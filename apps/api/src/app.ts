@@ -7,13 +7,38 @@ import type { AppEnv } from "./types/app.js";
 
 export const app = new Hono<AppEnv>();
 
-const allowedOrigins = Array.from(
-  new Set([
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    env.FRONTEND_URL
-  ])
-);
+const allowedOrigins = new Set([
+  "http://127.0.0.1:3000",
+  "http://localhost:3000",
+  env.FRONTEND_URL,
+  "https://sakuin-web.vercel.app"
+]);
+
+function getAllowedOrigin(origin: string) {
+  if (!origin) {
+    return env.FRONTEND_URL;
+  }
+
+  if (allowedOrigins.has(origin)) {
+    return origin;
+  }
+
+  try {
+    const url = new URL(origin);
+
+    const isVercelPreviewFromAccount =
+      url.protocol === "https:" &&
+      url.hostname.endsWith("-risaru9s-projects.vercel.app");
+
+    if (isVercelPreviewFromAccount) {
+      return origin;
+    }
+  } catch {
+    return env.FRONTEND_URL;
+  }
+
+  return env.FRONTEND_URL;
+}
 
 function getErrorStatus(error: unknown) {
   if (error && typeof error === "object") {
@@ -62,7 +87,7 @@ function jsonError(message: string, status: number, errors: unknown = null) {
 app.use(
   "*",
   cors({
-    origin: allowedOrigins,
+    origin: (origin) => getAllowedOrigin(origin),
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true
