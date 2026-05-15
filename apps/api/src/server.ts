@@ -3,7 +3,7 @@ import { app } from "./app.js";
 import { env } from "./config/env.js";
 
 const port = env.PORT;
-const hostname = "127.0.0.1";
+const hostname = env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
 const server = serve(
   {
@@ -22,6 +22,13 @@ server.on("error", (error) => {
 });
 
 process.on("SIGINT", () => {
+  server.close(() => {
+    console.log("Sakuin API stopped.");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", () => {
   server.close(() => {
     console.log("Sakuin API stopped.");
     process.exit(0);

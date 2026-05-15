@@ -1,10 +1,19 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { env } from "./config/env.js";
 import { apiRoutes } from "./modules/index.js";
 import { successResponse } from "./utils/api-response.js";
 import type { AppEnv } from "./types/app.js";
 
 export const app = new Hono<AppEnv>();
+
+const allowedOrigins = Array.from(
+  new Set([
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    env.FRONTEND_URL
+  ])
+);
 
 function getErrorStatus(error: unknown) {
   if (error && typeof error === "object") {
@@ -53,7 +62,7 @@ function jsonError(message: string, status: number, errors: unknown = null) {
 app.use(
   "*",
   cors({
-    origin: ["http://127.0.0.1:3000", "http://localhost:3000"],
+    origin: allowedOrigins,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true
