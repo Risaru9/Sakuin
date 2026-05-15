@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo Frontend test belum dibuat."
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
     "@sakuin/shared": "workspace:*",
