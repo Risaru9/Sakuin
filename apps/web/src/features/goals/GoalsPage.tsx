@@ -1,0 +1,537 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  Edit3,
+  Loader2,
+  Plus,
+  PlusCircle,
+  Star,
+  Trash2
+} from "lucide-react";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { AppShell } from "../../components/layout/AppShell";
+import { useToast } from "../../components/toast/ToastProvider";
+import { Button } from "../../components/ui/button";
+import { ApiClientError } from "../../lib/api-client";
+import { AddGoalProgressModal } from "./AddGoalProgressModal";
+import {
+  clearDashboardPriorityGoalId,
+  getDashboardPriorityGoalId,
+  setDashboardPriorityGoalId
+} from "./dashboard-goal-priority";
+import { deleteGoal, getGoals } from "./goal.service";
+import type { Goal } from "./goal.types";
+import { GoalFormModal } from "./GoalFormModal";
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof ApiClientError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Terjadi kesalahan.";
+}
+
+function toNumber(value: string | number | null | undefined) {
+  const numberValue = Number(value ?? 0);
+
+  if (Number.isNaN(numberValue)) {
+    return 0;
+  }
+
+  return numberValue;
+}
+
+function formatRupiah(value: string | number | null | undefined) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(toNumber(value));
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "Tanpa deadline";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Tanpa deadline";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(date);
+}
+
+function getGoalProgress(goal: Goal) {
+  const target = toNumber(goal.targetAmount);
+  const current = toNumber(goal.currentAmount);
+
+  if (target <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((current / target) * 100));
+}
+
+function GoalCard({
+  goal,
+  onAddProgress,
+  onSetDashboardPriority,
+  onEdit,
+  onDelete,
+  isDashboardPriority,
+  isDeleting
+}: {
+  goal: Goal;
+  onAddProgress: (goal: Goal) => void;
+  onSetDashboardPriority: (goal: Goal) => void;
+  onEdit: (goal: Goal) => void;
+  onDelete: (goal: Goal) => void;
+  isDashboardPriority: boolean;
+  isDeleting: boolean;
+}) {
+  const progress = getGoalProgress(goal);
+
+  return (
+    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-lg font-black text-slate-950">
+            {goal.name}
+          </p>
+
+          <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {formatDate(goal.deadline)}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">
+            {progress}%
+          </span>
+
+          {isDashboardPriority ? (
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
+              Dashboard
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {goal.description ? (
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {goal.description}
+        </p>
+      ) : null}
+
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
+          <span className="truncate">{formatRupiah(goal.currentAmount)}</span>
+          <span className="shrink-0">{formatRupiah(goal.targetAmount)}</span>
+        </div>
+
+        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-indigo-700"
+            style={{
+              width: `${progress}%`
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_90px_90px]">
+        <button
+          className={
+            isDashboardPriority
+              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-100 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-200"
+              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-indigo-100 px-3 text-xs font-black text-indigo-700 transition hover:bg-indigo-200"
+          }
+          onClick={() => onSetDashboardPriority(goal)}
+          type="button"
+        >
+          {isDashboardPriority ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : (
+            <Star className="h-4 w-4" />
+          )}
+          {isDashboardPriority ? "Prioritas Aktif" : "Jadikan Prioritas"}
+        </button>
+
+        <button
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 text-xs font-black text-white transition hover:bg-black"
+          onClick={() => onAddProgress(goal)}
+          type="button"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Tambah Dana
+        </button>
+
+        <button
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+          onClick={() => onEdit(goal)}
+          type="button"
+        >
+          <Edit3 className="h-4 w-4" />
+          Edit
+        </button>
+
+        <button
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isDeleting}
+          onClick={() => onDelete(goal)}
+          type="button"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+          Hapus
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function GoalsPage() {
+  const { addToast } = useToast();
+
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+
+  const [progressGoal, setProgressGoal] = useState<Goal | null>(null);
+  const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
+    useState<string | null>(() => getDashboardPriorityGoalId());
+
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const totalTarget = useMemo(() => {
+    return goals.reduce((total, goal) => total + toNumber(goal.targetAmount), 0);
+  }, [goals]);
+
+  const totalCurrent = useMemo(() => {
+    return goals.reduce(
+      (total, goal) => total + toNumber(goal.currentAmount),
+      0
+    );
+  }, [goals]);
+
+  const overallProgress = useMemo(() => {
+    if (totalTarget <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.round((totalCurrent / totalTarget) * 100));
+  }, [totalCurrent, totalTarget]);
+
+  async function loadGoals() {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await getGoals();
+      const storedPriorityGoalId = getDashboardPriorityGoalId();
+
+      if (
+        storedPriorityGoalId &&
+        !data.some((goal) => goal.id === storedPriorityGoalId)
+      ) {
+        clearDashboardPriorityGoalId();
+        setDashboardPriorityGoalIdState(null);
+      } else {
+        setDashboardPriorityGoalIdState(storedPriorityGoalId);
+      }
+
+      setGoals(data);
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleCreate() {
+    setSelectedGoal(null);
+    setIsFormOpen(true);
+  }
+
+  function handleEdit(goal: Goal) {
+    setSelectedGoal(goal);
+    setIsFormOpen(true);
+  }
+
+  function handleAddProgress(goal: Goal) {
+    setProgressGoal(goal);
+  }
+
+  function handleSetDashboardPriority(goal: Goal) {
+    setDashboardPriorityGoalId(goal.id);
+    setDashboardPriorityGoalIdState(goal.id);
+
+    addToast({
+      variant: "success",
+      title: "Goal prioritas diperbarui",
+      description: `"${goal.name}" sekarang tampil sebagai prioritas di dashboard.`
+    });
+  }
+
+  function openDeleteDialog(goal: Goal) {
+    setDeleteError(null);
+    setGoalToDelete(goal);
+  }
+
+  function closeDeleteDialog() {
+    if (deletingId) {
+      return;
+    }
+
+    setGoalToDelete(null);
+    setDeleteError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!goalToDelete) {
+      return;
+    }
+
+    const deletedGoalName = goalToDelete.name;
+
+    setDeletingId(goalToDelete.id);
+    setDeleteError(null);
+
+    try {
+      await deleteGoal(goalToDelete.id);
+
+      if (dashboardPriorityGoalId === goalToDelete.id) {
+        clearDashboardPriorityGoalId();
+        setDashboardPriorityGoalIdState(null);
+      }
+
+      await loadGoals();
+
+      addToast({
+        variant: "success",
+        title: "Goal berhasil dihapus",
+        description: `"${deletedGoalName}" sudah dihapus dari daftar goals.`
+      });
+
+      setGoalToDelete(null);
+    } catch (caughtError) {
+      const message = getErrorMessage(caughtError);
+
+      setDeleteError(message);
+
+      addToast({
+        variant: "error",
+        title: "Gagal menghapus goal",
+        description: message
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleGoalFormSuccess() {
+    const isEditing = Boolean(selectedGoal);
+    const goalName = selectedGoal?.name;
+
+    await loadGoals();
+
+    addToast({
+      variant: "success",
+      title: isEditing ? "Goal berhasil diperbarui" : "Goal berhasil dibuat",
+      description: isEditing
+        ? goalName
+          ? `Perubahan pada "${goalName}" sudah tersimpan.`
+          : "Perubahan goal sudah tersimpan."
+        : "Target tabungan baru sudah ditambahkan."
+    });
+  }
+
+  async function handleGoalProgressSuccess() {
+    const goalName = progressGoal?.name;
+
+    await loadGoals();
+
+    addToast({
+      variant: "success",
+      title: "Dana goal berhasil ditambahkan",
+      description: goalName
+        ? `Progress "${goalName}" sudah diperbarui.`
+        : "Progress goal sudah diperbarui."
+    });
+  }
+
+  useEffect(() => {
+    void loadGoals();
+  }, []);
+
+  const deleteDialogDescription = deleteError
+    ? `Gagal menghapus goal: ${deleteError}`
+    : goalToDelete
+      ? `Goal "${goalToDelete.name}" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.`
+      : "";
+
+  return (
+    <AppShell>
+      <header className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-indigo-700">Sakuin Goals</p>
+
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            Goals Tabungan
+          </h1>
+
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            Pantau target tabungan dan progres pencapaiannya.
+          </p>
+        </div>
+
+        <Button
+          className="rounded-2xl bg-slate-950 text-white hover:bg-black"
+          onClick={handleCreate}
+          size="md"
+        >
+          <Plus className="h-4 w-4" />
+          Tambah Goal
+        </Button>
+      </header>
+
+      <div className="mb-5 rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 sm:p-7">
+        <p className="text-sm font-semibold text-slate-300">
+          Total Progress Goals
+        </p>
+
+        <p className="mt-2 text-4xl font-black">{overallProgress}%</p>
+
+        <p className="mt-2 text-sm text-slate-300">
+          {formatRupiah(totalCurrent)} terkumpul dari{" "}
+          {formatRupiah(totalTarget)} target.
+        </p>
+
+        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-indigo-400"
+            style={{
+              width: `${overallProgress}%`
+            }}
+          />
+        </div>
+      </div>
+
+      {error ? (
+        <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-black">Gagal mengambil goals</p>
+              <p className="mt-1 text-sm font-medium text-rose-700">
+                {error}
+              </p>
+              <button
+                className="mt-2 text-sm font-black underline"
+                onClick={() => void loadGoals()}
+                type="button"
+              >
+                Coba lagi
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="flex min-h-52 items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white">
+          <div className="flex items-center gap-3 text-slate-500">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <p className="text-sm font-bold">Mengambil goals...</p>
+          </div>
+        </div>
+      ) : null}
+
+      {!isLoading && goals.length === 0 ? (
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-lg font-black text-slate-950">Belum ada goal</p>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Tambahkan target tabungan pertama kamu.
+          </p>
+
+          <Button
+            className="mt-5 rounded-2xl bg-slate-950 text-white hover:bg-black"
+            onClick={handleCreate}
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Goal
+          </Button>
+        </div>
+      ) : null}
+
+      {!isLoading && goals.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {goals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onAddProgress={handleAddProgress}
+              onSetDashboardPriority={handleSetDashboardPriority}
+              onEdit={handleEdit}
+              onDelete={openDeleteDialog}
+              isDashboardPriority={dashboardPriorityGoalId === goal.id}
+              isDeleting={deletingId === goal.id}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <GoalFormModal
+        open={isFormOpen}
+        goal={selectedGoal}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedGoal(null);
+        }}
+        onSuccess={handleGoalFormSuccess}
+      />
+
+      <AddGoalProgressModal
+        open={Boolean(progressGoal)}
+        goal={progressGoal}
+        onClose={() => setProgressGoal(null)}
+        onSuccess={handleGoalProgressSuccess}
+      />
+
+      <ConfirmDialog
+        open={Boolean(goalToDelete)}
+        title="Hapus goal?"
+        description={deleteDialogDescription}
+        confirmText="Ya, hapus goal"
+        cancelText="Batal"
+        loading={Boolean(goalToDelete && deletingId === goalToDelete.id)}
+        loadingText="Menghapus..."
+        variant="danger"
+        onClose={closeDeleteDialog}
+        onConfirm={() => void handleConfirmDelete()}
+      />
+    </AppShell>
+  );
+}

@@ -1,0 +1,110 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode
+} from "react";
+import {
+  getStoredToken,
+  removeStoredToken,
+  setStoredToken
+} from "../../lib/auth-storage";
+import {
+  getCurrentUser,
+  loginUser,
+  registerUser
+} from "./auth.service";
+import type {
+  AuthUser,
+  LoginInput,
+  RegisterInput
+} from "./auth.types";
+
+type AuthContextValue = {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isInitializing: boolean;
+  login: (input: LoginInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  async function refreshUser() {
+    const currentUser = await getCurrentUser();
+    setUser(currentUser);
+  }
+
+  async function login(input: LoginInput) {
+    const result = await loginUser(input);
+
+    setStoredToken(result.token);
+    setUser(result.user);
+  }
+
+  async function register(input: RegisterInput) {
+    const result = await registerUser(input);
+
+    setStoredToken(result.token);
+    setUser(result.user);
+  }
+
+  function logout() {
+    removeStoredToken();
+    setUser(null);
+  }
+
+  useEffect(() => {
+    const token = getStoredToken();
+
+    if (!token) {
+      setIsInitializing(false);
+      return;
+    }
+
+    getCurrentUser()
+      .then((currentUser) => {
+        setUser(currentUser);
+      })
+      .catch(() => {
+        removeStoredToken();
+        setUser(null);
+      })
+      .finally(() => {
+        setIsInitializing(false);
+      });
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: Boolean(user),
+        isInitializing,
+        login,
+        register,
+        logout,
+        refreshUser
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth harus digunakan di dalam AuthProvider");
+  }
+
+  return context;
+}

@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id                   String        @id @default(cuid())
+  name                 String
+  email                String        @unique
+  passwordHash         String
+  safeBalanceLimit     Decimal       @default(0) @db.Decimal(18, 2)
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  transactions         Transaction[]
+  goals                Goal[]
+  categories           Category[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  categoryId  String
+  type        TransactionType
+  amount      Decimal         @db.Decimal(18, 2)
+  note        String?
+  date        DateTime
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category        @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([categoryId])
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  targetAmount  Decimal   @db.Decimal(18, 2)
+  currentAmount Decimal   @default(0) @db.Decimal(18, 2)
+  deadline      DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  userId       String?
+  name         String
+  type         TransactionType
+  icon         String?
+  color        String?
+  isDefault    Boolean         @default(false)
+  user         User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId, type])
+  @@unique([userId, name, type])
+}
