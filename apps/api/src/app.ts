@@ -88,3 +88,5 @@ app.onError((error) => {
 
   return jsonError(message, status);
 });
+
+export default app;
