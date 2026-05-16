@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
   Database,
   Download,
   FileJson,
   FileSpreadsheet,
   FileText,
-  Loader2
+  Filter,
+  Loader2,
+  RefreshCcw,
+  ShieldCheck
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
 import { useToast } from "../../components/toast/ToastProvider";
@@ -14,28 +20,34 @@ import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
 import {
   downloadTransactionsExport,
+  getDownloadFileNamePreview,
+  sanitizeExportFileName,
   type ExportFormat,
   type ExportTypeFilter
 } from "./export.service";
+
+const MAX_CUSTOM_FILE_NAME_LENGTH = 80;
 
 const exportOptions = [
   {
     format: "json" as const,
     title: "Export JSON",
-    description: "Cocok untuk backup data atau integrasi teknis.",
+    description:
+      "Cocok untuk backup data, integrasi teknis, atau kebutuhan arsip mentah.",
     icon: FileJson
   },
   {
     format: "csv" as const,
     title: "Export CSV",
-    description: "Cocok dibuka di Excel, Google Sheets, atau analisis data.",
+    description:
+      "Cocok dibuka di Excel, Google Sheets, atau dipakai untuk analisis data sederhana.",
     icon: FileText
   },
   {
     format: "xlsx" as const,
     title: "Export Excel",
     description:
-      "Cocok untuk laporan spreadsheet. Sheet Transactions akan dibuka sebagai data utama.",
+      "Cocok untuk laporan spreadsheet dengan format Excel yang lebih nyaman dibaca.",
     icon: FileSpreadsheet
   }
 ];
@@ -52,7 +64,25 @@ function getErrorMessage(error: unknown) {
   return "Gagal melakukan export data.";
 }
 
+function isValidDateInput(value: string) {
+  if (!value) {
+    return true;
+  }
+
+  const date = new Date(`${value}T00:00:00.000`);
+
+  return !Number.isNaN(date.getTime());
+}
+
 function validateDateRange(startDate: string, endDate: string) {
+  if (startDate && !isValidDateInput(startDate)) {
+    return "Tanggal mulai tidak valid.";
+  }
+
+  if (endDate && !isValidDateInput(endDate)) {
+    return "Tanggal akhir tidak valid.";
+  }
+
   if (!startDate || !endDate) {
     return null;
   }
@@ -60,15 +90,47 @@ function validateDateRange(startDate: string, endDate: string) {
   const start = new Date(`${startDate}T00:00:00.000`);
   const end = new Date(`${endDate}T00:00:00.000`);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return "Format tanggal tidak valid.";
-  }
-
   if (start.getTime() > end.getTime()) {
     return "Tanggal mulai tidak boleh lebih besar dari tanggal akhir.";
   }
 
   return null;
+}
+
+function sanitizeFileNameInput(value: string) {
+  return value
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, MAX_CUSTOM_FILE_NAME_LENGTH);
+}
+
+function getTypeFilterLabel(type: ExportTypeFilter) {
+  if (type === "ALL") {
+    return "Semua transaksi";
+  }
+
+  if (type === "INCOME") {
+    return "Income saja";
+  }
+
+  return "Expense saja";
+}
+
+function getDateRangeLabel(startDate: string, endDate: string) {
+  if (startDate && endDate) {
+    return `${startDate} sampai ${endDate}`;
+  }
+
+  if (startDate) {
+    return `Mulai ${startDate}`;
+  }
+
+  if (endDate) {
+    return `Sampai ${endDate}`;
+  }
+
+  return "Semua tanggal";
 }
 
 export function ExportPage() {
@@ -79,56 +141,106 @@ export function ExportPage() {
   const [endDate, setEndDate] = useState("");
   const [isCustomFileNameEnabled, setIsCustomFileNameEnabled] = useState(false);
   const [fileName, setFileName] = useState("");
-
-  const [downloadingFormat, setDownloadingFormat] =
-    useState<ExportFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleDownload(format: ExportFormat) {
-    const dateError = validateDateRange(startDate, endDate);
+  const dateRangeError = validateDateRange(startDate, endDate);
 
-    if (dateError) {
-      setError(dateError);
+  const sanitizedFileName = useMemo(() => {
+    return sanitizeExportFileName(fileName);
+  }, [fileName]);
 
-      addToast({
-        variant: "error",
-        title: "Export gagal",
-        description: dateError
-      });
+  const activeFilterSummary = useMemo(() => {
+    return [
+      {
+        label: "Jenis transaksi",
+        value: getTypeFilterLabel(typeFilter)
+      },
+      {
+        label: "Rentang tanggal",
+        value: getDateRangeLabel(startDate, endDate)
+      },
+      {
+        label: "Nama file",
+        value: isCustomFileNameEnabled
+          ? sanitizedFileName || "Belum valid"
+          : "Otomatis"
+      }
+    ];
+  }, [typeFilter, startDate, endDate, isCustomFileNameEnabled, sanitizedFileName]);
 
-      return;
-    }
-
-    setDownloadingFormat(format);
-    setError(null);
-
-    try {
-      await downloadTransactionsExport({
+  const downloadMutation = useMutation({
+    mutationFn: async ({ format }: { format: ExportFormat }) => {
+      return downloadTransactionsExport({
         format,
         type: typeFilter,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        fileName: isCustomFileNameEnabled ? fileName : undefined
+        fileName: isCustomFileNameEnabled ? sanitizedFileName : undefined
       });
-
+    },
+    onSuccess: (_result, variables) => {
       addToast({
         variant: "success",
-        title: `Export ${format.toUpperCase()} berhasil`,
+        title: `Export ${variables.format.toUpperCase()} berhasil`,
         description: "File laporan transaksi mulai diunduh."
       });
-    } catch (caughtError) {
+    },
+    onError: (caughtError, variables) => {
       const message = getErrorMessage(caughtError);
 
       setError(message);
 
       addToast({
         variant: "error",
-        title: `Export ${format.toUpperCase()} gagal`,
+        title: `Export ${variables.format.toUpperCase()} gagal`,
         description: message
       });
-    } finally {
-      setDownloadingFormat(null);
     }
+  });
+
+  const downloadingFormat = downloadMutation.isPending
+    ? downloadMutation.variables?.format ?? null
+    : null;
+
+  function validateExportRequest() {
+    if (dateRangeError) {
+      return dateRangeError;
+    }
+
+    if (isCustomFileNameEnabled && !sanitizedFileName) {
+      return "Nama file custom wajib diisi atau matikan opsi nama file custom.";
+    }
+
+    if (
+      isCustomFileNameEnabled &&
+      sanitizedFileName.length > MAX_CUSTOM_FILE_NAME_LENGTH
+    ) {
+      return `Nama file maksimal ${MAX_CUSTOM_FILE_NAME_LENGTH} karakter.`;
+    }
+
+    return null;
+  }
+
+  function handleDownload(format: ExportFormat) {
+    const validationError = validateExportRequest();
+
+    if (validationError) {
+      setError(validationError);
+
+      addToast({
+        variant: "error",
+        title: "Export belum bisa dilakukan",
+        description: validationError
+      });
+
+      return;
+    }
+
+    setError(null);
+
+    downloadMutation.mutate({
+      format
+    });
   }
 
   function resetFilters() {
@@ -144,6 +256,14 @@ export function ExportPage() {
       title: "Filter export direset",
       description: "Filter export dikembalikan ke pengaturan awal."
     });
+  }
+
+  function handleCustomFileNameChange(value: string) {
+    setFileName(sanitizeFileNameInput(value));
+
+    if (error?.includes("Nama file")) {
+      setError(null);
+    }
   }
 
   return (
@@ -165,18 +285,35 @@ export function ExportPage() {
       </header>
 
       <div className="mb-5 rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 sm:p-7">
-        <p className="text-sm font-semibold text-slate-300">
-          Filter Data Export
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300">
+              <Filter className="h-4 w-4" />
+              Filter Data Export
+            </p>
 
-        <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-          Atur data sebelum download
-        </h2>
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+              Atur data sebelum download
+            </h2>
 
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-          Kamu bisa memilih jenis transaksi, rentang tanggal, dan nama file
-          sebelum mengunduh laporan.
-        </p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              Pilih jenis transaksi, rentang tanggal, dan nama file sebelum
+              mengunduh laporan.
+            </p>
+          </div>
+
+          {downloadMutation.isPending ? (
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Menyiapkan file
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Export siap
+            </div>
+          )}
+        </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/10 p-1">
           {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
@@ -186,6 +323,7 @@ export function ExportPage() {
                   ? "rounded-xl bg-white px-3 py-3 text-xs font-black text-slate-950"
                   : "rounded-xl px-3 py-3 text-xs font-black text-white/70 transition hover:bg-white/10 hover:text-white"
               }
+              disabled={downloadMutation.isPending}
               key={item}
               onClick={() => setTypeFilter(item)}
               type="button"
@@ -201,10 +339,14 @@ export function ExportPage() {
               Tanggal mulai
             </span>
             <input
-              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30"
+              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={downloadMutation.isPending}
               type="date"
               value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
+              onChange={(event) => {
+                setStartDate(event.target.value);
+                setError(null);
+              }}
             />
           </label>
 
@@ -213,23 +355,35 @@ export function ExportPage() {
               Tanggal akhir
             </span>
             <input
-              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30"
+              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={downloadMutation.isPending}
               type="date"
               value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
+              onChange={(event) => {
+                setEndDate(event.target.value);
+                setError(null);
+              }}
             />
           </label>
         </div>
+
+        {dateRangeError ? (
+          <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
+            {dateRangeError}
+          </div>
+        ) : null}
 
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
           <label className="flex items-center gap-3">
             <input
               checked={isCustomFileNameEnabled}
               className="h-4 w-4 accent-indigo-500"
+              disabled={downloadMutation.isPending}
               type="checkbox"
-              onChange={(event) =>
-                setIsCustomFileNameEnabled(event.target.checked)
-              }
+              onChange={(event) => {
+                setIsCustomFileNameEnabled(event.target.checked);
+                setError(null);
+              }}
             />
             <span className="text-sm font-black text-white">
               Gunakan nama file custom
@@ -243,27 +397,46 @@ export function ExportPage() {
                   Nama file
                 </span>
                 <input
-                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-400/30"
+                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={downloadMutation.isPending}
+                  maxLength={MAX_CUSTOM_FILE_NAME_LENGTH}
                   placeholder="Contoh: laporan-transaksi-mei-2026"
                   value={fileName}
-                  onChange={(event) => setFileName(event.target.value)}
+                  onChange={(event) =>
+                    handleCustomFileNameChange(event.target.value)
+                  }
                 />
               </label>
+
               <p className="mt-2 text-xs leading-5 text-slate-300">
-                Tidak perlu menulis ekstensi file. Sistem akan otomatis
-                menambahkan .json, .csv, atau .xlsx sesuai format yang kamu
-                pilih.
+                Tidak perlu menulis ekstensi file. Karakter ilegal akan diganti
+                otomatis. Maksimal {MAX_CUSTOM_FILE_NAME_LENGTH} karakter.
               </p>
             </div>
           ) : null}
         </div>
 
+        <div className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-3">
+          {activeFilterSummary.map((item) => (
+            <div key={item.label}>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
+                {item.label}
+              </p>
+              <p className="mt-1 break-words text-sm font-black text-white">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={downloadMutation.isPending}
             onClick={resetFilters}
             type="button"
           >
+            <RefreshCcw className="h-4 w-4" />
             Reset Filter
           </button>
         </div>
@@ -288,6 +461,14 @@ export function ExportPage() {
           const Icon = option.icon;
           const isDownloading = downloadingFormat === option.format;
 
+          const previewFileName = getDownloadFileNamePreview({
+            format: option.format,
+            type: typeFilter,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            fileName: isCustomFileNameEnabled ? sanitizedFileName : undefined
+          });
+
           return (
             <div
               className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
@@ -301,21 +482,32 @@ export function ExportPage() {
                 {option.title}
               </h2>
 
-              <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">
+              <p className="mt-2 min-h-16 text-sm leading-6 text-slate-500">
                 {option.description}
               </p>
 
+              <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
+                  Nama file
+                </p>
+                <p className="mt-1 break-words text-xs font-bold text-slate-700">
+                  {previewFileName}
+                </p>
+              </div>
+
               <Button
                 className="mt-5 w-full rounded-2xl bg-slate-950 text-white hover:bg-black"
-                disabled={Boolean(downloadingFormat)}
-                onClick={() => void handleDownload(option.format)}
+                disabled={downloadMutation.isPending}
+                onClick={() => handleDownload(option.format)}
               >
                 {isDownloading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Download className="h-4 w-4" />
                 )}
-                Download {option.format.toUpperCase()}
+                {isDownloading
+                  ? `Menyiapkan ${option.format.toUpperCase()}...`
+                  : `Download ${option.format.toUpperCase()}`}
               </Button>
             </div>
           );
@@ -341,7 +533,27 @@ export function ExportPage() {
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="font-black text-slate-950">XLSX</p>
             <p className="mt-1">
-              File Excel akan membuka sheet Transactions sebagai dataset utama.
+              File Excel membuka data transaksi dalam format spreadsheet.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-6 text-indigo-800">
+          <div className="flex items-start gap-3">
+            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              Jika rentang tanggal dikosongkan, export akan mengambil semua
+              transaksi sesuai jenis transaksi yang dipilih.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              Tombol export akan nonaktif saat file sedang disiapkan agar tidak
+              terjadi download ganda.
             </p>
           </div>
         </div>

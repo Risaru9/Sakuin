@@ -1,11 +1,14 @@
-import { ApiClientError } from "../../lib/api-client";
+import {
+  ApiClientError,
+  apiDownload
+} from "../../lib/api-client";
 import type { TransactionType } from "../transactions/transaction.types";
 
 export type ExportFormat = "json" | "csv" | "xlsx";
 
 export type ExportTypeFilter = "ALL" | TransactionType;
 
-type DownloadTransactionsExportInput = {
+export type DownloadTransactionsExportInput = {
   format: ExportFormat;
   type: ExportTypeFilter;
   startDate?: string;
@@ -13,97 +16,7 @@ type DownloadTransactionsExportInput = {
   fileName?: string;
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:5000";
-
-function isJwtLike(value: string) {
-  return /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(value);
-}
-
-function extractTokenFromValue(value: unknown): string | null {
-  if (!value) {
-    return null;
-  }
-
-  if (typeof value === "string") {
-    if (isJwtLike(value)) {
-      return value;
-    }
-
-    try {
-      const parsed = JSON.parse(value);
-      return extractTokenFromValue(parsed);
-    } catch {
-      return null;
-    }
-  }
-
-  if (typeof value === "object") {
-    const record = value as Record<string, unknown>;
-
-    const directToken =
-      record.token ??
-      record.accessToken ??
-      record.authToken ??
-      record.jwt ??
-      record.access_token;
-
-    if (typeof directToken === "string" && directToken.length > 0) {
-      return directToken;
-    }
-
-    for (const nestedValue of Object.values(record)) {
-      const nestedToken = extractTokenFromValue(nestedValue);
-
-      if (nestedToken) {
-        return nestedToken;
-      }
-    }
-  }
-
-  return null;
-}
-
-function getAuthTokenFromLocalStorage() {
-  const preferredKeys = [
-    "sakuin_token",
-    "sakuin_access_token",
-    "sakuin_auth",
-    "sakuin_user",
-    "auth",
-    "token",
-    "accessToken",
-    "authToken"
-  ];
-
-  for (const key of preferredKeys) {
-    const value = localStorage.getItem(key);
-    const token = extractTokenFromValue(value);
-
-    if (token) {
-      return token;
-    }
-  }
-
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
-
-    if (!key) {
-      continue;
-    }
-
-    const value = localStorage.getItem(key);
-    const token = extractTokenFromValue(value);
-
-    if (token) {
-      return token;
-    }
-  }
-
-  return null;
-}
-
-function buildExportUrl(input: DownloadTransactionsExportInput) {
+function buildExportPath(input: DownloadTransactionsExportInput) {
   const searchParams = new URLSearchParams();
 
   searchParams.set("format", input.format);
@@ -120,10 +33,10 @@ function buildExportUrl(input: DownloadTransactionsExportInput) {
     searchParams.set("endDate", input.endDate);
   }
 
-  return `${API_BASE_URL}/api/export/transactions?${searchParams.toString()}`;
+  return `/api/export/transactions?${searchParams.toString()}`;
 }
 
-function sanitizeFileName(value: string) {
+export function sanitizeExportFileName(value: string) {
   return value
     .trim()
     .replace(/\.[^/.]+$/, "")
@@ -133,64 +46,75 @@ function sanitizeFileName(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-function getDownloadFileName(input: DownloadTransactionsExportInput) {
+function getDefaultFileName(input: DownloadTransactionsExportInput) {
   const date = new Date().toISOString().slice(0, 10);
   const typePart = input.type === "ALL" ? "semua" : input.type.toLowerCase();
 
-  const defaultFileName = `sakuin-transactions-${typePart}-${date}`;
-  const baseFileName = input.fileName
-    ? sanitizeFileName(input.fileName)
-    : defaultFileName;
-
-  return `${baseFileName || defaultFileName}.${input.format}`;
+  return `sakuin-transactions-${typePart}-${date}`;
 }
 
-async function getErrorMessageFromResponse(response: Response) {
-  try {
-    const result = (await response.json()) as {
-      message?: string;
-      errors?: unknown;
-    };
-
-    return result.message ?? "Export gagal.";
-  } catch {
-    return "Export gagal.";
+function getFileNameFromContentDisposition(value: string | null) {
+  if (!value) {
+    return null;
   }
+
+  const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const fileNameMatch = value.match(/filename="?([^"]+)"?/i);
+
+  return fileNameMatch?.[1] ?? null;
+}
+
+export function getDownloadFileName(input: DownloadTransactionsExportInput) {
+  const defaultFileName = getDefaultFileName(input);
+  const customFileName = input.fileName
+    ? sanitizeExportFileName(input.fileName)
+    : "";
+
+  return `${customFileName || defaultFileName}.${input.format}`;
+}
+
+export function getDownloadFileNamePreview(
+  input: DownloadTransactionsExportInput
+) {
+  return getDownloadFileName(input);
 }
 
 export async function downloadTransactionsExport(
   input: DownloadTransactionsExportInput
 ) {
-  const token = getAuthTokenFromLocalStorage();
-
-  if (!token) {
-    throw new ApiClientError(
-      "Token login tidak ditemukan. Silakan login ulang.",
-      401
-    );
-  }
-
-  const response = await fetch(buildExportUrl(input), {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    const message = await getErrorMessageFromResponse(response);
-    throw new ApiClientError(message, response.status);
-  }
+  const response = await apiDownload(buildExportPath(input));
 
   const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
 
+  if (blob.size === 0) {
+    throw new ApiClientError("File export kosong.", 500);
+  }
+
+  const responseFileName = getFileNameFromContentDisposition(
+    response.headers.get("content-disposition")
+  );
+
+  const finalFileName = responseFileName || getDownloadFileName(input);
+
+  const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
+
   anchor.href = objectUrl;
-  anchor.download = getDownloadFileName(input);
+  anchor.download = finalFileName;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
 
-  URL.revokeObjectURL(objectUrl);
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 1000);
 }
