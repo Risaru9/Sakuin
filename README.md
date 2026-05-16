@@ -1,51 +1,57 @@
 # Sakuin
 
-Sakuin adalah webapp pengelola keuangan pribadi berbasis web yang dirancang mobile-friendly, sederhana, dan mudah digunakan. Aplikasi ini membantu pengguna mencatat transaksi, memantau kondisi saldo, mengelola target tabungan, mengatur batas saldo aman, dan mengekspor laporan transaksi.
+Sakuin adalah webapp pengelola keuangan pribadi berbasis web yang dirancang **mobile-friendly**, sederhana, cepat, dan nyaman digunakan di HP, tablet, laptop, maupun desktop.
 
-Project ini menggunakan struktur **monorepo** agar frontend, backend, dan shared package dapat dikelola dalam satu repository secara rapi.
+Aplikasi ini membantu pengguna mencatat pemasukan dan pengeluaran, memantau saldo, mengelola kategori transaksi, membuat target tabungan, mengatur batas saldo aman, serta mengekspor laporan transaksi ke beberapa format.
+
+Project ini menggunakan struktur **monorepo** agar frontend, backend, dan shared package dapat dikelola dalam satu repository secara rapi, modular, dan mudah dikembangkan.
 
 ---
 
 ## Production URL
 
-Sakuin sudah tersedia secara production melalui Vercel.
-
 ```txt
 Frontend : https://sakuin-web.vercel.app
 Backend  : https://sakuin-api.vercel.app
 GitHub   : https://github.com/Risaru9/Sakuin
+Database : Supabase PostgreSQL
 ```
 
 Health check backend:
 
 ```txt
-https://sakuin-api.vercel.app/health
-https://sakuin-api.vercel.app/api/health
+GET https://sakuin-api.vercel.app/health
+GET https://sakuin-api.vercel.app/api/health
 ```
 
 Status production terakhir:
 
 ```txt
-Frontend production : active
-Backend production  : active
-Database            : Supabase PostgreSQL
-Deployment platform : Vercel
+[✓] Frontend Vercel aktif
+[✓] Backend Vercel aktif
+[✓] Database Supabase aktif
+[✓] CORS frontend-backend berjalan
+[✓] Environment variable production terbaca
+[✓] GitHub Actions CI berjalan
+[✓] Vercel deployment berjalan
+[✓] Semua fitur utama berjalan normal di production
 ```
 
 ---
 
 ## Rumusan Masalah
 
-Banyak pengguna masih mencatat keuangan pribadi secara manual atau tersebar di beberapa tempat, seperti catatan HP, spreadsheet, aplikasi bank, atau ingatan pribadi. Hal ini membuat pengguna sering kesulitan untuk:
+Banyak pengguna masih mencatat keuangan pribadi secara manual atau tersebar di banyak tempat, seperti catatan HP, spreadsheet, aplikasi bank, atau ingatan pribadi. Pola tersebut membuat pengguna sulit untuk:
 
 - mengetahui kondisi saldo secara cepat;
 - memantau pemasukan dan pengeluaran;
+- mengelompokkan transaksi berdasarkan kategori;
 - melihat ringkasan keuangan bulanan;
 - menjaga saldo tetap berada di atas batas aman;
 - membuat dan memantau target tabungan;
 - menyimpan laporan transaksi dalam format yang mudah dianalisis.
 
-Sakuin dibuat untuk menjawab masalah tersebut melalui webapp keuangan pribadi yang ringan, responsif, dan terintegrasi.
+Sakuin dibuat untuk menjawab masalah tersebut melalui webapp keuangan pribadi yang ringan, responsif, terstruktur, dan mudah digunakan.
 
 ---
 
@@ -57,8 +63,10 @@ Tujuan utama Sakuin adalah menyediakan aplikasi keuangan pribadi yang:
 - nyaman diakses dari mobile maupun desktop;
 - membantu pencatatan pemasukan dan pengeluaran;
 - menyediakan ringkasan kondisi keuangan;
+- mendukung kategori transaksi default dan custom;
 - membantu pengguna membuat target tabungan;
 - menyediakan export laporan transaksi;
+- memiliki UX yang cepat melalui caching dan optimistic update;
 - memiliki struktur kode yang rapi dan mudah dikembangkan.
 
 ---
@@ -72,6 +80,7 @@ Tujuan utama Sakuin adalah menyediakan aplikasi keuangan pribadi yang:
 - Logout
 - Protected route
 - Token-based authentication menggunakan JWT
+- Session disimpan di browser melalui local storage
 
 ### Dashboard
 
@@ -85,6 +94,7 @@ Tujuan utama Sakuin adalah menyediakan aplikasi keuangan pribadi yang:
 - Menampilkan ringkasan goals
 - Menampilkan goal prioritas
 - Tambah transaksi langsung dari dashboard
+- Data dashboard memakai cache agar tidak loading berulang saat pindah halaman
 
 ### Transactions
 
@@ -92,11 +102,17 @@ Tujuan utama Sakuin adalah menyediakan aplikasi keuangan pribadi yang:
 - Tambah transaksi pengeluaran
 - Edit transaksi
 - Hapus transaksi
-- Search transaksi berdasarkan catatan/kategori
-- Filter transaksi berdasarkan semua/income/expense
-- Validasi nominal transaksi
-- Confirm dialog untuk aksi hapus
+- Search transaksi berdasarkan catatan
+- Filter berdasarkan tipe transaksi
+- Filter berdasarkan kategori
+- Filter berdasarkan rentang tanggal
+- Sorting transaksi
+- Pagination backend-driven
+- Limit data per halaman
+- Confirm dialog untuk hapus transaksi
 - Toast notification untuk feedback aksi
+- Cache dan background refetch menggunakan TanStack Query
+- Optimistic/faster action UX untuk edit dan delete
 
 Aturan validasi nominal transaksi:
 
@@ -106,9 +122,23 @@ Maksimal : Rp 1.000.000.000.000
 Tidak boleh 0
 Tidak boleh minus
 Tidak boleh format angka tidak valid
+Maksimal 2 angka desimal
 ```
 
 Validasi dilakukan di frontend dan backend.
+
+### Categories
+
+- Melihat default category
+- Membuat custom category
+- Edit custom category
+- Hapus custom category
+- Filter category berdasarkan ALL, INCOME, dan EXPENSE
+- Default category tidak bisa diedit
+- Default category tidak bisa dihapus
+- Category yang dipakai transaksi tidak bisa dihapus
+- Cache category menggunakan TanStack Query
+- Category langsung terintegrasi dengan Add/Edit Transaction
 
 ### Goals
 
@@ -121,6 +151,28 @@ Validasi dilakukan di frontend dan backend.
 - Validasi current amount tidak boleh melebihi target amount
 - Confirm dialog untuk aksi hapus
 - Toast notification untuk feedback aksi
+- Cache dan optimistic/faster action UX menggunakan TanStack Query
+
+### Profile
+
+- Melihat profile user
+- Update nama user
+- Update safe balance limit
+- Logout
+- Nama user langsung sinkron ke AppShell/sidebar
+- Safe balance limit langsung memengaruhi summary/dashboard setelah refresh cache
+- Toast notification untuk feedback aksi
+
+Aturan validasi safe balance limit:
+
+```txt
+Minimal  : Rp 0
+Maksimal : Rp 1.000.000.000.000
+Hanya angka
+Tidak boleh minus
+Tidak boleh huruf
+Tidak boleh simbol
+```
 
 ### Export
 
@@ -130,15 +182,11 @@ Validasi dilakukan di frontend dan backend.
 - Filter export berdasarkan tipe transaksi
 - Filter export berdasarkan rentang tanggal
 - Custom nama file export
+- Preview nama file sebelum download
+- Validasi rentang tanggal
+- Tombol export disabled saat file sedang diproses
 - Toast notification untuk feedback export
-
-### Profile
-
-- Melihat profile user
-- Update nama user
-- Update safe balance limit
-- Logout
-- Toast notification untuk feedback aksi
+- Download memakai auth flow standar melalui API client
 
 ### UI/UX
 
@@ -149,6 +197,9 @@ Validasi dilakukan di frontend dan backend.
 - Modal overlay konsisten
 - ConfirmDialog custom
 - ToastProvider global
+- Loading state dan error state konsisten
+- Caching global dengan TanStack Query
+- Optimistic/faster action UX pada halaman utama
 - Tampilan clean, sederhana, dan modern
 
 ---
@@ -167,10 +218,14 @@ Validasi dilakukan di frontend dan backend.
 - TypeScript
 - React Router
 - Tailwind CSS
+- TanStack Query
+- Recharts
 - lucide-react
 - clsx
 - tailwind-merge
-- Recharts
+- Vitest
+- Testing Library
+- jsdom
 
 ### Backend
 
@@ -192,12 +247,13 @@ Validasi dilakukan di frontend dan backend.
 - Prisma migration
 - Prisma seed
 
-### Deployment
+### Deployment dan CI
 
 - Vercel untuk frontend
 - Vercel untuk backend Hono serverless function
 - Supabase untuk database
 - GitHub sebagai repository
+- GitHub Actions untuk CI
 
 ---
 
@@ -209,6 +265,12 @@ sakuin/
 │  ├─ api/
 │  │  ├─ prisma/
 │  │  ├─ src/
+│  │  │  ├─ config/
+│  │  │  ├─ db/
+│  │  │  ├─ middlewares/
+│  │  │  ├─ modules/
+│  │  │  ├─ types/
+│  │  │  └─ utils/
 │  │  ├─ tests/
 │  │  ├─ package.json
 │  │  └─ .env.example
@@ -218,6 +280,15 @@ sakuin/
 │     │  ├─ app/
 │     │  ├─ components/
 │     │  ├─ features/
+│     │  │  ├─ auth/
+│     │  │  ├─ categories/
+│     │  │  ├─ dashboard/
+│     │  │  ├─ export/
+│     │  │  ├─ goals/
+│     │  │  ├─ health/
+│     │  │  ├─ profile/
+│     │  │  ├─ summary/
+│     │  │  └─ transactions/
 │     │  ├─ lib/
 │     │  ├─ types/
 │     │  └─ main.tsx
@@ -232,6 +303,7 @@ sakuin/
 │  └─ HANDOFF.md
 │
 ├─ package.json
+├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
 ├─ .gitignore
 └─ README.md
@@ -318,7 +390,7 @@ Contoh isi untuk production:
 VITE_API_BASE_URL="https://sakuin-api.vercel.app"
 ```
 
-Catatan:
+Catatan penting:
 
 ```txt
 VITE_API_BASE_URL tidak boleh diakhiri slash /
@@ -433,6 +505,8 @@ Untuk menjalankan frontend, gunakan pnpm dev:web.
 ```bash
 pnpm --filter @sakuin/web dev
 pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web test:watch
 pnpm --filter @sakuin/web build
 pnpm --filter @sakuin/web preview
 ```
@@ -440,10 +514,12 @@ pnpm --filter @sakuin/web preview
 Keterangan:
 
 ```txt
-dev       : menjalankan frontend lokal
-typecheck : mengecek TypeScript frontend
-build     : build frontend untuk production
-preview   : preview hasil build frontend
+dev        : menjalankan frontend lokal
+typecheck  : mengecek TypeScript frontend
+test       : menjalankan frontend automated test
+test:watch : menjalankan frontend test mode watch
+build      : build frontend untuk production
+preview    : preview hasil build frontend
 ```
 
 ---
@@ -454,6 +530,7 @@ preview   : preview hasil build frontend
 pnpm --filter @sakuin/api dev
 pnpm --filter @sakuin/api typecheck
 pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api test:watch
 pnpm --filter @sakuin/api build
 pnpm --filter @sakuin/api start
 ```
@@ -461,11 +538,12 @@ pnpm --filter @sakuin/api start
 Keterangan:
 
 ```txt
-dev       : menjalankan backend lokal
-typecheck : mengecek TypeScript backend dan test config
-test      : menjalankan backend test
-build     : build backend
-start     : menjalankan hasil build backend
+dev        : menjalankan backend lokal
+typecheck  : mengecek TypeScript backend dan test config
+test       : menjalankan backend test dengan timeout 20 detik
+test:watch : menjalankan backend test mode watch
+build      : build backend
+start      : menjalankan hasil build backend
 ```
 
 ---
@@ -498,7 +576,15 @@ db:reset    : reset database development
 
 ```bash
 pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
 pnpm --filter @sakuin/web build
+```
+
+Frontend test terakhir yang tercatat:
+
+```txt
+Test Files : 3 passed
+Tests      : 11 passed
 ```
 
 ### Backend
@@ -509,26 +595,33 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
+Backend test terakhir yang tercatat:
+
+```txt
+Test Files : 7 passed
+Tests      : 63 passed
+```
+
 ### Full Regression
 
 ```bash
 pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
 pnpm --filter @sakuin/web build
 pnpm --filter @sakuin/api typecheck
 pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
-Status regression terakhir:
+Target regression:
 
 ```txt
 Frontend typecheck : passed
+Frontend test      : passed
 Frontend build     : passed
 Backend typecheck  : passed
 Backend test       : passed
 Backend build      : passed
-API test files     : 6 passed
-API tests          : 47 passed
 ```
 
 ---
@@ -563,6 +656,11 @@ GET    /api/auth/me
 
 GET    /api/users/profile
 PATCH  /api/users/profile
+
+GET    /api/categories
+POST   /api/categories
+PUT    /api/categories/:id
+DELETE /api/categories/:id
 
 GET    /api/transactions
 POST   /api/transactions
@@ -657,6 +755,34 @@ Beberapa hal penting yang perlu diperhatikan saat deployment:
 6. Backend CORS harus mengizinkan URL frontend production.
 7. Jangan menggunakan URL dashboard Vercel sebagai API URL.
 8. Jangan menggunakan preview URL yang terkena Vercel Authentication sebagai API production.
+9. Jangan menyimpan secret production di repository.
+10. Pastikan GitHub Actions secrets tetap tersedia untuk CI.
+
+---
+
+## GitHub Actions CI
+
+CI digunakan untuk menjaga project tetap aman sebelum perubahan masuk ke main branch.
+
+Validasi CI mencakup:
+
+```txt
+[✓] pnpm install dengan frozen lockfile
+[✓] Prisma client/schema sync
+[✓] Frontend test
+[✓] Frontend typecheck
+[✓] Frontend build
+[✓] Backend typecheck
+[✓] Backend test
+[✓] Backend build
+```
+
+Catatan:
+
+```txt
+Jika package.json berubah, jalankan pnpm install agar pnpm-lock.yaml ikut sinkron.
+Jika lockfile tidak sinkron, CI akan gagal pada tahap frozen install.
+```
 
 ---
 
@@ -665,26 +791,33 @@ Beberapa hal penting yang perlu diperhatikan saat deployment:
 Status project saat ini:
 
 ```txt
-MVP Production Ready
+Production Ready
+App-wide UX/cache optimization completed
 ```
 
 Yang sudah selesai:
 
 ```txt
-[✓] Frontend selesai
-[✓] Backend selesai
+[✓] Frontend production aktif
+[✓] Backend production aktif
 [✓] Database Supabase aktif
+[✓] GitHub repository aktif
+[✓] GitHub Actions CI aktif
+[✓] Vercel deployment aktif
 [✓] Auth berjalan
 [✓] Dashboard berjalan
 [✓] Transactions berjalan
+[✓] Categories berjalan
 [✓] Goals berjalan
-[✓] Export berjalan
 [✓] Profile berjalan
+[✓] Export berjalan
 [✓] Toast notification berjalan
 [✓] Confirm dialog berjalan
-[✓] Responsive layout berjalan
-[✓] Production deployment berhasil
-[✓] Semua fitur utama berjalan normal di production
+[✓] AppShell responsive berjalan
+[✓] Frontend automated tests berjalan
+[✓] Backend automated tests berjalan
+[✓] TanStack Query cache diterapkan
+[✓] Performance/UX optimization diterapkan di semua page utama
 ```
 
 ---
@@ -703,15 +836,23 @@ Checklist production terakhir:
 [✓] Tambah transaksi
 [✓] Edit transaksi
 [✓] Hapus transaksi
+[✓] Filter/search/sort/pagination transaksi
+[✓] Tambah category custom
+[✓] Edit category custom
+[✓] Hapus category custom
 [✓] Tambah goal
+[✓] Edit goal
 [✓] Tambah dana goal
+[✓] Hapus goal
 [✓] Set goal prioritas dashboard
+[✓] Update profile
+[✓] Update safe balance limit
 [✓] Export JSON
 [✓] Export CSV
 [✓] Export XLSX
-[✓] Update profile
 [✓] Logout
 [✓] Login ulang
+[✓] Refresh route protected tidak 404
 ```
 
 ---
@@ -723,7 +864,7 @@ Prinsip yang digunakan selama pengembangan Sakuin:
 ```txt
 1. Jangan mengubah logic stabil tanpa alasan kuat.
 2. Perubahan dilakukan bertahap per fase.
-3. Setelah perubahan besar, jalankan typecheck/build/test.
+3. Setelah perubahan besar, jalankan typecheck/test/build.
 4. Validasi penting harus ada di frontend dan backend.
 5. Aksi destructive menggunakan ConfirmDialog.
 6. Feedback user menggunakan ToastProvider.
@@ -731,41 +872,64 @@ Prinsip yang digunakan selama pengembangan Sakuin:
 8. Modal overlay harus konsisten.
 9. Hindari window.confirm() dan alert().
 10. Dokumentasi harus jelas, ringkas, dan bisa dipakai developer lain.
+11. Cache dipakai untuk mengurangi blank loading berulang.
+12. Optimistic/faster action UX dipakai dengan rollback jika gagal.
 ```
+
+---
+
+## Release Notes
+
+Release yang sudah tercatat:
+
+```txt
+v0.1.0 - Sakuin MVP release
+v0.1.1 - Sakuin production deployment release
+v0.2.0 - Category management release
+```
+
+Rencana release berikutnya:
+
+```txt
+v0.4.0 - App-wide caching and UX performance optimization
+```
+
+Gunakan release tag baru setelah final regression dan dokumentasi selesai.
 
 ---
 
 ## Backlog Lanjutan
 
-Fitur yang belum dibuat pada fase MVP dan bisa dikembangkan selanjutnya:
+Fitur yang belum dibuat dan bisa dikembangkan selanjutnya:
 
 ```txt
-[ ] Category management custom
 [ ] Budgeting per kategori
 [ ] Recurring transaction
-[ ] Frontend automated tests
-[ ] Dark mode
 [ ] PWA installable
-[ ] CI/CD workflow
-[ ] AI assistant
+[ ] Dark mode
 [ ] Chat/command input transaksi, contoh: /pengeluaran makan 20000
+[ ] AI assistant
+[ ] Data visualization enhancement
+[ ] Import transaksi dari CSV/XLSX
+[ ] Multi-account wallet
+[ ] Notification/reminder untuk goal atau recurring transaction
 ```
 
 ---
 
 ## Rekomendasi Pengembangan Berikutnya
 
-Urutan pengembangan yang disarankan setelah MVP production:
+Urutan pengembangan yang disarankan setelah optimasi app-wide:
 
 ```txt
-1. Tambahkan frontend automated test.
-2. Tambahkan category management custom.
+1. Final regression dan update dokumentasi.
+2. Tag release app-wide performance optimization.
 3. Tambahkan budgeting per kategori.
 4. Tambahkan recurring transaction.
 5. Tambahkan PWA support.
 6. Tambahkan dark mode.
 7. Tambahkan chat/command input transaksi.
-8. Tambahkan AI assistant jika fitur utama sudah stabil.
+8. Tambahkan AI assistant setelah fitur utama semakin matang.
 ```
 
 ---
