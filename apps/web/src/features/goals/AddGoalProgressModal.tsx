@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, PlusCircle, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
+import { useToast } from "../../components/toast/ToastProvider";
 import { updateGoal } from "./goal.service";
 import type { Goal } from "./goal.types";
 
@@ -11,6 +14,12 @@ type AddGoalProgressModalProps = {
   goal: Goal | null;
   onClose: () => void;
   onSuccess: () => void | Promise<void>;
+};
+
+type AddGoalProgressMutationInput = {
+  goal: Goal;
+  nextCurrentAmount: string;
+  optimisticGoal: Goal;
 };
 
 function getErrorMessage(error: unknown) {
@@ -51,11 +60,83 @@ export function AddGoalProgressModal({
 }: AddGoalProgressModalProps) {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
 
   const currentAmount = Number(goal?.currentAmount ?? 0);
   const targetAmount = Number(goal?.targetAmount ?? 0);
   const remainingAmount = Math.max(0, targetAmount - currentAmount);
+
+  const addProgressMutation = useMutation({
+    mutationFn: ({ goal, nextCurrentAmount }: AddGoalProgressMutationInput) => {
+      return updateGoal(goal.id, {
+        name: goal.name,
+        targetAmount: goal.targetAmount,
+        currentAmount: nextCurrentAmount,
+        deadline: goal.deadline,
+        description: goal.description ?? undefined
+      });
+    },
+    onMutate: async ({ optimisticGoal }) => {
+      setAmount("");
+      setError(null);
+      onClose();
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.goals
+      });
+
+      const previousGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals);
+
+      queryClient.setQueryData<Goal[]>(queryKeys.goals, (currentGoals) => {
+        if (!currentGoals) {
+          return currentGoals;
+        }
+
+        return currentGoals.map((item) =>
+          item.id === optimisticGoal.id ? optimisticGoal : item
+        );
+      });
+
+      return {
+        previousGoals,
+        goalName: optimisticGoal.name
+      };
+    },
+    onError: (caughtError, _input, context) => {
+      if (context?.previousGoals) {
+        queryClient.setQueryData(queryKeys.goals, context.previousGoals);
+      }
+
+      addToast({
+        variant: "error",
+        title: "Gagal menambah dana goal",
+        description: getErrorMessage(caughtError)
+      });
+    },
+    onSuccess: (updatedGoal) => {
+      queryClient.setQueryData<Goal[]>(queryKeys.goals, (currentGoals) => {
+        if (!currentGoals) {
+          return [updatedGoal];
+        }
+
+        return currentGoals.map((item) =>
+          item.id === updatedGoal.id ? updatedGoal : item
+        );
+      });
+
+      addToast({
+        variant: "success",
+        title: "Dana goal berhasil ditambahkan",
+        description: `Progress "${updatedGoal.name}" sudah diperbarui.`
+      });
+
+      void onSuccess();
+    }
+  });
+
+  const isSubmitting = addProgressMutation.isPending;
 
   function handleClose() {
     if (isSubmitting) {
@@ -67,7 +148,7 @@ export function AddGoalProgressModal({
     onClose();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!goal) {
@@ -82,9 +163,9 @@ export function AddGoalProgressModal({
       return;
     }
 
-    const nextCurrentAmount = currentAmount + addAmount;
+    const nextCurrentAmountNumber = currentAmount + addAmount;
 
-    if (nextCurrentAmount > targetAmount) {
+    if (nextCurrentAmountNumber > targetAmount) {
       setError(
         `Nominal melebihi target. Sisa dana yang dibutuhkan hanya ${formatRupiah(
           remainingAmount
@@ -93,27 +174,21 @@ export function AddGoalProgressModal({
       return;
     }
 
+    const nextCurrentAmount = String(nextCurrentAmountNumber);
+
+    const optimisticGoal: Goal = {
+      ...goal,
+      currentAmount: nextCurrentAmount,
+      updatedAt: new Date().toISOString()
+    };
+
     setError(null);
-    setIsSubmitting(true);
 
-    try {
-      await updateGoal(goal.id, {
-        name: goal.name,
-        targetAmount: goal.targetAmount,
-        currentAmount: String(nextCurrentAmount),
-        deadline: goal.deadline,
-        description: goal.description ?? undefined
-      });
-
-      await onSuccess();
-
-      setAmount("");
-      onClose();
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsSubmitting(false);
-    }
+    addProgressMutation.mutate({
+      goal,
+      nextCurrentAmount,
+      optimisticGoal
+    });
   }
 
   useEffect(() => {

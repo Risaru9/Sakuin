@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CalendarDays,
@@ -15,6 +16,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { AddGoalProgressModal } from "./AddGoalProgressModal";
 import {
   clearDashboardPriorityGoalId,
@@ -208,10 +210,7 @@ function GoalCard({
 
 export function GoalsPage() {
   const { addToast } = useToast();
-
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -221,8 +220,21 @@ export function GoalsPage() {
     useState<string | null>(() => getDashboardPriorityGoalId());
 
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const goalsQuery = useQuery({
+    queryKey: queryKeys.goals,
+    queryFn: getGoals
+  });
+
+  const goals = goalsQuery.data ?? [];
+  const isLoading = goalsQuery.isLoading && !goalsQuery.data;
+  const isBackgroundFetching = goalsQuery.isFetching && Boolean(goalsQuery.data);
+
+  const error =
+    goalsQuery.error && !goalsQuery.data
+      ? getErrorMessage(goalsQuery.error)
+      : null;
 
   const totalTarget = useMemo(() => {
     return goals.reduce((total, goal) => total + toNumber(goal.targetAmount), 0);
@@ -243,30 +255,83 @@ export function GoalsPage() {
     return Math.min(100, Math.round((totalCurrent / totalTarget) * 100));
   }, [totalCurrent, totalTarget]);
 
-  async function loadGoals() {
-    setIsLoading(true);
-    setError(null);
+  const deleteGoalMutation = useMutation({
+    mutationFn: (goal: Goal) => deleteGoal(goal.id),
+    onMutate: async (goal) => {
+      setGoalToDelete(null);
+      setDeleteError(null);
 
-    try {
-      const data = await getGoals();
-      const storedPriorityGoalId = getDashboardPriorityGoalId();
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.goals
+      });
 
-      if (
-        storedPriorityGoalId &&
-        !data.some((goal) => goal.id === storedPriorityGoalId)
-      ) {
+      const previousGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals);
+
+      queryClient.setQueryData<Goal[]>(queryKeys.goals, (currentGoals) => {
+        if (!currentGoals) {
+          return currentGoals;
+        }
+
+        return currentGoals.filter((item) => item.id !== goal.id);
+      });
+
+      if (dashboardPriorityGoalId === goal.id) {
         clearDashboardPriorityGoalId();
         setDashboardPriorityGoalIdState(null);
-      } else {
-        setDashboardPriorityGoalIdState(storedPriorityGoalId);
       }
 
-      setGoals(data);
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoading(false);
+      return {
+        previousGoals,
+        deletedGoalName: goal.name
+      };
+    },
+    onError: (caughtError, _goal, context) => {
+      if (context?.previousGoals) {
+        queryClient.setQueryData(queryKeys.goals, context.previousGoals);
+      }
+
+      const message = getErrorMessage(caughtError);
+
+      setDeleteError(message);
+
+      addToast({
+        variant: "error",
+        title: "Gagal menghapus goal",
+        description: message
+      });
+    },
+    onSuccess: (_deletedGoal, _goal, context) => {
+      addToast({
+        variant: "success",
+        title: "Goal berhasil dihapus",
+        description: `"${context?.deletedGoalName ?? "Goal"}" sudah dihapus dari daftar goals.`
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.goals
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
     }
+  });
+
+  function refreshGoalsData() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.goals
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
+  }
+
+  function retryGoals() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.goals
+    });
   }
 
   function handleCreate() {
@@ -292,6 +357,10 @@ export function GoalsPage() {
       title: "Goal prioritas diperbarui",
       description: `"${goal.name}" sekarang tampil sebagai prioritas di dashboard.`
     });
+
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
   }
 
   function openDeleteDialog(goal: Goal) {
@@ -300,7 +369,7 @@ export function GoalsPage() {
   }
 
   function closeDeleteDialog() {
-    if (deletingId) {
+    if (deleteGoalMutation.isPending) {
       return;
     }
 
@@ -308,82 +377,32 @@ export function GoalsPage() {
     setDeleteError(null);
   }
 
-  async function handleConfirmDelete() {
+  function handleConfirmDelete() {
     if (!goalToDelete) {
       return;
     }
 
-    const deletedGoalName = goalToDelete.name;
-
-    setDeletingId(goalToDelete.id);
-    setDeleteError(null);
-
-    try {
-      await deleteGoal(goalToDelete.id);
-
-      if (dashboardPriorityGoalId === goalToDelete.id) {
-        clearDashboardPriorityGoalId();
-        setDashboardPriorityGoalIdState(null);
-      }
-
-      await loadGoals();
-
-      addToast({
-        variant: "success",
-        title: "Goal berhasil dihapus",
-        description: `"${deletedGoalName}" sudah dihapus dari daftar goals.`
-      });
-
-      setGoalToDelete(null);
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      setDeleteError(message);
-
-      addToast({
-        variant: "error",
-        title: "Gagal menghapus goal",
-        description: message
-      });
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  async function handleGoalFormSuccess() {
-    const isEditing = Boolean(selectedGoal);
-    const goalName = selectedGoal?.name;
-
-    await loadGoals();
-
-    addToast({
-      variant: "success",
-      title: isEditing ? "Goal berhasil diperbarui" : "Goal berhasil dibuat",
-      description: isEditing
-        ? goalName
-          ? `Perubahan pada "${goalName}" sudah tersimpan.`
-          : "Perubahan goal sudah tersimpan."
-        : "Target tabungan baru sudah ditambahkan."
-    });
-  }
-
-  async function handleGoalProgressSuccess() {
-    const goalName = progressGoal?.name;
-
-    await loadGoals();
-
-    addToast({
-      variant: "success",
-      title: "Dana goal berhasil ditambahkan",
-      description: goalName
-        ? `Progress "${goalName}" sudah diperbarui.`
-        : "Progress goal sudah diperbarui."
-    });
+    deleteGoalMutation.mutate(goalToDelete);
   }
 
   useEffect(() => {
-    void loadGoals();
-  }, []);
+    if (!goalsQuery.data) {
+      return;
+    }
+
+    const storedPriorityGoalId = getDashboardPriorityGoalId();
+
+    if (
+      storedPriorityGoalId &&
+      !goalsQuery.data.some((goal) => goal.id === storedPriorityGoalId)
+    ) {
+      clearDashboardPriorityGoalId();
+      setDashboardPriorityGoalIdState(null);
+      return;
+    }
+
+    setDashboardPriorityGoalIdState(storedPriorityGoalId);
+  }, [goalsQuery.data]);
 
   const deleteDialogDescription = deleteError
     ? `Gagal menghapus goal: ${deleteError}`
@@ -417,16 +436,27 @@ export function GoalsPage() {
       </header>
 
       <div className="mb-5 rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 sm:p-7">
-        <p className="text-sm font-semibold text-slate-300">
-          Total Progress Goals
-        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-300">
+              Total Progress Goals
+            </p>
 
-        <p className="mt-2 text-4xl font-black">{overallProgress}%</p>
+            <p className="mt-2 text-4xl font-black">{overallProgress}%</p>
 
-        <p className="mt-2 text-sm text-slate-300">
-          {formatRupiah(totalCurrent)} terkumpul dari{" "}
-          {formatRupiah(totalTarget)} target.
-        </p>
+            <p className="mt-2 text-sm text-slate-300">
+              {formatRupiah(totalCurrent)} terkumpul dari{" "}
+              {formatRupiah(totalTarget)} target.
+            </p>
+          </div>
+
+          {isBackgroundFetching ? (
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Memperbarui
+            </div>
+          ) : null}
+        </div>
 
         <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
           <div
@@ -449,7 +479,7 @@ export function GoalsPage() {
               </p>
               <button
                 className="mt-2 text-sm font-black underline"
-                onClick={() => void loadGoals()}
+                onClick={retryGoals}
                 type="button"
               >
                 Coba lagi
@@ -497,7 +527,10 @@ export function GoalsPage() {
               onEdit={handleEdit}
               onDelete={openDeleteDialog}
               isDashboardPriority={dashboardPriorityGoalId === goal.id}
-              isDeleting={deletingId === goal.id}
+              isDeleting={
+                deleteGoalMutation.isPending &&
+                deleteGoalMutation.variables?.id === goal.id
+              }
             />
           ))}
         </div>
@@ -510,14 +543,14 @@ export function GoalsPage() {
           setIsFormOpen(false);
           setSelectedGoal(null);
         }}
-        onSuccess={handleGoalFormSuccess}
+        onSuccess={refreshGoalsData}
       />
 
       <AddGoalProgressModal
         open={Boolean(progressGoal)}
         goal={progressGoal}
         onClose={() => setProgressGoal(null)}
-        onSuccess={handleGoalProgressSuccess}
+        onSuccess={refreshGoalsData}
       />
 
       <ConfirmDialog
@@ -526,11 +559,11 @@ export function GoalsPage() {
         description={deleteDialogDescription}
         confirmText="Ya, hapus goal"
         cancelText="Batal"
-        loading={Boolean(goalToDelete && deletingId === goalToDelete.id)}
+        loading={deleteGoalMutation.isPending}
         loadingText="Menghapus..."
         variant="danger"
         onClose={closeDeleteDialog}
-        onConfirm={() => void handleConfirmDelete()}
+        onConfirm={handleConfirmDelete}
       />
     </AppShell>
   );

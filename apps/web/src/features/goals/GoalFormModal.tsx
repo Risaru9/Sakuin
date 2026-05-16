@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
+import { useToast } from "../../components/toast/ToastProvider";
 import { createGoal, updateGoal } from "./goal.service";
-import type { Goal } from "./goal.types";
+import type { CreateGoalInput, Goal, UpdateGoalInput } from "./goal.types";
 
 type GoalFormModalProps = {
   open: boolean;
@@ -19,6 +22,18 @@ type GoalFormState = {
   deadline: string;
   description: string;
 };
+
+type GoalMutationInput =
+  | {
+      mode: "create";
+      payload: CreateGoalInput;
+    }
+  | {
+      mode: "edit";
+      goal: Goal;
+      payload: UpdateGoalInput;
+      optimisticGoal: Goal;
+    };
 
 function getInitialForm(): GoalFormState {
   return {
@@ -77,7 +92,89 @@ export function GoalFormModal({
 
   const [form, setForm] = useState<GoalFormState>(getInitialForm);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+
+  const goalMutation = useMutation({
+    mutationFn: (input: GoalMutationInput) => {
+      if (input.mode === "create") {
+        return createGoal(input.payload);
+      }
+
+      return updateGoal(input.goal.id, input.payload);
+    },
+    onMutate: async (input) => {
+      setError(null);
+      setForm(getInitialForm());
+      onClose();
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.goals
+      });
+
+      const previousGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals);
+
+      if (input.mode === "edit") {
+        queryClient.setQueryData<Goal[]>(queryKeys.goals, (currentGoals) => {
+          if (!currentGoals) {
+            return currentGoals;
+          }
+
+          return currentGoals.map((item) =>
+            item.id === input.goal.id ? input.optimisticGoal : item
+          );
+        });
+      }
+
+      return {
+        previousGoals,
+        mode: input.mode,
+        goalName:
+          input.mode === "edit" ? input.optimisticGoal.name : input.payload.name
+      };
+    },
+    onError: (caughtError, _input, context) => {
+      if (context?.previousGoals) {
+        queryClient.setQueryData(queryKeys.goals, context.previousGoals);
+      }
+
+      addToast({
+        variant: "error",
+        title: "Gagal menyimpan goal",
+        description: getErrorMessage(caughtError)
+      });
+    },
+    onSuccess: (savedGoal, input) => {
+      queryClient.setQueryData<Goal[]>(queryKeys.goals, (currentGoals) => {
+        if (!currentGoals) {
+          return [savedGoal];
+        }
+
+        if (input.mode === "create") {
+          return [savedGoal, ...currentGoals];
+        }
+
+        return currentGoals.map((item) =>
+          item.id === savedGoal.id ? savedGoal : item
+        );
+      });
+
+      addToast({
+        variant: "success",
+        title:
+          input.mode === "edit" ? "Goal berhasil diperbarui" : "Goal berhasil dibuat",
+        description:
+          input.mode === "edit"
+            ? `"${savedGoal.name}" sudah diperbarui.`
+            : `"${savedGoal.name}" sudah ditambahkan.`
+      });
+
+      void onSuccess();
+    }
+  });
+
+  const isSubmitting = goalMutation.isPending;
 
   function handleClose() {
     if (isSubmitting) {
@@ -89,11 +186,13 @@ export function GoalFormModal({
     onClose();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const normalizedTargetAmount = normalizeMoneyInput(form.targetAmount);
     const targetAmountNumber = Number(normalizedTargetAmount);
+    const nextDeadline = toIsoDateOrNull(form.deadline);
+    const nextDescription = form.description.trim() || null;
 
     if (!form.name.trim()) {
       setError("Nama goal wajib diisi.");
@@ -117,32 +216,47 @@ export function GoalFormModal({
     }
 
     setError(null);
-    setIsSubmitting(true);
 
-    try {
-      const payload = {
+    if (goal) {
+      const payload: UpdateGoalInput = {
         name: form.name.trim(),
         targetAmount: normalizedTargetAmount,
-        currentAmount: goal?.currentAmount ?? "0",
-        deadline: toIsoDateOrNull(form.deadline),
-        description: form.description.trim() || undefined
+        currentAmount: goal.currentAmount,
+        deadline: nextDeadline,
+        description: nextDescription ?? undefined
       };
 
-      if (goal) {
-        await updateGoal(goal.id, payload);
-      } else {
-        await createGoal(payload);
-      }
+      const optimisticGoal: Goal = {
+        ...goal,
+        name: form.name.trim(),
+        targetAmount: normalizedTargetAmount,
+        deadline: nextDeadline,
+        description: nextDescription,
+        updatedAt: new Date().toISOString()
+      };
 
-      await onSuccess();
+      goalMutation.mutate({
+        mode: "edit",
+        goal,
+        payload,
+        optimisticGoal
+      });
 
-      setForm(getInitialForm());
-      onClose();
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    const payload: CreateGoalInput = {
+      name: form.name.trim(),
+      targetAmount: normalizedTargetAmount,
+      currentAmount: "0",
+      deadline: nextDeadline,
+      description: nextDescription ?? undefined
+    };
+
+    goalMutation.mutate({
+      mode: "create",
+      payload
+    });
   }
 
   useEffect(() => {
