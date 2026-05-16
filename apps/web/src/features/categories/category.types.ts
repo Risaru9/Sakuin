@@ -8,3 +8,12 @@ export type Category = {
   color: string | null;
   isDefault: boolean;
 };
+
+export type CreateCategoryInput = {
+  name: string;
+  type: CategoryType;
+  icon?: string | null;
+  color?: string | null;
+};
+
+export type UpdateCategoryInput = Partial<CreateCategoryInput>;

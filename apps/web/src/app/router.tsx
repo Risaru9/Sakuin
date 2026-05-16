@@ -20,6 +20,7 @@ import { ProfilePage } from "../features/profile/ProfilePage";
 import { TransactionsPage } from "../features/transactions/TransactionsPage";
 import { GoalsPage } from "../features/goals/GoalsPage";
 import { ExportPage } from "../features/export/ExportPage";
+import { CategoriesPage } from "../features/categories/CategoriesPage";
 
 function LoadingScreen() {
   return (
@@ -311,6 +312,14 @@ export const router = createBrowserRouter([
   element: (
     <ProtectedRoute>
       <ProfilePage />
+    </ProtectedRoute>
+  )
+},
+{
+  path: "/categories",
+  element: (
+    <ProtectedRoute>
+      <CategoriesPage />
     </ProtectedRoute>
   )
 },
