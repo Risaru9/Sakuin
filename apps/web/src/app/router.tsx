@@ -205,7 +205,7 @@ function HomePage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Link
               className={buttonClassName({
                 variant: "ghost",
@@ -217,18 +217,13 @@ function HomePage() {
               Login
             </Link>
 
-            <InstallAppButton
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-slate-200 bg-white px-6 text-base font-black text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto"
-              label="Install app"
-            />
-
-          <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black !text-white shadow-sm transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
-            to="/register"
-          >
-            <span className="text-white">Daftar</span>
-            <ArrowRight className="ml-2 h-4 w-4 text-white" />
-          </Link>
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black !text-white shadow-sm transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+              to="/register"
+            >
+              <span className="text-white">Daftar</span>
+              <ArrowRight className="ml-2 h-4 w-4 text-white" />
+            </Link>
           </div>
         </header>
 
@@ -251,13 +246,13 @@ function HomePage() {
             </p>
 
             <div className="mt-8 grid gap-3 sm:flex">
-            <Link
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-[1.35rem] bg-slate-950 px-6 text-base font-black !text-white shadow-sm transition hover:bg-black sm:w-auto"
-              to="/register"
-            >
-              <span className="text-white">Mulai gratis</span>
-              <ArrowRight className="ml-2 h-4 w-4 text-white" />
-            </Link>
+              <Link
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-[1.35rem] bg-slate-950 px-6 text-base font-black !text-white shadow-sm transition hover:bg-black sm:w-auto"
+                to="/register"
+              >
+                <span className="text-white">Mulai gratis</span>
+                <ArrowRight className="ml-2 h-4 w-4 text-white" />
+              </Link>
 
               <Link
                 className={buttonClassName({
@@ -270,10 +265,7 @@ function HomePage() {
                 Login
               </Link>
 
-              <InstallAppButton
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-slate-200 bg-white px-6 text-base font-black text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto"
-                label="Install Sakuin"
-              />
+              <InstallAppButton label="Install Sakuin" variant="hero" />
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -496,6 +488,8 @@ function HomePage() {
               >
                 Login
               </Link>
+
+              <InstallAppButton label="Install Sakuin" variant="hero" />
             </div>
           </div>
         </section>
