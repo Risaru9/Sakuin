@@ -1,9 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  CheckCircle2,
   Loader2,
   LogOut,
+  RefreshCcw,
   Save,
   UserCircle
 } from "lucide-react";
@@ -12,9 +20,13 @@ import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { useAuth } from "../auth/auth-context";
 import { getUserProfile, updateUserProfile } from "./profile.service";
-import type { UserProfile } from "./profile.types";
+import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
+
+const MAX_SAFE_BALANCE_LIMIT = 1_000_000_000_000;
+const MAX_SAFE_BALANCE_LIMIT_LABEL = "Rp 1.000.000.000.000";
 
 type ProfileFormState = {
   name: string;
@@ -33,8 +45,37 @@ function getErrorMessage(error: unknown) {
   return "Terjadi kesalahan.";
 }
 
+function sanitizeNumericInput(value: string) {
+  const digitsOnly = value.replace(/\D/g, "");
+
+  if (!digitsOnly) {
+    return "";
+  }
+
+  const withoutLeadingZero = digitsOnly.replace(/^0+(?=\d)/, "");
+  const numericValue = Number(withoutLeadingZero);
+
+  if (!Number.isFinite(numericValue)) {
+    return "";
+  }
+
+  if (numericValue > MAX_SAFE_BALANCE_LIMIT) {
+    return String(MAX_SAFE_BALANCE_LIMIT);
+  }
+
+  return withoutLeadingZero;
+}
+
+function preventInvalidSafeBalanceKey(
+  event: ReactKeyboardEvent<HTMLInputElement>
+) {
+  if (["-", "+", "e", "E", ".", ",", " "].includes(event.key)) {
+    event.preventDefault();
+  }
+}
+
 function normalizeMoneyInput(value: string) {
-  return value.replace(/\./g, "").replace(",", ".").trim();
+  return sanitizeNumericInput(value);
 }
 
 function formatRupiah(value: string | number | null | undefined) {
@@ -51,50 +92,153 @@ function formatRupiah(value: string | number | null | undefined) {
   }).format(numberValue);
 }
 
+function toFormSafeBalanceLimit(value: string | number | null | undefined) {
+  return sanitizeNumericInput(String(Math.trunc(Number(value ?? 0))));
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const { user, logout, updateAuthUser } = useAuth();
   const { addToast } = useToast();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     name: "",
     safeBalanceLimit: "0"
   });
 
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
 
-  async function loadProfile() {
-    setIsLoadingProfile(true);
-    setError(null);
+  const profileQuery = useQuery({
+    queryKey: queryKeys.profile,
+    queryFn: getUserProfile
+  });
 
-    try {
-      const data = await getUserProfile();
+  const profile = profileQuery.data ?? null;
+  const isLoadingProfile = profileQuery.isLoading && !profileQuery.data;
+  const isBackgroundFetching =
+    profileQuery.isFetching && Boolean(profileQuery.data);
 
-      setProfile(data);
-      setForm({
-        name: data.name,
-        safeBalanceLimit: String(Math.trunc(Number(data.safeBalanceLimit ?? 0)))
+  const queryError =
+    profileQuery.error && !profileQuery.data
+      ? getErrorMessage(profileQuery.error)
+      : null;
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (input: UpdateUserProfileInput) => updateUserProfile(input),
+    onMutate: async (input) => {
+      setError(null);
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.profile
       });
-    } catch (caughtError) {
+
+      const previousProfile = queryClient.getQueryData<UserProfile>(
+        queryKeys.profile
+      );
+
+      const optimisticProfile: UserProfile = {
+        id: previousProfile?.id ?? user?.id ?? "",
+        name: input.name,
+        email: previousProfile?.email ?? user?.email ?? "-",
+        safeBalanceLimit: input.safeBalanceLimit,
+        createdAt: previousProfile?.createdAt,
+        updatedAt: new Date().toISOString()
+      };
+
+      queryClient.setQueryData<UserProfile>(
+        queryKeys.profile,
+        optimisticProfile
+      );
+
+      updateAuthUser({
+        name: input.name,
+        safeBalanceLimit: input.safeBalanceLimit
+      });
+
+      return {
+        previousProfile
+      };
+    },
+    onError: (caughtError, _input, context) => {
+      if (context?.previousProfile) {
+        queryClient.setQueryData(queryKeys.profile, context.previousProfile);
+
+        updateAuthUser({
+          name: context.previousProfile.name,
+          safeBalanceLimit: context.previousProfile.safeBalanceLimit
+        });
+      }
+
       const message = getErrorMessage(caughtError);
 
       setError(message);
 
       addToast({
         variant: "error",
-        title: "Gagal mengambil profile",
+        title: "Gagal memperbarui profile",
         description: message
       });
-    } finally {
-      setIsLoadingProfile(false);
+    },
+    onSuccess: (updatedProfile) => {
+      queryClient.setQueryData<UserProfile>(
+        queryKeys.profile,
+        updatedProfile
+      );
+
+      setForm({
+        name: updatedProfile.name,
+        safeBalanceLimit: toFormSafeBalanceLimit(
+          updatedProfile.safeBalanceLimit
+        )
+      });
+
+      updateAuthUser({
+        name: updatedProfile.name,
+        safeBalanceLimit: updatedProfile.safeBalanceLimit
+      });
+
+      addToast({
+        variant: "success",
+        title: "Profile berhasil diperbarui",
+        description: "Nama dan batas saldo aman sudah tersimpan."
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.profile
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
+    }
+  });
+
+  const isSubmitting = updateProfileMutation.isPending;
+
+  function refreshProfile() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.profile
+    });
+  }
+
+  function handleSafeBalanceChange(value: string) {
+    const sanitizedValue = sanitizeNumericInput(value);
+
+    setForm((current) => ({
+      ...current,
+      safeBalanceLimit: sanitizedValue
+    }));
+
+    if (Number(sanitizedValue || 0) > MAX_SAFE_BALANCE_LIMIT) {
+      setError(`Safe balance limit maksimal ${MAX_SAFE_BALANCE_LIMIT_LABEL}.`);
+    } else if (error?.includes("Safe balance limit")) {
+      setError(null);
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const normalizedSafeLimit = normalizeMoneyInput(form.safeBalanceLimit);
@@ -114,12 +258,8 @@ export function ProfilePage() {
       return;
     }
 
-    if (
-      !normalizedSafeLimit ||
-      Number.isNaN(safeLimitNumber) ||
-      safeLimitNumber < 0
-    ) {
-      const message = "Safe balance limit harus berupa angka minimal 0.";
+    if (normalizedSafeLimit === "") {
+      const message = "Safe balance limit wajib diisi. Gunakan 0 jika tidak ingin memakai batas aman.";
 
       setError(message);
 
@@ -132,41 +272,30 @@ export function ProfilePage() {
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const updatedProfile = await updateUserProfile({
-        name: form.name.trim(),
-        safeBalanceLimit: normalizedSafeLimit
-      });
-
-      setProfile(updatedProfile);
-      setForm({
-        name: updatedProfile.name,
-        safeBalanceLimit: String(
-          Math.trunc(Number(updatedProfile.safeBalanceLimit ?? 0))
-        )
-      });
-
-      addToast({
-        variant: "success",
-        title: "Profile berhasil diperbarui",
-        description: "Nama dan batas saldo aman sudah tersimpan."
-      });
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
+    if (
+      Number.isNaN(safeLimitNumber) ||
+      safeLimitNumber < 0 ||
+      safeLimitNumber > MAX_SAFE_BALANCE_LIMIT
+    ) {
+      const message = `Safe balance limit harus angka 0 sampai ${MAX_SAFE_BALANCE_LIMIT_LABEL}.`;
 
       setError(message);
 
       addToast({
         variant: "error",
-        title: "Gagal memperbarui profile",
+        title: "Profile belum bisa disimpan",
         description: message
       });
-    } finally {
-      setIsSubmitting(false);
+
+      return;
     }
+
+    setError(null);
+
+    updateProfileMutation.mutate({
+      name: form.name.trim(),
+      safeBalanceLimit: normalizedSafeLimit
+    });
   }
 
   function handleLogout() {
@@ -176,6 +305,7 @@ export function ProfilePage() {
       description: "Kamu sudah keluar dari akun Sakuin."
     });
 
+    queryClient.clear();
     logout();
 
     navigate("/login", {
@@ -184,8 +314,15 @@ export function ProfilePage() {
   }
 
   useEffect(() => {
-    void loadProfile();
-  }, []);
+    if (!profile) {
+      return;
+    }
+
+    setForm({
+      name: profile.name,
+      safeBalanceLimit: toFormSafeBalanceLimit(profile.safeBalanceLimit)
+    });
+  }, [profile]);
 
   const displayedName = profile?.name ?? user?.name ?? "User";
   const displayedEmail = profile?.email ?? user?.email ?? "-";
@@ -194,25 +331,52 @@ export function ProfilePage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="mb-5">
-        <p className="text-sm font-black text-indigo-700">Sakuin Profile</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
-          Pengaturan Akun
-        </h1>
-        <p className="mt-1 text-sm font-medium text-slate-500">
-          Kelola nama akun dan batas saldo aman untuk dashboard.
-        </p>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-indigo-700">Sakuin Profile</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            Pengaturan Akun
+          </h1>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            Kelola nama akun dan batas saldo aman untuk dashboard.
+          </p>
+        </div>
+
+        <Button
+          className="rounded-2xl"
+          disabled={profileQuery.isFetching}
+          onClick={refreshProfile}
+          type="button"
+          variant="secondary"
+        >
+          {profileQuery.isFetching ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCcw className="h-4 w-4" />
+          )}
+          Refresh
+        </Button>
       </div>
 
-      {error ? (
+      {queryError || error ? (
         <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="font-black">Terjadi kesalahan</p>
               <p className="mt-1 text-sm font-medium text-rose-700">
-                {error}
+                {queryError ?? error}
               </p>
+
+              {queryError ? (
+                <button
+                  className="mt-2 text-sm font-black underline"
+                  onClick={refreshProfile}
+                  type="button"
+                >
+                  Coba lagi
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -226,7 +390,17 @@ export function ProfilePage() {
             </div>
 
             <div className="min-w-0">
-              <p className="text-sm font-black text-indigo-700">Profile</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-black text-indigo-700">Profile</p>
+
+                {isBackgroundFetching ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Sync
+                  </span>
+                ) : null}
+              </div>
+
               <h2 className="mt-1 truncate text-2xl font-black tracking-tight text-slate-950">
                 {displayedName}
               </h2>
@@ -264,15 +438,19 @@ export function ProfilePage() {
                 name="safeBalanceLimit"
                 type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Contoh: 500000"
                 value={form.safeBalanceLimit}
+                onKeyDown={preventInvalidSafeBalanceKey}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    safeBalanceLimit: event.target.value
-                  }))
+                  handleSafeBalanceChange(event.target.value)
                 }
               />
+
+              <p className="-mt-2 text-xs font-medium text-slate-500">
+                Hanya angka. Minimal Rp 0 dan maksimal{" "}
+                {MAX_SAFE_BALANCE_LIMIT_LABEL}.
+              </p>
 
               <div className="rounded-2xl bg-slate-50 p-4">
                 <p className="text-xs font-bold text-slate-500">
@@ -333,7 +511,8 @@ export function ProfilePage() {
                 <p className="text-xs font-bold text-emerald-700">
                   Status akun
                 </p>
-                <p className="mt-1 text-lg font-black text-emerald-700">
+                <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-emerald-700">
+                  <CheckCircle2 className="h-5 w-5" />
                   Aktif
                 </p>
               </div>
