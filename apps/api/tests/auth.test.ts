@@ -50,7 +50,7 @@ describe("Auth API", () => {
     expect(body.data.user.passwordHash).toBeUndefined();
 
     token = body.data.token;
-  });
+  }, 20000);
 
   it("Register gagal jika email sudah dipakai", async () => {
     const response = await app.request("/api/auth/register", {

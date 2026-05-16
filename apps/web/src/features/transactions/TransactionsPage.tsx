@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowDownCircle,
+  ArrowLeft,
+  ArrowRight,
   ArrowUpCircle,
   Edit3,
   Loader2,
   Plus,
+  RefreshCcw,
   Search,
   Trash2
 } from "lucide-react";
@@ -14,12 +17,50 @@ import { AppShell } from "../../components/layout/AppShell";
 import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import { getCategories } from "../categories/category.service";
+import type { Category } from "../categories/category.types";
 import { AddTransactionModal } from "./AddTransactionModal";
 import { EditTransactionModal } from "./EditTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
-import type { Transaction, TransactionType } from "./transaction.types";
+import type {
+  Transaction,
+  TransactionPagination,
+  TransactionSort,
+  TransactionType
+} from "./transaction.types";
 
 type TransactionFilter = "ALL" | TransactionType;
+
+const DEFAULT_PAGINATION: TransactionPagination = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0
+};
+
+const limitOptions = [10, 20, 50, 100] as const;
+
+const sortOptions: Array<{
+  value: TransactionSort;
+  label: string;
+}> = [
+  {
+    value: "date_desc",
+    label: "Tanggal terbaru"
+  },
+  {
+    value: "date_asc",
+    label: "Tanggal terlama"
+  },
+  {
+    value: "created_desc",
+    label: "Input terbaru"
+  },
+  {
+    value: "created_asc",
+    label: "Input terlama"
+  }
+];
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -63,6 +104,12 @@ function formatDate(value: string) {
     month: "short",
     year: "numeric"
   }).format(date);
+}
+
+function getPaginationLabel(pagination: TransactionPagination) {
+  const safeTotalPages = Math.max(pagination.totalPages, 1);
+
+  return `Halaman ${pagination.page} dari ${safeTotalPages}`;
 }
 
 function TransactionRow({
@@ -163,10 +210,22 @@ export function TransactionsPage() {
   const { addToast } = useToast();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [filter, setFilter] = useState<TransactionFilter>("ALL");
+  const [categoryId, setCategoryId] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [sort, setSort] = useState<TransactionSort>("date_desc");
+  const [pagination, setPagination] =
+    useState<TransactionPagination>(DEFAULT_PAGINATION);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
@@ -175,19 +234,36 @@ export function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const matchesType = filter === "ALL" || transaction.type === filter;
+  const categoryOptions = useMemo(() => {
+    if (filter === "ALL") {
+      return categories;
+    }
 
-      const keyword = search.trim().toLowerCase();
-      const matchesSearch =
-        !keyword ||
-        transaction.note?.toLowerCase().includes(keyword) ||
-        transaction.category.name.toLowerCase().includes(keyword);
+    return categories.filter((category) => category.type === filter);
+  }, [categories, filter]);
 
-      return matchesType && matchesSearch;
-    });
-  }, [transactions, filter, search]);
+  const hasActiveFilter =
+    filter !== "ALL" ||
+    categoryId.length > 0 ||
+    debouncedSearch.length > 0 ||
+    startDate.length > 0 ||
+    endDate.length > 0 ||
+    sort !== "date_desc" ||
+    limit !== 10;
+
+  async function loadCategories() {
+    setIsLoadingCategories(true);
+    setCategoryError(null);
+
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch (caughtError) {
+      setCategoryError(getErrorMessage(caughtError));
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  }
 
   async function loadTransactions() {
     setIsLoading(true);
@@ -195,16 +271,43 @@ export function TransactionsPage() {
 
     try {
       const data = await getTransactions({
-        page: 1,
-        limit: 100
+        page,
+        limit,
+        type: filter === "ALL" ? undefined : filter,
+        categoryId: categoryId || undefined,
+        search: debouncedSearch || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sort
       });
 
+      const nextPagination = data.pagination ??
+        data.meta ?? {
+          page,
+          limit,
+          total: data.items.length,
+          totalPages: data.items.length > 0 ? 1 : 0
+        };
+
       setTransactions(data.items);
+      setPagination(nextPagination);
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function resetFilters() {
+    setFilter("ALL");
+    setCategoryId("");
+    setSearch("");
+    setDebouncedSearch("");
+    setStartDate("");
+    setEndDate("");
+    setSort("date_desc");
+    setLimit(10);
+    setPage(1);
   }
 
   function handleOpenDeleteDialog(transaction: Transaction) {
@@ -234,7 +337,6 @@ export function TransactionsPage() {
 
     try {
       await deleteTransaction(transactionToDelete.id);
-      await loadTransactions();
 
       addToast({
         variant: "success",
@@ -243,6 +345,7 @@ export function TransactionsPage() {
       });
 
       setTransactionToDelete(null);
+      await loadTransactions();
     } catch (caughtError) {
       const message = getErrorMessage(caughtError);
 
@@ -259,8 +362,42 @@ export function TransactionsPage() {
   }
 
   useEffect(() => {
-    void loadTransactions();
+    void loadCategories();
   }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [search]);
+
+  useEffect(() => {
+    if (!categoryId) {
+      return;
+    }
+
+    const categoryStillExists = categoryOptions.some(
+      (category) => category.id === categoryId
+    );
+
+    if (!categoryStillExists) {
+      setCategoryId("");
+      setPage(1);
+    }
+  }, [categoryId, categoryOptions]);
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [filter, categoryId, debouncedSearch, startDate, endDate, sort, page, limit]);
+
+  const canGoToPreviousPage = pagination.page > 1;
+  const canGoToNextPage =
+    pagination.totalPages > 0 && pagination.page < pagination.totalPages;
 
   const deleteDialogDescription = deleteError
     ? `Gagal menghapus transaksi: ${deleteError}`
@@ -282,7 +419,7 @@ export function TransactionsPage() {
               Kelola Transaksi
             </h1>
             <p className="mt-1 text-sm font-medium text-slate-500">
-              Edit atau hapus transaksi yang salah input.
+              Edit, hapus, filter, dan telusuri transaksi keuanganmu.
             </p>
           </div>
 
@@ -296,34 +433,149 @@ export function TransactionsPage() {
           </Button>
         </header>
 
-        <div className="mb-5 grid gap-3 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[1fr_300px]">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              placeholder="Cari catatan atau kategori..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
+        <section className="mb-5 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                placeholder="Cari catatan transaksi..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
 
-          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1">
-            {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
-              <button
-                className={
-                  filter === item
-                    ? "rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white"
-                    : "rounded-xl px-3 py-2 text-xs font-black text-slate-600 hover:bg-white"
-                }
-                key={item}
-                onClick={() => setFilter(item)}
-                type="button"
-              >
-                {item === "ALL" ? "Semua" : item}
-              </button>
-            ))}
+            <select
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              value={categoryId}
+              onChange={(event) => {
+                setCategoryId(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">
+                {isLoadingCategories
+                  ? "Mengambil kategori..."
+                  : "Semua kategori"}
+              </option>
+
+              {categoryOptions.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name} ·{" "}
+                  {category.type === "INCOME" ? "Income" : "Expense"}
+                </option>
+              ))}
+            </select>
+
+            <input
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              type="date"
+              value={startDate}
+              onChange={(event) => {
+                setStartDate(event.target.value);
+                setPage(1);
+              }}
+            />
+
+            <input
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              type="date"
+              value={endDate}
+              onChange={(event) => {
+                setEndDate(event.target.value);
+                setPage(1);
+              }}
+            />
           </div>
-        </div>
+
+          <div className="mt-3 grid gap-3 xl:grid-cols-[1fr_220px_180px_auto] xl:items-center">
+            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1">
+              {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
+                <button
+                  className={
+                    filter === item
+                      ? "rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white"
+                      : "rounded-xl px-3 py-2 text-xs font-black text-slate-600 hover:bg-white"
+                  }
+                  key={item}
+                  onClick={() => {
+                    setFilter(item);
+                    setCategoryId("");
+                    setPage(1);
+                  }}
+                  type="button"
+                >
+                  {item === "ALL" ? "Semua" : item}
+                </button>
+              ))}
+            </div>
+
+            <select
+              className="min-h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value as TransactionSort);
+                setPage(1);
+              }}
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="min-h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              value={limit}
+              onChange={(event) => {
+                setLimit(Number(event.target.value));
+                setPage(1);
+              }}
+            >
+              {limitOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option} / halaman
+                </option>
+              ))}
+            </select>
+
+            <Button
+              disabled={!hasActiveFilter}
+              onClick={resetFilters}
+              type="button"
+              variant="secondary"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Reset
+            </Button>
+          </div>
+
+          {categoryError ? (
+            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+              {categoryError}
+            </div>
+          ) : null}
+
+          <div className="mt-3 flex flex-col gap-2 text-xs font-medium text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Total data:{" "}
+              <span className="font-black text-slate-700">
+                {pagination.total}
+              </span>{" "}
+              transaksi
+            </p>
+
+            {debouncedSearch ? (
+              <p>
+                Search aktif:{" "}
+                <span className="font-black text-slate-700">
+                  {debouncedSearch}
+                </span>
+              </p>
+            ) : null}
+          </div>
+        </section>
 
         {error ? (
           <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
@@ -356,7 +608,7 @@ export function TransactionsPage() {
             </div>
           ) : null}
 
-          {!isLoading && filteredTransactions.length === 0 ? (
+          {!isLoading && transactions.length === 0 ? (
             <div className="rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
               <p className="text-lg font-black text-slate-950">
                 Belum ada transaksi
@@ -375,7 +627,7 @@ export function TransactionsPage() {
           ) : null}
 
           {!isLoading
-            ? filteredTransactions.map((transaction) => (
+            ? transactions.map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
@@ -385,6 +637,43 @@ export function TransactionsPage() {
                 />
               ))
             : null}
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-slate-950">
+              {getPaginationLabel(pagination)}
+            </p>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              Menampilkan maksimal {pagination.limit} transaksi per halaman.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:w-auto">
+            <Button
+              disabled={!canGoToPreviousPage || isLoading}
+              onClick={() => setPage((current) => Math.max(current - 1, 1))}
+              type="button"
+              variant="secondary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Sebelumnya
+            </Button>
+
+            <Button
+              disabled={!canGoToNextPage || isLoading}
+              onClick={() =>
+                setPage((current) =>
+                  Math.min(current + 1, Math.max(pagination.totalPages, 1))
+                )
+              }
+              type="button"
+              variant="secondary"
+            >
+              Berikutnya
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </AppShell>
 

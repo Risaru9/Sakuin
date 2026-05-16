@@ -1,5 +1,11 @@
 export type TransactionType = "INCOME" | "EXPENSE";
 
+export type TransactionSort =
+  | "date_desc"
+  | "date_asc"
+  | "created_desc"
+  | "created_asc";
+
 export type TransactionCategoryOption = {
   id: string;
   name: string;
@@ -27,14 +33,17 @@ export type Transaction = {
   updatedAt: string;
 };
 
+export type TransactionPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export type TransactionListResponse = {
   items: Transaction[];
-  meta?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination?: TransactionPagination;
+  meta?: TransactionPagination;
 };
 
 export type CreateTransactionInput = {
