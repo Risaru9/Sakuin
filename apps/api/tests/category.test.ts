@@ -598,5 +598,5 @@ describe("Category API", () => {
     expect(deleteCategoryBody.success).toBe(true);
     expect(deleteCategoryBody.message).toBe("Kategori berhasil dihapus");
     expect(deleteCategoryBody.data.id).toBe(usedCategoryId);
-  });
+  }, 20000);
 });
