@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  CheckCircle2,
   Edit3,
   Loader2,
   Plus,
@@ -15,13 +17,19 @@ import { Input } from "../../components/ui/input";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useToast } from "../../components/toast/ToastProvider";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import {
   createCategory,
   deleteCategory,
   getCategories,
   updateCategory
 } from "./category.service";
-import type { Category, CategoryType } from "./category.types";
+import type {
+  Category,
+  CategoryType,
+  CreateCategoryInput,
+  UpdateCategoryInput
+} from "./category.types";
 
 type CategoryFilter = "ALL" | CategoryType;
 
@@ -31,6 +39,18 @@ type FormState = {
   icon: string;
   color: string;
 };
+
+type CategoryMutationInput =
+  | {
+      mode: "create";
+      payload: CreateCategoryInput;
+    }
+  | {
+      mode: "edit";
+      category: Category;
+      payload: UpdateCategoryInput;
+      optimisticCategory: Category;
+    };
 
 const initialForm: FormState = {
   name: "",
@@ -67,27 +87,56 @@ function normalizeOptionalValue(value: string) {
   return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
+function sortCategories(categories: Category[]) {
+  return [...categories].sort((firstCategory, secondCategory) => {
+    if (firstCategory.isDefault !== secondCategory.isDefault) {
+      return Number(firstCategory.isDefault) - Number(secondCategory.isDefault);
+    }
+
+    if (firstCategory.type !== secondCategory.type) {
+      return firstCategory.type.localeCompare(secondCategory.type);
+    }
+
+    return firstCategory.name.localeCompare(secondCategory.name);
+  });
+}
+
 export function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
   const [filter, setFilter] = useState<CategoryFilter>("ALL");
   const [form, setForm] = useState<FormState>(initialForm);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories(),
+    staleTime: 5 * 60_000
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const isLoading = categoriesQuery.isLoading && !categoriesQuery.data;
+  const isBackgroundFetching =
+    categoriesQuery.isFetching && Boolean(categoriesQuery.data);
+
+  const queryError =
+    categoriesQuery.error && !categoriesQuery.data
+      ? getErrorMessage(categoriesQuery.error)
+      : null;
 
   const filteredCategories = useMemo(() => {
+    const sortedCategories = sortCategories(categories);
+
     if (filter === "ALL") {
-      return categories;
+      return sortedCategories;
     }
 
-    return categories.filter((category) => category.type === filter);
+    return sortedCategories.filter((category) => category.type === filter);
   }, [categories, filter]);
 
   const defaultCategories = filteredCategories.filter(
@@ -98,24 +147,208 @@ export function CategoriesPage() {
     (category) => !category.isDefault
   );
 
-  async function loadCategories() {
-    setIsLoading(true);
-    setError(null);
+  const categoryMutation = useMutation({
+    mutationFn: (input: CategoryMutationInput) => {
+      if (input.mode === "create") {
+        return createCategory(input.payload);
+      }
 
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoading(false);
+      return updateCategory(input.category.id, input.payload);
+    },
+    onMutate: async (input) => {
+      setError(null);
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.categories
+      });
+
+      const previousCategories = queryClient.getQueryData<Category[]>(
+        queryKeys.categories
+      );
+
+      if (input.mode === "edit") {
+        queryClient.setQueryData<Category[]>(
+          queryKeys.categories,
+          (currentCategories) => {
+            if (!currentCategories) {
+              return currentCategories;
+            }
+
+            return currentCategories.map((category) =>
+              category.id === input.category.id
+                ? input.optimisticCategory
+                : category
+            );
+          }
+        );
+      }
+
+      resetForm();
+
+      return {
+        previousCategories,
+        mode: input.mode,
+        categoryName:
+          input.mode === "edit"
+            ? input.optimisticCategory.name
+            : input.payload.name
+      };
+    },
+    onError: (caughtError, _input, context) => {
+      if (context?.previousCategories) {
+        queryClient.setQueryData(
+          queryKeys.categories,
+          context.previousCategories
+        );
+      }
+
+      const message = getErrorMessage(caughtError);
+
+      setError(message);
+
+      addToast({
+        variant: "error",
+        title:
+          context?.mode === "edit"
+            ? "Gagal memperbarui kategori"
+            : "Gagal membuat kategori",
+        description: message
+      });
+    },
+    onSuccess: (savedCategory, input) => {
+      queryClient.setQueryData<Category[]>(
+        queryKeys.categories,
+        (currentCategories) => {
+          if (!currentCategories) {
+            return [savedCategory];
+          }
+
+          if (input.mode === "create") {
+            return sortCategories([savedCategory, ...currentCategories]);
+          }
+
+          return sortCategories(
+            currentCategories.map((category) =>
+              category.id === savedCategory.id ? savedCategory : category
+            )
+          );
+        }
+      );
+
+      addToast({
+        variant: "success",
+        title:
+          input.mode === "edit"
+            ? "Kategori berhasil diperbarui"
+            : "Kategori berhasil dibuat",
+        description:
+          input.mode === "edit"
+            ? `"${savedCategory.name}" sudah diperbarui.`
+            : `"${savedCategory.name}" sudah tersedia untuk transaksi.`
+      });
+    },
+    onSettled: (_savedCategory, _caughtError, input) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.categories
+      });
+
+      if (input?.mode === "edit") {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.transactions.all
+        });
+
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.summary
+        });
+      }
     }
-  }
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (category: Category) => deleteCategory(category.id),
+    onMutate: async (category) => {
+      setCategoryToDelete(null);
+      setError(null);
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.categories
+      });
+
+      const previousCategories = queryClient.getQueryData<Category[]>(
+        queryKeys.categories
+      );
+
+      queryClient.setQueryData<Category[]>(
+        queryKeys.categories,
+        (currentCategories) => {
+          if (!currentCategories) {
+            return currentCategories;
+          }
+
+          return currentCategories.filter((item) => item.id !== category.id);
+        }
+      );
+
+      if (editingCategory?.id === category.id) {
+        resetForm();
+      }
+
+      return {
+        previousCategories,
+        categoryName: category.name
+      };
+    },
+    onError: (caughtError, _category, context) => {
+      if (context?.previousCategories) {
+        queryClient.setQueryData(
+          queryKeys.categories,
+          context.previousCategories
+        );
+      }
+
+      const message = getErrorMessage(caughtError);
+
+      addToast({
+        variant: "error",
+        title: "Gagal menghapus kategori",
+        description: message
+      });
+    },
+    onSuccess: (_deletedCategory, _category, context) => {
+      addToast({
+        variant: "success",
+        title: "Kategori berhasil dihapus",
+        description: `"${context?.categoryName ?? "Kategori"}" sudah dihapus dari daftar.`
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.categories
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
+    }
+  });
+
+  const isSubmitting = categoryMutation.isPending;
+  const deletingId = deleteCategoryMutation.variables?.id ?? null;
 
   function resetForm() {
     setForm(initialForm);
     setEditingCategory(null);
     setError(null);
+  }
+
+  function refreshCategories() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.categories
+    });
   }
 
   function startEditCategory(category: Category) {
@@ -143,10 +376,12 @@ export function CategoriesPage() {
     });
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const categoryName = form.name.trim();
+    const normalizedIcon = normalizeOptionalValue(form.icon);
+    const normalizedColor = normalizeOptionalValue(form.color);
 
     if (!categoryName) {
       setError("Nama kategori wajib diisi.");
@@ -159,89 +394,82 @@ export function CategoriesPage() {
     }
 
     setError(null);
-    setIsSubmitting(true);
 
-    try {
-      if (editingCategory) {
-        await updateCategory(editingCategory.id, {
-          name: categoryName,
-          type: form.type,
-          icon: normalizeOptionalValue(form.icon),
-          color: normalizeOptionalValue(form.color)
-        });
+    if (editingCategory) {
+      const payload: UpdateCategoryInput = {
+        name: categoryName,
+        type: form.type,
+        icon: normalizedIcon,
+        color: normalizedColor
+      };
 
-        addToast({
-          variant: "success",
-          title: "Kategori berhasil diperbarui",
-          description: "Perubahan kategori custom sudah tersimpan."
-        });
-      } else {
-        await createCategory({
-          name: categoryName,
-          type: form.type,
-          icon: normalizeOptionalValue(form.icon),
-          color: normalizeOptionalValue(form.color)
-        });
+      const optimisticCategory: Category = {
+        ...editingCategory,
+        name: categoryName,
+        type: form.type,
+        icon: normalizedIcon,
+        color: normalizedColor
+      };
 
-        addToast({
-          variant: "success",
-          title: "Kategori berhasil dibuat",
-          description: "Kategori custom baru sudah tersedia untuk transaksi."
-        });
-      }
-
-      resetForm();
-      await loadCategories();
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      setError(message);
-      addToast({
-        variant: "error",
-        title: editingCategory
-          ? "Gagal memperbarui kategori"
-          : "Gagal membuat kategori",
-        description: message
+      categoryMutation.mutate({
+        mode: "edit",
+        category: editingCategory,
+        payload,
+        optimisticCategory
       });
-    } finally {
-      setIsSubmitting(false);
+
+      return;
     }
+
+    const payload: CreateCategoryInput = {
+      name: categoryName,
+      type: form.type,
+      icon: normalizedIcon,
+      color: normalizedColor
+    };
+
+    categoryMutation.mutate({
+      mode: "create",
+      payload
+    });
   }
 
-  async function handleDeleteCategory() {
+  function openDeleteDialog(category: Category) {
+    if (category.isDefault) {
+      addToast({
+        variant: "info",
+        title: "Kategori default tidak bisa dihapus",
+        description: "Kategori bawaan sistem wajib tersedia untuk aplikasi."
+      });
+      return;
+    }
+
+    setCategoryToDelete(category);
+  }
+
+  function closeDeleteDialog() {
+    if (deleteCategoryMutation.isPending) {
+      return;
+    }
+
+    setCategoryToDelete(null);
+  }
+
+  function confirmDeleteCategory() {
     if (!categoryToDelete) {
       return;
     }
 
-    setDeletingId(categoryToDelete.id);
-
-    try {
-      await deleteCategory(categoryToDelete.id);
-
-      addToast({
-        variant: "success",
-        title: "Kategori berhasil dihapus",
-        description: "Kategori custom sudah dihapus dari daftar."
-      });
-
-      setCategoryToDelete(null);
-      await loadCategories();
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      addToast({
-        variant: "error",
-        title: "Gagal menghapus kategori",
-        description: message
-      });
-    } finally {
-      setDeletingId(null);
-    }
+    deleteCategoryMutation.mutate(categoryToDelete);
   }
 
-  useEffect(() => {
-    void loadCategories();
-  }, []);
+  const totalCustomCategories = categories.filter(
+    (category) => !category.isDefault
+  ).length;
+
+  const totalDefaultCategories = categories.filter(
+    (category) => category.isDefault
+  ).length;
 
   return (
     <AppShell>
@@ -259,14 +487,42 @@ export function CategoriesPage() {
 
         <Button
           className="rounded-2xl"
-          onClick={() => void loadCategories()}
+          disabled={categoriesQuery.isFetching}
+          onClick={refreshCategories}
           type="button"
           variant="secondary"
         >
-          <RefreshCcw className="h-4 w-4" />
+          {categoriesQuery.isFetching ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCcw className="h-4 w-4" />
+          )}
           Refresh
         </Button>
       </header>
+
+      <section className="mb-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold text-slate-500">Total Kategori</p>
+          <p className="mt-1 text-2xl font-black text-slate-950">
+            {categories.length}
+          </p>
+        </div>
+
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold text-slate-500">Custom Category</p>
+          <p className="mt-1 text-2xl font-black text-indigo-700">
+            {totalCustomCategories}
+          </p>
+        </div>
+
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold text-slate-500">Default Category</p>
+          <p className="mt-1 text-2xl font-black text-slate-950">
+            {totalDefaultCategories}
+          </p>
+        </div>
+      </section>
 
       <section className="mb-5 grid gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
         <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -286,6 +542,7 @@ export function CategoriesPage() {
               <button
                 aria-label="Batal edit"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                disabled={isSubmitting}
                 onClick={resetForm}
                 type="button"
               >
@@ -327,6 +584,7 @@ export function CategoriesPage() {
                       ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
                       : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                   }
+                  disabled={isSubmitting}
                   onClick={() =>
                     setForm((current) => ({
                       ...current,
@@ -344,6 +602,7 @@ export function CategoriesPage() {
                       ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
                       : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                   }
+                  disabled={isSubmitting}
                   onClick={() =>
                     setForm((current) => ({
                       ...current,
@@ -393,7 +652,11 @@ export function CategoriesPage() {
                 Reset
               </Button>
 
-              <Button disabled={isSubmitting} isLoading={isSubmitting} type="submit">
+              <Button
+                disabled={isSubmitting}
+                isLoading={isSubmitting}
+                type="submit"
+              >
                 {editingCategory ? "Simpan perubahan" : "Tambah kategori"}
                 {!isSubmitting ? <Plus className="h-4 w-4" /> : null}
               </Button>
@@ -404,9 +667,19 @@ export function CategoriesPage() {
         <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_320px] sm:items-center">
             <div>
-              <p className="text-sm font-black text-slate-950">
-                Daftar kategori
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-black text-slate-950">
+                  Daftar kategori
+                </p>
+
+                {isBackgroundFetching ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Sync
+                  </span>
+                ) : null}
+              </div>
+
               <p className="mt-1 text-xs font-medium text-slate-500">
                 Default category berasal dari sistem. Custom category bisa kamu
                 edit atau hapus.
@@ -430,6 +703,22 @@ export function CategoriesPage() {
               ))}
             </div>
           </div>
+
+          {queryError ? (
+            <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p>{queryError}</p>
+                <button
+                  className="mt-2 font-black underline"
+                  onClick={refreshCategories}
+                  type="button"
+                >
+                  Coba lagi
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {isLoading ? (
             <div className="flex min-h-52 items-center justify-center rounded-[1.5rem] border border-slate-200 bg-slate-50">
@@ -498,6 +787,7 @@ export function CategoriesPage() {
 
                             <button
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+                              disabled={isSubmitting}
                               onClick={() => startEditCategory(category)}
                               type="button"
                             >
@@ -506,11 +796,17 @@ export function CategoriesPage() {
                             </button>
 
                             <button
-                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100"
-                              onClick={() => setCategoryToDelete(category)}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={deleteCategoryMutation.isPending}
+                              onClick={() => openDeleteDialog(category)}
                               type="button"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteCategoryMutation.isPending &&
+                              deletingId === category.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                               Hapus
                             </button>
                           </div>
@@ -557,7 +853,8 @@ export function CategoriesPage() {
                             {getCategoryTypeLabel(category.type)}
                           </span>
 
-                          <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-600">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
                             Default
                           </span>
                         </div>
@@ -581,16 +878,11 @@ export function CategoriesPage() {
         }
         confirmText="Hapus"
         cancelText="Batal"
-        loading={Boolean(
-          categoryToDelete && deletingId === categoryToDelete.id
-        )}
+        loading={Boolean(categoryToDelete && deletingId === categoryToDelete.id)}
+        loadingText="Menghapus..."
         variant="danger"
-        onClose={() => {
-          if (!deletingId) {
-            setCategoryToDelete(null);
-          }
-        }}
-        onConfirm={() => void handleDeleteCategory()}
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDeleteCategory}
       />
     </AppShell>
   );
