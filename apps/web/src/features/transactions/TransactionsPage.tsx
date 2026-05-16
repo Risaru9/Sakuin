@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowDownCircle,
@@ -17,13 +18,14 @@ import { AppShell } from "../../components/layout/AppShell";
 import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { getCategories } from "../categories/category.service";
-import type { Category } from "../categories/category.types";
 import { AddTransactionModal } from "./AddTransactionModal";
 import { EditTransactionModal } from "./EditTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
 import type {
   Transaction,
+  TransactionListResponse,
   TransactionPagination,
   TransactionSort,
   TransactionType
@@ -110,6 +112,13 @@ function getPaginationLabel(pagination: TransactionPagination) {
   const safeTotalPages = Math.max(pagination.totalPages, 1);
 
   return `Halaman ${pagination.page} dari ${safeTotalPages}`;
+}
+
+function getTransactionListPagination(
+  data: TransactionListResponse | undefined,
+  fallback: TransactionPagination
+) {
+  return data?.pagination ?? data?.meta ?? fallback;
 }
 
 function TransactionRow({
@@ -208,9 +217,8 @@ function TransactionRow({
 
 export function TransactionsPage() {
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [filter, setFilter] = useState<TransactionFilter>("ALL");
   const [categoryId, setCategoryId] = useState("");
   const [search, setSearch] = useState("");
@@ -218,21 +226,65 @@ export function TransactionsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [sort, setSort] = useState<TransactionSort>("date_desc");
-  const [pagination, setPagination] =
-    useState<TransactionPagination>(DEFAULT_PAGINATION);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] =
     useState<Transaction | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const transactionParams = useMemo(
+    () => ({
+      page,
+      limit,
+      type: filter === "ALL" ? undefined : filter,
+      categoryId: categoryId || undefined,
+      search: debouncedSearch || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      sort
+    }),
+    [page, limit, filter, categoryId, debouncedSearch, startDate, endDate, sort]
+  );
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories()
+  });
+
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.transactions.list(transactionParams),
+    queryFn: () => getTransactions(transactionParams),
+    placeholderData: (previousData) => previousData
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const transactions = transactionsQuery.data?.items ?? [];
+  const pagination = getTransactionListPagination(
+    transactionsQuery.data,
+    DEFAULT_PAGINATION
+  );
+
+  const isLoading =
+    transactionsQuery.isLoading && !transactionsQuery.data;
+  const isBackgroundFetching =
+    transactionsQuery.isFetching && Boolean(transactionsQuery.data);
+
+  const isLoadingCategories =
+    categoriesQuery.isLoading && !categoriesQuery.data;
+
+  const error =
+    transactionsQuery.error && !transactionsQuery.data
+      ? getErrorMessage(transactionsQuery.error)
+      : null;
+
+  const categoryError =
+    categoriesQuery.error && !categoriesQuery.data
+      ? getErrorMessage(categoriesQuery.error)
+      : null;
 
   const categoryOptions = useMemo(() => {
     if (filter === "ALL") {
@@ -251,52 +303,99 @@ export function TransactionsPage() {
     sort !== "date_desc" ||
     limit !== 10;
 
-  async function loadCategories() {
-    setIsLoadingCategories(true);
-    setCategoryError(null);
+  const deleteMutation = useMutation({
+    mutationFn: async (transaction: Transaction) => {
+      return deleteTransaction(transaction.id);
+    },
+    onMutate: async (transaction) => {
+      setTransactionToDelete(null);
+      setDeleteError(null);
 
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (caughtError) {
-      setCategoryError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }
-
-  async function loadTransactions() {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await getTransactions({
-        page,
-        limit,
-        type: filter === "ALL" ? undefined : filter,
-        categoryId: categoryId || undefined,
-        search: debouncedSearch || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        sort
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.transactions.all
       });
 
-      const nextPagination = data.pagination ??
-        data.meta ?? {
-          page,
-          limit,
-          total: data.items.length,
-          totalPages: data.items.length > 0 ? 1 : 0
-        };
+      const previousTransactionQueries =
+        queryClient.getQueriesData<TransactionListResponse>({
+          queryKey: queryKeys.transactions.all
+        });
 
-      setTransactions(data.items);
-      setPagination(nextPagination);
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoading(false);
+      queryClient.setQueriesData<TransactionListResponse>(
+        {
+          queryKey: queryKeys.transactions.all
+        },
+        (currentData) => {
+          if (!currentData) {
+            return currentData;
+          }
+
+          const currentPagination =
+            currentData.pagination ?? currentData.meta;
+
+          const nextPagination = currentPagination
+            ? {
+                ...currentPagination,
+                total: Math.max(currentPagination.total - 1, 0),
+                totalPages: Math.max(
+                  Math.ceil(
+                    Math.max(currentPagination.total - 1, 0) /
+                      currentPagination.limit
+                  ),
+                  0
+                )
+              }
+            : undefined;
+
+          return {
+            ...currentData,
+            items: currentData.items.filter(
+              (item) => item.id !== transaction.id
+            ),
+            pagination: currentData.pagination ? nextPagination : undefined,
+            meta: currentData.meta ? nextPagination : undefined
+          };
+        }
+      );
+
+      return {
+        previousTransactionQueries,
+        deletedTransactionName: transaction.note || transaction.category.name
+      };
+    },
+    onError: (caughtError, _transaction, context) => {
+      if (context?.previousTransactionQueries) {
+        for (const [queryKey, data] of context.previousTransactionQueries) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+
+      const message = getErrorMessage(caughtError);
+
+      setDeleteError(message);
+
+      addToast({
+        variant: "error",
+        title: "Gagal menghapus transaksi",
+        description: message
+      });
+    },
+    onSuccess: (_data, _transaction, context) => {
+      addToast({
+        variant: "success",
+        title: "Transaksi berhasil dihapus",
+        description: `"${context?.deletedTransactionName ?? "Transaksi"}" sudah dihapus dari daftar transaksi.`
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
     }
-  }
+  });
 
   function resetFilters() {
     setFilter("ALL");
@@ -316,7 +415,7 @@ export function TransactionsPage() {
   }
 
   function handleCloseDeleteDialog() {
-    if (deletingId) {
+    if (deleteMutation.isPending) {
       return;
     }
 
@@ -324,46 +423,29 @@ export function TransactionsPage() {
     setDeleteError(null);
   }
 
-  async function handleConfirmDelete() {
+  function handleConfirmDelete() {
     if (!transactionToDelete) {
       return;
     }
 
-    const deletedTransactionName =
-      transactionToDelete.note || transactionToDelete.category.name;
-
-    setDeletingId(transactionToDelete.id);
-    setDeleteError(null);
-
-    try {
-      await deleteTransaction(transactionToDelete.id);
-
-      addToast({
-        variant: "success",
-        title: "Transaksi berhasil dihapus",
-        description: `"${deletedTransactionName}" sudah dihapus dari daftar transaksi.`
-      });
-
-      setTransactionToDelete(null);
-      await loadTransactions();
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      setDeleteError(message);
-
-      addToast({
-        variant: "error",
-        title: "Gagal menghapus transaksi",
-        description: message
-      });
-    } finally {
-      setDeletingId(null);
-    }
+    deleteMutation.mutate(transactionToDelete);
   }
 
-  useEffect(() => {
-    void loadCategories();
-  }, []);
+  function refreshTransactionData() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.transactions.all
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
+  }
+
+  function retryTransactions() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.transactions.all
+    });
+  }
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -390,10 +472,6 @@ export function TransactionsPage() {
       setPage(1);
     }
   }, [categoryId, categoryOptions]);
-
-  useEffect(() => {
-    void loadTransactions();
-  }, [filter, categoryId, debouncedSearch, startDate, endDate, sort, page, limit]);
 
   const canGoToPreviousPage = pagination.page > 1;
   const canGoToNextPage =
@@ -574,6 +652,13 @@ export function TransactionsPage() {
                 </span>
               </p>
             ) : null}
+
+            {isBackgroundFetching ? (
+              <p className="inline-flex items-center gap-1.5 font-black text-indigo-700">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Memperbarui data...
+              </p>
+            ) : null}
           </div>
         </section>
 
@@ -588,7 +673,7 @@ export function TransactionsPage() {
                 </p>
                 <button
                   className="mt-2 text-sm font-black underline"
-                  onClick={() => void loadTransactions()}
+                  onClick={retryTransactions}
                   type="button"
                 >
                   Coba lagi
@@ -633,7 +718,10 @@ export function TransactionsPage() {
                   transaction={transaction}
                   onEdit={setSelectedTransaction}
                   onDelete={handleOpenDeleteDialog}
-                  isDeleting={deletingId === transaction.id}
+                  isDeleting={
+                    deleteMutation.isPending &&
+                    deleteMutation.variables?.id === transaction.id
+                  }
                 />
               ))
             : null}
@@ -680,14 +768,14 @@ export function TransactionsPage() {
       <AddTransactionModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onSuccess={loadTransactions}
+        onSuccess={refreshTransactionData}
       />
 
       <EditTransactionModal
         open={Boolean(selectedTransaction)}
         transaction={selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
-        onSuccess={loadTransactions}
+        onSuccess={refreshTransactionData}
       />
 
       <ConfirmDialog
@@ -696,13 +784,11 @@ export function TransactionsPage() {
         description={deleteDialogDescription}
         confirmText="Ya, hapus transaksi"
         cancelText="Batal"
-        loading={Boolean(
-          transactionToDelete && deletingId === transactionToDelete.id
-        )}
+        loading={deleteMutation.isPending}
         loadingText="Menghapus..."
         variant="danger"
         onClose={handleCloseDeleteDialog}
-        onConfirm={() => void handleConfirmDelete()}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

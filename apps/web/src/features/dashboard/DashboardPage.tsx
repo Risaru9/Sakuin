@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -15,6 +16,7 @@ import {
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { useAuth } from "../auth/auth-context";
 import { getGoals } from "../goals/goal.service";
 import type { Goal } from "../goals/goal.types";
@@ -25,12 +27,10 @@ import {
 import { getSummary } from "../summary/summary.service";
 import type {
   MonthlyTrendItem,
-  SummaryData,
   SummaryTransaction
 } from "../summary/summary.types";
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
-import type { UserProfile } from "../profile/profile.types";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -424,77 +424,78 @@ function DashboardGoalsCard({
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [summary, setSummary] = useState<SummaryData | null>(null);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
-
-  const [isLoadingSummary, setIsLoadingSummary] = useState(true);
-  const [isLoadingGoals, setIsLoadingGoals] = useState(true);
-
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [goalsError, setGoalsError] = useState<string | null>(null);
-
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
 
-  async function loadSummaryData() {
-    setIsLoadingSummary(true);
-    setSummaryError(null);
+  const summaryQuery = useQuery({
+    queryKey: queryKeys.summary,
+    queryFn: getSummary
+  });
 
-    try {
-      const data = await getSummary();
-      setSummary(data);
-    } catch (error) {
-      setSummaryError(getErrorMessage(error));
-    } finally {
-      setIsLoadingSummary(false);
-    }
-  }
+  const goalsQuery = useQuery({
+    queryKey: queryKeys.goals,
+    queryFn: getGoals
+  });
 
-  async function loadGoalsData() {
-    setIsLoadingGoals(true);
-    setGoalsError(null);
+  const profileQuery = useQuery({
+    queryKey: queryKeys.profile,
+    queryFn: getUserProfile
+  });
 
-    try {
-      const data = await getGoals();
-      const storedPriorityGoalId = getDashboardPriorityGoalId();
+  const summary = summaryQuery.data ?? null;
+  const goals = goalsQuery.data ?? [];
+  const profile = profileQuery.data ?? null;
 
-      if (
-        storedPriorityGoalId &&
-        !data.some((goal) => goal.id === storedPriorityGoalId)
-      ) {
-        clearDashboardPriorityGoalId();
-        setDashboardPriorityGoalIdState(null);
-      } else {
-        setDashboardPriorityGoalIdState(storedPriorityGoalId);
-      }
+  const isLoadingSummary = summaryQuery.isLoading && !summaryQuery.data;
+  const isLoadingGoals = goalsQuery.isLoading && !goalsQuery.data;
 
-      setGoals(data);
-    } catch (error) {
-      setGoalsError(getErrorMessage(error));
-    } finally {
-      setIsLoadingGoals(false);
-    }
-  }
+  const summaryError =
+    summaryQuery.error && !summaryQuery.data
+      ? getErrorMessage(summaryQuery.error)
+      : null;
 
-  async function loadProfileData() {
-    try {
-      const data = await getUserProfile();
-      setProfile(data);
-    } catch {
-      // Profile fallback tetap memakai data dari auth context.
-    }
-  }
-
-  async function loadDashboardData() {
-    await Promise.all([loadSummaryData(), loadGoalsData(), loadProfileData()]);
-  }
+  const goalsError =
+    goalsQuery.error && !goalsQuery.data
+      ? getErrorMessage(goalsQuery.error)
+      : null;
 
   useEffect(() => {
-    void loadDashboardData();
-  }, []);
+    if (!goalsQuery.data) {
+      return;
+    }
+
+    const storedPriorityGoalId = getDashboardPriorityGoalId();
+
+    if (
+      storedPriorityGoalId &&
+      !goalsQuery.data.some((goal) => goal.id === storedPriorityGoalId)
+    ) {
+      clearDashboardPriorityGoalId();
+      setDashboardPriorityGoalIdState(null);
+      return;
+    }
+
+    setDashboardPriorityGoalIdState(storedPriorityGoalId);
+  }, [goalsQuery.data]);
+
+  function refreshDashboardData() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.transactions.all
+    });
+  }
+
+  function retrySummaryData() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
+  }
 
   const displayedName = profile?.name ?? user?.name ?? "User";
   const displayedEmail = profile?.email ?? user?.email ?? "-";
@@ -543,7 +544,7 @@ export function DashboardPage() {
                 </p>
                 <button
                   className="mt-2 text-sm font-black underline"
-                  onClick={() => void loadSummaryData()}
+                  onClick={retrySummaryData}
                   type="button"
                 >
                   Coba lagi
@@ -599,7 +600,7 @@ export function DashboardPage() {
                       Pemasukan
                     </p>
                     <p className="mt-1.5 text-lg font-black text-emerald-300">
-                      {formatCompactRupiah(summary?.totalIncome)}
+                      {formatRupiah(summary?.totalIncome)}
                     </p>
                   </div>
 
@@ -608,7 +609,7 @@ export function DashboardPage() {
                       Pengeluaran
                     </p>
                     <p className="mt-1.5 text-lg font-black text-rose-300">
-                      {formatCompactRupiah(summary?.totalExpense)}
+                      {formatRupiah(summary?.totalExpense)}
                     </p>
                   </div>
 
@@ -617,7 +618,7 @@ export function DashboardPage() {
                       Batas Aman
                     </p>
                     <p className="mt-1.5 text-lg font-black text-white">
-                      {formatCompactRupiah(summary?.safeBalanceLimit)}
+                      {formatRupiah(summary?.safeBalanceLimit)}
                     </p>
                   </div>
                 </div>
@@ -684,7 +685,7 @@ export function DashboardPage() {
                     Income Bulan Ini
                   </p>
                   <p className="mt-1 truncate text-lg font-black text-slate-950">
-                    {formatCompactRupiah(summary?.incomeThisMonth)}
+                    {formatRupiah(summary?.incomeThisMonth)}
                   </p>
                 </div>
               </div>
@@ -698,7 +699,7 @@ export function DashboardPage() {
                     Expense Bulan Ini
                   </p>
                   <p className="mt-1 truncate text-lg font-black text-slate-950">
-                    {formatCompactRupiah(summary?.expenseThisMonth)}
+                    {formatRupiah(summary?.expenseThisMonth)}
                   </p>
                 </div>
               </div>
@@ -734,7 +735,7 @@ export function DashboardPage() {
       <AddTransactionModal
         open={isAddTransactionOpen}
         onClose={() => setIsAddTransactionOpen(false)}
-        onSuccess={loadDashboardData}
+        onSuccess={refreshDashboardData}
       />
     </>
   );

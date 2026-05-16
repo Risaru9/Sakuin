@@ -5,14 +5,21 @@ import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent
 } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Loader2, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { getCategories } from "../categories/category.service";
 import type { Category } from "../categories/category.types";
 import { updateTransaction } from "./transaction.service";
-import type { Transaction, TransactionType } from "./transaction.types";
+import type {
+  Transaction,
+  TransactionListResponse,
+  TransactionType,
+  UpdateTransactionInput
+} from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
 
 const MIN_TRANSACTION_AMOUNT = 1;
@@ -32,6 +39,12 @@ type FormState = {
   categoryId: string;
   date: string;
   note: string;
+};
+
+type UpdateTransactionMutationInput = {
+  transactionId: string;
+  input: UpdateTransactionInput;
+  optimisticTransaction: Transaction;
 };
 
 function getErrorMessage(error: unknown) {
@@ -134,6 +147,17 @@ function resolveCategoryId({
   return firstCategoryByType?.id ?? "";
 }
 
+function mapCategoryToTransactionCategory(category: Category) {
+  return {
+    id: category.id,
+    name: category.name,
+    type: category.type,
+    icon: category.icon,
+    color: category.color,
+    isDefault: category.isDefault
+  };
+}
+
 export function EditTransactionModal({
   open,
   transaction,
@@ -148,20 +172,127 @@ export function EditTransactionModal({
     note: ""
   });
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories(),
+    enabled: open,
+    staleTime: 5 * 60_000
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const isLoadingCategories =
+    categoriesQuery.isLoading && !categoriesQuery.data;
+
+  const categoryError =
+    categoriesQuery.error && !categoriesQuery.data
+      ? getErrorMessage(categoriesQuery.error)
+      : null;
 
   const categoryOptions = useMemo(() => {
     return categories.filter((category) => category.type === form.type);
   }, [categories, form.type]);
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: ({ transactionId, input }: UpdateTransactionMutationInput) => {
+      return updateTransaction(transactionId, input);
+    },
+    onMutate: async ({ optimisticTransaction }) => {
+      setError(null);
+      onClose();
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      const previousTransactionQueries =
+        queryClient.getQueriesData<TransactionListResponse>({
+          queryKey: queryKeys.transactions.all
+        });
+
+      queryClient.setQueriesData<TransactionListResponse>(
+        {
+          queryKey: queryKeys.transactions.all
+        },
+        (currentData) => {
+          if (!currentData) {
+            return currentData;
+          }
+
+          return {
+            ...currentData,
+            items: currentData.items.map((item) =>
+              item.id === optimisticTransaction.id
+                ? optimisticTransaction
+                : item
+            )
+          };
+        }
+      );
+
+      return {
+        previousTransactionQueries
+      };
+    },
+    onError: (caughtError, _variables, context) => {
+      if (context?.previousTransactionQueries) {
+        for (const [queryKey, data] of context.previousTransactionQueries) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+
+      addToast({
+        variant: "error",
+        title: "Gagal memperbarui transaksi",
+        description: getErrorMessage(caughtError)
+      });
+    },
+    onSuccess: (updatedTransaction) => {
+      queryClient.setQueriesData<TransactionListResponse>(
+        {
+          queryKey: queryKeys.transactions.all
+        },
+        (currentData) => {
+          if (!currentData) {
+            return currentData;
+          }
+
+          return {
+            ...currentData,
+            items: currentData.items.map((item) =>
+              item.id === updatedTransaction.id ? updatedTransaction : item
+            )
+          };
+        }
+      );
+
+      addToast({
+        variant: "success",
+        title: "Transaksi berhasil diperbarui",
+        description: "Perubahan transaksi sudah tersimpan."
+      });
+
+      void onSuccess();
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
+    }
+  });
+
+  const isSubmitting = updateTransactionMutation.isPending;
+
   function resetError() {
     setError(null);
-    setCategoryError(null);
   }
 
   function handleClose() {
@@ -185,32 +316,7 @@ export function EditTransactionModal({
     }));
   }
 
-  async function loadCategories(currentTransaction: Transaction) {
-    setIsLoadingCategories(true);
-    setCategoryError(null);
-
-    try {
-      const data = await getCategories();
-      const resolvedCategoryId = resolveCategoryId({
-        transaction: currentTransaction,
-        categories: data,
-        type: currentTransaction.type
-      });
-
-      setCategories(data);
-
-      setForm((current) => ({
-        ...current,
-        categoryId: resolvedCategoryId
-      }));
-    } catch (caughtError) {
-      setCategoryError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!transaction) {
@@ -229,11 +335,11 @@ export function EditTransactionModal({
       return;
     }
 
-    const categoryStillExists = categoryOptions.some(
+    const selectedCategory = categoryOptions.find(
       (category) => category.id === form.categoryId
     );
 
-    if (!categoryStillExists) {
+    if (!selectedCategory) {
       setError("Kategori tidak valid. Silakan pilih kategori lain.");
       return;
     }
@@ -243,40 +349,35 @@ export function EditTransactionModal({
       return;
     }
 
+    const nextDate = toIsoDate(form.date);
+    const nextNote = form.note.trim() || null;
+
+    const input: UpdateTransactionInput = {
+      type: form.type,
+      amount: form.amount.trim(),
+      categoryId: form.categoryId,
+      date: nextDate,
+      note: nextNote ?? undefined
+    };
+
+    const optimisticTransaction: Transaction = {
+      ...transaction,
+      type: form.type,
+      amount: form.amount.trim(),
+      categoryId: form.categoryId,
+      date: nextDate,
+      note: nextNote,
+      category: mapCategoryToTransactionCategory(selectedCategory),
+      updatedAt: new Date().toISOString()
+    };
+
     setError(null);
-    setIsSubmitting(true);
 
-    try {
-      await updateTransaction(transaction.id, {
-        type: form.type,
-        amount: form.amount.trim(),
-        categoryId: form.categoryId,
-        date: toIsoDate(form.date),
-        note: form.note.trim() || undefined
-      });
-
-      await onSuccess();
-
-      addToast({
-        variant: "success",
-        title: "Transaksi berhasil diperbarui",
-        description: "Perubahan transaksi sudah tersimpan."
-      });
-
-      onClose();
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      setError(message);
-
-      addToast({
-        variant: "error",
-        title: "Gagal memperbarui transaksi",
-        description: message
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateTransactionMutation.mutate({
+      transactionId: transaction.id,
+      input,
+      optimisticTransaction
+    });
   }
 
   useEffect(() => {
@@ -284,16 +385,25 @@ export function EditTransactionModal({
       return;
     }
 
+    setError(null);
+
+    const resolvedCategoryId =
+      categories.length > 0
+        ? resolveCategoryId({
+            transaction,
+            categories,
+            type: transaction.type
+          })
+        : getTransactionCategoryId(transaction);
+
     setForm({
       type: transaction.type,
       amount: transaction.amount,
-      categoryId: getTransactionCategoryId(transaction),
+      categoryId: resolvedCategoryId,
       date: toDateInputValue(transaction.date),
       note: transaction.note ?? ""
     });
-
-    void loadCategories(transaction);
-  }, [open, transaction]);
+  }, [open, transaction, categories]);
 
   useEffect(() => {
     function handleEscape(event: globalThis.KeyboardEvent) {
@@ -348,11 +458,7 @@ export function EditTransactionModal({
               <p>{categoryError}</p>
               <button
                 className="mt-2 font-bold underline"
-                onClick={() => {
-                  if (transaction) {
-                    void loadCategories(transaction);
-                  }
-                }}
+                onClick={() => void categoriesQuery.refetch()}
                 type="button"
               >
                 Ambil kategori lagi

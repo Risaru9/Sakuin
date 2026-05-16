@@ -5,6 +5,7 @@ import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent
 } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowRight,
@@ -15,10 +16,10 @@ import {
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { getCategories } from "../categories/category.service";
-import type { Category } from "../categories/category.types";
 import { createTransaction } from "./transaction.service";
-import type { TransactionType } from "./transaction.types";
+import type { CreateTransactionInput, TransactionType } from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
 
 const MIN_TRANSACTION_AMOUNT = 1;
@@ -109,22 +110,69 @@ export function AddTransactionModal({
   onSuccess
 }: AddTransactionModalProps) {
   const [form, setForm] = useState<TransactionFormState>(getInitialForm);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories(),
+    enabled: open,
+    staleTime: 5 * 60_000
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const isLoadingCategories =
+    categoriesQuery.isLoading && !categoriesQuery.data;
+
+  const categoryError =
+    categoriesQuery.error && !categoriesQuery.data
+      ? getErrorMessage(categoriesQuery.error)
+      : null;
 
   const categoryOptions = useMemo(
     () => categories.filter((category) => category.type === form.type),
     [categories, form.type]
   );
 
+  const createTransactionMutation = useMutation({
+    mutationFn: (input: CreateTransactionInput) => createTransaction(input),
+    onMutate: () => {
+      resetForm();
+      onClose();
+    },
+    onSuccess: () => {
+      addToast({
+        variant: "success",
+        title: "Transaksi berhasil ditambahkan",
+        description: "Data transaksi dan dashboard sedang diperbarui."
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.summary
+      });
+
+      void onSuccess();
+    },
+    onError: (caughtError) => {
+      addToast({
+        variant: "error",
+        title: "Gagal menambahkan transaksi",
+        description: getErrorMessage(caughtError)
+      });
+    }
+  });
+
+  const isSubmitting = createTransactionMutation.isPending;
+
   function resetForm() {
     setForm(getInitialForm());
     setError(null);
-    setIsSubmitting(false);
   }
 
   function handleClose() {
@@ -148,30 +196,7 @@ export function AddTransactionModal({
     }));
   }
 
-  async function loadCategories() {
-    setIsLoadingCategories(true);
-    setCategoryError(null);
-
-    try {
-      const data = await getCategories();
-      setCategories(data);
-
-      const defaultExpenseCategory = data.find(
-        (category) => category.type === "EXPENSE"
-      );
-
-      setForm((current) => ({
-        ...current,
-        categoryId: defaultExpenseCategory?.id ?? ""
-      }));
-    } catch (caughtError) {
-      setCategoryError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const amountError = validateTransactionAmount(form.amount);
@@ -191,48 +216,40 @@ export function AddTransactionModal({
       return;
     }
 
+    const input: CreateTransactionInput = {
+      type: form.type,
+      amount: form.amount.trim(),
+      categoryId: form.categoryId,
+      date: toIsoDate(form.date),
+      note: form.note.trim() || undefined
+    };
+
     setError(null);
-    setIsSubmitting(true);
-
-    try {
-      await createTransaction({
-        type: form.type,
-        amount: form.amount.trim(),
-        categoryId: form.categoryId,
-        date: toIsoDate(form.date),
-        note: form.note.trim() || undefined
-      });
-
-      await onSuccess();
-
-      addToast({
-        variant: "success",
-        title: "Transaksi berhasil ditambahkan",
-        description: "Data transaksi dan dashboard sudah diperbarui."
-      });
-
-      resetForm();
-      onClose();
-    } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
-
-      setError(message);
-
-      addToast({
-        variant: "error",
-        title: "Gagal menambahkan transaksi",
-        description: message
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    createTransactionMutation.mutate(input);
   }
 
   useEffect(() => {
-    if (open) {
-      void loadCategories();
+    if (!open) {
+      return;
     }
+
+    setError(null);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || categories.length === 0 || form.categoryId) {
+      return;
+    }
+
+    const defaultExpenseCategory = categories.find(
+      (category) => category.type === "EXPENSE"
+    );
+
+    setForm((current) => ({
+      ...current,
+      categoryId: defaultExpenseCategory?.id ?? ""
+    }));
+  }, [open, categories, form.categoryId]);
 
   useEffect(() => {
     function handleEscape(event: globalThis.KeyboardEvent) {
@@ -264,8 +281,8 @@ export function AddTransactionModal({
               Tambah transaksi
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--sakuin-muted)]">
-              Catat pemasukan atau pengeluaranmu. Dashboard akan otomatis
-              diperbarui setelah transaksi tersimpan.
+              Catat pemasukan atau pengeluaranmu. Setelah disimpan, data akan
+              diperbarui otomatis.
             </p>
           </div>
 
@@ -287,7 +304,7 @@ export function AddTransactionModal({
               <p>{categoryError}</p>
               <button
                 className="mt-2 font-bold underline"
-                onClick={() => void loadCategories()}
+                onClick={() => void categoriesQuery.refetch()}
                 type="button"
               >
                 Coba ambil kategori lagi
@@ -393,7 +410,7 @@ export function AddTransactionModal({
           {isLoadingCategories ? (
             <div className="flex items-center gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-4 py-3 text-xs font-medium text-[var(--sakuin-muted)]">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Mengambil daftar kategori dari backend...
+              Mengambil daftar kategori...
             </div>
           ) : null}
 
@@ -456,8 +473,8 @@ export function AddTransactionModal({
         <div className="mt-4 flex items-start gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-4 py-3 text-xs leading-5 text-[var(--sakuin-muted)]">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Kategori sekarang diambil dari backend, jadi pilihan akan mengikuti
-            data Category yang tersedia di database.
+            Kategori memakai cache, jadi modal akan lebih cepat saat dibuka
+            berikutnya.
           </p>
         </div>
       </div>
