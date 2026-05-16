@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowLeft,
   ArrowRight,
   LockKeyhole,
   ShieldCheck,
@@ -55,15 +56,25 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1fr_0.9fr]">
         <div className="hidden lg:block">
-          <Link className="mb-8 inline-flex items-center gap-2" to="/">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
-              <WalletCards className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-black tracking-tight">Sakuin</span>
-          </Link>
+          <div className="mb-8 flex flex-col items-start gap-3">
+            <Link className="inline-flex items-center gap-2" to="/">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+                <WalletCards className="h-5 w-5" />
+              </div>
+              <span className="text-xl font-black tracking-tight">Sakuin</span>
+            </Link>
+
+            <Link
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-4 py-2 text-xs font-black text-[var(--sakuin-muted)] shadow-sm transition hover:text-[var(--sakuin-text)]"
+              to="/"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Beranda
+            </Link>
+          </div>
 
           <div className="rounded-[2rem] border border-[var(--sakuin-border)] bg-white p-8 shadow-xl shadow-black/5">
             <div className="inline-flex items-center gap-2 rounded-full bg-[var(--sakuin-purple-soft)] px-3 py-2 text-xs font-bold text-[var(--sakuin-purple)]">
@@ -109,12 +120,20 @@ export function LoginPage() {
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 text-center lg:hidden">
+          <div className="mb-6 flex items-center justify-between gap-3 lg:hidden">
             <Link className="inline-flex items-center gap-2" to="/">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
                 <WalletCards className="h-5 w-5" />
               </div>
               <span className="text-xl font-black tracking-tight">Sakuin</span>
+            </Link>
+
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
+              to="/"
+            >
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Beranda
             </Link>
           </div>
 
@@ -186,6 +205,16 @@ export function LoginPage() {
                 to="/register"
               >
                 Buat akun
+              </Link>
+            </p>
+
+            <p className="mt-3 text-center text-sm text-[var(--sakuin-muted)]">
+              Ingin lihat halaman utama?{" "}
+              <Link
+                className="font-bold text-[var(--sakuin-text)] hover:underline"
+                to="/"
+              >
+                Kembali ke Beranda
               </Link>
             </p>
           </div>
