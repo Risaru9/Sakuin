@@ -14,6 +14,7 @@ import {
   Target,
   WalletCards
 } from "lucide-react";
+import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { buttonClassName } from "../components/ui/button";
 import { useAuth } from "../features/auth/auth-context";
 import { LoginPage } from "../features/auth/pages/LoginPage";
@@ -216,6 +217,11 @@ function HomePage() {
               Login
             </Link>
 
+            <InstallAppButton
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-slate-200 bg-white px-6 text-base font-black text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+              label="Install app"
+            />
+
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black !text-white shadow-sm transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
             to="/register"
@@ -263,6 +269,11 @@ function HomePage() {
               >
                 Login
               </Link>
+
+              <InstallAppButton
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-slate-200 bg-white px-6 text-base font-black text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                label="Install Sakuin"
+              />
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
