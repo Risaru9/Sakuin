@@ -10,4 +10,12 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>
 );
 
-registerServiceWorker();
+registerServiceWorker({
+  onUpdate: (registration) => {
+    window.dispatchEvent(
+      new CustomEvent<ServiceWorkerRegistration>("sakuin:pwa-update", {
+        detail: registration
+      })
+    );
+  }
+});
