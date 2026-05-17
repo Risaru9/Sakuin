@@ -6,12 +6,15 @@ import {
   type KeyboardEvent as ReactKeyboardEvent
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Loader2, Plus, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
-import { getCategories } from "../categories/category.service";
+import {
+  createCategory,
+  getCategories
+} from "../categories/category.service";
 import type { Category } from "../categories/category.types";
 import { updateTransaction } from "./transaction.service";
 import type {
@@ -25,6 +28,7 @@ import { useToast } from "../../components/toast/ToastProvider";
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
 const MAX_TRANSACTION_AMOUNT_LABEL = "Rp 1.000.000.000.000";
+const MAX_CATEGORY_NAME_LENGTH = 50;
 
 type EditTransactionModalProps = {
   open: boolean;
@@ -39,12 +43,15 @@ type FormState = {
   categoryId: string;
   date: string;
   note: string;
+  saveAsNewCategory: boolean;
+  customCategoryName: string;
 };
 
 type UpdateTransactionMutationInput = {
   transactionId: string;
   input: UpdateTransactionInput;
   optimisticTransaction: Transaction;
+  customCategoryName?: string;
 };
 
 function getErrorMessage(error: unknown) {
@@ -107,6 +114,53 @@ function validateTransactionAmount(amount: string) {
   return null;
 }
 
+function normalizeCategoryName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function isOtherCategory(category: Category | undefined) {
+  if (!category) {
+    return false;
+  }
+
+  const normalizedName = category.name.toLowerCase();
+
+  return normalizedName.includes("lain") || normalizedName.includes("other");
+}
+
+function sortCategoryOptions(categories: Category[]) {
+  return categories
+    .map((category, index) => ({
+      category,
+      index
+    }))
+    .sort((firstItem, secondItem) => {
+      const firstIsOther = isOtherCategory(firstItem.category);
+      const secondIsOther = isOtherCategory(secondItem.category);
+
+      if (firstIsOther !== secondIsOther) {
+        return firstIsOther ? 1 : -1;
+      }
+
+      return firstItem.index - secondItem.index;
+    })
+    .map((item) => item.category);
+}
+
+function findCategoryByName(
+  categories: Category[],
+  type: TransactionType,
+  categoryName: string
+) {
+  const normalizedCategoryName = normalizeCategoryName(categoryName).toLowerCase();
+
+  return categories.find(
+    (category) =>
+      category.type === type &&
+      category.name.toLowerCase() === normalizedCategoryName
+  );
+}
+
 function getTransactionCategoryId(transaction: Transaction) {
   return transaction.categoryId || transaction.category?.id || "";
 }
@@ -140,9 +194,9 @@ function resolveCategoryId({
     return nameMatch.id;
   }
 
-  const firstCategoryByType = categories.find(
-    (category) => category.type === type
-  );
+  const firstCategoryByType = sortCategoryOptions(
+    categories.filter((category) => category.type === type)
+  )[0];
 
   return firstCategoryByType?.id ?? "";
 }
@@ -169,7 +223,9 @@ export function EditTransactionModal({
     amount: "",
     categoryId: "",
     date: new Date().toISOString().slice(0, 10),
-    note: ""
+    note: "",
+    saveAsNewCategory: false,
+    customCategoryName: ""
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -194,12 +250,62 @@ export function EditTransactionModal({
       : null;
 
   const categoryOptions = useMemo(() => {
-    return categories.filter((category) => category.type === form.type);
+    const categoriesByType = categories.filter(
+      (category) => category.type === form.type
+    );
+
+    return sortCategoryOptions(categoriesByType);
   }, [categories, form.type]);
 
+  const selectedCategory = useMemo(() => {
+    return categoryOptions.find((category) => category.id === form.categoryId);
+  }, [categoryOptions, form.categoryId]);
+
+  const canCreateInlineCategory = isOtherCategory(selectedCategory);
+
   const updateTransactionMutation = useMutation({
-    mutationFn: ({ transactionId, input }: UpdateTransactionMutationInput) => {
-      return updateTransaction(transactionId, input);
+    mutationFn: async ({
+      transactionId,
+      input,
+      customCategoryName
+    }: UpdateTransactionMutationInput) => {
+      if (!customCategoryName) {
+        return {
+          updatedTransaction: await updateTransaction(transactionId, input),
+          createdCategory: null
+        };
+      }
+
+      const transactionType = input.type;
+
+      if (!transactionType) {
+        throw new Error("Tipe transaksi wajib diisi.");
+      }
+
+      const existingCategory = findCategoryByName(
+        categories,
+        transactionType,
+        customCategoryName
+      );
+
+      const category =
+        existingCategory ??
+        (await createCategory({
+          name: customCategoryName,
+          type: transactionType,
+          icon: null,
+          color: null
+        }));
+
+      const updatedTransaction = await updateTransaction(transactionId, {
+        ...input,
+        categoryId: category.id
+      });
+
+      return {
+        updatedTransaction,
+        createdCategory: existingCategory ? null : category
+      };
     },
     onMutate: async ({ optimisticTransaction }) => {
       setError(null);
@@ -251,7 +357,7 @@ export function EditTransactionModal({
         description: getErrorMessage(caughtError)
       });
     },
-    onSuccess: (updatedTransaction) => {
+    onSuccess: ({ updatedTransaction, createdCategory }) => {
       queryClient.setQueriesData<TransactionListResponse>(
         {
           queryKey: queryKeys.transactions.all
@@ -273,12 +379,14 @@ export function EditTransactionModal({
       addToast({
         variant: "success",
         title: "Transaksi berhasil diperbarui",
-        description: "Perubahan transaksi sudah tersimpan."
+        description: createdCategory
+          ? `Kategori "${createdCategory.name}" ikut disimpan untuk transaksi berikutnya.`
+          : "Perubahan transaksi sudah tersimpan."
       });
 
       void onSuccess();
     },
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.transactions.all
       });
@@ -286,6 +394,12 @@ export function EditTransactionModal({
       void queryClient.invalidateQueries({
         queryKey: queryKeys.summary
       });
+
+      if (variables?.customCategoryName) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.categories
+        });
+      }
     }
   });
 
@@ -305,14 +419,33 @@ export function EditTransactionModal({
   }
 
   function handleTypeChange(nextType: TransactionType) {
-    const defaultCategory = categories.find(
-      (category) => category.type === nextType
+    const categoriesByType = sortCategoryOptions(
+      categories.filter((category) => category.type === nextType)
     );
+
+    const defaultCategory = categoriesByType[0];
 
     setForm((current) => ({
       ...current,
       type: nextType,
-      categoryId: defaultCategory?.id ?? ""
+      categoryId: defaultCategory?.id ?? "",
+      saveAsNewCategory: false,
+      customCategoryName: ""
+    }));
+  }
+
+  function handleCategoryChange(categoryId: string) {
+    const nextCategory = categoryOptions.find(
+      (category) => category.id === categoryId
+    );
+
+    setForm((current) => ({
+      ...current,
+      categoryId,
+      saveAsNewCategory: false,
+      customCategoryName: isOtherCategory(nextCategory)
+        ? current.customCategoryName
+        : ""
     }));
   }
 
@@ -335,17 +468,39 @@ export function EditTransactionModal({
       return;
     }
 
-    const selectedCategory = categoryOptions.find(
+    const selectedCategoryForSubmit = categoryOptions.find(
       (category) => category.id === form.categoryId
     );
 
-    if (!selectedCategory) {
+    if (!selectedCategoryForSubmit) {
       setError("Kategori tidak valid. Silakan pilih kategori lain.");
       return;
     }
 
     if (!form.date) {
       setError("Tanggal transaksi wajib diisi.");
+      return;
+    }
+
+    const normalizedCustomCategoryName = normalizeCategoryName(
+      form.customCategoryName
+    );
+
+    if (form.saveAsNewCategory && !canCreateInlineCategory) {
+      setError("Kategori baru hanya bisa dibuat dari pilihan kategori Lain.");
+      return;
+    }
+
+    if (form.saveAsNewCategory && !normalizedCustomCategoryName) {
+      setError("Nama kategori baru wajib diisi.");
+      return;
+    }
+
+    if (
+      form.saveAsNewCategory &&
+      normalizedCustomCategoryName.length > MAX_CATEGORY_NAME_LENGTH
+    ) {
+      setError(`Nama kategori maksimal ${MAX_CATEGORY_NAME_LENGTH} karakter.`);
       return;
     }
 
@@ -360,6 +515,17 @@ export function EditTransactionModal({
       note: nextNote ?? undefined
     };
 
+    const optimisticCategory = form.saveAsNewCategory
+      ? {
+          id: selectedCategoryForSubmit.id,
+          name: normalizedCustomCategoryName,
+          type: form.type,
+          icon: null,
+          color: null,
+          isDefault: false
+        }
+      : mapCategoryToTransactionCategory(selectedCategoryForSubmit);
+
     const optimisticTransaction: Transaction = {
       ...transaction,
       type: form.type,
@@ -367,7 +533,7 @@ export function EditTransactionModal({
       categoryId: form.categoryId,
       date: nextDate,
       note: nextNote,
-      category: mapCategoryToTransactionCategory(selectedCategory),
+      category: optimisticCategory,
       updatedAt: new Date().toISOString()
     };
 
@@ -376,7 +542,10 @@ export function EditTransactionModal({
     updateTransactionMutation.mutate({
       transactionId: transaction.id,
       input,
-      optimisticTransaction
+      optimisticTransaction,
+      customCategoryName: form.saveAsNewCategory
+        ? normalizedCustomCategoryName
+        : undefined
     });
   }
 
@@ -401,9 +570,24 @@ export function EditTransactionModal({
       amount: transaction.amount,
       categoryId: resolvedCategoryId,
       date: toDateInputValue(transaction.date),
-      note: transaction.note ?? ""
+      note: transaction.note ?? "",
+      saveAsNewCategory: false,
+      customCategoryName: ""
     });
   }, [open, transaction, categories]);
+
+  useEffect(() => {
+    if (
+      !canCreateInlineCategory &&
+      (form.saveAsNewCategory || form.customCategoryName)
+    ) {
+      setForm((current) => ({
+        ...current,
+        saveAsNewCategory: false,
+        customCategoryName: ""
+      }));
+    }
+  }, [canCreateInlineCategory, form.customCategoryName, form.saveAsNewCategory]);
 
   useEffect(() => {
     function handleEscape(event: globalThis.KeyboardEvent) {
@@ -436,7 +620,8 @@ export function EditTransactionModal({
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
               Ubah nominal, kategori, tanggal, atau catatan transaksi yang
-              keliru.
+              keliru. Jika kategorinya belum ada, pilih kategori Lain lalu
+              simpan sebagai kategori baru.
             </p>
           </div>
 
@@ -538,12 +723,7 @@ export function EditTransactionModal({
               className="min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
               disabled={isLoadingCategories || categoryOptions.length === 0}
               value={form.categoryId}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  categoryId: event.target.value
-                }))
-              }
+              onChange={(event) => handleCategoryChange(event.target.value)}
             >
               {isLoadingCategories ? (
                 <option value="">Mengambil kategori...</option>
@@ -566,6 +746,65 @@ export function EditTransactionModal({
               ))}
             </select>
           </label>
+
+          {canCreateInlineCategory ? (
+            <div className="rounded-[1.5rem] border border-indigo-100 bg-indigo-50 p-4">
+              <label className="flex items-start gap-3">
+                <input
+                  checked={form.saveAsNewCategory}
+                  className="mt-1 h-4 w-4 rounded border-indigo-300 text-indigo-700 focus:ring-indigo-600"
+                  type="checkbox"
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      saveAsNewCategory: event.target.checked,
+                      customCategoryName: event.target.checked
+                        ? current.customCategoryName
+                        : ""
+                    }))
+                  }
+                />
+
+                <span>
+                  <span className="block text-sm font-black text-indigo-950">
+                    Simpan sebagai kategori baru
+                  </span>
+                  <span className="mt-1 block text-xs font-medium leading-5 text-indigo-700">
+                    Cocok untuk transaksi yang sering muncul, misalnya Laundry,
+                    Parkir, Kopi, atau Freelance.
+                  </span>
+                </span>
+              </label>
+
+              {form.saveAsNewCategory ? (
+                <div className="mt-4">
+                  <Input
+                    label="Nama kategori baru"
+                    name="customCategoryName"
+                    maxLength={MAX_CATEGORY_NAME_LENGTH}
+                    placeholder={
+                      form.type === "INCOME"
+                        ? "Contoh: Freelance"
+                        : "Contoh: Laundry"
+                    }
+                    value={form.customCategoryName}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        customCategoryName: event.target.value
+                      }))
+                    }
+                  />
+
+                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-indigo-700">
+                    <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    Jika nama kategori sudah ada, Sakuin akan memakai kategori
+                    tersebut dan tidak membuat duplikat.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {isLoadingCategories ? (
             <div className="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs font-medium text-slate-600">
