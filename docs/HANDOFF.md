@@ -2,6 +2,8 @@
 
 Dokumen ini berisi konteks teknis dan status pengembangan terbaru project **Sakuin**. Tujuannya agar developer atau agent berikutnya dapat langsung memahami kondisi project, keputusan teknis, fitur yang sudah selesai, cara menjalankan project, cara validasi, dan prioritas pengembangan berikutnya.
 
+Dokumen ini harus dibaca sebelum melanjutkan development, terutama karena project sudah berjalan di production dan sudah melewati beberapa fase besar: MVP, deployment, category management, transactions, dashboard, goals, profile, export, app-wide caching/UX optimization, landing/auth/mobile polish, PWA installable support, transactions mobile date filter polish, dan basic API security hardening.
+
 ---
 
 ## 1. Project Overview
@@ -18,6 +20,7 @@ Aplikasi ini membantu user untuk:
 [✓] Membuat dan memantau target tabungan
 [✓] Mengatur safe balance limit
 [✓] Mengekspor transaksi ke JSON, CSV, dan XLSX
+[✓] Menginstall webapp sebagai PWA
 ```
 
 Project dibuat dengan struktur **monorepo** agar frontend, backend, dan shared package bisa dikelola dalam satu repository.
@@ -53,7 +56,10 @@ Status terakhir:
 [✓] Environment variable production terbaca
 [✓] GitHub Actions CI berjalan
 [✓] Vercel deployment berjalan
+[✓] PWA installable support berjalan
+[✓] Basic API security hardening berjalan
 [✓] Semua fitur utama berjalan normal di production
+[✓] Manual production regression terakhir aman
 ```
 
 ---
@@ -96,6 +102,7 @@ Release tag yang sudah tercatat:
 v0.1.0 - Sakuin MVP release
 v0.1.1 - Sakuin production deployment release
 v0.2.0 - Category management release
+v0.4.0 - App-wide caching and UX performance optimization
 ```
 
 Catatan penting:
@@ -103,24 +110,17 @@ Catatan penting:
 ```txt
 Tag hanya dibuat ketika ada penambahan fitur besar, perbaikan penting, atau release milestone.
 Jangan membuat tag hanya untuk perubahan kecil yang belum layak release.
+Jangan update tag hanya karena dokumentasi kecil kecuali memang diputuskan sebagai release milestone.
 ```
 
-Rencana release berikutnya yang logis:
+Status fase terbaru:
 
 ```txt
-v0.4.0 - App-wide caching and UX performance optimization
-```
-
-Release `v0.4.0` layak dibuat setelah:
-
-```txt
-[✓] Final regression selesai
-[✓] README.md update selesai
-[✓] docs/API.md update selesai
-[✓] docs/HANDOFF.md update selesai
-[✓] Validasi lokal passed
-[✓] CI passed
-[✓] Deploy passed
+[✓] Phase 22A  - Landing/Auth/Transactions Mobile UI Polish
+[✓] Phase 22B  - PWA Installable Support
+[✓] Phase 22C.1 - Improve Transactions Mobile Date Range UX
+[✓] Phase 22C.2 - Security Hardening Basic
+[~] Phase 22C.3 - Security Documentation
 ```
 
 ---
@@ -150,6 +150,7 @@ tailwind-merge
 Vitest
 Testing Library
 jsdom
+PWA basic support
 ```
 
 ### Backend
@@ -204,10 +205,16 @@ sakuin/
 │  │  └─ package.json
 │  │
 │  └─ web/
+│     ├─ public/
+│     │  ├─ icons/
+│     │  ├─ manifest.webmanifest
+│     │  ├─ offline.html
+│     │  └─ sw.js
 │     ├─ src/
 │     │  ├─ app/
 │     │  ├─ components/
 │     │  │  ├─ layout/
+│     │  │  ├─ pwa/
 │     │  │  ├─ toast/
 │     │  │  └─ ui/
 │     │  ├─ features/
@@ -304,6 +311,7 @@ Important notes:
 4. Setelah mengubah environment variable di Vercel, lakukan redeploy.
 5. Jangan memakai URL dashboard Vercel sebagai API URL.
 6. Jangan memakai preview URL yang terkena Vercel Authentication sebagai API production.
+7. Pastikan GitHub Actions secrets tersedia untuk CI.
 ```
 
 ---
@@ -409,7 +417,25 @@ pnpm --filter @sakuin/api db:reset
 
 ## 10. Validation Commands
 
-Sebelum commit atau push, jalankan:
+Sebelum commit atau push, jalankan validasi sesuai area perubahan.
+
+Jika frontend disentuh:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+```
+
+Jika backend disentuh:
+
+```bash
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Full regression:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -454,6 +480,20 @@ Catatan:
 ```txt
 Backend test memakai timeout 20 detik di package script:
 vitest run --testTimeout=20000
+```
+
+Build frontend dapat menampilkan warning:
+
+```txt
+Some chunks are larger than 500 kB after minification.
+```
+
+Status warning tersebut:
+
+```txt
+Warning ini bukan error.
+Build tetap valid jika selesai sukses.
+Optimasi dapat dilakukan nanti melalui lazy loading route/code splitting.
 ```
 
 ---
@@ -546,13 +586,14 @@ apps/api/src/server.ts
 Core backend:
 
 ```txt
-config/env.ts          : validasi environment variable
-db/prisma.ts           : Prisma Client
-middlewares/auth       : JWT auth middleware
-middlewares/validate   : Zod request validation
-utils/api-response     : response helper
-utils/http-error       : HTTP error helper
-modules/index.ts       : aggregator route /api
+config/env.ts              : validasi environment variable
+db/prisma.ts               : Prisma Client
+middlewares/auth           : JWT auth middleware
+middlewares/validate       : Zod request validation
+middlewares/security       : security headers dan request body size limit
+utils/api-response         : response helper
+utils/http-error           : HTTP error helper
+modules/index.ts           : aggregator route /api
 ```
 
 Modul backend:
@@ -592,7 +633,9 @@ lib/api-client.ts      : API request dan download helper
 lib/auth-storage.ts    : localStorage token helper
 lib/query-client.ts    : TanStack Query client
 lib/query-keys.ts      : query key terpusat
+lib/pwa.ts             : PWA install prompt helper
 components/layout      : AppShell
+components/pwa         : InstallAppButton
 components/toast       : ToastProvider/useToast
 components/ui          : Button, Input, reusable UI
 ```
@@ -615,7 +658,7 @@ health        : backend health check
 
 ## 16. TanStack Query Usage
 
-Sakuin sekarang memakai TanStack Query untuk mengurangi blank loading dan mempercepat UX.
+Sakuin memakai TanStack Query untuk mengurangi blank loading dan mempercepat UX.
 
 Query keys utama:
 
@@ -682,7 +725,131 @@ Logout:
 
 ---
 
-## 17. Feature Completion Status
+## 17. PWA Status
+
+PWA installable support sudah selesai.
+
+File terkait PWA:
+
+```txt
+apps/web/public/manifest.webmanifest
+apps/web/public/offline.html
+apps/web/public/sw.js
+apps/web/public/icons/
+apps/web/src/lib/pwa.ts
+apps/web/src/components/pwa/InstallAppButton.tsx
+apps/web/src/main.tsx
+apps/web/index.html
+apps/web/src/app/router.tsx
+```
+
+Status PWA:
+
+```txt
+[✓] Manifest tersedia
+[✓] Icon tersedia
+[✓] Maskable icon tersedia
+[✓] Offline page tersedia
+[✓] Service worker tersedia
+[✓] Service worker registered
+[✓] Install button tersedia
+[✓] Install button tidak merusak mobile navbar
+[✓] Webapp bisa diinstall
+[✓] Manual test passed
+[✓] CI/deploy passed
+```
+
+Catatan penting:
+
+```txt
+Browser tidak selalu memberikan event beforeinstallprompt.
+Jika event tersedia, tombol Install Sakuin memunculkan prompt install.
+Jika event tidak tersedia, tombol memberi instruksi manual lewat toast.
+```
+
+Hal yang belum dibuat:
+
+```txt
+[ ] PWA update prompt
+[ ] Better offline mode
+[ ] App version display
+[ ] Install guide modal/page
+```
+
+---
+
+## 18. Security Status
+
+Security hardening basic sudah selesai.
+
+Yang sudah diterapkan:
+
+```txt
+[✓] Prisma ORM untuk mengurangi risiko SQL injection
+[✓] Zod validation
+[✓] JWT Bearer Token authentication
+[✓] bcryptjs password hashing
+[✓] Protected endpoint
+[✓] User ownership check pada data user
+[✓] CORS production dibatasi
+[✓] Secret tidak disimpan di repository
+[✓] Security headers middleware
+[✓] Request body size limit basic
+[✓] Production error handling lebih aman
+```
+
+Security headers yang ditambahkan:
+
+```txt
+X-Content-Type-Options
+X-Frame-Options
+Referrer-Policy
+Permissions-Policy
+Content-Security-Policy
+X-Permitted-Cross-Domain-Policies
+Strict-Transport-Security pada production
+```
+
+Request body size limit:
+
+```txt
+1 MB
+```
+
+Production error handling:
+
+```txt
+Error internal 500 di production tidak membocorkan detail error.
+Response memakai "Internal server error".
+HttpError yang aman tetap mengirim pesan user-facing seperti token invalid, route tidak ditemukan, atau validasi gagal.
+```
+
+Yang belum diterapkan:
+
+```txt
+[ ] Rate limiting login/register
+[ ] Stronger password policy
+[ ] Better JWT expiration strategy
+[ ] Refresh token strategy
+[ ] Migrasi auth ke httpOnly secure cookie
+[ ] CSRF strategy jika pindah ke cookie
+[ ] XSS hardening lanjutan
+[ ] CSP lanjutan untuk frontend
+[ ] Audit localStorage token risk
+[ ] Optional audit logging
+[ ] Privacy policy jika nanti ada fitur sensitif
+```
+
+Catatan penting:
+
+```txt
+Jangan membuat fitur email/e-wallet/m-banking transaction detection sebelum security matang.
+Fitur tersebut membutuhkan OAuth resmi, scope minimal, token encryption, user disconnect, delete parsed data, dan privacy policy.
+```
+
+---
+
+## 19. Feature Completion Status
 
 ### Authentication
 
@@ -724,6 +891,7 @@ Logout:
 [✓] Filter by type
 [✓] Filter by category
 [✓] Filter by date range
+[✓] Mobile date range filter UX improved
 [✓] Sorting
 [✓] Backend-driven pagination
 [✓] Limit per page
@@ -798,7 +966,7 @@ Logout:
 
 ---
 
-## 18. Important Validation Rules
+## 20. Important Validation Rules
 
 ### Transaction Amount
 
@@ -853,7 +1021,7 @@ Custom filename tidak boleh mengandung karakter ilegal
 
 ---
 
-## 19. Manual Regression Checklist
+## 21. Manual Regression Checklist
 
 Sebelum release atau setelah perubahan besar, lakukan manual regression ini.
 
@@ -871,7 +1039,7 @@ Sebelum release atau setelah perubahan besar, lakukan manual regression ini.
 [ ] Search transaksi
 [ ] Filter transaksi by type
 [ ] Filter transaksi by category
-[ ] Filter transaksi by date
+[ ] Filter transaksi by date range
 [ ] Sorting transaksi
 [ ] Pagination transaksi
 [ ] Edit transaksi
@@ -895,6 +1063,7 @@ Sebelum release atau setelah perubahan besar, lakukan manual regression ini.
 [ ] Export JSON
 [ ] Export CSV
 [ ] Export XLSX
+[ ] Tombol Install Sakuin berjalan atau memberi instruksi manual
 [ ] Logout
 [ ] Login ulang
 [ ] Refresh route /dashboard tidak 404
@@ -907,7 +1076,7 @@ Sebelum release atau setelah perubahan besar, lakukan manual regression ini.
 
 ---
 
-## 20. Known Solved Issues
+## 22. Known Solved Issues
 
 Masalah yang sudah pernah muncul dan sudah diselesaikan:
 
@@ -929,21 +1098,39 @@ Masalah yang sudah pernah muncul dan sudah diselesaikan:
 [✓] Export token lookup manual diganti ke apiDownload standar
 [✓] Safe balance bisa input karakter tidak valid
 [✓] Dashboard compact money formatting membulatkan angka penting
+[✓] PWA install button sempat mengganggu mobile navbar
+[✓] Transactions mobile date range filter sempat membingungkan di mobile
+[✓] API belum punya basic security headers
+[✓] Production 500 error sebelumnya berpotensi mengirim detail error
 ```
 
 ---
 
-## 21. Current Documentation Status
+## 23. Current Documentation Status
 
-Dokumentasi yang sedang/harus sinkron dengan kondisi terbaru:
+Dokumentasi yang harus sinkron dengan kondisi terbaru:
 
 ```txt
 README.md       : project overview, setup, fitur, deployment, status
-docs/API.md     : detail endpoint backend
+docs/API.md     : detail endpoint backend dan security note
 docs/HANDOFF.md : konteks teknis dan status untuk developer berikutnya
 ```
 
-Setelah update dokumentasi, jalankan minimal:
+Status dokumentasi fase ini:
+
+```txt
+[✓] README.md full replacement disiapkan
+[✓] docs/API.md full replacement disiapkan
+[✓] docs/HANDOFF.md full replacement disiapkan
+[ ] User replace file lokal
+[ ] Validasi minimal dijalankan
+[ ] Commit dokumentasi
+[ ] Push
+[ ] CI checked
+[ ] Deploy checked
+```
+
+Jika hanya markdown yang berubah, jalankan minimal:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -951,72 +1138,81 @@ pnpm --filter @sakuin/api typecheck
 git status
 ```
 
-Jika hanya markdown yang berubah, test/build biasanya tidak wajib, tetapi tetap direkomendasikan sebelum release tag.
+Full confidence validation:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
 
 ---
 
-## 22. Suggested Finalization Step
+## 24. Suggested Finalization Step
 
 Setelah README, API, dan HANDOFF sudah update:
 
 ```bash
 git status
+git diff -- README.md docs/API.md docs/HANDOFF.md
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
 git add README.md docs/API.md docs/HANDOFF.md
-git commit -m "Update documentation for app-wide optimization"
+git commit -m "Update documentation for security hardening"
 git push
 ```
 
 Lalu cek:
 
 ```txt
-GitHub Actions CI
-Vercel deployment
-Production smoke test singkat
+[ ] GitHub Actions CI
+[ ] Vercel deployment
+[ ] Production smoke test singkat
 ```
 
-Jika semua aman, buat release tag:
-
-```bash
-git tag -a v0.4.0 -m "Improve app-wide caching and UX performance"
-git push origin v0.4.0
-git tag
-git status
-```
+Tidak perlu membuat tag baru hanya untuk dokumentasi, kecuali diputuskan sebagai milestone release.
 
 ---
 
-## 23. Recommended Next Development Phase
+## 25. Recommended Next Development Phase
 
-Setelah app-wide caching/UX optimization dan dokumentasi selesai, fase pengembangan berikutnya yang paling logis adalah:
+Setelah security documentation selesai, fase berikutnya yang paling logis:
 
 ```txt
-Phase 22A - Budgeting per kategori
-Phase 22B - Recurring transaction
-Phase 22C - PWA installable
-Phase 22D - Dark mode
-Phase 22E - Chat/command input transaksi
-Phase 22F - AI assistant
+Phase 22C.4 - PWA Update Prompt
+Phase 22C.5 - Bundle Size Optimization
+Phase 22D   - Budgeting per Category
+Phase 22E   - Recurring Transaction
+Phase 22F   - Advanced Security/Auth Cookie Migration
+Phase 23    - Email/e-wallet Transaction Detection Research
 ```
 
 Prioritas paling aman:
 
 ```txt
-1. Budgeting per kategori
-2. Recurring transaction
-3. PWA installable
+1. PWA Update Prompt
+2. Bundle Size Optimization
+3. Budgeting per Category
+4. Recurring Transaction
+5. Advanced Auth Security
 ```
 
 Alasan:
 
 ```txt
-Budgeting per kategori adalah ekstensi paling natural dari category + transaction.
+PWA Update Prompt penting karena webapp sudah installable, tetapi belum memberi tahu user ketika versi baru tersedia.
+Bundle optimization menangani warning chunk size.
+Budgeting per category adalah ekstensi natural dari category + transaction.
 Recurring transaction berguna untuk transaksi rutin seperti gaji, kos, cicilan, langganan.
-PWA membuat Sakuin terasa seperti aplikasi mobile tanpa harus membuat native app.
+Advanced auth harus direncanakan hati-hati karena menyentuh token/session/CORS/CSRF.
 ```
 
 ---
 
-## 24. Development Principles
+## 26. Development Principles
 
 Prinsip yang sudah dipakai dan sebaiknya dilanjutkan:
 
@@ -1035,29 +1231,29 @@ Prinsip yang sudah dipakai dan sebaiknya dilanjutkan:
 12. Jangan commit secret.
 13. Jangan tag release sebelum CI/deploy aman.
 14. Dokumentasi harus ikut diupdate setelah milestone besar.
+15. Jangan mengubah service worker tanpa memahami efek cache.
+16. Jangan cache API private user di service worker.
+17. Jangan mengubah auth/security tanpa regression test.
 ```
 
 ---
 
-## 25. Notes for Next Agent
+## 27. Notes for Next Agent
 
 Jika agent berikutnya melanjutkan project ini, pahami terlebih dahulu:
 
 ```txt
 1. Project sudah production-ready.
 2. Semua page utama sudah dioptimasi dengan TanStack Query atau UX polish.
-3. Jangan rollback pola cache ke useEffect manual tanpa alasan kuat.
-4. Jangan menghapus queryKeys/queryClient karena dipakai lintas fitur.
-5. Jangan mengubah CORS/env/deployment config tanpa validasi production.
-6. Jangan mengubah Prisma schema tanpa migration dan test.
-7. Jangan mengubah auth/token flow tanpa test login/register/protected route.
-8. Jika menambah fitur baru, ikuti pola yang sudah ada:
-   - service.ts untuk API call
-   - types.ts untuk type frontend
-   - page/modal pakai ToastProvider
-   - mutation pakai TanStack Query
-   - invalidate cache terkait
-   - manual test + typecheck + build + test
+3. PWA installable support sudah selesai.
+4. Transactions mobile date range filter sudah diperbaiki.
+5. Basic API security hardening sudah diterapkan.
+6. Jangan rollback pola cache ke useEffect manual tanpa alasan kuat.
+7. Jangan menghapus queryKeys/queryClient karena dipakai lintas fitur.
+8. Jangan mengubah CORS/env/deployment config tanpa validasi production.
+9. Jangan mengubah Prisma schema tanpa migration dan test.
+10. Jangan mengubah auth/token flow tanpa test login/register/protected route.
+11. Jangan menambah fitur sensitif email/e-wallet sebelum security lebih matang.
 ```
 
 Recommended workflow untuk fitur baru:
@@ -1082,25 +1278,28 @@ Recommended workflow untuk fitur baru:
 
 ---
 
-## 26. Current Best Next Action
+## 28. Current Best Next Action
 
 Kondisi saat dokumen ini dibuat:
 
 ```txt
-App-wide caching and UX optimization sudah selesai.
-README.md sedang/baru diupdate.
-docs/API.md sedang/baru diupdate.
-docs/HANDOFF.md perlu diupdate dengan dokumen ini.
+README.md sudah disiapkan untuk update security/PWA/latest status.
+docs/API.md disiapkan untuk update security/API/latest status.
+docs/HANDOFF.md disiapkan untuk update latest status.
+Phase 22C.3 Security Documentation sedang difinalisasi.
 ```
 
 Next action paling tepat:
 
 ```txt
-1. Replace docs/HANDOFF.md dengan isi dokumen ini.
-2. Jalankan typecheck minimal.
-3. Commit dokumentasi.
-4. Push.
-5. Cek CI.
-6. Cek deploy.
-7. Buat release tag v0.4.0 jika semua aman.
+1. Replace README.md.
+2. Replace docs/API.md.
+3. Replace docs/HANDOFF.md.
+4. Jalankan minimal frontend/backend typecheck.
+5. Cek git diff.
+6. Commit dokumentasi.
+7. Push.
+8. Cek CI.
+9. Cek deploy.
+10. Manual smoke test singkat production.
 ```

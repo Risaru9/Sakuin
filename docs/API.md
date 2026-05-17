@@ -14,6 +14,7 @@ Validation   : Zod
 Auth         : JWT Bearer Token
 Test         : Vitest
 Export       : JSON, CSV, XLSX
+Security     : Security headers, request body size limit, safer production error handling
 ```
 
 ---
@@ -78,6 +79,25 @@ Semua endpoint JSON mengikuti format response standar.
 }
 ```
 
+### Production Internal Error Response
+
+Untuk error internal 500 pada production, backend tidak mengirim detail error mentah.
+
+```json
+{
+  "success": false,
+  "message": "Internal server error",
+  "errors": null
+}
+```
+
+Catatan:
+
+```txt
+HttpError yang memang aman untuk user tetap boleh mengirim pesan spesifik.
+Contoh: token invalid, route tidak ditemukan, validasi gagal, atau data tidak ditemukan.
+```
+
 ---
 
 ## Authentication
@@ -98,6 +118,96 @@ POST /api/auth/login
 ```
 
 Frontend tidak perlu mengirim `userId` pada request protected. Backend mengambil identitas user dari JWT token.
+
+Catatan security:
+
+```txt
+Token saat ini masih disimpan di localStorage pada frontend.
+Untuk security tingkat lanjut, migrasi ke httpOnly secure cookie dapat dipertimbangkan pada fase berbeda.
+```
+
+---
+
+## Security Notes
+
+Backend sudah menerapkan basic API security hardening.
+
+### Security Headers
+
+Security headers yang diterapkan:
+
+```txt
+X-Content-Type-Options
+X-Frame-Options
+Referrer-Policy
+Permissions-Policy
+Content-Security-Policy
+X-Permitted-Cross-Domain-Policies
+Strict-Transport-Security pada production
+```
+
+Tujuan:
+
+```txt
+[✓] Mengurangi risiko MIME sniffing
+[✓] Mencegah clickjacking melalui frame protection
+[✓] Membatasi referrer leakage
+[✓] Membatasi browser permissions yang tidak dibutuhkan
+[✓] Memberikan basic CSP untuk response API
+[✓] Mengaktifkan HSTS pada production
+```
+
+### Request Body Size Limit
+
+Backend membatasi request body berdasarkan `Content-Length`.
+
+Limit saat ini:
+
+```txt
+1 MB
+```
+
+Jika request body melebihi limit, response:
+
+```json
+{
+  "success": false,
+  "message": "Ukuran request terlalu besar. Maksimal 1 MB.",
+  "errors": null
+}
+```
+
+### CORS
+
+CORS production dibatasi untuk frontend production dan local development.
+
+Allowed origin utama:
+
+```txt
+http://127.0.0.1:3000
+http://localhost:3000
+FRONTEND_URL dari environment
+https://sakuin-web.vercel.app
+Vercel preview domain dari akun yang diizinkan
+```
+
+Allowed headers:
+
+```txt
+Content-Type
+Authorization
+```
+
+Allowed methods:
+
+```txt
+GET
+POST
+PUT
+PATCH
+DELETE
+OPTIONS
+```
 
 ---
 
@@ -187,6 +297,17 @@ Untuk query filter tanggal, format `YYYY-MM-DD` juga dapat digunakan:
 ```txt
 2026-05-15
 ```
+
+### Decimal Money Format
+
+Nominal uang umumnya dikirim sebagai string decimal:
+
+```txt
+"250000.00"
+"1000000.00"
+```
+
+Frontend boleh menampilkan nominal dengan format Rupiah.
 
 ---
 
@@ -411,6 +532,12 @@ Mengambil profile user login.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Response
 
@@ -1432,6 +1559,16 @@ id wajib, goal id
 }
 ```
 
+### Error Jika Tidak Ditemukan atau Bukan Milik User
+
+```json
+{
+  "success": false,
+  "message": "Goal tidak ditemukan",
+  "errors": null
+}
+```
+
 ---
 
 # 8. Export API
@@ -1452,6 +1589,16 @@ type        optional, INCOME | EXPENSE
 categoryId  optional
 startDate   optional
 endDate     optional
+```
+
+### Contoh Request
+
+```txt
+GET /api/export/transactions?format=json
+GET /api/export/transactions?format=csv
+GET /api/export/transactions?format=xlsx
+GET /api/export/transactions?format=xlsx&type=EXPENSE
+GET /api/export/transactions?format=csv&startDate=2026-05-01&endDate=2026-05-31
 ```
 
 ---
@@ -1488,7 +1635,7 @@ GET /api/export/transactions?format=json
       {
         "id": "transaction-id",
         "type": "EXPENSE",
-        "amount": "250000",
+        "amount": "250000.00",
         "note": "Makan siang",
         "date": "2026-05-15T00:00:00.000Z",
         "category": {
@@ -1500,12 +1647,6 @@ GET /api/export/transactions?format=json
     ]
   }
 }
-```
-
-### Content-Type
-
-```txt
-application/json
 ```
 
 ---
@@ -1520,17 +1661,12 @@ GET /api/export/transactions?format=csv
 
 ### Response
 
-File download:
-
 ```txt
-sakuin-transactions-YYYY-MM-DD_HH-MM-SS.csv
+File CSV download
+Content-Type: text/csv atau attachment file sesuai implementasi backend
 ```
 
-### Content-Type
-
-```txt
-text/csv; charset=utf-8
-```
+Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
 
 ---
 
@@ -1544,47 +1680,29 @@ GET /api/export/transactions?format=xlsx
 
 ### Response
 
-File download:
-
 ```txt
-sakuin-transactions-YYYY-MM-DD_HH-MM-SS.xlsx
+File XLSX download
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet atau attachment file sesuai implementasi backend
 ```
 
-### Content-Type
-
-```txt
-application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-```
-
-### Sheet
-
-```txt
-Summary
-Transactions
-```
+Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
 
 ---
 
-## Filter Export by Type
+### Error Format Tidak Valid
 
-```txt
-GET /api/export/transactions?format=json&type=EXPENSE
-```
-
----
-
-## Filter Export by Category
-
-```txt
-GET /api/export/transactions?format=json&categoryId=custom-category-id
-```
-
----
-
-## Filter Export by Date Range
-
-```txt
-GET /api/export/transactions?format=json&startDate=2026-05-01&endDate=2026-05-31
+```json
+{
+  "success": false,
+  "message": "Validasi request gagal",
+  "errors": {
+    "fieldErrors": {
+      "format": [
+        "Format export tidak valid"
+      ]
+    }
+  }
+}
 ```
 
 ### Error Date Range Tidak Valid
@@ -1603,162 +1721,43 @@ GET /api/export/transactions?format=json&startDate=2026-05-01&endDate=2026-05-31
 }
 ```
 
-### Error Format Tidak Valid
-
-```json
-{
-  "success": false,
-  "message": "Validasi request gagal",
-  "errors": {
-    "fieldErrors": {
-      "format": [
-        "Invalid enum value"
-      ]
-    }
-  }
-}
-```
-
 ---
 
-# 9. Default Category
+# 9. HTTP Status Notes
 
-Default category dibuat melalui seed database.
-
-Contoh default category awal:
+Status umum yang digunakan:
 
 ```txt
-cat_income_salary     Gaji        INCOME
-cat_expense_food      Makanan     EXPENSE
+200 OK                  : request berhasil
+201 Created             : data berhasil dibuat, jika route memakai created response
+400 Bad Request         : validasi request gagal
+401 Unauthorized        : token tidak ada, format token salah, token invalid, atau token expired
+403 Forbidden           : akses tidak diizinkan
+404 Not Found           : route/data tidak ditemukan
+409 Conflict            : data konflik, misalnya email/category duplikat jika diterapkan
+413 Payload Too Large   : ukuran request body melebihi limit
+500 Internal Server Error : error internal server
 ```
 
-Catatan:
+---
+
+# 10. User Ownership Rules
+
+Backend harus selalu menentukan user dari JWT token.
+
+Frontend tidak boleh mengirim `userId` untuk endpoint protected.
+
+Rules:
 
 ```txt
-Category INCOME hanya boleh dipakai untuk transaksi INCOME.
-Category EXPENSE hanya boleh dipakai untuk transaksi EXPENSE.
-Jika category tidak sesuai type, backend menolak request.
-Default category tidak bisa diedit.
-Default category tidak bisa dihapus.
-```
-
----
-
-# 10. Common Errors
-
-## Tanpa Token
-
-```json
-{
-  "success": false,
-  "message": "Authorization header wajib diisi",
-  "errors": null
-}
-```
-
----
-
-## Format Token Salah
-
-```json
-{
-  "success": false,
-  "message": "Format token harus Bearer token",
-  "errors": null
-}
-```
-
----
-
-## Token Tidak Ada
-
-```json
-{
-  "success": false,
-  "message": "Token tidak ditemukan",
-  "errors": null
-}
-```
-
----
-
-## Token Tidak Valid atau Kedaluwarsa
-
-```json
-{
-  "success": false,
-  "message": "Token tidak valid atau sudah kedaluwarsa",
-  "errors": null
-}
-```
-
----
-
-## Data Tidak Ditemukan
-
-```json
-{
-  "success": false,
-  "message": "Data tidak ditemukan",
-  "errors": null
-}
-```
-
-Contoh spesifik:
-
-```txt
-User tidak ditemukan
-Transaksi tidak ditemukan
-Goal tidak ditemukan
-Kategori tidak ditemukan
-```
-
----
-
-## Category Tidak Valid untuk Transaksi
-
-```json
-{
-  "success": false,
-  "message": "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi",
-  "errors": null
-}
-```
-
----
-
-## Content-Type Salah
-
-```json
-{
-  "success": false,
-  "message": "Content-Type harus application/json",
-  "errors": null
-}
-```
-
----
-
-## Body JSON Tidak Valid
-
-```json
-{
-  "success": false,
-  "message": "Body JSON tidak valid",
-  "errors": null
-}
-```
-
----
-
-## Route Tidak Ditemukan
-
-```json
-{
-  "success": false,
-  "message": "Route tidak ditemukan",
-  "errors": null
-}
+[✓] User hanya bisa melihat profile miliknya sendiri.
+[✓] User hanya bisa melihat custom category miliknya sendiri.
+[✓] User hanya bisa membuat/update/delete custom category miliknya sendiri.
+[✓] User hanya bisa melihat transaksi miliknya sendiri.
+[✓] User hanya bisa update/delete transaksi miliknya sendiri.
+[✓] User hanya bisa melihat summary miliknya sendiri.
+[✓] User hanya bisa melihat/mengubah goal miliknya sendiri.
+[✓] User hanya bisa export transaksi miliknya sendiri.
 ```
 
 ---
@@ -1881,7 +1880,36 @@ Untuk export file, response dapat berupa blob/file sehingga tidak selalu JSON.
 
 ---
 
-# 14. Backend Validation Summary
+# 14. Security Testing Notes
+
+Minimal security check setelah perubahan backend:
+
+```txt
+[ ] GET /health tetap sukses
+[ ] GET /api/health tetap sukses
+[ ] Login tetap sukses
+[ ] Protected endpoint tanpa token tetap 401
+[ ] Protected endpoint dengan token invalid tetap 401
+[ ] Request body besar mengembalikan 413
+[ ] Response production error 500 tidak membocorkan detail error
+[ ] Header security muncul pada response API
+```
+
+Header yang bisa dicek di browser devtools, Postman, Insomnia, atau curl:
+
+```txt
+X-Content-Type-Options
+X-Frame-Options
+Referrer-Policy
+Permissions-Policy
+Content-Security-Policy
+X-Permitted-Cross-Domain-Policies
+Strict-Transport-Security pada production
+```
+
+---
+
+# 15. Backend Validation Summary
 
 Validasi penting backend:
 
@@ -1898,11 +1926,13 @@ Validasi penting backend:
 [✓] Goal currentAmount tidak boleh lebih besar dari targetAmount
 [✓] Export date range valid
 [✓] Profile safeBalanceLimit tidak boleh negatif
+[✓] Basic request body size limit aktif
+[✓] Production error handling lebih aman
 ```
 
 ---
 
-# 15. Backend Status
+# 16. Backend Status
 
 Status backend terakhir yang diharapkan sebelum push/release:
 
@@ -1937,4 +1967,34 @@ pnpm --filter @sakuin/web build
 pnpm --filter @sakuin/api typecheck
 pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
+```
+
+---
+
+# 17. Documentation Finalization
+
+Setelah update `docs/API.md`, jalankan minimal:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
+git status
+```
+
+Jika README, API, dan HANDOFF sudah diupdate:
+
+```bash
+git status
+git diff -- README.md docs/API.md docs/HANDOFF.md
+git add README.md docs/API.md docs/HANDOFF.md
+git commit -m "Update documentation for security hardening"
+git push
+```
+
+Setelah push:
+
+```txt
+[ ] Cek GitHub Actions CI
+[ ] Cek Vercel deployment
+[ ] Cek production smoke test singkat
 ```
