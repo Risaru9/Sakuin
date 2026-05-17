@@ -8,6 +8,7 @@ import {
   ArrowUpCircle,
   Edit3,
   Loader2,
+  MessageSquare,
   Plus,
   RefreshCcw,
   Search,
@@ -22,6 +23,7 @@ import { queryKeys } from "../../lib/query-keys";
 import { getCategories } from "../categories/category.service";
 import { AddTransactionModal } from "./AddTransactionModal";
 import { EditTransactionModal } from "./EditTransactionModal";
+import { QuickTransactionModal } from "./QuickTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
 import type {
   Transaction,
@@ -230,6 +232,7 @@ export function TransactionsPage() {
   const [limit, setLimit] = useState(10);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] =
@@ -501,14 +504,28 @@ export function TransactionsPage() {
             </p>
           </div>
 
-          <Button
-            className="rounded-2xl bg-slate-950 text-white hover:bg-black"
-            onClick={() => setIsAddOpen(true)}
-            size="md"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Transaksi
-          </Button>
+          <div className="grid gap-2 sm:flex sm:items-center">
+            <Button
+              className="rounded-2xl"
+              onClick={() => setIsQuickOpen(true)}
+              size="md"
+              type="button"
+              variant="secondary"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Catat Cepat
+            </Button>
+
+            <Button
+              className="rounded-2xl bg-slate-950 text-white hover:bg-black"
+              onClick={() => setIsAddOpen(true)}
+              size="md"
+              type="button"
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Transaksi
+            </Button>
+          </div>
         </header>
 
         <section className="mb-5 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
@@ -821,6 +838,12 @@ export function TransactionsPage() {
           </div>
         </div>
       </AppShell>
+
+      <QuickTransactionModal
+        open={isQuickOpen}
+        onClose={() => setIsQuickOpen(false)}
+        onSuccess={refreshTransactionData}
+      />
 
       <AddTransactionModal
         open={isAddOpen}

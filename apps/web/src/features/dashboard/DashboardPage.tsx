@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Loader2,
+  MessageSquare,
   PiggyBank,
   Plus,
   Settings
@@ -30,6 +31,7 @@ import type {
   SummaryTransaction
 } from "../summary/summary.types";
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
+import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
 
 function getErrorMessage(error: unknown) {
@@ -429,6 +431,7 @@ export function DashboardPage() {
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.summary,
@@ -516,14 +519,28 @@ export function DashboardPage() {
             </p>
           </div>
 
-          <Button
-            className="hidden rounded-2xl bg-slate-950 text-white hover:bg-black sm:inline-flex"
-            onClick={() => setIsAddTransactionOpen(true)}
-            size="md"
-          >
-            <Plus className="h-4 w-4" />
-            Transaksi
-          </Button>
+          <div className="hidden items-center gap-2 sm:flex">
+            <Button
+              className="rounded-2xl"
+              onClick={() => setIsQuickTransactionOpen(true)}
+              size="md"
+              type="button"
+              variant="secondary"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Catat Cepat
+            </Button>
+
+            <Button
+              className="rounded-2xl bg-slate-950 text-white hover:bg-black"
+              onClick={() => setIsAddTransactionOpen(true)}
+              size="md"
+              type="button"
+            >
+              <Plus className="h-4 w-4" />
+              Transaksi
+            </Button>
+          </div>
 
           <Link
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 sm:hidden"
@@ -623,14 +640,25 @@ export function DashboardPage() {
                   </div>
                 </div>
 
-                <button
-                  className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100 sm:hidden"
-                  onClick={() => setIsAddTransactionOpen(true)}
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                  Tambah Transaksi
-                </button>
+                <div className="relative z-10 mt-4 grid gap-2 sm:hidden">
+                  <button
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
+                    onClick={() => setIsQuickTransactionOpen(true)}
+                    type="button"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Catat Cepat
+                  </button>
+
+                  <button
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-black text-white ring-1 ring-white/20 transition hover:bg-white/15"
+                    onClick={() => setIsAddTransactionOpen(true)}
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah Manual
+                  </button>
+                </div>
               </div>
             )}
 
@@ -731,6 +759,12 @@ export function DashboardPage() {
           </aside>
         </div>
       </AppShell>
+
+      <QuickTransactionModal
+        open={isQuickTransactionOpen}
+        onClose={() => setIsQuickTransactionOpen(false)}
+        onSuccess={refreshDashboardData}
+      />
 
       <AddTransactionModal
         open={isAddTransactionOpen}
