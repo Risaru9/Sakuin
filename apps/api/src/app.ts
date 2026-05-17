@@ -1,9 +1,15 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { env } from "./config/env.js";
+import {
+  getSecurityHeaders,
+  requestSizeLimitMiddleware,
+  securityHeadersMiddleware
+} from "./middlewares/security.middleware.js";
 import { apiRoutes } from "./modules/index.js";
-import { successResponse } from "./utils/api-response.js";
 import type { AppEnv } from "./types/app.js";
+import { successResponse } from "./utils/api-response.js";
+import { HttpError } from "./utils/http-error.js";
 
 export const app = new Hono<AppEnv>();
 
@@ -60,12 +66,36 @@ function getErrorStatus(error: unknown) {
   return 500;
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, status: number) {
+  if (status >= 500 && env.NODE_ENV === "production") {
+    return "Internal server error";
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Internal server error";
+  if (status >= 500) {
+    return "Internal server error";
+  }
+
+  return "Terjadi kesalahan.";
+}
+
+function getErrorDetails(error: unknown, status: number) {
+  if (status >= 500) {
+    return null;
+  }
+
+  if (error instanceof HttpError) {
+    return error.errors ?? null;
+  }
+
+  if (error && typeof error === "object" && "errors" in error) {
+    return (error as { errors?: unknown }).errors ?? null;
+  }
+
+  return null;
 }
 
 function jsonError(message: string, status: number, errors: unknown = null) {
@@ -78,11 +108,14 @@ function jsonError(message: string, status: number, errors: unknown = null) {
     {
       status,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getSecurityHeaders()
       }
     }
   );
 }
+
+app.use("*", securityHeadersMiddleware);
 
 app.use(
   "*",
@@ -91,6 +124,13 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true
+  })
+);
+
+app.use(
+  "*",
+  requestSizeLimitMiddleware({
+    maxBytes: 1024 * 1024
   })
 );
 
@@ -109,9 +149,10 @@ app.notFound(() => {
 
 app.onError((error) => {
   const status = getErrorStatus(error);
-  const message = getErrorMessage(error);
+  const message = getErrorMessage(error, status);
+  const errors = getErrorDetails(error, status);
 
-  return jsonError(message, status);
+  return jsonError(message, status, errors);
 });
 
 export default app;
