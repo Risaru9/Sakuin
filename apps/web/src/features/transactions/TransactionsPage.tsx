@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -513,57 +513,99 @@ export function TransactionsPage() {
 
         <section className="mb-5 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-                placeholder="Cari catatan transaksi..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Cari transaksi
+              </span>
+
+              <div className="relative mt-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                  placeholder="Cari catatan transaksi..."
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
             </label>
 
-            <select
-              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              value={categoryId}
-              onChange={(event) => {
-                setCategoryId(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">
-                {isLoadingCategories
-                  ? "Mengambil kategori..."
-                  : "Semua kategori"}
-              </option>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Kategori
+              </span>
 
-              {categoryOptions.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name} ·{" "}
-                  {category.type === "INCOME" ? "Income" : "Expense"}
+              <select
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                value={categoryId}
+                onChange={(event) => {
+                  setCategoryId(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  {isLoadingCategories
+                    ? "Mengambil kategori..."
+                    : "Semua kategori"}
                 </option>
-              ))}
-            </select>
 
-            <input
-              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              type="date"
-              value={startDate}
-              onChange={(event) => {
-                setStartDate(event.target.value);
-                setPage(1);
-              }}
-            />
+                {categoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name} ·{" "}
+                    {category.type === "INCOME" ? "Income" : "Expense"}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <input
-              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              type="date"
-              value={endDate}
-              onChange={(event) => {
-                setEndDate(event.target.value);
-                setPage(1);
-              }}
-            />
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Tanggal mulai
+              </span>
+
+              <input
+                aria-label="Tanggal mulai transaksi"
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                type="date"
+                value={startDate}
+                onChange={(event) => {
+                  setStartDate(event.target.value);
+                  setPage(1);
+                }}
+              />
+
+              <p className="mt-1 text-xs font-medium text-slate-400">
+                Mulai dari tanggal ini.
+              </p>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Tanggal akhir
+              </span>
+
+              <input
+                aria-label="Tanggal akhir transaksi"
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                type="date"
+                value={endDate}
+                onChange={(event) => {
+                  setEndDate(event.target.value);
+                  setPage(1);
+                }}
+              />
+
+              <p className="mt-1 text-xs font-medium text-slate-400">
+                Sampai tanggal ini.
+              </p>
+            </label>
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-medium leading-relaxed text-slate-500">
+              Filter tanggal bersifat opsional. Kosongkan tanggal mulai atau tanggal
+              akhir jika ingin menampilkan transaksi tanpa batas rentang tertentu.
+            </p>
           </div>
 
           <div className="mt-3 grid gap-3 xl:grid-cols-[1fr_220px_180px_auto] xl:items-center">
@@ -588,35 +630,41 @@ export function TransactionsPage() {
               ))}
             </div>
 
-            <select
-              className="min-h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value as TransactionSort);
-                setPage(1);
-              }}
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <label className="block">
+              <span className="sr-only">Urutkan transaksi</span>
+              <select
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                value={sort}
+                onChange={(event) => {
+                  setSort(event.target.value as TransactionSort);
+                  setPage(1);
+                }}
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <select
-              className="min-h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
-                setPage(1);
-              }}
-            >
-              {limitOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option} / halaman
-                </option>
-              ))}
-            </select>
+            <label className="block">
+              <span className="sr-only">Jumlah transaksi per halaman</span>
+              <select
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                value={limit}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value));
+                  setPage(1);
+                }}
+              >
+                {limitOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option} / halaman
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <Button
               disabled={!hasActiveFilter}
@@ -649,6 +697,15 @@ export function TransactionsPage() {
                 Search aktif:{" "}
                 <span className="font-black text-slate-700">
                   {debouncedSearch}
+                </span>
+              </p>
+            ) : null}
+
+            {startDate || endDate ? (
+              <p>
+                Rentang tanggal:{" "}
+                <span className="font-black text-slate-700">
+                  {startDate || "Awal"} - {endDate || "Sekarang"}
                 </span>
               </p>
             ) : null}
