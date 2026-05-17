@@ -2,6 +2,11 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { env } from "./config/env.js";
 import {
+  apiGeneralRateLimitMiddleware,
+  authLoginRateLimitMiddleware,
+  authRegisterRateLimitMiddleware
+} from "./middlewares/rate-limit.middleware.js";
+import {
   getSecurityHeaders,
   requestSizeLimitMiddleware,
   securityHeadersMiddleware
@@ -133,6 +138,10 @@ app.use(
     maxBytes: 1024 * 1024
   })
 );
+
+app.use("/api/auth/login", authLoginRateLimitMiddleware);
+app.use("/api/auth/register", authRegisterRateLimitMiddleware);
+app.use("/api/*", apiGeneralRateLimitMiddleware);
 
 app.get("/health", (c) => {
   return successResponse(c, "Server sehat", {
