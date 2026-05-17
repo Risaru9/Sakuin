@@ -19,6 +19,12 @@ type RateLimitOptions = {
   keyGenerator?: RateLimitKeyGenerator;
 };
 
+type CloneableJsonRequest = {
+  clone: () => {
+    json: () => Promise<unknown>;
+  };
+};
+
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -61,6 +67,15 @@ function getRequestPath(c: Context<AppEnv>) {
   }
 }
 
+function canCloneRequest(rawRequest: unknown): rawRequest is CloneableJsonRequest {
+  return (
+    typeof rawRequest === "object" &&
+    rawRequest !== null &&
+    "clone" in rawRequest &&
+    typeof (rawRequest as { clone?: unknown }).clone === "function"
+  );
+}
+
 async function getEmailFromJsonBody(c: Context<AppEnv>) {
   const contentType = c.req.header("content-type") ?? "";
 
@@ -68,8 +83,14 @@ async function getEmailFromJsonBody(c: Context<AppEnv>) {
     return "no-email";
   }
 
+  const rawRequest = c.req.raw as unknown;
+
+  if (!canCloneRequest(rawRequest)) {
+    return "no-email";
+  }
+
   try {
-    const body = (await c.req.raw.clone().json()) as {
+    const body = (await rawRequest.clone().json()) as {
       email?: unknown;
     };
 
