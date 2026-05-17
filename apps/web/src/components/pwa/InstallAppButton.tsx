@@ -28,14 +28,14 @@ function getManualInstallMessage() {
   const userAgent = window.navigator.userAgent.toLowerCase();
 
   if (/iphone|ipad|ipod/.test(userAgent)) {
-    return "Dialog install belum tersedia. Untuk iPhone/iPad: buka Safari, tap Share, lalu pilih Add to Home Screen.";
+    return "Untuk iPhone/iPad: buka Sakuin di Safari, tap tombol Share, lalu pilih Add to Home Screen.";
   }
 
   if (/android/.test(userAgent)) {
-    return "Dialog install belum tersedia. Coba tunggu beberapa detik, refresh halaman, atau gunakan menu browser Chrome/Edge > Install app/Add to Home screen.";
+    return "Jika dialog install belum muncul, buka menu browser Chrome/Edge, lalu pilih Install app atau Add to Home screen.";
   }
 
-  return "Dialog install belum tersedia. Buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
+  return "Jika dialog install belum muncul, buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
 }
 
 function getButtonClassName(variant: InstallAppButtonVariant, className?: string) {
@@ -80,7 +80,8 @@ export function InstallAppButton({
       addToast({
         variant: "success",
         title: "Sakuin berhasil diinstall",
-        description: "Sakuin sekarang bisa dibuka seperti aplikasi."
+        description: "Sakuin sekarang bisa dibuka dari home screen atau daftar aplikasi.",
+        duration: 6000
       });
     }
 
@@ -97,7 +98,9 @@ export function InstallAppButton({
       addToast({
         variant: "info",
         title: "Sakuin sudah terinstall",
-        description: "Buka Sakuin dari home screen atau daftar aplikasi perangkatmu."
+        description:
+          "Aplikasi sedang berjalan sebagai PWA. Jika ada versi baru yang siap dipakai, Sakuin akan menampilkan tombol update.",
+        duration: 7000
       });
 
       return;
@@ -108,7 +111,7 @@ export function InstallAppButton({
     if (!installPrompt) {
       addToast({
         variant: "info",
-        title: "Dialog install belum tersedia",
+        title: "Install manual dari browser",
         description: getManualInstallMessage(),
         duration: 8000
       });
@@ -124,13 +127,15 @@ export function InstallAppButton({
       addToast({
         variant: "success",
         title: "Install Sakuin diproses",
-        description: "Ikuti dialog browser untuk menyelesaikan instalasi."
+        description: "Ikuti dialog browser untuk menyelesaikan instalasi.",
+        duration: 6000
       });
     } else {
       addToast({
         variant: "info",
         title: "Install dibatalkan",
-        description: "Kamu bisa mencoba install lagi nanti dari tombol ini."
+        description: "Kamu bisa mencoba install lagi nanti dari tombol ini.",
+        duration: 6000
       });
     }
 
