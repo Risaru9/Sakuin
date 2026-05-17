@@ -1,14 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import { Download, Info, Smartphone } from "lucide-react";
 import { useToast } from "../toast/ToastProvider";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
-  }>;
-};
+import {
+  clearDeferredInstallPrompt,
+  getDeferredInstallPrompt,
+  subscribeToInstallPrompt,
+  type BeforeInstallPromptEvent
+} from "../../lib/pwa";
 
 type InstallAppButtonVariant = "navbar" | "hero" | "compact";
 
@@ -30,14 +28,14 @@ function getManualInstallMessage() {
   const userAgent = window.navigator.userAgent.toLowerCase();
 
   if (/iphone|ipad|ipod/.test(userAgent)) {
-    return "Untuk iPhone/iPad: buka Safari, tap tombol Share, lalu pilih Add to Home Screen.";
+    return "Dialog install belum tersedia. Untuk iPhone/iPad: buka Safari, tap Share, lalu pilih Add to Home Screen.";
   }
 
   if (/android/.test(userAgent)) {
-    return "Untuk Android: buka menu browser Chrome/Edge, lalu pilih Install app atau Add to Home screen.";
+    return "Dialog install belum tersedia. Coba tunggu beberapa detik, refresh halaman, atau gunakan menu browser Chrome/Edge > Install app/Add to Home screen.";
   }
 
-  return "Buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
+  return "Dialog install belum tersedia. Buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
 }
 
 function getButtonClassName(variant: InstallAppButtonVariant, className?: string) {
@@ -68,13 +66,14 @@ export function InstallAppButton({
 
   useEffect(() => {
     setIsInstalled(isStandaloneMode());
+    setDeferredPrompt(getDeferredInstallPrompt());
 
-    function handleBeforeInstallPrompt(event: Event) {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-    }
+    const unsubscribe = subscribeToInstallPrompt((event) => {
+      setDeferredPrompt(event);
+    });
 
     function handleAppInstalled() {
+      clearDeferredInstallPrompt();
       setDeferredPrompt(null);
       setIsInstalled(true);
 
@@ -85,11 +84,10 @@ export function InstallAppButton({
       });
     }
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      unsubscribe();
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, [addToast]);
@@ -105,20 +103,22 @@ export function InstallAppButton({
       return;
     }
 
-    if (!deferredPrompt) {
+    const installPrompt = deferredPrompt ?? getDeferredInstallPrompt();
+
+    if (!installPrompt) {
       addToast({
         variant: "info",
-        title: "Install manual dari browser",
+        title: "Dialog install belum tersedia",
         description: getManualInstallMessage(),
-        duration: 7000
+        duration: 8000
       });
 
       return;
     }
 
-    await deferredPrompt.prompt();
+    await installPrompt.prompt();
 
-    const choice = await deferredPrompt.userChoice;
+    const choice = await installPrompt.userChoice;
 
     if (choice.outcome === "accepted") {
       addToast({
@@ -134,6 +134,7 @@ export function InstallAppButton({
       });
     }
 
+    clearDeferredInstallPrompt();
     setDeferredPrompt(null);
   }
 

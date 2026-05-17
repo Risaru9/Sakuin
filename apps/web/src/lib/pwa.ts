@@ -1,4 +1,12 @@
-﻿type ServiceWorkerUpdateHandler = (
+﻿export type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+};
+
+type ServiceWorkerUpdateHandler = (
   registration: ServiceWorkerRegistration
 ) => void;
 
@@ -6,7 +14,64 @@ type RegisterServiceWorkerOptions = {
   onUpdate?: ServiceWorkerUpdateHandler;
 };
 
+type InstallPromptListener = (
+  event: BeforeInstallPromptEvent | null
+) => void;
+
+let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+let hasSetupInstallPromptCapture = false;
 let isReloadingForServiceWorkerUpdate = false;
+
+const installPromptListeners = new Set<InstallPromptListener>();
+
+function notifyInstallPromptListeners() {
+  for (const listener of installPromptListeners) {
+    listener(deferredInstallPrompt);
+  }
+}
+
+export function setupInstallPromptCapture() {
+  if (hasSetupInstallPromptCapture) {
+    return;
+  }
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  hasSetupInstallPromptCapture = true;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+
+    deferredInstallPrompt = event as BeforeInstallPromptEvent;
+    notifyInstallPromptListeners();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    notifyInstallPromptListeners();
+  });
+}
+
+export function getDeferredInstallPrompt() {
+  return deferredInstallPrompt;
+}
+
+export function clearDeferredInstallPrompt() {
+  deferredInstallPrompt = null;
+  notifyInstallPromptListeners();
+}
+
+export function subscribeToInstallPrompt(listener: InstallPromptListener) {
+  installPromptListeners.add(listener);
+
+  listener(deferredInstallPrompt);
+
+  return () => {
+    installPromptListeners.delete(listener);
+  };
+}
 
 export function activateWaitingServiceWorker(
   registration: ServiceWorkerRegistration
