@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
+import { Buffer } from "node:buffer";
 import { TransactionType } from "@prisma/client";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
@@ -252,7 +253,11 @@ async function getXlsxText(response: Response) {
   const arrayBuffer = await response.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
 
-  await workbook.xlsx.load(Buffer.from(arrayBuffer));
+  const xlsxBuffer = Buffer.from(arrayBuffer) as unknown as Parameters<
+    typeof workbook.xlsx.load
+  >[0];
+
+  await workbook.xlsx.load(xlsxBuffer);
 
   const values: string[] = [];
 
