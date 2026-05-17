@@ -1,4 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  type ReactNode
+} from "react";
 import { createBrowserRouter, Link, Navigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -17,15 +23,55 @@ import {
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { buttonClassName } from "../components/ui/button";
 import { useAuth } from "../features/auth/auth-context";
-import { LoginPage } from "../features/auth/pages/LoginPage";
-import { RegisterPage } from "../features/auth/pages/RegisterPage";
-import { CategoriesPage } from "../features/categories/CategoriesPage";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { ExportPage } from "../features/export/ExportPage";
-import { GoalsPage } from "../features/goals/GoalsPage";
 import { getBackendHealth } from "../features/health/health.service";
-import { ProfilePage } from "../features/profile/ProfilePage";
-import { TransactionsPage } from "../features/transactions/TransactionsPage";
+
+const LoginPage = lazy(() =>
+  import("../features/auth/pages/LoginPage").then((module) => ({
+    default: module.LoginPage
+  }))
+);
+
+const RegisterPage = lazy(() =>
+  import("../features/auth/pages/RegisterPage").then((module) => ({
+    default: module.RegisterPage
+  }))
+);
+
+const DashboardPage = lazy(() =>
+  import("../features/dashboard/DashboardPage").then((module) => ({
+    default: module.DashboardPage
+  }))
+);
+
+const TransactionsPage = lazy(() =>
+  import("../features/transactions/TransactionsPage").then((module) => ({
+    default: module.TransactionsPage
+  }))
+);
+
+const GoalsPage = lazy(() =>
+  import("../features/goals/GoalsPage").then((module) => ({
+    default: module.GoalsPage
+  }))
+);
+
+const ExportPage = lazy(() =>
+  import("../features/export/ExportPage").then((module) => ({
+    default: module.ExportPage
+  }))
+);
+
+const ProfilePage = lazy(() =>
+  import("../features/profile/ProfilePage").then((module) => ({
+    default: module.ProfilePage
+  }))
+);
+
+const CategoriesPage = lazy(() =>
+  import("../features/categories/CategoriesPage").then((module) => ({
+    default: module.CategoriesPage
+  }))
+);
 
 function LoadingScreen() {
   return (
@@ -40,6 +86,10 @@ function LoadingScreen() {
   );
 }
 
+function PageSuspense({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
+}
+
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isInitializing } = useAuth();
 
@@ -51,7 +101,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <PageSuspense>{children}</PageSuspense>;
 }
 
 function GuestRoute({ children }: { children: ReactNode }) {
@@ -65,7 +115,7 @@ function GuestRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  return <PageSuspense>{children}</PageSuspense>;
 }
 
 function StatusBadge({
