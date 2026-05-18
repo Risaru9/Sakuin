@@ -1,6 +1,7 @@
 import type { Context, MiddlewareHandler } from "hono";
 import { env } from "../config/env.js";
 import type { AppEnv } from "../types/app.js";
+import { logSecurityEventFromContext } from "../utils/security-event-logger.js";
 
 type RateLimitRecord = {
   count: number;
@@ -172,6 +173,15 @@ export function createRateLimitMiddleware(
       });
 
       c.header("Retry-After", String(retryAfterSeconds));
+
+      logSecurityEventFromContext(c, "rate_limit.hit", {
+        status: 429,
+        metadata: {
+          limiter: options.keyPrefix,
+          limit: options.max,
+          retryAfterSeconds
+        }
+      });
 
       return c.json(
         {

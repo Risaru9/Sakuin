@@ -2,6 +2,10 @@ import type { Context } from "hono";
 import type { AppEnv } from "../../types/app.js";
 import { successResponse } from "../../utils/api-response.js";
 import { HttpError } from "../../utils/http-error.js";
+import {
+  createSecurityHash,
+  logSecurityEventFromContext
+} from "../../utils/security-event-logger.js";
 import type { LoginInput, RegisterInput } from "./auth.types.js";
 import { getCurrentUser, loginUser, registerUser } from "./auth.service.js";
 
@@ -16,9 +20,23 @@ export async function registerController(c: Context<AppEnv>) {
 export async function loginController(c: Context<AppEnv>) {
   const input = c.get("validatedJson") as LoginInput;
 
-  const result = await loginUser(input);
+  try {
+    const result = await loginUser(input);
 
-  return successResponse(c, "Login berhasil", result);
+    return successResponse(c, "Login berhasil", result);
+  } catch (error) {
+    if (error instanceof HttpError && error.statusCode === 401) {
+      logSecurityEventFromContext(c, "auth.login_failed", {
+        status: 401,
+        metadata: {
+          reason: "invalid_credentials",
+          identifierHash: createSecurityHash(input.email)
+        }
+      });
+    }
+
+    throw error;
+  }
 }
 
 export async function meController(c: Context<AppEnv>) {
