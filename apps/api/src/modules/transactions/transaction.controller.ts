@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { AppEnv } from "../../types/app.js";
 import { successResponse } from "../../utils/api-response.js";
+import { recordAuditEventFromContext } from "../../utils/audit-event-recorder.js";
 import { HttpError } from "../../utils/http-error.js";
 import type {
   CreateTransactionInput,
@@ -26,11 +27,34 @@ function getAuthenticatedUserId(c: Context<AppEnv>) {
   return userId;
 }
 
+function getChangedFields(input: UpdateTransactionInput) {
+  return Object.entries(input)
+    .filter(([, value]) => value !== undefined)
+    .map(([field]) => field)
+    .join(",");
+}
+
+function hasNonEmptyNote(note: string | null | undefined) {
+  return Boolean(note?.trim());
+}
+
 export async function createTransactionController(c: Context<AppEnv>) {
   const userId = getAuthenticatedUserId(c);
   const input = c.get("validatedJson") as CreateTransactionInput;
 
   const transaction = await createTransaction(userId, input);
+
+  await recordAuditEventFromContext(c, {
+    eventType: "transaction.created",
+    status: "success",
+    targetType: "transaction",
+    targetId: transaction.id,
+    metadata: {
+      type: transaction.type,
+      hasNote: hasNonEmptyNote(input.note),
+      dateProvided: Boolean(input.date)
+    }
+  });
 
   return successResponse(c, "Transaksi berhasil dibuat", transaction, 201);
 }
@@ -60,6 +84,17 @@ export async function updateTransactionController(c: Context<AppEnv>) {
 
   const transaction = await updateTransaction(userId, param.id, input);
 
+  await recordAuditEventFromContext(c, {
+    eventType: "transaction.updated",
+    status: "success",
+    targetType: "transaction",
+    targetId: transaction.id,
+    metadata: {
+      changedFields: getChangedFields(input),
+      hasNote: input.note !== undefined ? hasNonEmptyNote(input.note) : null
+    }
+  });
+
   return successResponse(c, "Transaksi berhasil diupdate", transaction);
 }
 
@@ -68,6 +103,16 @@ export async function deleteTransactionController(c: Context<AppEnv>) {
   const param = c.get("validatedParam") as TransactionIdParam;
 
   const transaction = await deleteTransaction(userId, param.id);
+
+  await recordAuditEventFromContext(c, {
+    eventType: "transaction.deleted",
+    status: "success",
+    targetType: "transaction",
+    targetId: transaction.id,
+    metadata: {
+      reason: "user_requested"
+    }
+  });
 
   return successResponse(c, "Transaksi berhasil dihapus", transaction);
 }

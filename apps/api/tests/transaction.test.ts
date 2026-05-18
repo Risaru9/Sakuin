@@ -1,7 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { TransactionType } from "@prisma/client";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AuditEvent } from "../src/utils/audit-event.js";
+import {
+  resetAuditEventSink,
+  setAuditEventSink
+} from "../src/utils/audit-event-recorder.js";
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -93,13 +98,16 @@ async function registerUser(user: typeof userA) {
   return body.data;
 }
 
-async function createTransaction(token: string, payload?: Partial<{
-  type: "INCOME" | "EXPENSE";
-  amount: string;
-  categoryId: string;
-  date: string;
-  note: string;
-}>) {
+async function createTransaction(
+  token: string,
+  payload?: Partial<{
+    type: "INCOME" | "EXPENSE";
+    amount: string;
+    categoryId: string;
+    date: string;
+    note: string;
+  }>
+) {
   const response = await app.request("/api/transactions", {
     method: "POST",
     headers: {
@@ -203,6 +211,10 @@ beforeAll(async () => {
   transactionForDeleteId = transactionForDelete.body.data.id;
 }, 60000);
 
+afterEach(() => {
+  resetAuditEventSink();
+});
+
 afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
@@ -217,6 +229,12 @@ afterAll(async () => {
 
 describe("Transaction API", () => {
   it("Create transaction berhasil", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const { response, body } = await createTransaction(tokenA, {
       type: "EXPENSE",
       amount: "30000",
@@ -231,6 +249,31 @@ describe("Transaction API", () => {
     expect(body.data.amount).toBe("30000");
     expect(body.data.category.id).toBe("cat_expense_food");
     expect(body.data.category.type).toBe("EXPENSE");
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "transaction.created",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "transaction",
+      targetId: body.data.id,
+      metadata: {
+        type: "EXPENSE",
+        hasNote: true,
+        dateProvided: true
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("30000");
+    expect(serializedAuditEvent).not.toContain("Create transaction berhasil");
+    expect(serializedAuditEvent).not.toContain("cat_expense_food");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Create transaction gagal tanpa token", async () => {
@@ -275,7 +318,9 @@ describe("Transaction API", () => {
 
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
-    expect(body.message).toBe("Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi");
+    expect(body.message).toBe(
+      "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi"
+    );
   });
 
   it("Create transaction gagal jika type EXPENSE memakai category INCOME", async () => {
@@ -298,7 +343,9 @@ describe("Transaction API", () => {
 
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
-    expect(body.message).toBe("Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi");
+    expect(body.message).toBe(
+      "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi"
+    );
   });
 
   it("Get transactions hanya menampilkan transaksi milik user login", async () => {
@@ -322,12 +369,15 @@ describe("Transaction API", () => {
   });
 
   it("Get detail transaction milik sendiri berhasil", async () => {
-    const response = await app.request(`/api/transactions/${userATransactionId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${tokenA}`
+    const response = await app.request(
+      `/api/transactions/${userATransactionId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${tokenA}`
+        }
       }
-    });
+    );
 
     const body = await parseJson<TransactionData>(response);
 
@@ -338,6 +388,12 @@ describe("Transaction API", () => {
   });
 
   it("Update transaction milik sendiri berhasil", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request(`/api/transactions/${userATransactionId}`, {
       method: "PUT",
       headers: {
@@ -357,6 +413,29 @@ describe("Transaction API", () => {
     expect(body.message).toBe("Transaksi berhasil diupdate");
     expect(body.data.amount).toBe("40000");
     expect(body.data.note).toBe("Transaksi user A updated");
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "transaction.updated",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "transaction",
+      targetId: userATransactionId,
+      metadata: {
+        changedFields: "amount,note",
+        hasNote: true
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("40000");
+    expect(serializedAuditEvent).not.toContain("Transaksi user A updated");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Update transaction user lain gagal", async () => {
@@ -380,12 +459,21 @@ describe("Transaction API", () => {
   });
 
   it("Delete transaction milik sendiri berhasil", async () => {
-    const response = await app.request(`/api/transactions/${transactionForDeleteId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${tokenA}`
-      }
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
     });
+
+    const response = await app.request(
+      `/api/transactions/${transactionForDeleteId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenA}`
+        }
+      }
+    );
 
     const body = await parseJson<TransactionData>(response);
 
@@ -393,6 +481,28 @@ describe("Transaction API", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Transaksi berhasil dihapus");
     expect(body.data.id).toBe(transactionForDeleteId);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "transaction.deleted",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "transaction",
+      targetId: transactionForDeleteId,
+      metadata: {
+        reason: "user_requested"
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("10000");
+    expect(serializedAuditEvent).not.toContain("Transaksi untuk delete");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Delete transaction user lain gagal", async () => {
@@ -411,12 +521,15 @@ describe("Transaction API", () => {
   });
 
   it("Filter transaction by type berhasil", async () => {
-    const response = await app.request("/api/transactions?type=EXPENSE&page=1&limit=50", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${tokenA}`
+    const response = await app.request(
+      "/api/transactions?type=EXPENSE&page=1&limit=50",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${tokenA}`
+        }
       }
-    });
+    );
 
     const body = await parseJson<TransactionListData>(response);
 
