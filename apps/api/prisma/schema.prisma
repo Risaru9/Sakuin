@@ -24,6 +24,7 @@ model User {
   transactions         Transaction[]
   goals                Goal[]
   categories           Category[]
+  auditLogs            AuditLog[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 }
@@ -75,4 +76,24 @@ model Category {
 
   @@index([userId, type])
   @@unique([userId, name, type])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  eventType   String
+  status      String
+  requestId   String?
+  actorType   String
+  actorUserId String?
+  targetType  String
+  targetId    String?
+  metadata    Json
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([requestId])
+  @@index([targetType, targetId])
 }

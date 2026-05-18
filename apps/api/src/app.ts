@@ -21,9 +21,12 @@ import {
 import { apiRoutes } from "./modules/index.js";
 import type { AppEnv } from "./types/app.js";
 import { successResponse } from "./utils/api-response.js";
+import { configureAuditLogPersistence } from "./utils/audit-log-sink.js";
 import { HttpError } from "./utils/http-error.js";
 
 export const app = new Hono<AppEnv>();
+
+configureAuditLogPersistence();
 
 const allowedOrigins = new Set([
   "http://127.0.0.1:3000",
