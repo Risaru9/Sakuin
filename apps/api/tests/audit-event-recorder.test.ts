@@ -1,6 +1,10 @@
+import { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
+import { requestIdMiddleware } from "../src/middlewares/request-id.middleware.js";
+import type { AppEnv } from "../src/types/app.js";
 import {
   recordAuditEvent,
+  recordAuditEventFromContext,
   resetAuditEventSink,
   setAuditEventSink,
   type AuditEventSink
@@ -137,5 +141,94 @@ describe("Audit event recorder", () => {
     });
 
     expect(capturedEvents).toHaveLength(0);
+  });
+
+  it("recordAuditEventFromContext mengisi requestId dan actor user dari context", async () => {
+    const capturedEvents: Awaited<ReturnType<typeof recordAuditEvent>>[] = [];
+    const app = new Hono<AppEnv>();
+
+    setAuditEventSink((event) => {
+      capturedEvents.push(event);
+    });
+
+    app.use("*", requestIdMiddleware);
+
+    app.get("/test", async (c) => {
+      c.set("userId", "user-ctx-123");
+
+      await recordAuditEventFromContext(c, {
+        eventType: "profile.updated",
+        status: "success",
+        targetType: "profile",
+        targetId: "user-ctx-123",
+        metadata: {
+          changedField: "name"
+        }
+      });
+
+      return c.json({ success: true });
+    });
+
+    const response = await app.request("/test", {
+      headers: {
+        "X-Request-Id": "request-from-client"
+      }
+    });
+
+    expect(response.status).toBe(200);
+    expect(capturedEvents).toHaveLength(1);
+
+    const [event] = capturedEvents;
+
+    expect(event).toMatchObject({
+      eventType: "profile.updated",
+      status: "success",
+      requestId: "request-from-client",
+      actorType: "user",
+      actorUserId: "user-ctx-123",
+      targetType: "profile",
+      targetId: "user-ctx-123",
+      metadata: {
+        changedField: "name"
+      }
+    });
+  });
+
+  it("recordAuditEventFromContext memakai actor system jika userId tidak tersedia", async () => {
+    const capturedEvents: Awaited<ReturnType<typeof recordAuditEvent>>[] = [];
+    const app = new Hono<AppEnv>();
+
+    setAuditEventSink((event) => {
+      capturedEvents.push(event);
+    });
+
+    app.use("*", requestIdMiddleware);
+
+    app.get("/system-test", async (c) => {
+      await recordAuditEventFromContext(c, {
+        eventType: "rate_limit.hit",
+        status: "failure",
+        targetType: "rate_limit",
+        metadata: {
+          limiter: "api:general"
+        }
+      });
+
+      return c.json({ success: true });
+    });
+
+    const response = await app.request("/system-test");
+
+    expect(response.status).toBe(200);
+    expect(capturedEvents).toHaveLength(1);
+
+    const [event] = capturedEvents;
+
+    expect(event.actorType).toBe("system");
+    expect(event.actorUserId).toBeNull();
+    expect(event.requestId).toBeTruthy();
+    expect(event.metadata).toEqual({
+      limiter: "api:general"
+    });
   });
 });
