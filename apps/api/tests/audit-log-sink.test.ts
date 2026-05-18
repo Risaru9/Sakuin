@@ -1,7 +1,10 @@
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/db/prisma.js";
 import { createAuditEvent } from "../src/utils/audit-event.js";
-import { databaseAuditEventSink } from "../src/utils/audit-log-sink.js";
+import {
+  createDatabaseAuditEventSink,
+  databaseAuditEventSink
+} from "../src/utils/audit-log-sink.js";
 import { REDACTED_VALUE } from "../src/utils/safe-metadata.js";
 
 const auditRequestIds: string[] = [];
@@ -25,6 +28,7 @@ async function cleanupAuditLogs() {
 describe("Audit log database sink", () => {
   afterEach(async () => {
     await cleanupAuditLogs();
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -91,19 +95,53 @@ describe("Audit log database sink", () => {
   });
 
   it("tidak melempar error jika audit persistence gagal", async () => {
+    const logger = {
+      error: vi.fn()
+    };
+
+    const failingRepository = {
+      auditLog: {
+        create: vi.fn(async () => {
+          throw new Error("Simulated audit persistence failure");
+        })
+      }
+    };
+
+    const sink = createDatabaseAuditEventSink({
+      repository: failingRepository,
+      logger
+    });
+
     const event = createAuditEvent({
       eventType: "profile.updated",
       status: "success",
       requestId: `audit-sink-fail-open-${Date.now()}`,
       actorType: "user",
-      actorUserId: "user-yang-tidak-ada",
+      actorUserId: "user-test",
       targetType: "profile",
       targetId: "profile-test-target",
       metadata: {
-        changedFields: "name"
+        changedFields: "name",
+        token: "sensitive-token-value",
+        rawBody: "raw-body-content"
       }
     });
 
-    await expect(databaseAuditEventSink(event)).resolves.toBeUndefined();
+    await expect(sink(event)).resolves.toBeUndefined();
+
+    expect(failingRepository.auditLog.create).toHaveBeenCalledOnce();
+    expect(logger.error).toHaveBeenCalledOnce();
+
+    const loggedMessage = logger.error.mock.calls[0]?.[0] ?? "";
+
+    expect(loggedMessage).toContain("audit_log_persist_failed");
+    expect(loggedMessage).toContain(event.requestId);
+    expect(loggedMessage).toContain(event.eventType);
+    expect(loggedMessage).toContain(event.targetType);
+
+    expect(loggedMessage).not.toContain("sensitive-token-value");
+    expect(loggedMessage).not.toContain("raw-body-content");
+    expect(loggedMessage).not.toContain("changedFields");
+    expect(loggedMessage).not.toContain("metadata");
   });
 });

@@ -5,6 +5,31 @@ import {
   setAuditEventSink,
   type AuditEventSink
 } from "./audit-event-recorder.js";
+import type { AuditEvent } from "./audit-event.js";
+
+type AuditLogCreateInput = {
+  data: {
+    eventType: string;
+    status: string;
+    requestId: string | null;
+    actorType: string;
+    actorUserId: string | null;
+    targetType: string;
+    targetId: string | null;
+    metadata: Prisma.InputJsonObject;
+    createdAt: Date;
+  };
+};
+
+type AuditLogRepository = {
+  auditLog: {
+    create: (input: AuditLogCreateInput) => Promise<unknown>;
+  };
+};
+
+type AuditLogSinkLogger = {
+  error: (message: string) => void;
+};
 
 function toJsonMetadata(
   metadata: Record<string, string | number | boolean | null>
@@ -13,15 +38,17 @@ function toJsonMetadata(
 }
 
 function logAuditPersistenceFailure({
+  logger,
   requestId,
   eventType,
   targetType
 }: {
+  logger: AuditLogSinkLogger;
   requestId: string | null;
   eventType: string;
   targetType: string;
 }) {
-  console.error(
+  logger.error(
     JSON.stringify({
       level: "error",
       event: "audit_log_persist_failed",
@@ -33,29 +60,42 @@ function logAuditPersistenceFailure({
   );
 }
 
-export const databaseAuditEventSink: AuditEventSink = async (event) => {
-  try {
-    await prisma.auditLog.create({
-      data: {
-        eventType: event.eventType,
-        status: event.status,
+export function createDatabaseAuditEventSink({
+  repository,
+  logger = console
+}: {
+  repository: AuditLogRepository;
+  logger?: AuditLogSinkLogger;
+}): AuditEventSink {
+  return async (event: AuditEvent) => {
+    try {
+      await repository.auditLog.create({
+        data: {
+          eventType: event.eventType,
+          status: event.status,
+          requestId: event.requestId,
+          actorType: event.actorType,
+          actorUserId: event.actorUserId,
+          targetType: event.targetType,
+          targetId: event.targetId,
+          metadata: toJsonMetadata(event.metadata),
+          createdAt: new Date(event.createdAt)
+        }
+      });
+    } catch {
+      logAuditPersistenceFailure({
+        logger,
         requestId: event.requestId,
-        actorType: event.actorType,
-        actorUserId: event.actorUserId,
-        targetType: event.targetType,
-        targetId: event.targetId,
-        metadata: toJsonMetadata(event.metadata),
-        createdAt: new Date(event.createdAt)
-      }
-    });
-  } catch {
-    logAuditPersistenceFailure({
-      requestId: event.requestId,
-      eventType: event.eventType,
-      targetType: event.targetType
-    });
-  }
-};
+        eventType: event.eventType,
+        targetType: event.targetType
+      });
+    }
+  };
+}
+
+export const databaseAuditEventSink = createDatabaseAuditEventSink({
+  repository: prisma
+});
 
 let auditLogPersistenceConfigured = false;
 
