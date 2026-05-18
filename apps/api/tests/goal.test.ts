@@ -1,6 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AuditEvent } from "../src/utils/audit-event.js";
+import {
+  resetAuditEventSink,
+  setAuditEventSink
+} from "../src/utils/audit-event-recorder.js";
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -147,6 +152,10 @@ beforeAll(async () => {
   goalForDeleteId = goalForDelete.body.data.id;
 }, 60000);
 
+afterEach(() => {
+  resetAuditEventSink();
+});
+
 afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
@@ -161,6 +170,12 @@ afterAll(async () => {
 
 describe("Goal API", () => {
   it("Create goal berhasil", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const { response, body } = await createGoal(tokenA, {
       name: "Beli Laptop",
       targetAmount: "10000000",
@@ -178,6 +193,31 @@ describe("Goal API", () => {
     expect(body.data.remainingAmount).toBe("7500000.00");
     expect(body.data.isCompleted).toBe(false);
     expect(body.data.isOverdue).toBe(false);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "goal.created",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "goal",
+      targetId: body.data.id,
+      metadata: {
+        hasCurrentAmount: true,
+        hasDeadline: true
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("Beli Laptop");
+    expect(serializedAuditEvent).not.toContain("10000000");
+    expect(serializedAuditEvent).not.toContain("2500000");
+    expect(serializedAuditEvent).not.toContain("7500000");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Create goal gagal tanpa token", async () => {
@@ -276,6 +316,12 @@ describe("Goal API", () => {
   });
 
   it("Update goal milik sendiri berhasil", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request(`/api/goals/${userAGoalId}`, {
       method: "PUT",
       headers: {
@@ -298,6 +344,29 @@ describe("Goal API", () => {
     expect(body.data.currentAmount).toBe("5000000.00");
     expect(body.data.progressPercentage).toBe(50);
     expect(body.data.remainingAmount).toBe("5000000.00");
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "goal.updated",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "goal",
+      targetId: userAGoalId,
+      metadata: {
+        changedFields: "name,currentAmount",
+        hasDeadline: null
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("Goal User A Updated");
+    expect(serializedAuditEvent).not.toContain("5000000");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Update goal user lain gagal", async () => {
@@ -342,6 +411,12 @@ describe("Goal API", () => {
   });
 
   it("Delete goal milik sendiri berhasil", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request(`/api/goals/${goalForDeleteId}`, {
       method: "DELETE",
       headers: {
@@ -355,6 +430,29 @@ describe("Goal API", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Goal berhasil dihapus");
     expect(body.data.id).toBe(goalForDeleteId);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "goal.deleted",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "goal",
+      targetId: goalForDeleteId,
+      metadata: {
+        reason: "user_requested"
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("Goal Untuk Delete");
+    expect(serializedAuditEvent).not.toContain("5000000");
+    expect(serializedAuditEvent).not.toContain("1000000");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("Delete goal user lain gagal", async () => {
