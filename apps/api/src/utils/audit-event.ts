@@ -1,4 +1,4 @@
-import { sanitizeSafeMetadata, type SafeMetadata } from "./safe-metadata.js";
+import { sanitizeSafeMetadata, type SafeMetadata, type SafeMetadataValue } from "./safe-metadata.js";
 
 export type AuditEventType =
   | "auth.login_failed"
@@ -50,7 +50,19 @@ export type AuditEventInput = {
   metadata?: SafeMetadata;
 };
 
-export function createAuditEvent(input: AuditEventInput) {
+export type AuditEvent = {
+  eventType: AuditEventType;
+  status: AuditEventStatus;
+  requestId: string | null;
+  actorType: AuditActorType;
+  actorUserId: string | null;
+  targetType: AuditTargetType;
+  targetId: string | null;
+  metadata: Record<string, SafeMetadataValue>;
+  createdAt: string;
+};
+
+export function createAuditEvent(input: AuditEventInput): AuditEvent {
   return {
     eventType: input.eventType,
     status: input.status,
