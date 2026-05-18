@@ -1,6 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AuditEvent } from "../src/utils/audit-event.js";
+import {
+  resetAuditEventSink,
+  setAuditEventSink
+} from "../src/utils/audit-event-recorder.js";
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -90,6 +95,10 @@ beforeAll(async () => {
   userId = auth.user.id;
 }, 60000);
 
+afterEach(() => {
+  resetAuditEventSink();
+});
+
 afterAll(async () => {
   if (userId) {
     await prisma.user.deleteMany({
@@ -128,6 +137,12 @@ describe("User Profile API", () => {
   });
 
   it("PATCH /api/users/profile berhasil update name dan safeBalanceLimit", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request("/api/users/profile", {
       method: "PATCH",
       headers: {
@@ -152,6 +167,29 @@ describe("User Profile API", () => {
     expect(body.data.safeBalanceLimit).toBe("500000.00");
 
     expect("passwordHash" in body.data).toBe(false);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "profile.updated",
+      status: "success",
+      actorType: "user",
+      actorUserId: userId,
+      targetType: "profile",
+      targetId: userId,
+      metadata: {
+        changedFields: "name,safeBalanceLimit"
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain("User Profile Updated");
+    expect(serializedAuditEvent).not.toContain("500000.00");
+    expect(serializedAuditEvent).not.toContain("500000");
+    expect(serializedAuditEvent).not.toContain(token);
   });
 
   it("GET /api/summary membaca safeBalanceLimit terbaru", async () => {

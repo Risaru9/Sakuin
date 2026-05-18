@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { AppEnv } from "../../types/app.js";
 import { successResponse } from "../../utils/api-response.js";
+import { recordAuditEventFromContext } from "../../utils/audit-event-recorder.js";
 import { HttpError } from "../../utils/http-error.js";
 import type { UpdateUserProfileInput } from "./user.types.js";
 import { getUserProfile, updateUserProfile } from "./user.service.js";
@@ -13,6 +14,13 @@ function getAuthenticatedUserId(c: Context<AppEnv>) {
   }
 
   return userId;
+}
+
+function getChangedFields(input: UpdateUserProfileInput) {
+  return Object.entries(input)
+    .filter(([, value]) => value !== undefined)
+    .map(([field]) => field)
+    .join(",");
 }
 
 export async function getUserProfileController(c: Context<AppEnv>) {
@@ -28,6 +36,16 @@ export async function updateUserProfileController(c: Context<AppEnv>) {
   const input = c.get("validatedJson") as UpdateUserProfileInput;
 
   const profile = await updateUserProfile(userId, input);
+
+  await recordAuditEventFromContext(c, {
+    eventType: "profile.updated",
+    status: "success",
+    targetType: "profile",
+    targetId: userId,
+    metadata: {
+      changedFields: getChangedFields(input)
+    }
+  });
 
   return successResponse(c, "Profile berhasil diupdate", profile);
 }
