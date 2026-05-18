@@ -2,7 +2,29 @@
 
 Dokumen ini berisi konteks teknis dan status pengembangan terbaru project **Sakuin**. Tujuannya agar developer atau agent berikutnya dapat langsung memahami kondisi project, keputusan teknis, fitur yang sudah selesai, cara menjalankan project, cara validasi, dan prioritas pengembangan berikutnya.
 
-Dokumen ini harus dibaca sebelum melanjutkan development, karena project sudah berjalan di production dan sudah melewati banyak fase besar: MVP, deployment, category management, transactions, dashboard, goals, profile, export, app-wide caching/UX optimization, landing/auth/mobile polish, PWA installable support, transactions mobile date filter polish, Quick Transaction, dan security hardening sebelum integrasi sensitif.
+Dokumen ini wajib dibaca sebelum melanjutkan development, karena project sudah berjalan di production dan sudah melewati banyak fase besar:
+
+```txt
+[✓] MVP aplikasi keuangan pribadi
+[✓] Production deployment
+[✓] Category management
+[✓] Transaction management
+[✓] Dashboard
+[✓] Goals
+[✓] Profile
+[✓] Export JSON/CSV/XLSX
+[✓] App-wide caching/UX optimization
+[✓] Landing/auth/mobile polish
+[✓] PWA installable support
+[✓] Transactions mobile date filter polish
+[✓] Quick Transaction / Catat Cepat
+[✓] Security hardening baseline
+[✓] Extended security tests
+[✓] Request ID + safe request logging
+[✓] Safe security event logging
+[✓] Database-backed audit trail
+[✓] Audit sink reliability polish
+```
 
 ---
 
@@ -31,6 +53,7 @@ Arah produk Sakuin sekarang bukan hanya menjadi pencatat transaksi seperti sprea
 [✓] Mengurangi effort input manual
 [✓] Memahami kondisi keuangan pribadi
 [✓] Menjaga keamanan data keuangan
+[✓] Memiliki audit trail untuk aksi penting
 [ ] Ke depannya menjadi financial assistant/advisor yang aman
 ```
 
@@ -71,8 +94,9 @@ Status terakhir:
 [✓] Quick Transaction berjalan
 [✓] Security hardening baseline berjalan
 [✓] Security tests tambahan berjalan
+[✓] AuditLog table aktif
+[✓] Audit trail production smoke test aman
 [✓] Semua fitur utama berjalan normal di production
-[✓] Manual production regression terakhir aman
 ```
 
 ---
@@ -105,14 +129,12 @@ Your branch is up to date with 'origin/main'.
 nothing to commit, working tree clean
 ```
 
-Catatan fase dokumentasi saat ini:
+Catatan:
 
 ```txt
-README.md sudah diperbarui/direncanakan untuk status terbaru.
-docs/SECURITY.md dibuat pada Phase 24C.
-docs/HANDOFF.md sedang diperbarui.
-docs/API.md akan dicek/update setelah ini jika perlu.
-Commit ditunda sampai semua file Markdown selesai.
+Jangan lanjut coding fitur baru jika working tree masih berisi perubahan yang belum jelas.
+Pisahkan perubahan fitur, security, bugfix, dan dokumentasi jika memungkinkan.
+Untuk fase dokumentasi saat ini, commit sebaiknya dilakukan setelah README.md, docs/SECURITY.md, docs/HANDOFF.md, dan docs/API.md selesai disinkronkan.
 ```
 
 ---
@@ -136,27 +158,55 @@ Jangan membuat tag hanya untuk perubahan kecil yang belum layak release.
 Jangan update tag hanya karena dokumentasi kecil kecuali memang diputuskan sebagai release milestone.
 ```
 
-Status fase terbaru:
+---
+
+## 5. Current Phase Status
+
+Status fase besar terbaru:
 
 ```txt
-[✓] Phase 22A  - Landing/Auth/Transactions Mobile UI Polish
-[✓] Phase 22B  - PWA Installable Support
-[✓] Phase 22C.1 - Improve Transactions Mobile Date Range UX
-[✓] Phase 22C.2 - Security Hardening Basic
-[✓] Phase 22C.5 - Bundle Size Optimization
-[✓] Phase 23A  - Simplify Category UX
-[✓] Phase 23B  - Quick Transaction / Catat Cepat MVP
-[✓] Phase 24A  - Auth Rate Limit + Security Test Baseline
-[✓] Phase 24B.1 - Cross-Cutting Security Tests
-[✓] Phase 24B.2 - Summary & Export Data Isolation Tests
-[✓] Phase 24B.3 - Auth & Token Edge Case Tests
-[✓] Phase 24B.4 - Rate Limit & API Abuse Edge Case Tests
-[~] Phase 24C  - Security Documentation
+[✓] Phase 22A    - Landing/Auth/Transactions Mobile UI Polish
+[✓] Phase 22B    - PWA Installable Support
+[✓] Phase 22C.1  - Improve Transactions Mobile Date Range UX
+[✓] Phase 22C.2  - Security Hardening Basic
+[✓] Phase 22C.5  - Bundle Size Optimization
+[✓] Phase 23A    - Simplify Category UX
+[✓] Phase 23B    - Quick Transaction / Catat Cepat MVP
+[✓] Phase 24A    - Auth Rate Limit + Security Test Baseline
+[✓] Phase 24B.1  - Cross-Cutting Security Tests
+[✓] Phase 24B.2  - Summary & Export Data Isolation Tests
+[✓] Phase 24B.3  - Auth & Token Edge Case Tests
+[✓] Phase 24B.4  - Rate Limit & API Abuse Edge Case Tests
+[✓] Phase 24C    - Security Documentation baseline
+[✓] Phase 24D.1  - Request ID + Safe Request Logging Middleware
+[✓] Phase 24D.2  - Safe Security Event Logging
+[✓] Phase 24D.3A - Audit Event Types + Safe Metadata Contract
+[✓] Phase 24D.3B - Audit Event Recorder Abstraction
+[✓] Phase 24D.3C - Audit Event Context Helper
+[✓] Phase 24D.3D.1 - Audit Profile Update Event
+[✓] Phase 24D.3D.2 - Audit Export Transactions Event
+[✓] Phase 24D.3D.3 - Audit Transaction Mutation Events
+[✓] Phase 24D.3D.4 - Audit Goal Mutation Events
+[✓] Phase 24D.3D.5 - Audit Category Mutation Events
+[✓] Phase 24D.4A - Audit Log Persistence Design
+[✓] Phase 24D.4B - Prisma AuditLog Model + Database Sink
+[✓] Phase 24D.4C - Audit Sink Noise & Reliability Polish
+[~] Phase 24D.5 - Security Documentation Sync
+```
+
+Status dokumentasi saat ini:
+
+```txt
+[✓] README.md disiapkan untuk update audit trail terbaru
+[✓] docs/SECURITY.md disiapkan untuk update audit trail terbaru
+[~] docs/HANDOFF.md sedang diperbarui
+[ ] docs/API.md perlu disinkronkan setelah ini
+[ ] Commit dokumentasi ditunda sampai semua file Markdown selesai
 ```
 
 ---
 
-## 5. Tech Stack
+## 6. Tech Stack
 
 ### Monorepo
 
@@ -210,14 +260,15 @@ CI       : GitHub Actions
 
 ---
 
-## 6. Project Structure
+## 7. Project Structure
 
 ```txt
 sakuin/
 ├─ apps/
 │  ├─ api/
 │  │  ├─ prisma/
-│  │  │  └─ schema.prisma
+│  │  │  ├─ schema.prisma
+│  │  │  └─ migrations/
 │  │  ├─ src/
 │  │  │  ├─ config/
 │  │  │  ├─ db/
@@ -280,7 +331,7 @@ sakuin/
 
 ---
 
-## 7. Environment Variables
+## 8. Environment Variables
 
 ### Backend Local
 
@@ -348,7 +399,7 @@ Important notes:
 
 ---
 
-## 8. Local Development Setup
+## 9. Local Development Setup
 
 Dari root project:
 
@@ -401,7 +452,7 @@ http://127.0.0.1:3000
 
 ---
 
-## 9. Important Scripts
+## 10. Important Scripts
 
 ### Root Scripts
 
@@ -447,7 +498,7 @@ pnpm --filter @sakuin/api db:reset
 
 ---
 
-## 10. Validation Commands
+## 11. Validation Commands
 
 Sebelum commit atau push, jalankan validasi sesuai area perubahan.
 
@@ -462,6 +513,16 @@ pnpm --filter @sakuin/web build
 Jika backend disentuh:
 
 ```bash
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Jika Prisma schema berubah:
+
+```bash
+pnpm --filter @sakuin/api db:migrate -- --name nama_migration
+pnpm --filter @sakuin/api db:generate
 pnpm --filter @sakuin/api typecheck
 pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
@@ -499,7 +560,7 @@ Backend build      : passed
 
 ---
 
-## 11. Current Test Status
+## 12. Current Test Status
 
 Frontend automated tests terakhir yang pernah tercatat:
 
@@ -508,7 +569,13 @@ Test Files : 3 passed
 Tests      : 11 passed
 ```
 
-Backend automated tests terus bertambah karena fase security hardening.
+Backend automated tests terakhir setelah database-backed audit trail:
+
+```txt
+Test Files : 17 passed
+Tests      : 114 passed
+Build      : passed
+```
 
 Catatan:
 
@@ -517,7 +584,7 @@ Gunakan output test lokal/CI terbaru sebagai sumber kebenaran.
 Jika jumlah test berbeda dari dokumentasi lama, jangan anggap error selama semua test passed.
 ```
 
-Build frontend sebelumnya pernah menampilkan warning chunk size, tetapi route lazy loading/code splitting sudah pernah dilakukan untuk menghapus warning tersebut.
+Build frontend sebelumnya pernah menampilkan warning chunk size, tetapi route lazy loading/code splitting sudah dilakukan untuk menghapus warning tersebut.
 
 Jika warning chunk size muncul lagi:
 
@@ -529,7 +596,7 @@ Optimasi dapat dilakukan melalui lazy loading route/code splitting/dynamic impor
 
 ---
 
-## 12. GitHub Actions CI
+## 13. GitHub Actions CI
 
 CI berjalan melalui GitHub Actions.
 
@@ -562,7 +629,7 @@ Pastikan DATABASE_URL, DIRECT_URL, JWT_SECRET, dan environment terkait tersedia.
 
 ---
 
-## 13. Deployment Notes
+## 14. Deployment Notes
 
 Frontend dan backend sama-sama dideploy ke Vercel.
 
@@ -597,11 +664,13 @@ Deployment issues yang sudah pernah diselesaikan:
 [✓] Lockfile mismatch akibat perubahan package.json sudah diperbaiki.
 [✓] GitHub Actions secrets/variables diperbaiki.
 [✓] Rate limit middleware sempat error di Vercel karena Request.clone typing, sudah diperbaiki.
+[✓] Request/Response typing issue pada request-id middleware di Vercel sudah diperbaiki.
+[✓] Prisma Client generate EPERM di Windows diselesaikan dengan menghentikan backend process yang mengunci DLL.
 ```
 
 ---
 
-## 14. Backend Architecture Summary
+## 15. Backend Architecture Summary
 
 Backend utama berada di:
 
@@ -625,8 +694,14 @@ middlewares/auth               : JWT auth middleware
 middlewares/validate           : Zod request validation
 middlewares/security           : security headers dan request body size limit
 middlewares/rate-limit         : login/register/general API rate limit
+middlewares/request-id         : X-Request-Id dan safe request logging
 utils/api-response             : response helper
 utils/http-error               : HTTP error helper
+utils/safe-metadata            : metadata sanitizer dan hashing helper
+utils/security-event-logger    : safe security event logging
+utils/audit-event              : audit event contract
+utils/audit-event-recorder     : audit recorder dan context helper
+utils/audit-log-sink           : database audit log sink
 modules/index.ts               : aggregator route /api
 ```
 
@@ -644,7 +719,7 @@ export        : transaction export JSON/CSV/XLSX
 
 ---
 
-## 15. Frontend Architecture Summary
+## 16. Frontend Architecture Summary
 
 Frontend utama berada di:
 
@@ -690,7 +765,709 @@ health        : backend health check
 
 ---
 
-## 16. TanStack Query Usage
+## 17. Database Summary
+
+Database menggunakan Supabase PostgreSQL dengan Prisma ORM.
+
+Model utama:
+
+```txt
+User
+Transaction
+Goal
+Category
+AuditLog
+```
+
+Migration penting terbaru:
+
+```txt
+20260518133113_add_audit_log
+```
+
+Model `AuditLog` ditambahkan untuk menyimpan business audit trail dengan metadata aman.
+
+Prinsip Prisma:
+
+```txt
+Jangan mengubah schema.prisma tanpa migration.
+Setelah schema berubah, jalankan db:migrate dan db:generate.
+Migration folder harus ikut dicommit.
+Jangan menjalankan db:reset pada database production.
+```
+
+Windows note:
+
+```txt
+Jika Prisma generate gagal dengan EPERM pada query_engine-windows.dll.node, biasanya backend/dev server/test/Prisma Studio/VSCode masih mengunci file.
+Stop proses node/tsx lalu generate ulang.
+```
+
+Command bantu:
+
+```powershell
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process tsx -ErrorAction SilentlyContinue | Stop-Process -Force
+pnpm --filter @sakuin/api db:generate
+```
+
+---
+
+## 18. Security Architecture Summary
+
+Security baseline yang sudah diterapkan:
+
+```txt
+[✓] JWT Bearer Token authentication
+[✓] bcryptjs password hashing
+[✓] Zod request validation
+[✓] Prisma ORM
+[✓] Protected endpoint
+[✓] Ownership checks
+[✓] CORS allowlist
+[✓] Security headers
+[✓] Request body size limit 1 MB
+[✓] Production error masking
+[✓] Login rate limit
+[✓] Register rate limit
+[✓] General API rate limit
+[✓] Request ID via X-Request-Id
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Database-backed audit trail
+[✓] Fail-open audit persistence
+```
+
+Security yang belum selesai:
+
+```txt
+[ ] Distributed rate limiting
+[ ] Better JWT/session strategy
+[ ] httpOnly secure cookie migration
+[ ] CSRF strategy jika pindah ke cookie
+[ ] OAuth token encryption
+[ ] Google Login
+[ ] Gmail disconnect/revoke flow
+[ ] Formal retention policy untuk AuditLog
+[ ] AuditLog viewer/admin policy
+```
+
+---
+
+## 19. Request ID
+
+Request ID sudah diterapkan melalui middleware.
+
+Header:
+
+```txt
+X-Request-Id
+```
+
+Behavior:
+
+```txt
+[✓] Response membawa X-Request-Id
+[✓] Request ID bisa dibuat otomatis
+[✓] Request ID dari client diterima jika format aman
+[✓] Request ID tidak aman diganti dengan yang baru
+[✓] Request ID dipakai untuk request log, security event, dan audit event
+```
+
+File terkait:
+
+```txt
+apps/api/src/middlewares/request-id.middleware.ts
+apps/api/tests/request-id-security.test.ts
+```
+
+Catatan:
+
+```txt
+Request ID bukan auth/session identifier.
+Request ID tidak boleh mengandung data sensitif.
+```
+
+---
+
+## 20. Safe Request Logging
+
+Request logging mencatat informasi aman:
+
+```txt
+level
+event
+requestId
+method
+path
+status
+durationMs
+timestamp
+```
+
+Request logging tidak mencatat:
+
+```txt
+password
+token
+Authorization header
+cookie
+raw request body
+transaction amount
+transaction note
+goal amount
+goal name
+category name
+export content
+raw email
+OAuth token
+```
+
+Logging request dinonaktifkan pada `NODE_ENV=test` agar test output tetap bersih.
+
+---
+
+## 21. Safe Security Event Logging
+
+Security event logger sudah tersedia.
+
+Event yang didukung:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+File terkait:
+
+```txt
+apps/api/src/utils/security-event-logger.ts
+apps/api/tests/security-event-logger.test.ts
+```
+
+Prinsip:
+
+```txt
+[✓] Failed login tidak log password
+[✓] Failed login tidak log email mentah
+[✓] Failed login boleh memakai identifierHash
+[✓] Auth failure tidak log token
+[✓] Rate limit tidak log raw body/token
+[✓] Metadata sensitif otomatis diredact
+```
+
+Security event saat ini tetap sebagai application log, bukan semua masuk database AuditLog, karena failed login/rate limit bisa high-volume.
+
+---
+
+## 22. Safe Metadata Sanitizer
+
+Safe metadata sanitizer dipakai bersama oleh security event dan audit event.
+
+File:
+
+```txt
+apps/api/src/utils/safe-metadata.ts
+```
+
+Fungsi utama:
+
+```txt
+createSecurityHash()
+sanitizeSafeMetadata()
+```
+
+Key sensitif yang harus diredact mencakup pola:
+
+```txt
+password
+token
+authorization
+secret
+cookie
+body
+raw
+email
+credential
+session
+otp
+pin
+key
+```
+
+Nilai redaction:
+
+```txt
+[REDACTED]
+```
+
+Aturan:
+
+```txt
+Jangan membuat sanitizer baru tanpa alasan kuat.
+Jika ada metadata sensitif baru, update sanitizer dan test.
+```
+
+---
+
+## 23. Audit Trail Architecture
+
+Audit trail sudah aktif dengan database-backed `AuditLog`.
+
+Komponen:
+
+```txt
+utils/audit-event.ts             : audit event type/contract
+utils/audit-event-recorder.ts    : recorder abstraction + recordAuditEventFromContext()
+utils/audit-log-sink.ts          : database sink untuk AuditLog
+utils/safe-metadata.ts           : sanitizer metadata
+prisma/schema.prisma             : model AuditLog
+```
+
+Model database:
+
+```txt
+AuditLog
+```
+
+Field utama:
+
+```txt
+id
+eventType
+status
+requestId
+actorType
+actorUserId
+targetType
+targetId
+metadata
+createdAt
+```
+
+Relasi:
+
+```txt
+AuditLog.actorUserId -> User.id
+onDelete: SetNull
+```
+
+Alasan `onDelete: SetNull`:
+
+```txt
+Jika user dihapus, audit history tidak langsung ikut hilang.
+actorUserId bisa menjadi null.
+AuditLog tidak menyimpan email/nama user.
+```
+
+Audit persistence bersifat fail-open:
+
+```txt
+Jika penyimpanan audit log gagal, request utama user tetap tidak langsung gagal.
+Failure hanya dicatat sebagai safe error log tanpa metadata sensitif.
+```
+
+---
+
+## 24. Business Audit Events
+
+Event yang sudah dicatat ke `AuditLog`:
+
+```txt
+profile.updated
+export.transactions_generated
+transaction.created
+transaction.updated
+transaction.deleted
+goal.created
+goal.updated
+goal.deleted
+category.created
+category.updated
+category.deleted
+```
+
+Event yang belum masuk database audit log:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+Alasan:
+
+```txt
+Auth failure dan rate limit bisa high-volume.
+Saat ini cukup dicatat sebagai safe security event log.
+Jika ingin disimpan permanen, desain retention/storage harus dibuat dulu.
+```
+
+---
+
+## 25. Audit Metadata Rules
+
+Audit metadata harus aman dan minimal.
+
+Metadata yang boleh:
+
+```txt
+changedFields
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
+type
+hasNote
+dateProvided
+hasCurrentAmount
+hasDeadline
+hasIcon
+hasColor
+typeProvided
+iconProvided
+colorProvided
+reason
+```
+
+Metadata yang tidak boleh:
+
+```txt
+password
+JWT token
+Authorization header
+cookie
+raw request body
+email mentah
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export content
+OAuth access token
+OAuth refresh token
+OTP
+PIN
+secret/API key
+```
+
+Contoh metadata aman:
+
+```json
+{
+  "changedFields": "name,safeBalanceLimit"
+}
+```
+
+```json
+{
+  "format": "xlsx",
+  "typeFilter": null,
+  "hasCategoryFilter": false,
+  "hasDateRange": true
+}
+```
+
+```json
+{
+  "type": "EXPENSE",
+  "hasNote": true,
+  "dateProvided": true
+}
+```
+
+---
+
+## 26. Audit Event by Feature
+
+### Profile
+
+Event:
+
+```txt
+profile.updated
+```
+
+Metadata:
+
+```txt
+changedFields
+```
+
+Tidak menyimpan:
+
+```txt
+nama baru user
+safeBalanceLimit value
+raw body
+token
+```
+
+---
+
+### Export
+
+Event:
+
+```txt
+export.transactions_generated
+```
+
+Metadata:
+
+```txt
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
+```
+
+Tidak menyimpan:
+
+```txt
+isi export
+transaction note
+transaction amount
+category name
+file content
+token
+```
+
+---
+
+### Transactions
+
+Event:
+
+```txt
+transaction.created
+transaction.updated
+transaction.deleted
+```
+
+Metadata:
+
+```txt
+type
+hasNote
+dateProvided
+changedFields
+reason
+```
+
+Tidak menyimpan:
+
+```txt
+amount
+note
+categoryId
+category name
+raw body
+token
+```
+
+---
+
+### Goals
+
+Event:
+
+```txt
+goal.created
+goal.updated
+goal.deleted
+```
+
+Metadata:
+
+```txt
+hasCurrentAmount
+hasDeadline
+changedFields
+reason
+```
+
+Tidak menyimpan:
+
+```txt
+goal name
+targetAmount
+currentAmount
+remainingAmount
+deadline value
+raw body
+token
+```
+
+---
+
+### Categories
+
+Event:
+
+```txt
+category.created
+category.updated
+category.deleted
+```
+
+Metadata:
+
+```txt
+type
+hasIcon
+hasColor
+changedFields
+typeProvided
+iconProvided
+colorProvided
+reason
+```
+
+Tidak menyimpan:
+
+```txt
+category name
+icon value
+color value
+raw body
+token
+```
+
+---
+
+## 27. AuditLog Production Smoke Test
+
+Audit trail sudah dicek di production melalui Supabase table `AuditLog`.
+
+Smoke test yang sudah dilakukan:
+
+```txt
+[✓] Update profile menghasilkan profile.updated
+[✓] Create/update transaction menghasilkan transaction.created/transaction.updated
+[✓] Create category menghasilkan category.created
+[✓] Update goal menghasilkan goal.updated
+[✓] Export transaksi menghasilkan export.transactions_generated
+[✓] Metadata yang terlihat aman
+[✓] Tidak terlihat data sensitif seperti token/amount/note/raw body
+```
+
+Checklist smoke test audit trail untuk perubahan berikutnya:
+
+```txt
+[ ] Update profile menghasilkan AuditLog profile.updated
+[ ] Create/update/delete transaction menghasilkan AuditLog transaction.*
+[ ] Create/update/delete category menghasilkan AuditLog category.*
+[ ] Create/update/delete goal menghasilkan AuditLog goal.*
+[ ] Export transaksi menghasilkan AuditLog export.transactions_generated
+[ ] AuditLog metadata tidak memuat token/password/raw body/amount/note/export content
+[ ] Tidak ada audit_log_persist_failed di production log
+```
+
+---
+
+## 28. Frontend Feature Summary
+
+### Auth
+
+```txt
+[✓] Login
+[✓] Register
+[✓] Logout
+[✓] Protected route
+[✓] Auth context
+[✓] Token localStorage
+```
+
+### Dashboard
+
+```txt
+[✓] Summary cards
+[✓] Recent transactions
+[✓] Monthly trend
+[✓] Goals summary
+[✓] Add transaction
+[✓] Catat Cepat
+[✓] Cached data with TanStack Query
+```
+
+### Transactions
+
+```txt
+[✓] List transaksi
+[✓] Create
+[✓] Edit
+[✓] Delete
+[✓] Search
+[✓] Filter type/category/date
+[✓] Sort
+[✓] Pagination
+[✓] Quick Transaction
+[✓] Inline category creation
+[✓] Mobile date filter polish
+```
+
+### Categories
+
+```txt
+[✓] Default category
+[✓] Custom category
+[✓] Create/edit/delete custom category
+[✓] Filter category
+[✓] Inline category creation from transaction modal
+[✓] Category page masih ada, tetapi bukan prioritas menu utama mobile
+```
+
+### Goals
+
+```txt
+[✓] Create goal
+[✓] Edit goal
+[✓] Delete goal
+[✓] Add progress
+[✓] Priority goal for dashboard
+[✓] Progress percentage
+```
+
+### Profile
+
+```txt
+[✓] View profile
+[✓] Update name
+[✓] Update safeBalanceLimit
+[✓] Logout
+```
+
+### Export
+
+```txt
+[✓] JSON
+[✓] CSV
+[✓] XLSX
+[✓] Filter type/category/date range
+[✓] Download via authenticated API client
+```
+
+### PWA
+
+```txt
+[✓] manifest.webmanifest
+[✓] icons
+[✓] offline.html
+[✓] sw.js
+[✓] service worker registration
+[✓] install button
+[✓] fallback manual install instruction
+```
+
+---
+
+## 29. TanStack Query Usage
 
 Sakuin memakai TanStack Query untuk mengurangi blank loading dan mempercepat UX.
 
@@ -704,614 +1481,282 @@ goals
 transactions
 ```
 
-File query key:
+Prinsip:
 
 ```txt
-apps/web/src/lib/query-keys.ts
+Gunakan query key terpusat.
+Invalidate query yang relevan setelah mutation.
+Jaga agar update cepat tetapi tetap benar.
+Gunakan optimistic/faster update hanya jika rollback/error handling jelas.
 ```
 
-File query client:
+Halaman yang sudah memakai caching/UX optimization:
 
 ```txt
-apps/web/src/lib/query-client.ts
-```
-
-Query client dipasang di:
-
-```txt
-apps/web/src/app/App.tsx
-```
-
-Tujuan TanStack Query:
-
-```txt
-[✓] Data halaman tidak blank loading berulang
-[✓] Data lama tetap tampil saat background refetch
-[✓] Mutation bisa invalidate cache terkait
-[✓] Optimistic/faster action UX bisa diterapkan
-[✓] User experience terasa lebih cepat walaupun backend/database tetap remote
-```
-
-Invalidation rules:
-
-```txt
-Create/Edit/Delete Transaction:
-- invalidate transactions
-- invalidate summary
-
-Create/Edit/Delete Category:
-- invalidate categories
-- invalidate transactions
-- invalidate summary
-
-Create/Edit/Delete/Progress Goal:
-- invalidate goals
-- invalidate summary
-
-Update Profile:
-- invalidate profile
-- invalidate summary
-
-Logout:
-- clear query client cache
-- remove token
+[✓] Dashboard
+[✓] Transactions
+[✓] Goals
+[✓] Categories
+[✓] Profile
+[✓] Export polish/action UX
 ```
 
 ---
 
-## 17. PWA Status
+## 30. Quick Transaction / Catat Cepat
 
-PWA installable support sudah selesai.
-
-File terkait PWA:
-
-```txt
-apps/web/public/manifest.webmanifest
-apps/web/public/offline.html
-apps/web/public/sw.js
-apps/web/public/icons/
-apps/web/src/lib/pwa.ts
-apps/web/src/components/pwa/InstallAppButton.tsx
-apps/web/src/main.tsx
-apps/web/index.html
-apps/web/src/app/router.tsx
-```
-
-Status PWA:
-
-```txt
-[✓] Manifest tersedia
-[✓] Icon tersedia
-[✓] Maskable icon tersedia
-[✓] Offline page tersedia
-[✓] Service worker tersedia
-[✓] Service worker registered
-[✓] Install button tersedia
-[✓] Install button tidak merusak mobile navbar
-[✓] Webapp bisa diinstall
-[✓] Manual test passed
-[✓] CI/deploy passed
-```
-
-Catatan penting:
-
-```txt
-Browser tidak selalu memberikan event beforeinstallprompt.
-Jika event tersedia, tombol Install Sakuin memunculkan prompt install.
-Jika event tidak tersedia, tombol memberi instruksi manual lewat toast.
-```
-
-Hal yang belum dibuat:
-
-```txt
-[ ] PWA update prompt
-[ ] Better offline mode
-[ ] App version display
-[ ] Install guide modal/page
-```
-
-Security note:
-
-```txt
-Service worker tidak boleh cache API private user seperti auth, transactions, summary, profile, goals, categories, dan export.
-```
-
----
-
-## 18. Feature Completion Status
-
-### Authentication
-
-```txt
-[✓] Register
-[✓] Login
-[✓] Logout
-[✓] Protected route
-[✓] Auth context
-[✓] Token storage
-[✓] GET /api/auth/me
-[✓] Generic login error
-[✓] Auth API tests
-```
-
-### Dashboard
-
-```txt
-[✓] Summary card
-[✓] Total income
-[✓] Total expense
-[✓] Balance
-[✓] Safe balance status
-[✓] Monthly trend
-[✓] Recent transactions
-[✓] Goals card
-[✓] Priority goal
-[✓] Add transaction from dashboard
-[✓] Quick Transaction from dashboard
-[✓] TanStack Query cache
-[✓] Exact money formatting for important summary values
-```
-
-### Transactions
-
-```txt
-[✓] Add transaction
-[✓] Edit transaction
-[✓] Delete transaction
-[✓] Confirm delete dialog
-[✓] Search
-[✓] Filter by type
-[✓] Filter by category
-[✓] Filter by date range
-[✓] Mobile date range filter UX improved
-[✓] Sorting
-[✓] Backend-driven pagination
-[✓] Limit per page
-[✓] TanStack Query cache
-[✓] Faster add/edit/delete UX
-[✓] Optimistic delete
-[✓] Toast feedback
-[✓] Ownership protection
-```
-
-### Quick Transaction / Catat Cepat
-
-```txt
-[✓] Tombol Catat Cepat di Dashboard
-[✓] Tombol Catat Cepat di TransactionsPage
-[✓] Input banyak transaksi sekaligus
-[✓] Rule-based parser
-[✓] Parser membaca nominal dan konteks umum
-[✓] Parser mengenali pola income/expense umum
-[✓] Parser dinormalisasi untuk variasi bahasa Indonesia informal
-[✓] Custom category matching lebih baik
-[✓] Fallback ke kategori Lain
-[✓] Draft review sebelum save
-[✓] Draft bisa diedit
-[✓] Draft bisa dihapus
-[✓] Draft bisa disimpan semua setelah review
-[✓] Low confidence/warning support
-[✓] Collapsed draft review UI agar mobile tidak penuh
-```
-
-Catatan:
-
-```txt
-Parser masih rule-based, bukan AI/LLM.
-Jangan berharap parser memahami semua variasi bahasa natural.
-Jangan auto-save transaksi dari parser tanpa review user.
-Jika nanti memakai AI parser, tetap harus draft-first.
-```
-
-### Categories
-
-```txt
-[✓] List default categories
-[✓] List custom categories
-[✓] Create custom category
-[✓] Edit custom category
-[✓] Delete custom category
-[✓] Prevent edit default category
-[✓] Prevent delete default category
-[✓] Prevent delete category used by transaction
-[✓] Filter ALL/INCOME/EXPENSE
-[✓] TanStack Query cache
-[✓] Faster category action UX
-[✓] Integrated with transaction forms
-[✓] Inline category creation from AddTransactionModal
-[✓] Inline category creation from EditTransactionModal
-[✓] Category ownership protection
-```
-
-### Goals
-
-```txt
-[✓] Create goal
-[✓] Edit goal
-[✓] Delete goal
-[✓] Add progress
-[✓] Progress percentage
-[✓] Set dashboard priority goal
-[✓] Clear invalid priority goal if goal deleted
-[✓] TanStack Query cache
-[✓] Faster/optimistic goal actions
-[✓] Toast feedback
-[✓] Ownership protection
-```
-
-### Profile
-
-```txt
-[✓] Get profile
-[✓] Update name
-[✓] Update safe balance limit
-[✓] Sync name to AppShell/sidebar
-[✓] Safe balance affects dashboard summary
-[✓] Numeric-only safe balance input
-[✓] Safe balance max Rp 1.000.000.000.000
-[✓] TanStack Query cache
-[✓] Faster/optimistic update UX
-[✓] Logout flow
-```
-
-### Export
-
-```txt
-[✓] Export JSON
-[✓] Export CSV
-[✓] Export XLSX
-[✓] Filter type
-[✓] Filter category
-[✓] Filter date range
-[✓] Custom filename
-[✓] Filename preview
-[✓] Date validation
-[✓] Disable button while exporting
-[✓] Toast feedback
-[✓] Standard apiDownload/auth flow
-[✓] User-isolated export
-[✓] JSON/CSV/XLSX export isolation tests
-```
-
----
-
-## 19. Security Status
-
-Security hardening sudah masuk fase lanjut untuk MVP/production awal.
-
-Security baseline yang sudah diterapkan:
-
-```txt
-[✓] Prisma ORM untuk mengurangi risiko SQL injection
-[✓] Zod validation untuk request body/query/params
-[✓] JWT Bearer Token authentication
-[✓] bcryptjs password hashing
-[✓] Protected endpoint
-[✓] User ownership check pada data user
-[✓] CORS production dibatasi
-[✓] Secret tidak disimpan di repository
-[✓] Security headers middleware
-[✓] Request body size limit basic
-[✓] Production error handling lebih aman
-[✓] Login rate limiting
-[✓] Register rate limiting
-[✓] General API rate limiting
-[✓] Data isolation tests
-[✓] Auth/token edge case tests
-[✓] Rate limit/API abuse edge case tests
-```
-
-Security headers:
-
-```txt
-X-Content-Type-Options
-X-Frame-Options
-Referrer-Policy
-Permissions-Policy
-Content-Security-Policy
-X-Permitted-Cross-Domain-Policies
-Strict-Transport-Security pada production
-```
-
-Request body size limit:
-
-```txt
-1 MB
-```
-
-Production error handling:
-
-```txt
-Error internal 500 di production tidak membocorkan detail error.
-Response memakai "Internal server error".
-HttpError yang aman tetap mengirim pesan user-facing seperti token invalid, route tidak ditemukan, atau validasi gagal.
-```
-
-Rate limit:
-
-```txt
-[✓] Login rate limit
-[✓] Register rate limit
-[✓] General API rate limit
-```
-
-Rate limit headers:
-
-```txt
-RateLimit-Limit
-RateLimit-Remaining
-RateLimit-Reset
-Retry-After saat 429
-```
-
-Important limitation:
-
-```txt
-Rate limit saat ini menggunakan in-memory store.
-Ini cukup untuk baseline/MVP dan low-scale usage.
-Namun untuk production serverless/multi-instance, in-memory store tidak ideal karena setiap instance dapat memiliki state berbeda.
-Jika traffic meningkat, pertimbangkan Redis/Upstash/KV-based rate limiting.
-```
-
-Security yang belum diterapkan:
-
-```txt
-[ ] Security logging and audit trail
-[ ] Request ID
-[ ] Failed login logging
-[ ] Rate limit hit logging
-[ ] Better JWT expiration strategy
-[ ] Refresh token strategy
-[ ] Migrasi auth ke httpOnly secure cookie
-[ ] CSRF strategy jika pindah ke cookie
-[ ] XSS hardening lanjutan
-[ ] CSP lanjutan untuk frontend
-[ ] Audit localStorage token risk
-[ ] Distributed rate limit dengan Redis/Upstash/KV
-[ ] OAuth token encryption untuk integrasi sensitif
-[ ] Revoke/disconnect mechanism untuk integrasi sensitif
-[ ] Privacy policy jika nanti ada fitur sensitif
-```
-
-Catatan penting:
-
-```txt
-Jangan pernah klaim Sakuin 100% aman.
-Security target realistis adalah mengurangi risiko, bukan menghapus semua risiko.
-```
-
----
-
-## 20. Security Test Coverage
-
-### Phase 24A — Auth Rate Limit + Security Test Baseline
+Quick Transaction adalah fitur frontend/parser rule-based untuk input transaksi cepat.
 
 Status:
 
 ```txt
-[✓] Selesai
+[✓] Tersedia dari Dashboard
+[✓] Tersedia dari TransactionsPage
+[✓] Parser mendukung natural Indonesian variations sederhana
+[✓] Parser mengenali income/expense umum
+[✓] Parser menggunakan kategori existing/custom jika cocok
+[✓] Draft review UI dibuat collapsed agar ringan di mobile
+[✓] User harus review sebelum simpan
 ```
 
-Coverage:
+Prinsip penting:
 
 ```txt
-[✓] Login rate limit
-[✓] User tidak bisa baca detail transaksi user lain
-[✓] User tidak bisa create transaction memakai custom category user lain
+Parser tidak langsung menyimpan transaksi final.
+Parser hanya membuat draft.
+User harus approve sebelum data masuk transaction API.
 ```
 
-### Phase 24B.1 — Cross-Cutting Security Tests
-
-Status:
+Batasan:
 
 ```txt
-[✓] Selesai
-```
-
-Coverage:
-
-```txt
-[✓] Security headers muncul
-[✓] CORS tidak memantulkan origin asing
-[✓] CORS mengizinkan localhost development
-[✓] Request body terlalu besar ditolak 413
-[✓] Authorization header format salah ditolak
-[✓] Bearer token invalid ditolak
-[✓] Endpoint private gagal tanpa token
-[✓] JSON endpoint menolak request tanpa Content-Type: application/json
-[✓] JSON endpoint menolak body JSON rusak
-```
-
-### Phase 24B.2 — Summary & Export Data Isolation Tests
-
-Status:
-
-```txt
-[✓] Selesai
-```
-
-Coverage:
-
-```txt
-[✓] Summary hanya menghitung transaksi user login
-[✓] Summary recent transactions tidak memuat transaksi user lain
-[✓] Summary category breakdown tidak memuat custom category user lain
-[✓] Export JSON hanya memuat transaksi user login
-[✓] Export JSON dengan categoryId milik user lain menghasilkan data kosong dan tidak bocor
-[✓] Export CSV tidak memuat catatan/transaksi/custom category user lain
-[✓] Export XLSX tidak memuat catatan/transaksi/custom category user lain
-[✓] Export filter type tetap hanya menghitung transaksi user login
-```
-
-### Phase 24B.3 — Auth & Token Edge Case Tests
-
-Status:
-
-```txt
-[✓] Selesai
-```
-
-Coverage:
-
-```txt
-[✓] Authorization: Bearer tanpa token valid ditolak
-[✓] Token signature salah ditolak
-[✓] Token expired ditolak
-[✓] Token tanpa userId ditolak
-[✓] Token dengan userId bukan string ditolak
-[✓] Token valid milik user yang sudah dihapus tidak bisa mengambil profile
-[✓] Register dengan password lemah ditolak
-[✓] Login dengan email tidak valid ditolak sebelum masuk auth service
-```
-
-### Phase 24B.4 — Rate Limit & API Abuse Edge Case Tests
-
-Status:
-
-```txt
-[✓] Selesai
-```
-
-Coverage:
-
-```txt
-[✓] Login rate limit memblok IP + email yang sama
-[✓] Login rate limit tidak memblok email berbeda dari IP berbeda
-[✓] Register rate limit memblok spam register dari IP yang sama
-[✓] General API rate limit memblok request berlebihan dari IP yang sama
-[✓] 429 response punya Retry-After
-[✓] 429 response punya RateLimit-Limit
-[✓] 429 response punya RateLimit-Remaining
-[✓] 429 response punya RateLimit-Reset
-[✓] Rate limit store bisa di-reset antar test
+Parser masih rule-based.
+Belum memakai AI/LLM.
+Tidak ditargetkan memahami semua variasi bahasa natural.
 ```
 
 ---
 
-## 21. Sensitive Integration Policy
+## 31. PWA Notes
 
-Fitur sensitif belum boleh langsung dibuat.
+Sakuin sudah installable sebagai PWA.
 
-Contoh fitur sensitif:
+Catatan install:
 
 ```txt
-[ ] Google Login
-[ ] Gmail transaction detection
-[ ] E-wallet transaction detection
-[ ] Mobile banking transaction detection
-[ ] Bank account integration
-[ ] AI financial assistant berbasis data pribadi
+Browser tidak selalu memberi event beforeinstallprompt.
+Jika event tersedia, tombol Install Sakuin bisa memicu prompt.
+Jika tidak tersedia, tombol menampilkan instruksi manual.
 ```
 
-Prinsip wajib:
+Catatan update:
 
 ```txt
-[ ] Jangan pernah meminta password email user
-[ ] Jangan pernah meminta password e-wallet/mobile banking user
-[ ] Gunakan OAuth resmi jika provider mendukung
-[ ] Gunakan scope minimal
-[ ] Jangan meminta Gmail scope saat user hanya ingin login dengan Google
-[ ] Jangan membaca semua email tanpa alasan kuat
-[ ] Parsing hanya email transaksi yang relevan
-[ ] Jangan menyimpan raw email
-[ ] Simpan hanya hasil ekstraksi transaksi yang diperlukan
-[ ] Hasil deteksi harus menjadi draft transaksi
-[ ] User wajib review dan approve sebelum transaksi disimpan
-[ ] User harus bisa disconnect akses
-[ ] User harus bisa revoke/delete token
-[ ] User harus bisa menghapus data hasil parsing
-[ ] Token OAuth harus dienkripsi jika disimpan
-[ ] Jangan log access token, refresh token, raw email, atau isi email sensitif
-[ ] Buat privacy policy yang jelas
-[ ] Buat audit log untuk connect/disconnect/sync
+Installed PWA tetap mengambil versi dari domain production.
+Jika deploy baru sudah tersedia, user biasanya perlu refresh/reopen app.
+Service worker/cache dapat membuat update tidak langsung terasa di sebagian kondisi.
 ```
 
-Urutan yang benar sebelum implementasi Gmail/e-wallet detection:
+Rule security PWA:
 
 ```txt
-1. Security Documentation
-2. Gmail/e-wallet integration architecture
-3. Google Cloud/OAuth consent planning
-4. Scope decision
-5. Token storage design
-6. Privacy/disclosure planning
-7. Draft detection design
-8. Review UI design
-9. Disconnect/revoke flow
-10. Baru implement kecil bertahap
+Service worker tidak boleh cache API private user.
+Jangan cache auth, transactions, summary, profile, goals, categories user-specific, export, atau AuditLog.
 ```
 
 ---
 
-## 22. Google Login vs Gmail API
+## 32. Known Technical Decisions
 
-Google Login dan Gmail API harus dipisahkan.
+### Auth token storage
 
-Google Login:
+Saat ini token disimpan di localStorage.
+
+Alasan:
 
 ```txt
-Tujuan: Authentication
-Scope ideal: openid, email, profile
-Tidak membutuhkan Gmail scope
+Cukup untuk MVP/production awal.
+Lebih sederhana untuk frontend auth flow.
 ```
 
-Gmail API:
+Risiko:
 
 ```txt
-Tujuan: Membaca email tertentu untuk mendeteksi transaksi
-Membutuhkan consent eksplisit
-Membutuhkan scope minimal
-Membutuhkan token storage design
-Membutuhkan disconnect/revoke flow
+Jika XSS terjadi, token bisa dicuri.
+```
+
+Future improvement:
+
+```txt
+Evaluasi httpOnly secure cookie + CSRF strategy.
+```
+
+---
+
+### Rate limit store
+
+Saat ini rate limit memakai in-memory store.
+
+Alasan:
+
+```txt
+Cukup untuk baseline/MVP dan traffic rendah.
+Mudah dites.
+```
+
+Risiko:
+
+```txt
+Tidak ideal untuk serverless/multi-instance karena state bisa berbeda antar instance.
+```
+
+Future improvement:
+
+```txt
+Redis/Upstash/Vercel KV rate limit.
+```
+
+---
+
+### Security event vs AuditLog
+
+Security events seperti failed login/rate limit masih application log.
+
+Business mutation events masuk AuditLog.
+
+Alasan:
+
+```txt
+Failed login/rate-limit bisa high-volume.
+AuditLog saat ini difokuskan untuk business trail yang volumenya lebih terkendali.
+```
+
+---
+
+### Audit persistence fail-open
+
+Audit log persistence fail-open.
+
+Alasan:
+
+```txt
+Audit trail penting, tetapi gagal menyimpan audit tidak boleh membuat fitur utama user gagal.
+Failure dicatat sebagai safe error log tanpa metadata sensitif.
+```
+
+---
+
+### Gmail/e-wallet integration
+
+Belum diimplementasikan.
+
+Rule:
+
+```txt
+Jangan coding Gmail/e-wallet integration sebelum security/privacy design matang.
+```
+
+---
+
+## 33. Workflow Preference dari User
+
+User menginginkan workflow development yang hati-hati:
+
+```txt
+1. Pahami konteks.
+2. Minta file relevan jika perlu.
+3. Jangan langsung memberi code tanpa konteks.
+4. Berikan full code replacement atau instruksi spesifik.
+5. Jalankan validasi.
+6. Manual test.
+7. Commit/push.
+8. Cek CI/deploy.
+9. Baru lanjut fase berikutnya.
+```
+
+User lebih suka:
+
+```txt
+[✓] Penjelasan detail dan hati-hati
+[✓] Step kecil per fase
+[✓] Validasi sebelum commit
+[✓] Tidak buru-buru ke fitur sensitif
+[✓] Kode clean, reusable, mudah debug, mudah maintain, mudah dikembangkan
+```
+
+User tidak suka:
+
+```txt
+[!] Code diberi komentar path file seperti // apps/api/tests/...
+[!] Script otomatis yang menginjeksi code besar ke existing file
+[!] Perubahan besar tanpa validasi
+[!] Fitur sensitif dibuat tanpa desain
+```
+
+Saat perlu membuat file/folder baru:
+
+```txt
+User lebih suka command terminal hanya untuk membuat file/folder.
+Contoh: New-Item, mkdir, touch.
+Untuk isi code, berikan full replacement code manual untuk dicopy.
+```
+
+---
+
+## 34. Code Style and Maintenance Rules
+
+Prinsip code:
+
+```txt
+[✓] Reusable
+[✓] Clean code
+[✓] Mudah didebug
+[✓] Mudah dimaintain
+[✓] Mudah dikembangkan
+[✓] Type-safe
+[✓] Testable
 ```
 
 Rules:
 
 ```txt
-[✓] Jangan otomatis meminta Gmail scope saat user hanya ingin login dengan Google.
-[✓] Gmail access hanya boleh diminta jika user eksplisit mengaktifkan fitur Hubungkan Gmail.
-[✓] Jelaskan data apa yang akan dibaca.
-[✓] Jelaskan data apa yang disimpan.
-[✓] Jelaskan user bisa disconnect kapan saja.
+Jangan menambah komentar path file di atas code.
+Jangan membuat helper duplikat jika sudah ada utility reusable.
+Jangan mencampur business logic service dengan request context jika tidak perlu.
+Jangan membuat logging menyimpan data sensitif.
+Jangan mengubah response API tanpa update frontend dan docs.
+Jangan mengubah Prisma schema tanpa migration.
+Jangan mengubah auth/CORS/security middleware tanpa regression test.
+```
+
+Pattern yang sudah dipakai:
+
+```txt
+Controller:
+- ambil context request
+- ambil userId dari auth context
+- panggil service
+- record audit event jika mutation berhasil
+- return success response
+
+Service:
+- business logic
+- ownership checks
+- Prisma query
+- mapping response
+
+Utils:
+- response helper
+- http error
+- safe metadata
+- audit event
+- audit recorder
+- audit sink
 ```
 
 ---
 
-## 23. Documentation Status
-
-Dokumentasi yang harus sinkron dengan kondisi terbaru:
-
-```txt
-README.md        : project overview, setup, fitur, deployment, status terbaru
-docs/API.md      : detail endpoint backend dan security notes
-docs/HANDOFF.md  : konteks teknis dan status untuk developer berikutnya
-docs/SECURITY.md : security baseline, policy, dan roadmap sebelum integrasi sensitif
-```
-
-Status dokumentasi Phase 24C:
-
-```txt
-[✓] README.md full replacement disiapkan
-[✓] docs/SECURITY.md dibuat/disiapkan
-[✓] docs/HANDOFF.md full replacement disiapkan
-[ ] docs/API.md dicek/update jika perlu
-[ ] User replace file lokal
-[ ] Validasi minimal dijalankan
-[ ] Commit dokumentasi
-[ ] Push
-[ ] CI checked
-[ ] Deploy checked
-```
-
-Catatan:
-
-```txt
-Commit ditunda sampai seluruh file Markdown selesai.
-```
-
----
-
-## 24. Manual Production Smoke Test
+## 35. Manual Production Smoke Test
 
 Checklist production setelah perubahan besar:
 
@@ -1323,24 +1768,16 @@ Checklist production setelah perubahan besar:
 [ ] Login
 [ ] Dashboard tampil normal
 [ ] Summary dashboard muncul
-[ ] Tambah transaksi manual
+[ ] Tambah transaksi
 [ ] Edit transaksi
 [ ] Hapus transaksi
-[ ] Catat Cepat dari Dashboard
-[ ] Catat Cepat dari TransactionsPage
-[ ] Review draft Catat Cepat
-[ ] Save draft Catat Cepat
 [ ] Filter/search/sort/pagination transaksi
-[ ] Filter tanggal transaksi di mobile tampil jelas
 [ ] Tambah category custom
 [ ] Edit category custom
 [ ] Hapus category custom
-[ ] Tambah category inline dari modal transaksi
 [ ] Tambah goal
 [ ] Edit goal
-[ ] Tambah dana goal
 [ ] Hapus goal
-[ ] Set goal prioritas dashboard
 [ ] Update profile
 [ ] Update safe balance limit
 [ ] Export JSON
@@ -1349,87 +1786,24 @@ Checklist production setelah perubahan besar:
 [ ] Tombol install PWA berjalan atau menampilkan instruksi manual
 [ ] Logout
 [ ] Login ulang
-[ ] Refresh route /dashboard tidak 404
-[ ] Refresh route /transactions tidak 404
-[ ] Refresh route /categories tidak 404
-[ ] Refresh route /goals tidak 404
-[ ] Refresh route /profile tidak 404
-[ ] Refresh route /export tidak 404
-[ ] CI passed
-[ ] Vercel deployment passed
+[ ] Refresh route protected tidak 404
+[ ] Cek GitHub Actions CI
+[ ] Cek Vercel deployment
 ```
 
-Untuk dokumentasi saja, manual production smoke test lengkap tidak wajib, tetapi setelah push tetap cek CI/deploy.
-
----
-
-## 25. Known Solved Issues
-
-Masalah yang sudah pernah muncul dan sudah diselesaikan:
+Checklist tambahan untuk security/audit:
 
 ```txt
-[✓] Supabase connection string salah format
-[✓] Prisma DIRECT_URL missing
-[✓] Backend route handler error
-[✓] CORS error production
-[✓] Vercel API URL salah memakai dashboard URL
-[✓] Vercel preview URL terkena authentication
-[✓] Backend env variable tidak terbaca
-[✓] SPA route refresh 404 di Vercel
-[✓] pnpm-lock mismatch di CI
-[✓] GitHub Actions secrets/variables salah tempat
-[✓] Category API test timeout
-[✓] Frontend category management CI error
-[✓] Dashboard reload berulang tanpa cache
-[✓] Transactions reload berulang tanpa cache
-[✓] Export token lookup manual diganti ke apiDownload standar
-[✓] Safe balance bisa input karakter tidak valid
-[✓] Dashboard compact money formatting membulatkan angka penting
-[✓] PWA install button sempat mengganggu mobile navbar
-[✓] Transactions mobile date range filter sempat membingungkan di mobile
-[✓] API belum punya basic security headers
-[✓] Production 500 error sebelumnya berpotensi mengirim detail error
-[✓] Vercel backend build error karena Request.clone typing pada rate-limit middleware
-[✓] Register rate limit test timeout karena bcrypt.hash berulang
-[✓] XLSX isolation test typing issue dengan ExcelJS Buffer
-[✓] Auth/token test body.data possibly undefined
+[ ] Response memiliki X-Request-Id
+[ ] Production log tidak membocorkan token/password/raw body
+[ ] AuditLog mencatat business event yang relevan
+[ ] AuditLog metadata aman
+[ ] Tidak ada audit_log_persist_failed di production log
 ```
 
 ---
 
-## 26. Development Principles
-
-Prinsip yang sudah dipakai dan harus dilanjutkan:
-
-```txt
-1. Jangan ubah banyak area sekaligus tanpa validasi bertahap.
-2. Jangan menebak struktur file.
-3. Jika butuh konteks code, minta file spesifik.
-4. Untuk membuat file/folder baru, gunakan command sederhana seperti mkdir/New-Item/touch.
-5. Jangan gunakan script otomatis besar untuk inject kode ke file existing kecuali diminta eksplisit.
-6. Utamakan full code replacement untuk file besar agar minim typo dan mismatch.
-7. Jalankan typecheck/test/build sebelum commit.
-8. Gunakan ToastProvider untuk feedback user.
-9. Gunakan ConfirmDialog untuk aksi destructive.
-10. Hindari window.confirm() dan alert().
-11. Gunakan AppShell untuk protected pages.
-12. Gunakan TanStack Query untuk server state.
-13. Invalidate cache yang terkait setelah mutation.
-14. Pakai optimistic update hanya jika rollback jelas.
-15. Validasi penting harus ada di frontend dan backend.
-16. Jangan commit secret.
-17. Jangan tag release sebelum CI/deploy aman.
-18. Dokumentasi harus ikut diupdate setelah milestone besar.
-19. Jangan mengubah service worker tanpa memahami efek cache.
-20. Jangan cache API private user di service worker.
-21. Jangan mengubah auth/security tanpa regression test.
-22. Jangan auto-save hasil parser natural language tanpa user review.
-23. Jangan membuat Gmail/e-wallet detection sebelum security/privacy readiness matang.
-```
-
----
-
-## 27. Things That Must Not Be Changed Carelessly
+## 36. Hal yang Harus Dijaga
 
 Jangan mengubah hal berikut sembarangan:
 
@@ -1445,11 +1819,13 @@ Jangan mengubah hal berikut sembarangan:
 [!] ToastProvider
 [!] ConfirmDialog
 [!] Service worker caching strategy
-[!] Security middleware global
-[!] Rate limit middleware
-[!] Ownership/data isolation checks
 [!] Export response format
-[!] Quick Transaction draft-first behavior
+[!] Ownership/data isolation checks
+[!] Rate limit middleware tanpa test
+[!] Request ID behavior
+[!] Safe metadata sanitizer
+[!] AuditLog metadata safety
+[!] Audit sink fail-open behavior
 ```
 
 Jika mengubah Prisma schema:
@@ -1458,9 +1834,9 @@ Jika mengubah Prisma schema:
 [ ] Buat migration
 [ ] Update Prisma Client
 [ ] Update backend tests
-[ ] Jalankan backend typecheck/test/build
+[ ] Test lokal
 [ ] Cek CI
-[ ] Cek production
+[ ] Cek deploy
 ```
 
 Jika mengubah auth:
@@ -1468,201 +1844,137 @@ Jika mengubah auth:
 ```txt
 [ ] Test register
 [ ] Test login
-[ ] Test /api/auth/me
 [ ] Test logout
-[ ] Test protected route
-[ ] Test invalid token
-[ ] Test expired token
-[ ] Evaluasi token/session security
-[ ] Evaluasi CSRF jika pindah ke cookie
+[ ] Test /api/auth/me
+[ ] Test protected route frontend
+[ ] Test token invalid/expired
+[ ] Test deleted user token
+[ ] Pertimbangkan risiko CSRF jika pindah ke cookie
 ```
 
 Jika mengubah service worker:
 
 ```txt
-[ ] Jangan cache API private user
-[ ] Jangan cache endpoint auth/transactions/summary/profile/goals/export
-[ ] Test install PWA
-[ ] Test reload production
-[ ] Test behavior update aplikasi
-[ ] Test logout/login ulang
+[ ] Jangan cache endpoint private user
+[ ] Jangan cache auth response
+[ ] Jangan cache transactions/summary/profile/goals/export
+[ ] Test installed PWA
+[ ] Test refresh app setelah deploy
 ```
 
-Jika mengubah rate limit:
+Jika mengubah audit/logging:
 
 ```txt
-[ ] Update rate limit tests
-[ ] Test login rate limit
-[ ] Test register rate limit
-[ ] Test general API rate limit
-[ ] Pastikan 429 headers tetap benar
+[ ] Jangan log password/token/Authorization header
+[ ] Jangan log raw body
+[ ] Jangan log transaction amount/note
+[ ] Jangan log goal amount/name
+[ ] Jangan log category name/icon/color value
+[ ] Jangan log export content
+[ ] Test metadata redaction
+[ ] Test fail-open behavior
+[ ] Test database sink jika AuditLog berubah
 ```
 
 ---
 
-## 28. Backlog Lanjutan
+## 37. Next Recommended Roadmap
 
-Fitur dan improvement yang belum dibuat:
-
-```txt
-[ ] Finalisasi Phase 24C Security Documentation
-[ ] Update docs/API.md agar selaras dengan security docs terbaru
-[ ] Phase 24D Security Logging & Audit Trail Design
-[ ] Phase 24E Google Login Design, bukan Gmail reading
-[ ] Phase 24F Gmail Transaction Detection Architecture
-[ ] Phase 24G Distributed Rate Limit / Production Hardening
-[ ] PWA update prompt
-[ ] Better offline mode
-[ ] App version display
-[ ] Install guide modal/page
-[ ] Bundle size monitoring lanjutan
-[ ] Budgeting per kategori
-[ ] Recurring transaction
-[ ] Advanced auth security / cookie migration
-[ ] Dark mode
-[ ] Data visualization enhancement
-[ ] Import transaksi dari CSV/XLSX
-[ ] Multi-account wallet
-[ ] Notification/reminder untuk goal atau recurring transaction
-[ ] Email/e-wallet transaction detection research
-[ ] AI assistant
-```
-
----
-
-## 29. Recommended Next Development Phase
-
-Urutan pengembangan yang disarankan dari kondisi terbaru:
+Prioritas paling aman dari kondisi saat ini:
 
 ```txt
-1. Selesaikan Phase 24C Security Documentation
-2. Update docs/API.md jika perlu
-3. Jalankan validasi dokumentasi minimal
-4. Commit/push dokumentasi
-5. Cek CI dan deploy
-6. Phase 24D Security Logging & Audit Trail Design
-7. Phase 24E Google Login Design
-8. Phase 24F Gmail Transaction Detection Architecture
-9. Phase 24G Distributed Rate Limit / Production Hardening
-10. PWA Update Prompt
-11. Budgeting per Category
-12. Recurring Transaction
-```
-
-Prioritas paling aman:
-
-```txt
-1. Finalisasi Security Documentation
-2. Security Logging & Audit Trail Design
-3. Google Login Design tanpa Gmail scope
-4. Gmail Transaction Detection Architecture tanpa coding API dulu
-5. Distributed Rate Limit research
-```
-
-Alasan:
-
-```txt
-Security documentation penting karena backend sudah mendapat security hardening dan test tambahan.
-Audit trail penting sebelum integrasi sensitif.
-Google Login harus dipisahkan dari Gmail reading.
-Gmail/e-wallet detection menyentuh data sangat sensitif sehingga harus dirancang dulu.
-Distributed rate limit penting jika traffic meningkat karena in-memory store tidak ideal untuk serverless/multi-instance.
-```
-
----
-
-## 30. Current Best Next Action
-
-Kondisi saat dokumen ini diperbarui:
-
-```txt
-README.md sudah diarahkan ke status security terbaru.
-docs/SECURITY.md dibuat untuk Phase 24C.
-docs/HANDOFF.md diperbarui untuk status terbaru.
-Commit belum dilakukan karena semua Markdown belum selesai.
-```
-
-Next action paling tepat:
-
-```txt
-1. Replace docs/HANDOFF.md dengan isi terbaru.
-2. Lanjut cek/update docs/API.md.
-3. Jalankan validasi minimal.
-4. Cek git diff semua file Markdown.
-5. Baru commit dokumentasi.
-6. Push.
-7. Cek GitHub Actions CI.
-8. Cek Vercel deployment.
-```
-
----
-
-## 31. Suggested Finalization Step
-
-Setelah README, SECURITY, HANDOFF, dan API sudah update:
-
-```bash
-git status
-git diff -- README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/api typecheck
-git add README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
-git commit -m "Update documentation for security hardening"
-git push
-```
-
-Lalu cek:
-
-```txt
-[ ] GitHub Actions CI
-[ ] Vercel deployment
-[ ] Production /health
-[ ] Production /api/health
-[ ] Production smoke test singkat jika perlu
+1. Selesaikan Phase 24D.5 - Security Documentation Sync
+2. Phase 24E - Google Login Design, bukan Gmail reading
+3. Phase 24F - Gmail Transaction Detection Architecture, tanpa coding API dulu
+4. Phase 24G - Distributed Rate Limit / Production Hardening
+5. Phase 24H - Advanced Auth Security / Cookie Migration Research
+6. Budgeting per Category
+7. Recurring Transaction
+8. PWA Update Prompt lanjutan
 ```
 
 Catatan:
 
 ```txt
-Tidak perlu membuat tag baru hanya untuk dokumentasi, kecuali diputuskan sebagai milestone release.
+Google Login harus dipisahkan dari Gmail reading.
+Gmail/e-wallet detection menyentuh data sangat sensitif sehingga harus dirancang dulu.
+Distributed rate limit penting jika traffic meningkat karena in-memory store tidak ideal untuk serverless/multi-instance.
+Budgeting per Category adalah fitur produk yang paling natural setelah transaction/category/summary stabil.
 ```
 
 ---
 
-## 32. Final Notes for Next Agent
+## 38. Immediate Next Step
 
-Jika agent berikutnya melanjutkan project ini, pahami terlebih dahulu:
+Dari kondisi dokumen saat ini, langkah langsung berikutnya adalah:
 
 ```txt
-1. Project sudah production-ready.
-2. Semua page utama sudah stabil.
-3. TanStack Query sudah dipakai untuk server state.
-4. PWA installable support sudah selesai.
-5. Transactions mobile date range filter sudah diperbaiki.
-6. Quick Transaction MVP sudah selesai dan memakai draft-first review.
-7. Security hardening sudah masuk fase 24B.4.
-8. docs/SECURITY.md dibuat pada Phase 24C.
-9. Jangan rollback pola cache ke useEffect manual tanpa alasan kuat.
-10. Jangan menghapus queryKeys/queryClient karena dipakai lintas fitur.
-11. Jangan mengubah CORS/env/deployment config tanpa validasi production.
-12. Jangan mengubah Prisma schema tanpa migration dan test.
-13. Jangan mengubah auth/token flow tanpa test login/register/protected route.
-14. Jangan menambah fitur sensitif email/e-wallet sebelum security/privacy design matang.
-15. Jangan meminta Gmail scope hanya untuk login dengan Google.
-16. Jangan menyimpan raw email.
-17. Jangan auto-save transaksi hasil parser/email detection.
-18. Jangan mengklaim aplikasi 100% aman.
+[ ] Update docs/API.md agar sinkron dengan request ID, CORS X-Request-Id, security logging, audit trail, AuditLog, dan status test terbaru.
+[ ] Setelah semua Markdown selesai, jalankan typecheck frontend/backend.
+[ ] Cek git diff semua Markdown.
+[ ] Commit dokumentasi.
+[ ] Push.
+[ ] Cek CI/deploy/health.
 ```
 
-Workflow yang harus diikuti:
+Suggested validation untuk dokumentasi:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
+git status
+git diff -- README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
+```
+
+Jika ingin full confidence sebelum commit:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Suggested commit setelah semua Markdown selesai:
+
+```bash
+git add README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
+git commit -m "Update documentation for audit trail security hardening"
+git push
+```
+
+Setelah push:
 
 ```txt
-Pahami konteks
-Minta file relevan jika perlu
-Berikan full code replacement atau instruksi spesifik
-Jalankan validasi
-Manual test
-Commit/push
-Cek CI/deploy
-Update dokumentasi jika ada milestone
+[ ] GitHub Actions CI passed
+[ ] Vercel deployment passed
+[ ] Production /health normal
+[ ] Production /api/health normal
+```
+
+---
+
+## 39. Final Notes for Next Developer or Agent
+
+Sakuin sudah berada pada fase production dengan security baseline yang cukup matang untuk MVP/early production.
+
+Namun beberapa prinsip harus tetap dijaga:
+
+```txt
+Jangan mengklaim aplikasi 100% aman.
+Jangan membuat fitur sensitif tanpa desain security/privacy.
+Jangan menyimpan data sensitif di log atau audit metadata.
+Jangan membaca Gmail/e-wallet/mobile banking data tanpa consent eksplisit.
+Jangan auto-save transaksi dari parser/email detection tanpa user review.
+Jangan mengubah Prisma schema tanpa migration dan test.
+Jangan mengubah auth flow tanpa regression test.
+Jangan mengubah CORS/deployment config tanpa production validation.
+```
+
+Project harus dilanjutkan dengan pola:
+
+```txt
+Pahami konteks → minta file relevan → ubah kecil dan terukur → validasi → manual test → commit/push → cek CI/deploy → lanjut fase berikutnya.
 ```

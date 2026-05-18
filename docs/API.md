@@ -14,7 +14,7 @@ Validation   : Zod
 Auth         : JWT Bearer Token
 Test         : Vitest
 Export       : JSON, CSV, XLSX
-Security     : Security headers, request body size limit, CORS allowlist, rate limiting, safer production error handling, data isolation tests
+Security     : Security headers, request body size limit, CORS allowlist, rate limiting, request ID, safe logging, production error masking, data isolation tests, database-backed audit trail
 ```
 
 Catatan penting:
@@ -22,6 +22,7 @@ Catatan penting:
 ```txt
 Dokumentasi ini hanya mencakup API yang sudah ada saat ini.
 Quick Transaction / Catat Cepat adalah fitur frontend/parser yang menyimpan hasil final melalui endpoint transaksi biasa.
+AuditLog sudah aktif secara internal, tetapi belum ada public/protected API untuk membaca AuditLog.
 Gmail/e-wallet/mobile banking transaction detection belum diimplementasikan sebagai API.
 Google Login belum diimplementasikan sebagai API.
 ```
@@ -104,7 +105,43 @@ Catatan:
 
 ```txt
 HttpError yang memang aman untuk user tetap boleh mengirim pesan spesifik.
-Contoh: token invalid, route tidak ditemukan, validasi gagal, data tidak ditemukan, atau rate limit exceeded.
+Contoh: token invalid, route tidak ditemukan, validasi gagal, data tidak ditemukan, request terlalu besar, atau rate limit exceeded.
+```
+
+---
+
+## Request ID
+
+Backend menambahkan request ID pada response.
+
+Header response:
+
+```txt
+X-Request-Id: <request-id>
+```
+
+Client boleh mengirim request ID sendiri selama formatnya aman:
+
+```txt
+X-Request-Id: client-request-123
+```
+
+Behavior:
+
+```txt
+[✓] Jika client mengirim X-Request-Id yang aman, backend dapat memakai request ID tersebut
+[✓] Jika client tidak mengirim X-Request-Id, backend membuat request ID baru
+[✓] Jika client mengirim X-Request-Id yang tidak aman, backend mengganti dengan request ID baru
+[✓] Response membawa X-Request-Id
+[✓] Request ID dipakai untuk request log, security event, dan audit event
+```
+
+Aturan:
+
+```txt
+Request ID bukan token.
+Request ID bukan session identifier.
+Request ID tidak boleh berisi password, token, email, raw body, atau data sensitif lain.
 ```
 
 ---
@@ -157,6 +194,8 @@ Security bukan kondisi absolut. Project tidak boleh diklaim 100% aman. Target re
 [✓] CORS misconfiguration
 [✓] Production error leakage
 [✓] Export data leakage
+[✓] Sensitive data leakage through logs
+[✓] Sensitive data leakage through audit metadata
 ```
 
 ---
@@ -235,6 +274,7 @@ Allowed headers:
 ```txt
 Content-Type
 Authorization
+X-Request-Id
 ```
 
 Allowed methods:
@@ -303,6 +343,103 @@ Rate limit menggunakan in-memory store.
 Ini cukup untuk baseline/MVP dan low-scale usage.
 Namun untuk production serverless/multi-instance, in-memory store tidak ideal karena setiap instance dapat memiliki state berbeda.
 Jika traffic meningkat, pertimbangkan Redis/Upstash/KV-based rate limiting.
+```
+
+---
+
+### Safe Logging
+
+Backend memiliki safe request logging dan safe security event logging.
+
+Safe request log dapat mencatat:
+
+```txt
+requestId
+method
+path
+status
+durationMs
+timestamp
+```
+
+Safe security event yang didukung:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+Log tidak boleh memuat:
+
+```txt
+password
+token
+Authorization header
+cookie
+raw request body
+email mentah
+transaction amount
+transaction note
+goal name
+goal amount
+category name
+export content
+OAuth token
+```
+
+---
+
+### Audit Trail
+
+Backend memiliki database-backed audit trail menggunakan Prisma model `AuditLog`.
+
+Audit trail adalah proses internal. Saat ini tidak ada endpoint API untuk membaca AuditLog.
+
+Business audit events yang sudah dicatat:
+
+```txt
+profile.updated
+export.transactions_generated
+transaction.created
+transaction.updated
+transaction.deleted
+goal.created
+goal.updated
+goal.deleted
+category.created
+category.updated
+category.deleted
+```
+
+Audit event tidak mengubah response API. Audit event dicatat setelah mutation/export berhasil.
+
+Audit persistence bersifat **fail-open**:
+
+```txt
+Jika penyimpanan audit log gagal, request utama user tetap tidak langsung gagal.
+Failure hanya dicatat sebagai safe error log tanpa metadata sensitif.
+```
+
+Audit metadata tidak boleh memuat:
+
+```txt
+password
+JWT token
+Authorization header
+raw request body
+email mentah
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export content
+OAuth access token
+OAuth refresh token
 ```
 
 ---
@@ -396,6 +533,29 @@ DELETE /api/goals/:id
 
 GET    /api/export/transactions
 ```
+
+---
+
+## Internal-Only Behavior
+
+Behavior berikut berjalan secara internal dan bukan endpoint publik:
+
+```txt
+Request ID generation
+Safe request logging
+Safe security event logging
+Audit event recorder
+Database AuditLog persistence
+```
+
+Saat ini tidak ada endpoint:
+
+```txt
+GET /api/audit-logs
+GET /api/security-events
+```
+
+Jika endpoint audit log dibuat nanti, harus ada desain authorization, pagination, filter, rate limit, dan test khusus.
 
 ---
 
@@ -524,8 +684,11 @@ Tidak perlu token.
 
 ```txt
 name     wajib diisi
+name     maksimal 100 karakter
 email    wajib format email valid
-password wajib memenuhi aturan minimal backend
+email    akan dinormalisasi lowercase
+password minimal 8 karakter
+password harus mengandung angka
 email    harus unik
 ```
 
@@ -541,7 +704,7 @@ email    harus unik
       "id": "user-id",
       "name": "Rizal",
       "email": "rizal@example.com",
-      "safeBalanceLimit": "0"
+      "safeBalanceLimit": 0
     }
   }
 }
@@ -567,7 +730,8 @@ email    harus unik
     "formErrors": [],
     "fieldErrors": {
       "password": [
-        "Pesan validasi password"
+        "Password minimal 8 karakter",
+        "Password harus mengandung angka"
       ]
     }
   }
@@ -613,7 +777,7 @@ Tidak perlu token.
       "id": "user-id",
       "name": "Rizal",
       "email": "rizal@example.com",
-      "safeBalanceLimit": "0"
+      "safeBalanceLimit": 0
     }
   }
 }
@@ -651,6 +815,7 @@ Tidak perlu token.
 ```txt
 Login error dibuat generic agar tidak mudah dipakai untuk user enumeration.
 Login terkena rate limit.
+Failed login dicatat sebagai safe security event tanpa password/email mentah.
 ```
 
 ---
@@ -679,7 +844,7 @@ Authorization: Bearer <token>
     "id": "user-id",
     "name": "Rizal",
     "email": "rizal@example.com",
-    "safeBalanceLimit": "0"
+    "safeBalanceLimit": 0
   }
 }
 ```
@@ -775,6 +940,8 @@ Content-Type: application/json
 
 ### Body
 
+Minimal satu field wajib dikirim.
+
 ```json
 {
   "name": "Rizal Updated",
@@ -802,10 +969,11 @@ Content-Type: application/json
 ### Validasi
 
 ```txt
-name wajib diisi
-safeBalanceLimit wajib berupa angka valid
+name wajib diisi jika dikirim
+name maksimal 100 karakter
+safeBalanceLimit wajib berupa angka valid jika dikirim
 safeBalanceLimit tidak boleh negatif
-safeBalanceLimit disarankan berada pada rentang 0 sampai 1.000.000.000.000
+safeBalanceLimit maksimal 2 angka desimal
 ```
 
 ### Catatan Frontend
@@ -819,6 +987,29 @@ Hanya angka
 Tidak boleh minus
 Tidak boleh huruf
 Tidak boleh simbol
+```
+
+### Audit Event
+
+Jika update berhasil, backend mencatat audit event internal:
+
+```txt
+profile.updated
+```
+
+Metadata aman:
+
+```txt
+changedFields
+```
+
+Audit event tidak menyimpan:
+
+```txt
+nama baru user
+safeBalanceLimit value
+token
+raw body
 ```
 
 ---
@@ -933,8 +1124,8 @@ Content-Type: application/json
 ```txt
 name  wajib
 type  wajib, INCOME atau EXPENSE
-icon  opsional
-color opsional
+icon  opsional, maksimal 50 karakter
+color opsional, maksimal 30 karakter
 ```
 
 ### Response
@@ -958,10 +1149,38 @@ color opsional
 
 ```txt
 name wajib diisi
+name maksimal 50 karakter
 type wajib INCOME atau EXPENSE
 name tidak boleh duplikat untuk user dan type yang sama
+name tidak boleh sama dengan default category visible untuk type yang sama
 icon opsional
 color opsional
+```
+
+### Audit Event
+
+Jika create berhasil, backend mencatat audit event internal:
+
+```txt
+category.created
+```
+
+Metadata aman:
+
+```txt
+type
+hasIcon
+hasColor
+```
+
+Audit event tidak menyimpan:
+
+```txt
+category name
+icon value
+color value
+token
+raw body
 ```
 
 ---
@@ -1017,24 +1236,53 @@ Semua field opsional, tetapi minimal satu field dikirim.
 }
 ```
 
-### Error Jika Default Category Diedit
+### Error Jika Default Category atau Category User Lain
 
 ```json
 {
   "success": false,
-  "message": "Kategori default tidak bisa diubah",
+  "message": "Kategori tidak ditemukan atau tidak bisa diubah",
   "errors": null
 }
 ```
 
-### Error Jika Bukan Milik User
+### Error Jika Type Diubah Saat Category Sudah Dipakai
 
 ```json
 {
   "success": false,
-  "message": "Kategori tidak ditemukan",
+  "message": "Tipe kategori tidak bisa diubah karena kategori sudah digunakan oleh transaksi",
   "errors": null
 }
+```
+
+### Audit Event
+
+Jika update berhasil, backend mencatat audit event internal:
+
+```txt
+category.updated
+```
+
+Metadata aman:
+
+```txt
+changedFields
+typeProvided
+iconProvided
+hasIcon
+colorProvided
+hasColor
+```
+
+Audit event tidak menyimpan:
+
+```txt
+category name
+icon value
+color value
+token
+raw body
 ```
 
 ---
@@ -1067,158 +1315,64 @@ id wajib, category id
   "message": "Kategori berhasil dihapus",
   "data": {
     "id": "custom-category-id",
-    "name": "Transportasi Harian",
+    "name": "Transportasi",
     "type": "EXPENSE",
-    "icon": "bus",
-    "color": "#0284c7",
+    "icon": "car",
+    "color": "#0ea5e9",
     "isDefault": false
   }
 }
 ```
 
-### Error Jika Default Category Dihapus
+### Error Jika Default Category atau Category User Lain
 
 ```json
 {
   "success": false,
-  "message": "Kategori default tidak bisa dihapus",
+  "message": "Kategori tidak ditemukan atau tidak bisa diubah",
   "errors": null
 }
 ```
 
-### Error Jika Category Masih Dipakai Transaksi
+### Error Jika Category Sudah Digunakan Transaksi
 
 ```json
 {
   "success": false,
-  "message": "Kategori masih digunakan oleh transaksi",
+  "message": "Kategori tidak bisa dihapus karena sudah digunakan oleh transaksi",
   "errors": null
 }
 ```
 
-### Catatan
+### Audit Event
+
+Jika delete berhasil, backend mencatat audit event internal:
 
 ```txt
-Category yang sudah dipakai transaksi tidak boleh dihapus agar histori transaksi tetap valid.
+category.deleted
+```
+
+Metadata aman:
+
+```txt
+reason
+```
+
+Audit event tidak menyimpan:
+
+```txt
+category name
+icon value
+color value
+token
+raw body
 ```
 
 ---
 
 # 5. Transactions API
 
-Transaction adalah data pemasukan atau pengeluaran user.
-
-Semua endpoint transaksi wajib user-isolated.
-
----
-
-## POST `/api/transactions`
-
-Membuat transaksi baru.
-
-### Auth
-
-Wajib token.
-
-### Headers
-
-```txt
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-### Body Expense
-
-```json
-{
-  "type": "EXPENSE",
-  "amount": "250000",
-  "categoryId": "cat_expense_food",
-  "date": "2026-05-15T00:00:00.000Z",
-  "note": "Makan siang"
-}
-```
-
-### Body Income
-
-```json
-{
-  "type": "INCOME",
-  "amount": "3000000",
-  "categoryId": "cat_income_salary",
-  "date": "2026-05-15T00:00:00.000Z",
-  "note": "Gaji"
-}
-```
-
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Transaksi berhasil dibuat",
-  "data": {
-    "id": "transaction-id",
-    "type": "EXPENSE",
-    "amount": "250000",
-    "note": "Makan siang",
-    "date": "2026-05-15T00:00:00.000Z",
-    "categoryId": "cat_expense_food",
-    "category": {
-      "id": "cat_expense_food",
-      "name": "Makanan",
-      "type": "EXPENSE",
-      "icon": "utensils",
-      "color": "#f97316",
-      "isDefault": true
-    },
-    "createdAt": "2026-05-15T00:00:00.000Z",
-    "updatedAt": "2026-05-15T00:00:00.000Z"
-  }
-}
-```
-
-### Validasi Amount
-
-```txt
-amount wajib diisi
-amount harus angka positif
-amount harus lebih dari 0
-amount maksimal 1.000.000.000.000
-amount maksimal 2 angka desimal
-amount tidak boleh minus
-amount tidak boleh format tidak valid
-```
-
-### Validasi Category
-
-```txt
-categoryId wajib diisi
-category harus ada
-category harus bisa dipakai user login
-category type harus sama dengan transaction type
-category INCOME hanya boleh untuk transaksi INCOME
-category EXPENSE hanya boleh untuk transaksi EXPENSE
-```
-
-### Error Category Tidak Valid
-
-```json
-{
-  "success": false,
-  "message": "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi",
-  "errors": null
-}
-```
-
-### Catatan Quick Transaction
-
-```txt
-Quick Transaction / Catat Cepat tidak memiliki endpoint khusus.
-Frontend parser membuat draft transaksi.
-Setelah user review dan approve, frontend menyimpan transaksi final melalui POST /api/transactions.
-Jangan membuat endpoint auto-save untuk parser tanpa draft review.
-```
+Transaction adalah data utama untuk pemasukan dan pengeluaran user.
 
 ---
 
@@ -1239,22 +1393,23 @@ Authorization: Bearer <token>
 ### Query Params
 
 ```txt
-page        optional, default 1
-limit       optional, default 10, max 100
-type        optional, INCOME | EXPENSE
-categoryId  optional
-search      optional
-startDate   optional
-endDate     optional
-sort        optional, date_desc | date_asc | created_desc | created_asc
+page       optional, default 1
+limit      optional, default 10, maksimal 100
+type       optional, INCOME | EXPENSE
+categoryId optional
+search     optional
+startDate  optional
+endDate    optional
+sort       optional, date_desc | date_asc | created_desc | created_asc
 ```
 
 ### Contoh Request
 
 ```txt
+GET /api/transactions
 GET /api/transactions?page=1&limit=10
-GET /api/transactions?page=1&limit=10&type=EXPENSE
-GET /api/transactions?page=1&limit=20&categoryId=custom-category-id
+GET /api/transactions?type=EXPENSE
+GET /api/transactions?categoryId=category-id
 GET /api/transactions?search=makan
 GET /api/transactions?startDate=2026-05-01&endDate=2026-05-31
 GET /api/transactions?sort=date_asc
@@ -1271,10 +1426,9 @@ GET /api/transactions?sort=date_asc
       {
         "id": "transaction-id",
         "type": "EXPENSE",
-        "amount": "250000",
+        "amount": "25000",
         "note": "Makan siang",
         "date": "2026-05-15T00:00:00.000Z",
-        "categoryId": "cat_expense_food",
         "category": {
           "id": "cat_expense_food",
           "name": "Makanan",
@@ -1297,36 +1451,130 @@ GET /api/transactions?sort=date_asc
 }
 ```
 
-### Catatan Pagination
+### Catatan
 
 ```txt
-page dimulai dari 1
-limit maksimal 100
-total adalah jumlah semua data sesuai filter
-totalPages adalah jumlah halaman sesuai total dan limit
+User hanya menerima transaksi miliknya sendiri.
+Search saat ini berbasis catatan/note transaksi.
 ```
 
-### Error Date Range Tidak Valid
+---
+
+## POST `/api/transactions`
+
+Membuat transaksi baru.
+
+### Auth
+
+Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Body
+
+```json
+{
+  "type": "EXPENSE",
+  "amount": "25000",
+  "categoryId": "cat_expense_food",
+  "date": "2026-05-15T00:00:00.000Z",
+  "note": "Makan siang"
+}
+```
+
+### Field
+
+```txt
+type       wajib, INCOME atau EXPENSE
+amount     wajib
+categoryId wajib
+date       wajib
+note       opsional, nullable, maksimal 255 karakter
+```
+
+### Validasi Amount
+
+```txt
+amount wajib diisi
+amount harus angka positif
+amount harus lebih dari 0
+amount maksimal 1.000.000.000.000
+amount maksimal 2 angka desimal
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Transaksi berhasil dibuat",
+  "data": {
+    "id": "transaction-id",
+    "type": "EXPENSE",
+    "amount": "25000",
+    "note": "Makan siang",
+    "date": "2026-05-15T00:00:00.000Z",
+    "category": {
+      "id": "cat_expense_food",
+      "name": "Makanan",
+      "type": "EXPENSE",
+      "icon": "utensils",
+      "color": "#f97316",
+      "isDefault": true
+    },
+    "createdAt": "2026-05-15T00:00:00.000Z",
+    "updatedAt": "2026-05-15T00:00:00.000Z"
+  }
+}
+```
+
+### Error Category Tidak Valid atau Type Tidak Sesuai
 
 ```json
 {
   "success": false,
-  "message": "Validasi request gagal",
-  "errors": {
-    "fieldErrors": {
-      "endDate": [
-        "endDate tidak boleh lebih awal dari startDate"
-      ]
-    }
-  }
+  "message": "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi",
+  "errors": null
 }
+```
+
+### Audit Event
+
+Jika create berhasil, backend mencatat audit event internal:
+
+```txt
+transaction.created
+```
+
+Metadata aman:
+
+```txt
+type
+hasNote
+dateProvided
+```
+
+Audit event tidak menyimpan:
+
+```txt
+amount
+note
+categoryId
+category name
+token
+raw body
 ```
 
 ---
 
 ## GET `/api/transactions/:id`
 
-Mengambil detail transaksi.
+Mengambil detail transaksi milik user login.
 
 ### Auth
 
@@ -1353,10 +1601,9 @@ id wajib, transaction id
   "data": {
     "id": "transaction-id",
     "type": "EXPENSE",
-    "amount": "250000",
+    "amount": "25000",
     "note": "Makan siang",
     "date": "2026-05-15T00:00:00.000Z",
-    "categoryId": "cat_expense_food",
     "category": {
       "id": "cat_expense_food",
       "name": "Makanan",
@@ -1371,7 +1618,7 @@ id wajib, transaction id
 }
 ```
 
-### Error Jika Tidak Ditemukan atau Bukan Milik User
+### Error Jika Bukan Milik User atau Tidak Ada
 
 ```json
 {
@@ -1385,7 +1632,7 @@ id wajib, transaction id
 
 ## PUT `/api/transactions/:id`
 
-Update transaksi.
+Update transaksi milik user login.
 
 ### Auth
 
@@ -1406,12 +1653,12 @@ id wajib, transaction id
 
 ### Body
 
-Semua field opsional, tetapi minimal satu field harus dikirim.
+Semua field opsional, tetapi minimal satu field dikirim.
 
 ```json
 {
   "type": "EXPENSE",
-  "amount": "300000",
+  "amount": "30000",
   "categoryId": "cat_expense_food",
   "date": "2026-05-16T00:00:00.000Z",
   "note": "Makan malam"
@@ -1427,10 +1674,9 @@ Semua field opsional, tetapi minimal satu field harus dikirim.
   "data": {
     "id": "transaction-id",
     "type": "EXPENSE",
-    "amount": "300000",
+    "amount": "30000",
     "note": "Makan malam",
     "date": "2026-05-16T00:00:00.000Z",
-    "categoryId": "cat_expense_food",
     "category": {
       "id": "cat_expense_food",
       "name": "Makanan",
@@ -1445,20 +1691,47 @@ Semua field opsional, tetapi minimal satu field harus dikirim.
 }
 ```
 
-### Validasi
+### Error Jika Bukan Milik User atau Tidak Ada
+
+```json
+{
+  "success": false,
+  "message": "Transaksi tidak ditemukan",
+  "errors": null
+}
+```
+
+### Audit Event
+
+Jika update berhasil, backend mencatat audit event internal:
 
 ```txt
-Minimal satu field harus diisi
-Validasi amount sama seperti create transaction
-Jika type/categoryId berubah, category harus sesuai type transaksi
-User hanya bisa update transaksi miliknya sendiri
+transaction.updated
+```
+
+Metadata aman:
+
+```txt
+changedFields
+hasNote
+```
+
+Audit event tidak menyimpan:
+
+```txt
+amount
+note
+categoryId
+category name
+token
+raw body
 ```
 
 ---
 
 ## DELETE `/api/transactions/:id`
 
-Hapus transaksi.
+Menghapus transaksi milik user login.
 
 ### Auth
 
@@ -1485,10 +1758,9 @@ id wajib, transaction id
   "data": {
     "id": "transaction-id",
     "type": "EXPENSE",
-    "amount": "300000",
-    "note": "Makan malam",
-    "date": "2026-05-16T00:00:00.000Z",
-    "categoryId": "cat_expense_food",
+    "amount": "25000",
+    "note": "Makan siang",
+    "date": "2026-05-15T00:00:00.000Z",
     "category": {
       "id": "cat_expense_food",
       "name": "Makanan",
@@ -1498,12 +1770,12 @@ id wajib, transaction id
       "isDefault": true
     },
     "createdAt": "2026-05-15T00:00:00.000Z",
-    "updatedAt": "2026-05-16T00:00:00.000Z"
+    "updatedAt": "2026-05-15T00:00:00.000Z"
   }
 }
 ```
 
-### Error Jika Tidak Ditemukan atau Bukan Milik User
+### Error Jika Bukan Milik User atau Tidak Ada
 
 ```json
 {
@@ -1511,6 +1783,31 @@ id wajib, transaction id
   "message": "Transaksi tidak ditemukan",
   "errors": null
 }
+```
+
+### Audit Event
+
+Jika delete berhasil, backend mencatat audit event internal:
+
+```txt
+transaction.deleted
+```
+
+Metadata aman:
+
+```txt
+reason
+```
+
+Audit event tidak menyimpan:
+
+```txt
+amount
+note
+categoryId
+category name
+token
+raw body
 ```
 
 ---
@@ -1538,58 +1835,24 @@ Authorization: Bearer <token>
   "success": true,
   "message": "Summary berhasil diambil",
   "data": {
-    "totalIncome": "3000000.00",
+    "totalIncome": "1000000.00",
     "totalExpense": "250000.00",
-    "balance": "2750000.00",
+    "balance": "750000.00",
     "safeBalanceLimit": "500000.00",
     "isBelowSafeLimit": false,
-    "incomeThisMonth": "3000000.00",
+    "incomeThisMonth": "1000000.00",
     "expenseThisMonth": "250000.00",
-    "balanceThisMonth": "2750000.00",
+    "balanceThisMonth": "750000.00",
     "transactionCount": 2,
-    "recentTransactions": [
-      {
-        "id": "transaction-id",
-        "type": "EXPENSE",
-        "amount": "250000",
-        "note": "Makan siang",
-        "date": "2026-05-15T00:00:00.000Z",
-        "category": {
-          "id": "cat_expense_food",
-          "name": "Makanan",
-          "type": "EXPENSE",
-          "icon": "utensils",
-          "color": "#f97316",
-          "isDefault": true
-        },
-        "createdAt": "2026-05-15T00:00:00.000Z",
-        "updatedAt": "2026-05-15T00:00:00.000Z"
-      }
-    ],
-    "expenseByCategory": [
-      {
-        "categoryId": "cat_expense_food",
-        "categoryName": "Makanan",
-        "type": "EXPENSE",
-        "totalAmount": "250000.00",
-        "transactionCount": 1
-      }
-    ],
-    "incomeByCategory": [
-      {
-        "categoryId": "cat_income_salary",
-        "categoryName": "Gaji",
-        "type": "INCOME",
-        "totalAmount": "3000000.00",
-        "transactionCount": 1
-      }
-    ],
+    "recentTransactions": [],
+    "expenseByCategory": [],
+    "incomeByCategory": [],
     "monthlyTrend": [
       {
         "month": "2026-05",
-        "income": "3000000.00",
+        "income": "1000000.00",
         "expense": "250000.00",
-        "balance": "2750000.00"
+        "balance": "750000.00"
       }
     ]
   }
@@ -1599,94 +1862,22 @@ Authorization: Bearer <token>
 ### Catatan
 
 ```txt
-safeBalanceLimit berasal dari profile user
-isBelowSafeLimit bernilai true jika balance < safeBalanceLimit
-monthlyTrend berisi data 6 bulan terakhir
-recentTransactions digunakan dashboard
-expenseByCategory dan incomeByCategory digunakan untuk ringkasan kategori
-summary wajib hanya menghitung data user login
+Summary hanya menghitung data user login.
+Summary tidak boleh menghitung transaksi user lain.
+Summary category breakdown tidak boleh memuat custom category user lain.
 ```
 
 ---
 
 # 7. Goals API
 
-Goal digunakan untuk target tabungan user.
-
-Semua endpoint goal wajib user-isolated.
-
----
-
-## POST `/api/goals`
-
-Membuat goal tabungan.
-
-### Auth
-
-Wajib token.
-
-### Headers
-
-```txt
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-### Body
-
-```json
-{
-  "name": "Beli Laptop",
-  "targetAmount": "10000000",
-  "currentAmount": "2500000",
-  "deadline": "2026-12-31T00:00:00.000Z",
-  "description": "Laptop untuk kuliah dan kerja"
-}
-```
-
-### Field
-
-```txt
-name          wajib
-targetAmount  wajib, lebih dari 0
-currentAmount optional, default 0
-deadline      optional
-description   optional
-```
-
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Goal berhasil dibuat",
-  "data": {
-    "id": "goal-id",
-    "name": "Beli Laptop",
-    "targetAmount": "10000000.00",
-    "currentAmount": "2500000.00",
-    "deadline": "2026-12-31T00:00:00.000Z",
-    "description": "Laptop untuk kuliah dan kerja",
-    "createdAt": "2026-05-15T00:00:00.000Z",
-    "updatedAt": "2026-05-15T00:00:00.000Z"
-  }
-}
-```
-
-### Validasi
-
-```txt
-name wajib diisi
-targetAmount harus lebih dari 0
-currentAmount tidak boleh negatif
-currentAmount tidak boleh lebih besar dari targetAmount
-```
+Goal digunakan untuk target tabungan atau target finansial user.
 
 ---
 
 ## GET `/api/goals`
 
-Mengambil daftar goals user login.
+Mengambil daftar goal user login.
 
 ### Auth
 
@@ -1707,11 +1898,14 @@ Authorization: Bearer <token>
   "data": [
     {
       "id": "goal-id",
-      "name": "Beli Laptop",
+      "name": "Dana Darurat",
       "targetAmount": "10000000.00",
       "currentAmount": "2500000.00",
+      "progressPercentage": 25,
+      "remainingAmount": "7500000.00",
+      "isCompleted": false,
       "deadline": "2026-12-31T00:00:00.000Z",
-      "description": "Laptop untuk kuliah dan kerja",
+      "isOverdue": false,
       "createdAt": "2026-05-15T00:00:00.000Z",
       "updatedAt": "2026-05-15T00:00:00.000Z"
     }
@@ -1721,9 +1915,115 @@ Authorization: Bearer <token>
 
 ---
 
+## POST `/api/goals`
+
+Membuat goal baru.
+
+### Auth
+
+Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Body
+
+```json
+{
+  "name": "Dana Darurat",
+  "targetAmount": "10000000",
+  "currentAmount": "2500000",
+  "deadline": "2026-12-31T00:00:00.000Z"
+}
+```
+
+### Field
+
+```txt
+name          wajib
+targetAmount  wajib
+currentAmount opsional
+deadline      opsional, nullable
+```
+
+### Validasi
+
+```txt
+name wajib diisi
+name maksimal 100 karakter
+targetAmount harus lebih dari 0
+currentAmount tidak boleh negatif
+currentAmount tidak boleh lebih besar dari targetAmount
+nominal maksimal 2 angka desimal
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Goal berhasil dibuat",
+  "data": {
+    "id": "goal-id",
+    "name": "Dana Darurat",
+    "targetAmount": "10000000.00",
+    "currentAmount": "2500000.00",
+    "progressPercentage": 25,
+    "remainingAmount": "7500000.00",
+    "isCompleted": false,
+    "deadline": "2026-12-31T00:00:00.000Z",
+    "isOverdue": false,
+    "createdAt": "2026-05-15T00:00:00.000Z",
+    "updatedAt": "2026-05-15T00:00:00.000Z"
+  }
+}
+```
+
+### Error Jika Current Amount Lebih Besar dari Target
+
+```json
+{
+  "success": false,
+  "message": "Current amount tidak boleh lebih besar dari target amount",
+  "errors": null
+}
+```
+
+### Audit Event
+
+Jika create berhasil, backend mencatat audit event internal:
+
+```txt
+goal.created
+```
+
+Metadata aman:
+
+```txt
+hasCurrentAmount
+hasDeadline
+```
+
+Audit event tidak menyimpan:
+
+```txt
+goal name
+targetAmount
+currentAmount
+deadline value
+token
+raw body
+```
+
+---
+
 ## GET `/api/goals/:id`
 
-Mengambil detail goal.
+Mengambil detail goal milik user login.
 
 ### Auth
 
@@ -1749,18 +2049,21 @@ id wajib, goal id
   "message": "Detail goal berhasil diambil",
   "data": {
     "id": "goal-id",
-    "name": "Beli Laptop",
+    "name": "Dana Darurat",
     "targetAmount": "10000000.00",
     "currentAmount": "2500000.00",
+    "progressPercentage": 25,
+    "remainingAmount": "7500000.00",
+    "isCompleted": false,
     "deadline": "2026-12-31T00:00:00.000Z",
-    "description": "Laptop untuk kuliah dan kerja",
+    "isOverdue": false,
     "createdAt": "2026-05-15T00:00:00.000Z",
     "updatedAt": "2026-05-15T00:00:00.000Z"
   }
 }
 ```
 
-### Error Jika Tidak Ditemukan atau Bukan Milik User
+### Error Jika Bukan Milik User atau Tidak Ada
 
 ```json
 {
@@ -1774,7 +2077,7 @@ id wajib, goal id
 
 ## PUT `/api/goals/:id`
 
-Update goal.
+Update goal milik user login.
 
 ### Auth
 
@@ -1795,15 +2098,14 @@ id wajib, goal id
 
 ### Body
 
-Semua field opsional, tetapi minimal satu field harus dikirim.
+Semua field opsional, tetapi minimal satu field dikirim.
 
 ```json
 {
-  "name": "Beli Laptop Gaming",
-  "targetAmount": "15000000",
+  "name": "Dana Darurat Updated",
+  "targetAmount": "12000000",
   "currentAmount": "5000000",
-  "deadline": "2026-12-31T00:00:00.000Z",
-  "description": "Laptop gaming untuk kerja dan belajar"
+  "deadline": "2026-12-31T00:00:00.000Z"
 }
 ```
 
@@ -1815,28 +2117,21 @@ Semua field opsional, tetapi minimal satu field harus dikirim.
   "message": "Goal berhasil diupdate",
   "data": {
     "id": "goal-id",
-    "name": "Beli Laptop Gaming",
-    "targetAmount": "15000000.00",
+    "name": "Dana Darurat Updated",
+    "targetAmount": "12000000.00",
     "currentAmount": "5000000.00",
+    "progressPercentage": 41.67,
+    "remainingAmount": "7000000.00",
+    "isCompleted": false,
     "deadline": "2026-12-31T00:00:00.000Z",
-    "description": "Laptop gaming untuk kerja dan belajar",
+    "isOverdue": false,
     "createdAt": "2026-05-15T00:00:00.000Z",
     "updatedAt": "2026-05-16T00:00:00.000Z"
   }
 }
 ```
 
-### Error Jika Current Amount Melebihi Target
-
-```json
-{
-  "success": false,
-  "message": "Current amount tidak boleh lebih besar dari target amount",
-  "errors": null
-}
-```
-
-### Error Jika Tidak Ditemukan atau Bukan Milik User
+### Error Jika Bukan Milik User atau Tidak Ada
 
 ```json
 {
@@ -1846,11 +2141,37 @@ Semua field opsional, tetapi minimal satu field harus dikirim.
 }
 ```
 
+### Audit Event
+
+Jika update berhasil, backend mencatat audit event internal:
+
+```txt
+goal.updated
+```
+
+Metadata aman:
+
+```txt
+changedFields
+hasDeadline
+```
+
+Audit event tidak menyimpan:
+
+```txt
+goal name
+targetAmount
+currentAmount
+deadline value
+token
+raw body
+```
+
 ---
 
 ## DELETE `/api/goals/:id`
 
-Hapus goal.
+Menghapus goal milik user login.
 
 ### Auth
 
@@ -1876,18 +2197,21 @@ id wajib, goal id
   "message": "Goal berhasil dihapus",
   "data": {
     "id": "goal-id",
-    "name": "Beli Laptop Gaming",
-    "targetAmount": "15000000.00",
-    "currentAmount": "5000000.00",
+    "name": "Dana Darurat",
+    "targetAmount": "10000000.00",
+    "currentAmount": "2500000.00",
+    "progressPercentage": 25,
+    "remainingAmount": "7500000.00",
+    "isCompleted": false,
     "deadline": "2026-12-31T00:00:00.000Z",
-    "description": "Laptop gaming untuk kerja dan belajar",
+    "isOverdue": false,
     "createdAt": "2026-05-15T00:00:00.000Z",
-    "updatedAt": "2026-05-16T00:00:00.000Z"
+    "updatedAt": "2026-05-15T00:00:00.000Z"
   }
 }
 ```
 
-### Error Jika Tidak Ditemukan atau Bukan Milik User
+### Error Jika Bukan Milik User atau Tidak Ada
 
 ```json
 {
@@ -1897,9 +2221,45 @@ id wajib, goal id
 }
 ```
 
+### Audit Event
+
+Jika delete berhasil, backend mencatat audit event internal:
+
+```txt
+goal.deleted
+```
+
+Metadata aman:
+
+```txt
+reason
+```
+
+Audit event tidak menyimpan:
+
+```txt
+goal name
+targetAmount
+currentAmount
+token
+raw body
+```
+
 ---
 
 # 8. Export API
+
+Export transaksi menghasilkan laporan transaksi user login.
+
+Format yang tersedia:
+
+```txt
+json
+csv
+xlsx
+```
+
+---
 
 ## GET `/api/export/transactions`
 
@@ -1918,50 +2278,35 @@ Authorization: Bearer <token>
 ### Query Params
 
 ```txt
-format      optional, json | csv | xlsx, default json
-type        optional, INCOME | EXPENSE
-categoryId  optional
-startDate   optional
-endDate     optional
+format     optional, json | csv | xlsx, default json
+type       optional, INCOME | EXPENSE
+categoryId optional
+startDate  optional
+endDate    optional
 ```
 
 ### Contoh Request
 
 ```txt
+GET /api/export/transactions
 GET /api/export/transactions?format=json
 GET /api/export/transactions?format=csv
 GET /api/export/transactions?format=xlsx
-GET /api/export/transactions?format=xlsx&type=EXPENSE
-GET /api/export/transactions?format=csv&startDate=2026-05-01&endDate=2026-05-31
-GET /api/export/transactions?format=json&categoryId=custom-category-id
-```
-
-### Catatan Security
-
-```txt
-Export wajib hanya memuat transaksi user login.
-Export tidak boleh memuat transaksi user lain.
-Jika categoryId milik user lain digunakan, export tidak boleh membocorkan data user lain.
+GET /api/export/transactions?format=json&type=EXPENSE
+GET /api/export/transactions?format=json&startDate=2026-05-01&endDate=2026-05-31
 ```
 
 ---
 
-## Export JSON
+## JSON Export Response
 
-### Request
-
-```txt
-GET /api/export/transactions?format=json
-```
-
-### Response
+Jika `format=json`, response mengikuti format JSON standar.
 
 ```json
 {
   "success": true,
   "message": "Export transaksi berhasil dibuat",
   "data": {
-    "format": "json",
     "generatedAt": "2026-05-15T00:00:00.000Z",
     "filters": {
       "type": null,
@@ -1969,17 +2314,25 @@ GET /api/export/transactions?format=json
       "startDate": null,
       "endDate": null
     },
+    "summary": {
+      "totalIncome": "1000000.00",
+      "totalExpense": "250000.00",
+      "balance": "750000.00",
+      "transactionCount": 2
+    },
     "transactions": [
       {
         "id": "transaction-id",
-        "type": "EXPENSE",
-        "amount": "250000",
-        "note": "Makan siang",
         "date": "2026-05-15T00:00:00.000Z",
+        "type": "EXPENSE",
+        "amount": "250000.00",
+        "note": "Makan",
         "category": {
           "id": "cat_expense_food",
           "name": "Makanan",
-          "type": "EXPENSE"
+          "type": "EXPENSE",
+          "icon": "utensils",
+          "color": "#f97316"
         },
         "createdAt": "2026-05-15T00:00:00.000Z",
         "updatedAt": "2026-05-15T00:00:00.000Z"
@@ -1991,77 +2344,81 @@ GET /api/export/transactions?format=json
 
 ---
 
-## Export CSV
+## CSV Export Response
 
-### Request
+Jika `format=csv`, response berupa file CSV.
+
+### Response Headers
 
 ```txt
-GET /api/export/transactions?format=csv
+Content-Type: text/csv; charset=utf-8
+Content-Disposition: attachment; filename="sakuin-transactions-YYYY-MM-DD_HH-MM-SS.csv"
 ```
 
-### Response
-
-Response berupa file/blob CSV.
-
-Frontend harus memakai download helper, bukan parser JSON biasa.
-
-Contoh header response yang mungkin dikirim:
+### Catatan
 
 ```txt
-Content-Type: text/csv
-Content-Disposition: attachment; filename="transactions.csv"
+CSV hanya memuat transaksi user login.
+CSV tidak boleh memuat data user lain.
 ```
 
 ---
 
-## Export XLSX
+## XLSX Export Response
 
-### Request
+Jika `format=xlsx`, response berupa file XLSX.
 
-```txt
-GET /api/export/transactions?format=xlsx
-```
-
-### Response
-
-Response berupa file/blob XLSX.
-
-Frontend harus memakai download helper, bukan parser JSON biasa.
-
-Contoh header response yang mungkin dikirim:
+### Response Headers
 
 ```txt
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-Content-Disposition: attachment; filename="transactions.xlsx"
+Content-Disposition: attachment; filename="sakuin-transactions-YYYY-MM-DD_HH-MM-SS.xlsx"
+```
+
+### Catatan
+
+```txt
+XLSX hanya memuat transaksi user login.
+XLSX tidak boleh memuat data user lain.
 ```
 
 ---
 
-## Error Format Tidak Valid
+## Validasi Export
+
+```txt
+format wajib json/csv/xlsx jika dikirim
+type wajib INCOME/EXPENSE jika dikirim
+startDate harus tanggal valid jika dikirim
+endDate harus tanggal valid jika dikirim
+endDate tidak boleh lebih awal dari startDate
+```
+
+### Error Format Tidak Valid
 
 ```json
 {
   "success": false,
   "message": "Validasi request gagal",
   "errors": {
+    "formErrors": [],
     "fieldErrors": {
       "format": [
-        "Format export tidak valid"
+        "Invalid enum value"
       ]
     }
   }
 }
 ```
 
----
-
-## Error Date Range Tidak Valid
+### Error Date Range Tidak Valid
 
 ```json
 {
   "success": false,
   "message": "Validasi request gagal",
   "errors": {
+    "formErrors": [],
     "fieldErrors": {
       "endDate": [
         "endDate tidak boleh lebih awal dari startDate"
@@ -2073,279 +2430,257 @@ Content-Disposition: attachment; filename="transactions.xlsx"
 
 ---
 
-# 9. API yang Belum Ada
+## Export Data Isolation
 
-Fitur berikut belum memiliki endpoint backend saat ini.
-
-## Quick Transaction / Catat Cepat
-
-Status:
+Aturan penting:
 
 ```txt
-Tidak ada endpoint khusus.
-```
-
-Alur saat ini:
-
-```txt
-1. User mengetik transaksi natural di frontend.
-2. Parser rule-based frontend membuat draft.
-3. User review/edit/hapus draft.
-4. User approve.
-5. Frontend menyimpan transaksi final lewat POST /api/transactions.
-```
-
-Prinsip:
-
-```txt
-Jangan auto-save hasil parser tanpa review user.
+Export hanya boleh memuat data user login.
+Filter categoryId milik user lain tidak boleh membocorkan transaksi user lain.
+Summary export hanya menghitung transaksi user login.
+CSV/XLSX tidak boleh memuat catatan, transaksi, atau custom category user lain.
 ```
 
 ---
 
-## Google Login
+## Audit Event
 
-Status:
+Jika export berhasil, backend mencatat audit event internal:
 
 ```txt
-Belum diimplementasikan.
+export.transactions_generated
 ```
 
-Catatan:
+Metadata aman:
 
 ```txt
-Google Login hanya untuk authentication.
-Google Login tidak sama dengan Gmail API.
-Jika dibuat, scope awal harus openid, email, profile.
-Jangan meminta Gmail scope hanya untuk login.
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
 ```
 
----
-
-## Gmail / E-wallet / Mobile Banking Detection
-
-Status:
+Audit event tidak menyimpan:
 
 ```txt
-Belum diimplementasikan.
-```
-
-Prinsip sebelum implementasi:
-
-```txt
-[ ] Buat security/privacy documentation
-[ ] Buat architecture design
-[ ] Tentukan OAuth/consent flow
-[ ] Tentukan scope minimal
-[ ] Tentukan token encryption strategy
-[ ] Tentukan disconnect/revoke flow
-[ ] Tentukan draft-first transaction review flow
-[ ] Jangan simpan raw email
-[ ] Jangan auto-save transaksi final
+isi export
+amount
+note
+category name
+file content
+token
+raw query/body sensitif
 ```
 
 ---
 
-# 10. Frontend Integration Notes
+# 9. AuditLog Internal Behavior
 
-Frontend Sakuin memakai:
+AuditLog bukan public API.
+
+Tidak ada endpoint berikut:
 
 ```txt
-apiRequest  : request JSON API
-apiDownload : request file/blob API
+GET /api/audit-logs
+GET /api/audit-logs/:id
+GET /api/security-events
 ```
 
-Gunakan `apiRequest` untuk:
+AuditLog hanya berjalan sebagai internal persistence untuk business audit trail.
+
+Field utama AuditLog:
 
 ```txt
-GET /api/auth/me
-GET /api/users/profile
-PATCH /api/users/profile
-GET /api/categories
-POST /api/categories
-PUT /api/categories/:id
-DELETE /api/categories/:id
-GET /api/transactions
-POST /api/transactions
-GET /api/transactions/:id
-PUT /api/transactions/:id
-DELETE /api/transactions/:id
-GET /api/summary
-GET /api/goals
-POST /api/goals
-GET /api/goals/:id
-PUT /api/goals/:id
-DELETE /api/goals/:id
+id
+eventType
+status
+requestId
+actorType
+actorUserId
+targetType
+targetId
+metadata
+createdAt
 ```
 
-Gunakan `apiDownload` untuk:
+Business event yang dicatat:
 
 ```txt
-GET /api/export/transactions?format=csv
-GET /api/export/transactions?format=xlsx
+profile.updated
+export.transactions_generated
+transaction.created
+transaction.updated
+transaction.deleted
+goal.created
+goal.updated
+goal.deleted
+category.created
+category.updated
+category.deleted
 ```
 
-Untuk export JSON, frontend dapat memakai JSON request biasa atau download flow sesuai implementasi frontend saat ini.
-
----
-
-# 11. Caching dan Invalidation Notes
-
-Frontend Sakuin memakai TanStack Query.
-
-Query key utama:
+AuditLog persistence:
 
 ```txt
-summary
-profile
-categories
-goals
-transactions
+Fail-open.
+Jika gagal menyimpan audit event, endpoint utama tetap tidak langsung gagal.
 ```
 
-Invalidation yang perlu dilakukan setelah mutation:
+Jika nanti ingin membuat AuditLog API:
 
 ```txt
-Create/Edit/Delete Transaction:
-- invalidate transactions
-- invalidate summary
-
-Create/Edit/Delete Category:
-- invalidate categories
-- invalidate transactions
-- invalidate summary
-
-Create/Edit/Delete/Progress Goal:
-- invalidate goals
-- invalidate summary
-
-Update Profile:
-- invalidate profile
-- invalidate summary
-
-Logout:
-- clear query client cache
-- remove auth token
-```
-
-Catatan:
-
-```txt
-Jangan mengganti query key sembarangan karena dipakai lintas fitur.
-Jika API response shape berubah, update frontend types dan tests.
+[ ] Harus protected
+[ ] Harus punya authorization policy
+[ ] Harus pagination
+[ ] Harus filter aman
+[ ] Harus rate limited
+[ ] Harus punya tests
+[ ] Tidak boleh expose metadata sensitif
 ```
 
 ---
 
-# 12. Manual API Testing Notes
+# 10. Error Reference
 
-Urutan testing API manual yang disarankan:
+## 400 Validation Error
 
-```txt
-1. GET /health
-2. GET /api/health
-3. POST /api/auth/register
-4. POST /api/auth/login
-5. Simpan token dari login
-6. GET /api/auth/me dengan Bearer token
-7. GET /api/categories
-8. POST /api/categories
-9. POST /api/transactions
-10. GET /api/transactions
-11. GET /api/summary
-12. POST /api/goals
-13. GET /api/goals
-14. GET /api/export/transactions?format=json
-15. GET /api/export/transactions?format=csv
-16. GET /api/export/transactions?format=xlsx
+```json
+{
+  "success": false,
+  "message": "Validasi request gagal",
+  "errors": {
+    "formErrors": [],
+    "fieldErrors": {}
+  }
+}
 ```
 
-Header umum untuk protected endpoint:
+## 400 Business Rule Error
 
-```txt
-Authorization: Bearer <token>
-Content-Type: application/json
+```json
+{
+  "success": false,
+  "message": "Pesan business rule",
+  "errors": null
+}
 ```
 
-Untuk export file, response dapat berupa blob/file sehingga tidak selalu JSON.
+Contoh:
+
+```txt
+Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi
+Current amount tidak boleh lebih besar dari target amount
+Kategori tidak bisa dihapus karena sudah digunakan oleh transaksi
+Tipe kategori tidak bisa diubah karena kategori sudah digunakan oleh transaksi
+```
+
+## 401 Unauthorized
+
+```json
+{
+  "success": false,
+  "message": "Authorization header wajib diisi",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Format token harus Bearer token",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Token tidak valid atau sudah kedaluwarsa",
+  "errors": null
+}
+```
+
+## 404 Not Found
+
+```json
+{
+  "success": false,
+  "message": "Route tidak ditemukan",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Transaksi tidak ditemukan",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Goal tidak ditemukan",
+  "errors": null
+}
+```
+
+## 409 Conflict
+
+```json
+{
+  "success": false,
+  "message": "Email sudah digunakan",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Nama kategori sudah digunakan untuk tipe transaksi tersebut",
+  "errors": null
+}
+```
+
+## 413 Payload Too Large
+
+```json
+{
+  "success": false,
+  "message": "Ukuran request terlalu besar. Maksimal 1 MB.",
+  "errors": null
+}
+```
+
+## 429 Rate Limit
+
+```json
+{
+  "success": false,
+  "message": "Terlalu banyak request. Coba lagi nanti.",
+  "errors": null
+}
+```
+
+## 500 Internal Server Error
+
+Production:
+
+```json
+{
+  "success": false,
+  "message": "Internal server error",
+  "errors": null
+}
+```
 
 ---
 
-# 13. Security Testing Notes
+# 11. Validation and Regression
 
-Minimal security check setelah perubahan backend:
-
-```txt
-[ ] GET /health tetap sukses
-[ ] GET /api/health tetap sukses
-[ ] Login tetap sukses
-[ ] Protected endpoint tanpa token tetap 401
-[ ] Protected endpoint dengan token invalid tetap 401
-[ ] Authorization header format salah tetap ditolak
-[ ] Request body besar mengembalikan 413
-[ ] Response production error 500 tidak membocorkan detail error
-[ ] Header security muncul pada response API
-[ ] CORS tidak memantulkan origin asing
-[ ] Login rate limit bekerja
-[ ] Register rate limit bekerja
-[ ] General API rate limit bekerja
-[ ] Summary tidak menghitung data user lain
-[ ] Export tidak memuat data user lain
-```
-
-Header yang bisa dicek di browser devtools, Postman, Insomnia, atau curl:
-
-```txt
-X-Content-Type-Options
-X-Frame-Options
-Referrer-Policy
-Permissions-Policy
-Content-Security-Policy
-X-Permitted-Cross-Domain-Policies
-Strict-Transport-Security pada production
-```
-
----
-
-# 14. Backend Validation Summary
-
-Validasi penting backend:
-
-```txt
-[✓] Register email unik
-[✓] Login password valid
-[✓] Login email invalid ditolak sebelum auth service
-[✓] JWT required untuk protected endpoint
-[✓] JWT payload harus valid
-[✓] userId token harus string
-[✓] User yang sudah dihapus tidak bisa memakai token lama untuk profile
-[✓] User hanya bisa membaca/mengubah data miliknya sendiri
-[✓] Transaction amount > 0
-[✓] Transaction amount maksimal 1.000.000.000.000
-[✓] Transaction amount maksimal 2 angka desimal
-[✓] Category harus sesuai type transaksi
-[✓] Category harus default atau milik user login
-[✓] Goal currentAmount tidak boleh lebih besar dari targetAmount
-[✓] Export date range valid
-[✓] Profile safeBalanceLimit tidak boleh negatif
-[✓] Request body size limit aktif
-[✓] Production error handling lebih aman
-[✓] Rate limiting aktif
-```
-
----
-
-# 15. Backend Status
-
-Status backend terakhir yang diharapkan sebelum push/release:
-
-```txt
-Typecheck : passed
-Build     : passed
-Tests     : passed
-```
-
-Command validasi backend:
+Backend validation commands:
 
 ```bash
 pnpm --filter @sakuin/api typecheck
@@ -2353,7 +2688,7 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
-Command validasi frontend terkait integrasi API:
+Frontend validation commands:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -2372,57 +2707,91 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
----
+Backend test status terakhir setelah database-backed audit trail:
 
-# 16. Documentation Finalization
+```txt
+Test Files : 17 passed
+Tests      : 114 passed
+Build      : passed
+```
 
-Setelah update `docs/API.md`, cek diff:
+Jika hanya dokumentasi Markdown yang berubah:
 
 ```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
 git status
 git diff -- README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
 ```
 
-Jika hanya Markdown yang berubah, jalankan minimal:
+---
 
-```bash
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/api typecheck
-git status
-```
+# 12. Development Rules
 
-Jika ingin full confidence sebelum commit:
-
-```bash
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/web test
-pnpm --filter @sakuin/web build
-pnpm --filter @sakuin/api typecheck
-pnpm --filter @sakuin/api test
-pnpm --filter @sakuin/api build
-```
-
-Setelah validasi aman:
-
-```bash
-git status
-git add README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
-git commit -m "Update documentation for security hardening"
-git push
-```
-
-Setelah push:
+Aturan untuk endpoint baru:
 
 ```txt
-[ ] Cek GitHub Actions CI
-[ ] Cek Vercel deployment
-[ ] Cek production /health
-[ ] Cek production /api/health
-[ ] Cek production smoke test singkat jika perlu
+[ ] Tentukan apakah endpoint public atau protected
+[ ] Jika protected, pakai authMiddleware
+[ ] Jangan menerima userId dari frontend untuk ownership
+[ ] Ambil userId dari JWT context
+[ ] Tambahkan Zod schema untuk body/query/params
+[ ] Tambahkan service-layer ownership check
+[ ] Tambahkan test success
+[ ] Tambahkan test validation error
+[ ] Tambahkan test unauthorized
+[ ] Tambahkan test cross-user access jika endpoint menyentuh data user
+[ ] Tambahkan audit event jika endpoint melakukan business mutation penting
+[ ] Pastikan audit metadata aman
+[ ] Update dokumentasi API
 ```
 
-Catatan:
+Aturan untuk endpoint export/agregasi:
 
 ```txt
-Tidak perlu membuat tag baru hanya untuk update dokumentasi, kecuali diputuskan sebagai release milestone.
+[ ] Query wajib dibatasi userId dari token
+[ ] Test data isolation
+[ ] Test filter dengan resource user lain
+[ ] Jangan bocorkan data user lain di JSON/CSV/XLSX
+[ ] Audit event hanya boleh menyimpan metadata aman
+```
+
+Aturan untuk audit/logging:
+
+```txt
+[ ] Jangan log password/token/Authorization header
+[ ] Jangan log raw body
+[ ] Jangan log transaction amount/note
+[ ] Jangan log goal amount/name
+[ ] Jangan log category name/icon/color value
+[ ] Jangan log export content
+[ ] Gunakan safe metadata sanitizer
+[ ] Test redaction
+[ ] Test fail-open behavior
+```
+
+---
+
+# 13. Future API Roadmap
+
+API yang belum ada dan perlu desain dahulu:
+
+```txt
+[ ] Google Login API
+[ ] Gmail connect/disconnect API
+[ ] Gmail sync API
+[ ] Draft transaction API untuk hasil deteksi email/e-wallet
+[ ] Budgeting per Category API
+[ ] Recurring Transaction API
+[ ] AuditLog viewer API
+[ ] Account deletion/export privacy API
+```
+
+Catatan penting:
+
+```txt
+Google Login harus dipisahkan dari Gmail reading.
+Gmail API tidak boleh dibuat sebelum security/privacy design matang.
+AuditLog viewer API tidak boleh dibuat sebelum authorization policy jelas.
+Budgeting per Category adalah kandidat fitur produk berikutnya setelah security documentation sync.
 ```

@@ -1,6 +1,6 @@
 # Sakuin Security Documentation
 
-Dokumen ini menjelaskan security baseline, prinsip keamanan, batasan, risiko, dan roadmap security untuk project **Sakuin**.
+Dokumen ini menjelaskan security baseline, prinsip keamanan, batasan, risiko, audit trail, dan roadmap security untuk project **Sakuin**.
 
 Sakuin adalah webapp pengelola keuangan pribadi. Karena aplikasi ini menyimpan data sensitif seperti transaksi, saldo, kategori, target tabungan, dan export laporan keuangan, security harus dikembangkan secara bertahap, hati-hati, dan terdokumentasi.
 
@@ -31,6 +31,9 @@ Project ini **tidak boleh diklaim 100% aman**. Target realistis security Sakuin 
 [✓] Request hardening
 [✓] Security headers
 [✓] Safer error handling
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Database-backed audit trail
 [✓] Automated security tests
 [✓] Clear privacy rules
 [✓] Draft-first review flow untuk fitur otomatisasi
@@ -45,6 +48,7 @@ Security harus menjaga data user tetap terisolasi.
 Security harus menghindari akses data sensitif yang tidak perlu.
 Security harus mengutamakan consent dan kontrol user.
 Security harus berkembang bertahap, bukan sekaligus tanpa validasi.
+Security tidak boleh membuat log/audit menjadi sumber kebocoran data baru.
 ```
 
 ---
@@ -59,16 +63,22 @@ Dokumen ini mencakup:
 [✓] Authorization and ownership rules
 [✓] Data isolation principles
 [✓] Request validation
+[✓] Request body size limit
 [✓] Rate limiting
 [✓] Security headers
 [✓] CORS policy
 [✓] Production error handling
+[✓] Request ID
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Database-backed audit trail
+[✓] Audit metadata safety policy
 [✓] Sensitive integration policy
+[✓] Google Login vs Gmail API distinction
 [✓] Gmail integration rules
 [✓] OAuth token storage requirements
 [✓] Raw email storage prohibition
 [✓] Draft-first transaction detection
-[✓] Audit logging requirements
 [✓] Future security roadmap
 ```
 
@@ -82,6 +92,7 @@ Dokumen ini tidak mencakup:
 [ ] Implementasi Gmail API
 [ ] Implementasi token encryption
 [ ] Implementasi distributed rate limit
+[ ] Implementasi httpOnly secure cookie migration
 ```
 
 Hal-hal tersebut dapat menjadi fase lanjutan.
@@ -116,6 +127,11 @@ Status umum:
 [✓] Vercel deployment aktif
 [✓] Security hardening baseline aktif
 [✓] Security tests tambahan aktif
+[✓] Request ID aktif
+[✓] Safe logging aktif
+[✓] AuditLog table aktif
+[✓] Database-backed audit trail aktif
+[✓] Production audit smoke test aman
 ```
 
 ---
@@ -139,20 +155,27 @@ Security baseline yang sudah diterapkan:
 [✓] Login rate limiting
 [✓] Register rate limiting
 [✓] General API rate limiting
+[✓] Request ID via X-Request-Id
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Audit event contract
+[✓] Audit event recorder
+[✓] Audit event context helper
+[✓] Prisma AuditLog model
+[✓] Database audit log sink
+[✓] Fail-open audit persistence
 [✓] Security baseline tests
 [✓] Cross-cutting security tests
 [✓] Summary/export data isolation tests
 [✓] Auth/token edge case tests
 [✓] Rate limit/API abuse edge case tests
+[✓] Audit event tests
+[✓] Audit log sink tests
 ```
 
 Security yang belum selesai dan masih perlu direncanakan:
 
 ```txt
-[ ] Security logging and audit trail
-[ ] Request ID
-[ ] Failed login logging
-[ ] Rate limit hit logging
 [ ] Distributed rate limiting
 [ ] Better JWT/session strategy
 [ ] Refresh token strategy
@@ -161,7 +184,9 @@ Security yang belum selesai dan masih perlu direncanakan:
 [ ] OAuth token encryption
 [ ] Gmail disconnect/revoke mechanism
 [ ] Privacy policy untuk integrasi sensitif
-[ ] Data retention policy untuk hasil ekstraksi transaksi
+[ ] Data retention policy lanjutan
+[ ] Audit log viewer/admin policy
+[ ] Formal security review
 ```
 
 ---
@@ -185,6 +210,7 @@ Sakuin harus mempertimbangkan risiko berikut:
 [ ] Information leakage through error messages
 [ ] Data leakage through export
 [ ] Sensitive data leakage through logs
+[ ] Sensitive data leakage through audit metadata
 [ ] Sensitive data leakage through service worker cache
 [ ] Over-permission OAuth scope
 [ ] Raw email storage risk
@@ -198,7 +224,8 @@ Prioritas utama saat ini:
 2. Mencegah request abuse dasar.
 3. Mencegah error internal membocorkan detail.
 4. Mencegah akses endpoint private tanpa token valid.
-5. Menunda integrasi email/Gmail sampai security dan privacy design matang.
+5. Mencegah log/audit menyimpan data sensitif.
+6. Menunda integrasi email/Gmail sampai security dan privacy design matang.
 ```
 
 ---
@@ -235,6 +262,9 @@ Current behavior:
 [✓] Backend memverifikasi token
 [✓] Backend mengambil userId dari payload token
 [✓] Endpoint private gagal jika token tidak ada/invalid/expired
+[✓] Token tanpa userId valid ditolak
+[✓] Token dengan userId bukan string ditolak
+[✓] Token milik user yang sudah dihapus tidak bisa mengambil profile
 ```
 
 Catatan penting:
@@ -257,6 +287,7 @@ Rencana peningkatan:
 [ ] Evaluasi CSRF protection jika memakai cookie
 [ ] Evaluasi refresh token rotation
 [ ] Evaluasi session invalidation
+[ ] Evaluasi logout server-side jika session/cookie diterapkan
 ```
 
 Migrasi auth tidak boleh dilakukan secara terburu-buru karena akan berdampak ke:
@@ -284,6 +315,7 @@ Current behavior:
 [✓] Password di-hash menggunakan bcryptjs
 [✓] passwordHash tidak pernah dikirim ke frontend
 [✓] Login error dibuat generic
+[✓] Register menolak password lemah berdasarkan validasi backend
 ```
 
 Login error generic:
@@ -301,7 +333,7 @@ Mengurangi risiko user enumeration melalui pesan error login.
 Rencana peningkatan:
 
 ```txt
-[ ] Password policy yang lebih jelas
+[ ] Password policy yang lebih jelas di UI
 [ ] Optional email verification
 [ ] Secure forgot password flow
 [ ] Password reset token dengan expiry
@@ -383,6 +415,8 @@ Area rawan data leakage:
 [ ] Export XLSX
 [ ] Filter berdasarkan categoryId
 [ ] Dashboard data
+[ ] Future financial insight/advisor
+[ ] Future Gmail/e-wallet extraction
 ```
 
 Tests yang sudah tersedia:
@@ -404,6 +438,7 @@ Aturan pengembangan:
 Setiap endpoint baru yang membaca data user harus memiliki ownership filter berdasarkan userId dari token.
 Setiap endpoint agregasi harus diuji agar tidak menghitung data user lain.
 Setiap endpoint export harus diuji agar tidak memuat data user lain.
+Setiap fitur insight/AI harus diuji agar tidak mencampur data antar user.
 ```
 
 ---
@@ -544,6 +579,7 @@ Allowed headers:
 ```txt
 Content-Type
 Authorization
+X-Request-Id
 ```
 
 Allowed methods:
@@ -564,6 +600,7 @@ Rules:
 [✓] Production frontend harus diizinkan
 [✓] Local development harus tetap bisa berjalan
 [✓] Authorization header harus diizinkan untuk protected endpoint
+[✓] X-Request-Id boleh dikirim client untuk request tracing
 ```
 
 Aturan pengembangan:
@@ -613,6 +650,8 @@ Transaksi tidak ditemukan
 Kategori tidak ditemukan
 Goal tidak ditemukan
 Route tidak ditemukan
+Request terlalu besar
+Rate limit exceeded
 ```
 
 Aturan pengembangan:
@@ -697,16 +736,1117 @@ Aturan:
 
 ```txt
 Jangan menghapus rate limit tanpa mengganti dengan mekanisme yang setara atau lebih baik.
-Jika mengubah rate limit, update tests.
+Jika mengubah rate limit, update test terkait.
+Jangan log email mentah pada rate limit hit.
 ```
 
 ---
 
-## 16. Security Test Coverage
+## 16. Request ID
 
-Security tests yang sudah ada mencakup beberapa area.
+Backend sudah menambahkan request ID pada response.
 
-### 16.1 Security Baseline Tests
+Header:
+
+```txt
+X-Request-Id
+```
+
+Behavior:
+
+```txt
+[✓] Jika client mengirim X-Request-Id yang aman, backend dapat memakai request ID tersebut
+[✓] Jika client tidak mengirim X-Request-Id, backend membuat request ID baru
+[✓] Jika client mengirim request ID yang tidak aman, backend mengganti dengan request ID baru
+[✓] Response membawa X-Request-Id
+```
+
+Tujuan:
+
+```txt
+[✓] Memudahkan debugging request production
+[✓] Menghubungkan request log dengan audit event
+[✓] Menghubungkan security event dengan request tertentu
+[✓] Membantu troubleshooting tanpa menyimpan token/body sensitif
+```
+
+Aturan:
+
+```txt
+Request ID tidak boleh berisi data sensitif.
+Request ID tidak boleh digunakan sebagai auth/session identifier.
+Request ID hanya untuk tracing/debugging.
+```
+
+---
+
+## 17. Safe Request Logging
+
+Backend memiliki safe request logging.
+
+Data yang boleh dicatat:
+
+```txt
+level
+event
+requestId
+method
+path
+status
+durationMs
+timestamp
+```
+
+Data yang tidak boleh dicatat:
+
+```txt
+password
+token
+Authorization header
+cookie
+raw request body
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export content
+raw email
+OAuth token
+```
+
+Tujuan:
+
+```txt
+[✓] Memudahkan observability dasar
+[✓] Mendeteksi request error
+[✓] Menganalisis endpoint lambat secara kasar
+[✓] Tidak membocorkan data sensitif
+```
+
+Aturan:
+
+```txt
+Jika ingin menambahkan field baru ke request log, pastikan field tersebut bukan PII/sensitive financial data.
+Jangan log query mentah jika query dapat berisi identifier sensitif.
+```
+
+---
+
+## 18. Safe Security Event Logging
+
+Sakuin memiliki safe security event logger.
+
+Security event yang sudah didukung:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+Prinsip logging:
+
+```txt
+[✓] Failed login tidak menyimpan password
+[✓] Failed login tidak menyimpan email mentah
+[✓] Failed login boleh menyimpan hash identifier
+[✓] Auth failure tidak menyimpan token
+[✓] Rate limit hit tidak menyimpan body/token
+[✓] Metadata sensitif otomatis diredact
+```
+
+Security event saat ini diperlakukan sebagai application log, bukan semua dimasukkan ke database audit trail.
+
+Alasan:
+
+```txt
+Failed login dan rate limit hit bisa high-volume.
+Jika semua high-volume event masuk database, AuditLog bisa cepat membesar.
+Security event logging dan business audit trail dipisahkan dulu agar lebih aman dan mudah dikontrol.
+```
+
+Data yang tidak boleh masuk security event:
+
+```txt
+password
+JWT token
+Authorization header
+raw request body
+raw email
+OAuth access token
+OAuth refresh token
+OTP
+PIN
+cookie/session
+```
+
+---
+
+## 19. Safe Metadata Sanitization
+
+Sakuin memiliki reusable safe metadata sanitizer.
+
+Utility terkait:
+
+```txt
+utils/safe-metadata
+```
+
+Tujuan:
+
+```txt
+[✓] Menyamakan redaction logic untuk security event dan audit event
+[✓] Mencegah duplikasi sanitizer
+[✓] Mengurangi risiko developer lupa melakukan redaction
+```
+
+Key sensitif harus otomatis diredact, termasuk pola seperti:
+
+```txt
+password
+token
+authorization
+secret
+cookie
+body
+raw
+email
+credential
+session
+otp
+pin
+key
+```
+
+Nilai redaction:
+
+```txt
+[REDACTED]
+```
+
+Aturan:
+
+```txt
+Jangan membuat sanitizer baru tanpa alasan kuat.
+Gunakan sanitizer shared untuk security event dan audit event.
+Jika ada jenis data sensitif baru, update sanitizer dan test.
+```
+
+---
+
+## 20. Audit Trail
+
+Sakuin sudah memiliki database-backed audit trail menggunakan Prisma model `AuditLog`.
+
+Audit trail digunakan untuk mencatat event bisnis penting, bukan untuk menyimpan data transaksi mentah.
+
+Model database:
+
+```txt
+AuditLog
+```
+
+Field utama:
+
+```txt
+id
+eventType
+status
+requestId
+actorType
+actorUserId
+targetType
+targetId
+metadata
+createdAt
+```
+
+Relationship:
+
+```txt
+AuditLog.actorUserId -> User.id
+onDelete: SetNull
+```
+
+Alasan `onDelete: SetNull`:
+
+```txt
+Jika user dihapus, audit history tidak langsung hilang.
+actorUserId dapat menjadi null, tetapi event historis tetap ada.
+AuditLog tidak menyimpan email/nama user sehingga data pribadi tetap minimal.
+```
+
+Audit persistence bersifat **fail-open**:
+
+```txt
+Jika penyimpanan audit log gagal, request utama user tetap tidak langsung gagal.
+Failure hanya dicatat sebagai safe error log tanpa metadata sensitif.
+```
+
+Alasan fail-open:
+
+```txt
+Audit log penting untuk security trail, tetapi kegagalan audit persistence tidak boleh langsung merusak fitur utama user seperti update profile, transaksi, goals, category, atau export.
+```
+
+---
+
+## 21. Audit Event yang Sudah Dicatat
+
+Business audit events yang sudah dicatat ke AuditLog:
+
+```txt
+profile.updated
+export.transactions_generated
+transaction.created
+transaction.updated
+transaction.deleted
+goal.created
+goal.updated
+goal.deleted
+category.created
+category.updated
+category.deleted
+```
+
+Event yang belum masuk database audit log:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+Alasan:
+
+```txt
+Event auth/rate-limit bisa high-volume.
+Untuk saat ini event tersebut cukup dicatat sebagai safe security event log.
+Jika nanti perlu persistence, desain storage/retention harus dibuat terpisah.
+```
+
+---
+
+## 22. Audit Metadata Policy
+
+Audit metadata harus aman dan minimal.
+
+Prinsip:
+
+```txt
+[✓] Metadata hanya mencatat konteks non-sensitif
+[✓] Metadata harus melewati sanitizer
+[✓] Metadata tidak boleh menyimpan value finansial mentah
+[✓] Metadata tidak boleh menyimpan raw body
+[✓] Metadata tidak boleh menyimpan token atau credential
+[✓] Metadata tidak boleh menjadi sumber kebocoran baru
+```
+
+Metadata yang boleh:
+
+```txt
+changedFields
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
+type
+hasNote
+dateProvided
+hasCurrentAmount
+hasDeadline
+hasIcon
+hasColor
+typeProvided
+iconProvided
+colorProvided
+reason
+```
+
+Metadata yang tidak boleh:
+
+```txt
+password
+JWT token
+Authorization header
+cookie
+raw body
+email mentah
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export content
+OAuth access token
+OAuth refresh token
+OTP
+PIN
+secret/API key
+```
+
+Contoh metadata aman:
+
+```json
+{
+  "changedFields": "name,safeBalanceLimit"
+}
+```
+
+```json
+{
+  "format": "xlsx",
+  "typeFilter": null,
+  "hasCategoryFilter": false,
+  "hasDateRange": true
+}
+```
+
+```json
+{
+  "type": "EXPENSE",
+  "hasNote": true,
+  "dateProvided": true
+}
+```
+
+Contoh metadata tidak aman:
+
+```json
+{
+  "amount": "250000",
+  "note": "Makan di tempat X",
+  "token": "jwt-token-value",
+  "rawBody": "{...}"
+}
+```
+
+---
+
+## 23. Audit Event by Feature
+
+### Profile
+
+Event:
+
+```txt
+profile.updated
+```
+
+Metadata aman:
+
+```txt
+changedFields
+```
+
+Tidak boleh disimpan:
+
+```txt
+nama baru user
+safeBalanceLimit value
+raw body
+token
+```
+
+---
+
+### Export
+
+Event:
+
+```txt
+export.transactions_generated
+```
+
+Metadata aman:
+
+```txt
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
+```
+
+Tidak boleh disimpan:
+
+```txt
+isi export
+transaction note
+transaction amount
+category name
+file content
+raw query lengkap jika mengandung data sensitif
+token
+```
+
+---
+
+### Transactions
+
+Event:
+
+```txt
+transaction.created
+transaction.updated
+transaction.deleted
+```
+
+Metadata aman:
+
+```txt
+type
+hasNote
+dateProvided
+changedFields
+reason
+```
+
+Tidak boleh disimpan:
+
+```txt
+amount
+note
+categoryId
+category name
+raw body
+token
+```
+
+Catatan:
+
+```txt
+targetId boleh berisi transaction id.
+targetId tidak boleh diganti dengan data finansial.
+```
+
+---
+
+### Goals
+
+Event:
+
+```txt
+goal.created
+goal.updated
+goal.deleted
+```
+
+Metadata aman:
+
+```txt
+hasCurrentAmount
+hasDeadline
+changedFields
+reason
+```
+
+Tidak boleh disimpan:
+
+```txt
+goal name
+targetAmount
+currentAmount
+remainingAmount
+deadline value jika tidak perlu
+raw body
+token
+```
+
+---
+
+### Categories
+
+Event:
+
+```txt
+category.created
+category.updated
+category.deleted
+```
+
+Metadata aman:
+
+```txt
+type
+hasIcon
+hasColor
+changedFields
+typeProvided
+iconProvided
+colorProvided
+reason
+```
+
+Tidak boleh disimpan:
+
+```txt
+category name
+icon value
+color value
+raw body
+token
+```
+
+---
+
+## 24. AuditLog Access Policy
+
+Saat ini belum ada endpoint untuk membaca AuditLog dari frontend.
+
+Keputusan saat ini:
+
+```txt
+[✓] AuditLog tersimpan di database
+[✓] AuditLog dapat dicek melalui database/admin tool saat debugging
+[✓] Belum ada user-facing audit log page
+[✓] Belum ada admin panel audit log
+[✓] Belum ada public API untuk audit log
+```
+
+Alasan:
+
+```txt
+AuditLog berisi security trail.
+Sebelum dibuat API/UI, harus ada authorization policy yang jelas.
+Jika dibuka terlalu cepat, audit log bisa menjadi sumber data sensitif baru.
+```
+
+Jika nanti dibuat endpoint audit log:
+
+```txt
+[ ] Harus protected
+[ ] Harus dibatasi userId/role
+[ ] Harus pagination
+[ ] Harus filter aman
+[ ] Tidak boleh expose metadata sensitif
+[ ] Harus punya tests
+[ ] Harus punya rate limit
+```
+
+---
+
+## 25. AuditLog Retention Policy
+
+Retention policy saat ini:
+
+```txt
+Belum ada auto-delete.
+AuditLog disimpan untuk kebutuhan security trail awal.
+```
+
+Alasan:
+
+```txt
+Event yang disimpan saat ini adalah business mutation utama dengan volume relatif rendah.
+Security event high-volume belum dimasukkan ke AuditLog.
+```
+
+Rencana peningkatan:
+
+```txt
+[ ] Definisikan retention 90/180/365 hari sesuai jenis event
+[ ] Definisikan cleanup job jika volume meningkat
+[ ] Definisikan export/delete policy jika ada privacy requirement
+[ ] Definisikan policy jika user meminta penghapusan akun/data
+```
+
+Catatan:
+
+```txt
+Jangan membuat cleanup otomatis sebelum retention policy jelas.
+Jangan menghapus audit history tanpa keputusan produk/security yang eksplisit.
+```
+
+---
+
+## 26. Export Security
+
+Export adalah area sensitif karena menghasilkan data transaksi user.
+
+Format export:
+
+```txt
+JSON
+CSV
+XLSX
+```
+
+Rules:
+
+```txt
+[✓] Export hanya memuat data user login
+[✓] Export filter tetap dibatasi userId dari token
+[✓] Export tidak boleh memuat data user lain
+[✓] Export date range harus valid
+[✓] Export event dicatat sebagai audit event
+```
+
+Tests yang sudah tersedia:
+
+```txt
+[✓] Export JSON hanya memuat transaksi user login
+[✓] Export JSON dengan categoryId user lain menghasilkan data kosong dan tidak bocor
+[✓] Export CSV tidak memuat data user lain
+[✓] Export XLSX tidak memuat data user lain
+[✓] Export filter type tetap hanya menghitung transaksi user login
+```
+
+Audit policy export:
+
+```txt
+AuditLog hanya mencatat metadata export seperti format/filter boolean.
+AuditLog tidak menyimpan isi export.
+AuditLog tidak menyimpan nominal atau note transaksi.
+```
+
+---
+
+## 27. Service Worker and PWA Security
+
+Sakuin memiliki basic PWA installable support.
+
+Security rule utama:
+
+```txt
+Service worker tidak boleh cache API private user.
+```
+
+Tidak boleh cache:
+
+```txt
+auth response
+profile
+transactions
+summary
+goals
+categories user-specific
+export
+AuditLog
+endpoint private lain
+```
+
+Boleh cache:
+
+```txt
+static assets
+icons
+manifest
+offline page
+frontend shell non-sensitive
+```
+
+Alasan:
+
+```txt
+API private user berisi data finansial.
+Caching data private di service worker dapat menyebabkan stale data, data leakage, atau data tersisa setelah logout.
+```
+
+Jika mengubah service worker:
+
+```txt
+[ ] Test installed PWA
+[ ] Test login/logout
+[ ] Test refresh app setelah deploy
+[ ] Pastikan API private tidak masuk cache
+[ ] Pastikan offline fallback tidak menampilkan data private stale
+```
+
+---
+
+## 28. Sensitive Integration Policy
+
+Fitur integrasi sensitif belum boleh dibuat tanpa desain security dan privacy.
+
+Integrasi sensitif termasuk:
+
+```txt
+Google Login
+Gmail transaction detection
+E-wallet transaction detection
+Mobile banking transaction detection
+Financial assistant/advisor berbasis data pribadi
+```
+
+Prinsip:
+
+```txt
+[✓] Consent harus eksplisit
+[✓] Scope harus minimal
+[✓] Data yang diproses harus minimum necessary
+[✓] Raw data sensitif tidak boleh disimpan jika tidak perlu
+[✓] Token harus aman
+[✓] User harus bisa disconnect/revoke
+[✓] Hasil otomatisasi harus draft-first
+[✓] Audit event harus mencatat connect/disconnect/sync tanpa token/raw data
+```
+
+Aturan:
+
+```txt
+Jangan langsung membuat Gmail API integration hanya karena Google Login dibuat.
+Jangan meminta Gmail scope untuk login biasa.
+Jangan membaca email user tanpa consent eksplisit.
+Jangan menyimpan raw email.
+Jangan menyimpan OAuth token tanpa encryption strategy.
+Jangan auto-save transaksi hasil deteksi email.
+```
+
+---
+
+## 29. Google Login vs Gmail API
+
+Google Login dan Gmail API harus dipisahkan.
+
+Google Login:
+
+```txt
+Tujuan: authentication.
+Scope minimal: identity/email/profile.
+Tidak boleh otomatis meminta Gmail read scope.
+```
+
+Gmail API:
+
+```txt
+Tujuan: membaca email tertentu untuk mendeteksi transaksi.
+Scope sensitif.
+Membutuhkan consent eksplisit terpisah.
+Membutuhkan privacy disclosure yang jelas.
+Membutuhkan token storage strategy.
+Membutuhkan disconnect/revoke flow.
+```
+
+Rule:
+
+```txt
+Login dengan Google tidak sama dengan akses Gmail.
+User yang login dengan Google tidak otomatis mengizinkan aplikasi membaca Gmail.
+```
+
+Jika Google Login dibuat nanti:
+
+```txt
+[ ] Pisahkan flow Sign in with Google dari Connect Gmail
+[ ] Tambahkan provider/account linking strategy
+[ ] Jangan minta Gmail scope
+[ ] Test existing email/password account linking
+[ ] Test logout dan protected route
+```
+
+---
+
+## 30. Gmail Integration Rules
+
+Fitur Gmail transaction detection belum diimplementasikan.
+
+Sebelum coding Gmail API, harus ada desain:
+
+```txt
+[ ] OAuth consent screen
+[ ] Scope decision
+[ ] Token storage strategy
+[ ] Token encryption strategy
+[ ] Sync strategy
+[ ] Email query/filter strategy
+[ ] Draft extraction strategy
+[ ] Review UI
+[ ] Disconnect/revoke flow
+[ ] Data retention policy
+[ ] Audit events
+[ ] Privacy policy
+```
+
+Rules:
+
+```txt
+Jangan membaca semua email jika tidak perlu.
+Gunakan query/filter sesempit mungkin.
+Jangan menyimpan raw email.
+Jangan menyimpan isi email lengkap.
+Jangan log subject/body/raw sender jika sensitif.
+Jangan log access token.
+Jangan log refresh token.
+Jangan auto-create transaction final.
+```
+
+Data hasil deteksi harus menjadi:
+
+```txt
+Draft transaksi
+```
+
+Bukan langsung:
+
+```txt
+Transaksi final
+```
+
+User harus bisa:
+
+```txt
+[ ] Review draft
+[ ] Edit draft
+[ ] Hapus draft
+[ ] Approve draft
+[ ] Disconnect Gmail
+[ ] Revoke access
+```
+
+Audit event yang nanti dibutuhkan:
+
+```txt
+integration.gmail.connected
+integration.gmail.disconnected
+integration.gmail.sync_started
+integration.gmail.sync_completed
+integration.gmail.sync_failed
+oauth.token_revoked
+```
+
+Metadata audit Gmail yang boleh:
+
+```txt
+provider
+syncStatus
+draftCount
+reason code non-sensitive
+hasNewDrafts
+```
+
+Metadata audit Gmail yang tidak boleh:
+
+```txt
+access token
+refresh token
+raw email
+email subject
+email body
+sender email mentah jika tidak perlu
+OTP
+PIN
+bank account detail
+e-wallet account detail
+```
+
+---
+
+## 31. Draft-First Automation Policy
+
+Setiap fitur otomatisasi transaksi harus mengikuti prinsip draft-first.
+
+Berlaku untuk:
+
+```txt
+Quick Transaction
+Gmail transaction detection
+E-wallet transaction detection
+Mobile banking transaction detection
+AI financial assistant jika bisa membuat transaksi
+```
+
+Rules:
+
+```txt
+[✓] Parser/extractor hanya membuat draft
+[✓] User harus review
+[✓] User harus approve sebelum transaksi final disimpan
+[✓] Low confidence harus ditandai
+[✓] User harus bisa edit draft
+[✓] User harus bisa hapus draft
+[✓] Tidak boleh auto-save transaksi final tanpa user approval
+```
+
+Alasan:
+
+```txt
+Transaksi finansial rawan salah klasifikasi.
+Kesalahan nominal/category/type bisa berdampak pada laporan keuangan user.
+User harus tetap menjadi final decision maker.
+```
+
+---
+
+## 32. Logging Prohibitions
+
+Dilarang mencatat data berikut di application log, security log, audit log, atau test output:
+
+```txt
+password plaintext
+passwordHash
+JWT token
+Authorization header
+cookie/session value
+OAuth access token
+OAuth refresh token
+raw request body
+raw email
+email body
+OTP
+PIN
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export file content
+DATABASE_URL
+DIRECT_URL
+JWT_SECRET
+```
+
+Jika butuh debugging:
+
+```txt
+Gunakan requestId.
+Gunakan eventType.
+Gunakan targetType.
+Gunakan targetId jika aman.
+Gunakan boolean/enum metadata.
+Gunakan hash identifier jika benar-benar perlu.
+```
+
+---
+
+## 33. Secret Management
+
+Secret tidak boleh dicommit ke repository.
+
+Secret termasuk:
+
+```txt
+DATABASE_URL
+DIRECT_URL
+JWT_SECRET
+OAuth client secret
+OAuth refresh token
+API key
+SMTP credential
+Supabase service role key
+```
+
+Rules:
+
+```txt
+Gunakan .env lokal.
+Gunakan Vercel environment variables untuk production.
+Gunakan GitHub Actions secrets untuk CI.
+Jangan menulis secret asli di README, docs, issue, commit message, atau screenshot publik.
+```
+
+Jika secret terlanjur bocor:
+
+```txt
+[ ] Rotate secret
+[ ] Revoke token/key lama
+[ ] Update environment variable
+[ ] Redeploy
+[ ] Cek log akses
+```
+
+---
+
+## 34. Database Security Notes
+
+Database menggunakan Supabase PostgreSQL dan Prisma ORM.
+
+Rules:
+
+```txt
+[✓] Query user data harus difilter berdasarkan userId dari token
+[✓] Prisma migration harus dicommit
+[✓] Prisma Client harus di-generate setelah schema berubah
+[✓] Jangan mengubah schema tanpa test
+[✓] Jangan menyimpan secret di database tanpa encryption strategy
+```
+
+AuditLog:
+
+```txt
+[✓] AuditLog memiliki actorUserId nullable
+[✓] Relasi actor memakai onDelete: SetNull
+[✓] Metadata disimpan sebagai JSON
+[✓] Metadata harus sudah disanitasi sebelum masuk DB
+```
+
+Jika mengubah Prisma schema:
+
+```txt
+[ ] Buat migration
+[ ] Generate Prisma Client
+[ ] Update tests
+[ ] Jalankan typecheck/test/build
+[ ] Cek CI
+[ ] Cek deploy
+```
+
+Windows note:
+
+```txt
+Jika Prisma generate gagal dengan EPERM pada query_engine-windows.dll.node, biasanya ada proses backend/test/Prisma Studio/VSCode yang mengunci file.
+Stop proses node/tsx lalu jalankan generate ulang.
+```
+
+Command bantu:
+
+```powershell
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process tsx -ErrorAction SilentlyContinue | Stop-Process -Force
+pnpm --filter @sakuin/api db:generate
+```
+
+---
+
+## 35. Security Test Coverage
+
+Current backend test status terakhir yang tercatat setelah database-backed AuditLog:
+
+```txt
+Test Files : 17 passed
+Tests      : 114 passed
+Build      : passed
+```
+
+Coverage utama:
+
+```txt
+[✓] Auth API tests
+[✓] User profile tests
+[✓] Transaction CRUD and ownership tests
+[✓] Category CRUD and ownership tests
+[✓] Goal CRUD and ownership tests
+[✓] Summary tests
+[✓] Export tests
+[✓] Data isolation tests
+[✓] Security baseline tests
+[✓] Auth token edge case tests
+[✓] Rate limit abuse tests
+[✓] Request ID security tests
+[✓] Security event logger tests
+[✓] Audit event tests
+[✓] Audit event recorder tests
+[✓] Audit log sink tests
+```
+
+---
+
+### Phase 24A — Auth Rate Limit + Security Test Baseline
+
+Status:
+
+```txt
+[✓] Selesai
+```
 
 Coverage:
 
@@ -716,713 +1856,121 @@ Coverage:
 [✓] User tidak bisa create transaction memakai custom category user lain
 ```
 
-### 16.2 Cross-Cutting Security Tests
+---
+
+### Phase 24B.1 — Cross-Cutting Security Tests
+
+Status:
+
+```txt
+[✓] Selesai
+```
 
 Coverage:
 
 ```txt
-[✓] Security headers muncul
-[✓] CORS tidak memantulkan origin asing
-[✓] CORS mengizinkan localhost development
-[✓] Request body terlalu besar ditolak 413
-[✓] Authorization header format salah ditolak
-[✓] Bearer token invalid ditolak
-[✓] Endpoint private gagal tanpa token
-[✓] JSON endpoint menolak request tanpa Content-Type: application/json
-[✓] JSON endpoint menolak body JSON rusak
+[✓] Security headers
+[✓] Request body size limit
+[✓] CORS/security behavior dasar
+[✓] Safe production error behavior
 ```
 
-### 16.3 Data Isolation Tests
+---
+
+### Phase 24B.2 — Summary & Export Data Isolation Tests
+
+Status:
+
+```txt
+[✓] Selesai
+```
 
 Coverage:
 
 ```txt
 [✓] Summary hanya menghitung transaksi user login
-[✓] Summary recent transactions tidak memuat transaksi user lain
-[✓] Summary category breakdown tidak memuat custom category user lain
-[✓] Export JSON hanya memuat transaksi user login
-[✓] Export JSON dengan categoryId milik user lain menghasilkan data kosong dan tidak bocor
-[✓] Export CSV tidak memuat catatan/transaksi/custom category user lain
-[✓] Export XLSX tidak memuat catatan/transaksi/custom category user lain
-[✓] Export filter type tetap hanya menghitung transaksi user login
+[✓] Summary category breakdown tidak bocor
+[✓] Export JSON/CSV/XLSX tidak bocor
+[✓] Export filter categoryId user lain tidak membocorkan data
 ```
 
-### 16.4 Auth & Token Edge Case Tests
+---
+
+### Phase 24B.3 — Auth & Token Edge Case Tests
+
+Status:
+
+```txt
+[✓] Selesai
+```
 
 Coverage:
 
 ```txt
-[✓] Authorization: Bearer tanpa token valid ditolak
+[✓] Authorization header kosong ditolak
+[✓] Bearer token invalid ditolak
 [✓] Token signature salah ditolak
 [✓] Token expired ditolak
 [✓] Token tanpa userId ditolak
-[✓] Token dengan userId bukan string ditolak
-[✓] Token valid milik user yang sudah dihapus tidak bisa mengambil profile
-[✓] Register dengan password lemah ditolak
-[✓] Login dengan email tidak valid ditolak sebelum masuk auth service
+[✓] Token userId bukan string ditolak
+[✓] Token milik user yang sudah dihapus ditolak
+[✓] Password lemah ditolak
+[✓] Email invalid ditolak
 ```
 
-### 16.5 Rate Limit & API Abuse Edge Case Tests
+---
+
+### Phase 24B.4 — Rate Limit & API Abuse Edge Case Tests
+
+Status:
+
+```txt
+[✓] Selesai
+```
 
 Coverage:
 
 ```txt
-[✓] Login rate limit memblok IP + email yang sama
-[✓] Login rate limit tidak memblok email berbeda dari IP berbeda
-[✓] Register rate limit memblok spam register dari IP yang sama
-[✓] General API rate limit memblok request berlebihan dari IP yang sama
-[✓] 429 response punya Retry-After
-[✓] 429 response punya RateLimit-Limit
-[✓] 429 response punya RateLimit-Remaining
-[✓] 429 response punya RateLimit-Reset
-[✓] Rate limit store bisa di-reset antar test
+[✓] Login rate limit
+[✓] Register rate limit
+[✓] General API rate limit
+[✓] Retry-After
+[✓] RateLimit-Limit
+[✓] RateLimit-Remaining
+[✓] RateLimit-Reset
+[✓] Reset rate limit store untuk test
 ```
 
 ---
 
-## 17. Frontend Security Notes
+### Phase 24D — Security Logging & Audit Trail
 
-Frontend Sakuin harus menjaga beberapa aturan:
+Status:
 
 ```txt
-[✓] Jangan mengirim userId untuk endpoint protected
-[✓] Jangan menyimpan secret di frontend
-[✓] Jangan menampilkan error internal mentah
-[✓] Jangan membuat UI yang auto-save hasil parser tanpa review
-[✓] Jangan cache data private user di service worker
+[✓] Selesai untuk baseline production awal
 ```
 
-Current token storage:
+Coverage:
 
 ```txt
-localStorage
-```
-
-Risiko:
-
-```txt
-Token dapat dicuri jika terjadi XSS.
-```
-
-Mitigasi saat ini:
-
-```txt
-[✓] React escaping untuk rendering normal
-[✓] Tidak memakai dangerouslySetInnerHTML untuk data user
-[✓] API protected tetap membutuhkan token valid
-```
-
-Future improvement:
-
-```txt
-[ ] httpOnly secure cookie
-[ ] CSRF protection jika memakai cookie
-[ ] Frontend CSP yang lebih ketat
-[ ] Audit penggunaan third-party script
+[✓] Request ID middleware
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Safe metadata sanitizer
+[✓] Audit event contract
+[✓] Audit event recorder
+[✓] Audit event context helper
+[✓] Business audit event integration
+[✓] Prisma AuditLog model
+[✓] Database audit log sink
+[✓] Fail-open audit persistence
+[✓] Audit sink reliability polish
 ```
 
 ---
 
-## 18. PWA and Service Worker Security
-
-Sakuin sudah memiliki PWA installable support.
-
-Aturan penting:
-
-```txt
-Service worker tidak boleh cache API private user.
-```
-
-Endpoint yang tidak boleh dicache:
-
-```txt
-/api/auth/*
-/api/users/*
-/api/transactions/*
-/api/summary
-/api/goals/*
-/api/categories/*
-/api/export/*
-```
-
-Alasan:
-
-```txt
-Endpoint tersebut memuat data personal atau data keuangan user.
-Caching sembarangan dapat menyebabkan data stale, data leakage, atau behavior logout yang tidak aman.
-```
-
-Yang boleh dicache secara hati-hati:
-
-```txt
-[✓] Static assets
-[✓] App shell
-[✓] Offline page
-[✓] Icons
-[✓] Manifest
-```
-
-Jika mengubah service worker:
-
-```txt
-[ ] Test production reload
-[ ] Test installed PWA
-[ ] Test logout/login ulang
-[ ] Pastikan data private tidak tersimpan di cache
-```
-
----
-
-## 19. Logging Policy
-
-Logging harus membantu debugging dan audit, tetapi tidak boleh membocorkan data sensitif.
-
-Data yang tidak boleh dicatat di logs:
-
-```txt
-[!] Password
-[!] passwordHash
-[!] JWT token
-[!] Authorization header penuh
-[!] Access token OAuth
-[!] Refresh token OAuth
-[!] Raw email
-[!] Isi email transaksi
-[!] Connection string database
-[!] JWT_SECRET
-[!] DATABASE_URL
-[!] DIRECT_URL
-[!] Data finansial user secara berlebihan
-```
-
-Data yang boleh dicatat secara hati-hati:
-
-```txt
-[✓] Request method
-[✓] Request path
-[✓] Status code
-[✓] Timestamp
-[✓] Request ID
-[✓] User ID internal jika perlu audit
-[✓] Event type
-[✓] Rate limit hit event
-[✓] Failed login event tanpa password
-```
-
-Rencana Phase 24D:
-
-```txt
-[ ] Request ID
-[ ] Auth event logging
-[ ] Failed login logging
-[ ] Rate limit hit logging
-[ ] No sensitive data in logs
-[ ] Audit event untuk Gmail connect/disconnect/sync nanti
-```
-
----
-
-## 20. Secrets Management
-
-Secret tidak boleh disimpan di repository.
-
-Secret yang harus dilindungi:
-
-```txt
-DATABASE_URL
-DIRECT_URL
-JWT_SECRET
-OAuth client secret
-OAuth access token
-OAuth refresh token
-Encryption key
-```
-
-Rules:
-
-```txt
-[✓] .env tidak boleh dicommit
-[✓] .env.example boleh dicommit tanpa value asli
-[✓] Production secret disimpan di Vercel Environment Variables
-[✓] CI secret disimpan di GitHub Actions Secrets
-```
-
-Jika secret bocor:
-
-```txt
-1. Anggap secret sudah compromise.
-2. Rotate secret secepatnya.
-3. Revoke token/credential terkait.
-4. Cek log dan akses yang mencurigakan.
-5. Update environment variable.
-6. Redeploy.
-```
-
----
-
-## 21. Sensitive Integration Policy
-
-Fitur sensitif belum boleh langsung dibuat tanpa security design.
-
-Contoh fitur sensitif:
-
-```txt
-[ ] Gmail transaction detection
-[ ] E-wallet email detection
-[ ] Mobile banking email detection
-[ ] Bank account integration
-[ ] Auto financial advisor berbasis data pribadi
-```
-
-Prinsip wajib:
-
-```txt
-[ ] Jangan pernah meminta password email user
-[ ] Jangan pernah meminta password e-wallet/mobile banking user
-[ ] Gunakan OAuth resmi jika provider mendukung
-[ ] Gunakan scope minimal
-[ ] Jangan membaca semua email tanpa alasan kuat
-[ ] Jangan menyimpan raw email jika tidak benar-benar diperlukan
-[ ] Jangan auto-save hasil parsing sebagai transaksi final
-[ ] User harus review/approve hasil deteksi
-[ ] User harus bisa disconnect integration
-[ ] User harus bisa revoke/delete token
-[ ] User harus bisa menghapus data hasil parsing
-[ ] Token OAuth harus dienkripsi jika disimpan
-[ ] Harus ada privacy policy yang jelas
-[ ] Harus ada audit log untuk connect/disconnect/sync
-```
-
----
-
-## 22. Google Login vs Gmail API
-
-Google Login dan Gmail API adalah dua hal berbeda.
-
-### Google Login
-
-Tujuan:
-
-```txt
-Authentication.
-User bisa masuk menggunakan akun Google.
-```
-
-Scope yang ideal:
-
-```txt
-openid
-email
-profile
-```
-
-Google Login tidak membutuhkan Gmail scope.
-
-### Gmail API
-
-Tujuan:
-
-```txt
-Membaca email tertentu untuk mendeteksi transaksi.
-```
-
-Gmail API membutuhkan consent yang lebih sensitif.
-
-Rules:
-
-```txt
-[✓] Jangan otomatis meminta Gmail scope saat user hanya ingin login dengan Google
-[✓] Gmail access hanya boleh diminta jika user eksplisit mengaktifkan fitur Hubungkan Gmail
-[✓] Jelaskan data apa yang akan dibaca
-[✓] Jelaskan data apa yang disimpan
-[✓] Jelaskan user bisa disconnect kapan saja
-```
-
-Urutan yang benar:
-
-```txt
-1. Implement Google Login sebagai auth jika dibutuhkan
-2. Jangan minta Gmail scope
-3. Buat desain Gmail integration terpisah
-4. Buat consent dan privacy explanation
-5. Minta Gmail scope hanya saat user mengaktifkan fitur Gmail detection
-```
-
----
-
-## 23. Gmail Integration Rules
-
-Gmail integration belum diimplementasikan.
-
-Jika nanti dibuat, rules wajib:
-
-```txt
-[ ] User harus mengaktifkan fitur secara eksplisit
-[ ] Gunakan OAuth resmi Google
-[ ] Gunakan scope minimal
-[ ] Jangan meminta password Gmail
-[ ] Jangan membaca semua email tanpa filter
-[ ] Gunakan query/filter yang spesifik jika memungkinkan
-[ ] Jangan menyimpan raw email
-[ ] Simpan metadata minimal jika diperlukan
-[ ] Simpan hasil ekstraksi transaksi sebagai draft
-[ ] User harus review/approve draft
-[ ] User bisa edit draft sebelum save
-[ ] User bisa menghapus draft
-[ ] User bisa disconnect Gmail
-[ ] User bisa revoke token
-[ ] User bisa menghapus data hasil sinkronisasi
-[ ] Audit log connect/disconnect/sync harus tersedia
-```
-
-Data yang boleh dipertimbangkan untuk disimpan:
-
-```txt
-[ ] Provider name
-[ ] Integration status
-[ ] Connected timestamp
-[ ] Last sync timestamp
-[ ] Extracted transaction draft
-[ ] Minimal external message reference/hash jika diperlukan untuk deduplication
-```
-
-Data yang sebaiknya tidak disimpan:
-
-```txt
-[!] Raw email body
-[!] Full email thread
-[!] Access token plaintext
-[!] Refresh token plaintext
-[!] OTP
-[!] PIN
-[!] Password
-[!] Informasi sensitif yang tidak relevan dengan transaksi
-```
-
----
-
-## 24. OAuth Token Storage Requirements
-
-Jika OAuth integration dibuat, token tidak boleh disimpan sembarangan.
-
-Rules:
-
-```txt
-[ ] Access token tidak boleh dilog
-[ ] Refresh token tidak boleh dilog
-[ ] Refresh token tidak boleh disimpan plaintext
-[ ] Token harus dienkripsi sebelum disimpan
-[ ] Encryption key harus disimpan sebagai environment secret
-[ ] Harus ada mekanisme revoke
-[ ] Harus ada mekanisme disconnect
-[ ] Harus ada mekanisme delete token dari database
-```
-
-Token lifecycle yang disarankan:
-
-```txt
-1. User connect provider
-2. Provider mengirim authorization code
-3. Backend exchange code menjadi token
-4. Backend mengenkripsi refresh token jika perlu disimpan
-5. Backend menyimpan status integration
-6. User dapat disconnect
-7. Disconnect menghapus token lokal
-8. Jika memungkinkan, revoke token ke provider
-```
-
----
-
-## 25. Draft-First Transaction Detection
-
-Fitur otomatisasi transaksi harus menggunakan prinsip **draft-first**.
-
-Artinya:
-
-```txt
-Sistem boleh mendeteksi kemungkinan transaksi.
-Sistem boleh membuat draft transaksi.
-Sistem tidak boleh langsung membuat transaksi final tanpa approval user.
-```
-
-Wajib untuk:
-
-```txt
-[✓] Quick Transaction parser
-[ ] Gmail transaction detection
-[ ] E-wallet transaction detection
-[ ] Mobile banking transaction detection
-[ ] AI assistant transaction creation
-```
-
-Draft harus bisa:
-
-```txt
-[ ] Dilihat user
-[ ] Diedit user
-[ ] Dihapus user
-[ ] Disimpan user secara sadar
-```
-
-Field draft minimal:
-
-```txt
-type
-amount
-category
-date
-note
-source
-confidence
-warning
-```
-
-Alasan:
-
-```txt
-Parser bisa salah.
-Email transaksi bisa ambigu.
-Bahasa natural bisa salah dipahami.
-User tetap harus memegang kontrol akhir atas data keuangannya.
-```
-
----
-
-## 26. Raw Email Storage Policy
-
-Raw email tidak boleh disimpan secara default.
-
-Policy:
-
-```txt
-[✓] Jangan menyimpan raw email body
-[✓] Jangan menyimpan full thread
-[✓] Jangan menyimpan data yang tidak dibutuhkan
-[✓] Jangan menyimpan OTP/PIN/password jika muncul di email
-[✓] Jangan menampilkan raw email di log
-```
-
-Jika suatu saat raw email dianggap perlu untuk debugging:
-
-```txt
-[ ] Harus ada alasan teknis yang kuat
-[ ] Harus ada consent eksplisit
-[ ] Harus ada retention policy
-[ ] Harus ada delete mechanism
-[ ] Harus ada masking/redaction
-[ ] Harus dipertimbangkan ulang secara security review
-```
-
-Rekomendasi default:
-
-```txt
-Simpan hasil ekstraksi transaksi saja, bukan isi email.
-```
-
----
-
-## 27. Consent, Disconnect, and Revoke
-
-Integrasi sensitif wajib memiliki consent dan kontrol user.
-
-Consent harus menjelaskan:
-
-```txt
-[ ] Data apa yang akan diakses
-[ ] Mengapa data itu dibutuhkan
-[ ] Bagaimana data diproses
-[ ] Data apa yang disimpan
-[ ] Berapa lama data disimpan
-[ ] Cara disconnect
-[ ] Cara menghapus data
-```
-
-Disconnect harus:
-
-```txt
-[ ] Menghapus token lokal
-[ ] Mengubah status integration menjadi disconnected
-[ ] Menghentikan sync berikutnya
-[ ] Mencatat audit log disconnect
-```
-
-Revoke harus:
-
-```txt
-[ ] Mencoba revoke token ke provider jika provider mendukung
-[ ] Tetap menghapus token lokal meskipun revoke remote gagal
-[ ] Memberi feedback yang jelas ke user
-```
-
----
-
-## 28. Audit Log Requirements
-
-Audit log belum diimplementasikan, tetapi wajib dirancang sebelum integrasi sensitif.
-
-Event yang sebaiknya diaudit:
-
-```txt
-[ ] User login
-[ ] Failed login
-[ ] Rate limit hit
-[ ] Password/security setting changed
-[ ] Gmail connected
-[ ] Gmail disconnected
-[ ] Gmail sync started
-[ ] Gmail sync completed
-[ ] Gmail sync failed
-[ ] OAuth token revoked
-[ ] Export generated
-[ ] Large data operation
-```
-
-Audit log tidak boleh menyimpan:
-
-```txt
-[!] Password
-[!] Token
-[!] Raw email
-[!] Full transaction export
-[!] Secret
-```
-
-Field audit log yang disarankan:
-
-```txt
-id
-userId
-eventType
-metadataSafeJson
-ipHash atau ipPartial jika diperlukan
-userAgentHash jika diperlukan
-createdAt
-```
-
-Catatan:
-
-```txt
-Audit logging harus dirancang hati-hati agar membantu security tanpa menjadi sumber kebocoran data baru.
-```
-
----
-
-## 29. Financial Advisor / AI Assistant Policy
-
-Jika Sakuin berkembang menjadi financial assistant/advisor, perlu batasan jelas.
-
-Rules:
-
-```txt
-[ ] Jangan memberikan klaim finansial absolut
-[ ] Jangan memberi instruksi investasi berisiko tinggi tanpa konteks
-[ ] Jangan membuat transaksi tanpa approval user
-[ ] Jangan menyimpulkan hal sensitif di luar kebutuhan aplikasi
-[ ] Jangan memakai data user untuk tujuan lain tanpa consent
-[ ] Jelaskan jika insight bersifat estimasi
-```
-
-AI assistant harus:
-
-```txt
-[ ] Menggunakan data minimal yang diperlukan
-[ ] Memberi insight yang bisa diverifikasi user
-[ ] Menghindari auto-action tanpa approval
-[ ] Menjaga privasi data transaksi
-```
-
----
-
-## 30. Incident Response Basic Plan
-
-Jika ditemukan bug security atau data leakage:
-
-```txt
-1. Hentikan perubahan baru yang tidak terkait.
-2. Identifikasi scope masalah.
-3. Reproduksi bug secara lokal jika aman.
-4. Jangan membuka data user yang tidak diperlukan.
-5. Buat fix minimal dan terarah.
-6. Tambahkan test agar bug tidak terulang.
-7. Jalankan validation.
-8. Deploy fix.
-9. Rotate secret jika ada indikasi secret bocor.
-10. Dokumentasikan root cause dan mitigasi.
-```
-
-Jika ada token/secret bocor:
-
-```txt
-1. Rotate secret.
-2. Revoke token jika memungkinkan.
-3. Redeploy environment.
-4. Cek log untuk indikasi penyalahgunaan.
-5. Tambahkan pencegahan agar tidak terulang.
-```
-
----
-
-## 31. Development Guardrails
-
-Aturan saat mengembangkan fitur baru:
-
-```txt
-1. Jangan mengubah auth flow tanpa regression test.
-2. Jangan mengubah CORS production tanpa test production.
-3. Jangan mengubah Prisma schema tanpa migration dan test.
-4. Jangan menambah endpoint protected tanpa auth middleware.
-5. Jangan membaca data user tanpa filter userId dari token.
-6. Jangan menambah export/agregasi tanpa data isolation test.
-7. Jangan menambah parser otomatis tanpa draft-first review.
-8. Jangan menyimpan raw data sensitif tanpa security review.
-9. Jangan log token/password/raw email.
-10. Jangan cache API private user di service worker.
-11. Jangan menambah Gmail scope ke Google Login.
-12. Jangan auto-save hasil Gmail/e-wallet detection.
-```
-
----
-
-## 32. Validation Commands
-
-Jika hanya dokumentasi yang berubah:
-
-```bash
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/api typecheck
-git status
-```
-
-Jika ingin full confidence:
-
-```bash
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/web test
-pnpm --filter @sakuin/web build
-pnpm --filter @sakuin/api typecheck
-pnpm --filter @sakuin/api test
-pnpm --filter @sakuin/api build
-```
-
-Jika security code berubah:
-
-```bash
-pnpm --filter @sakuin/api typecheck
-pnpm --filter @sakuin/api test
-pnpm --filter @sakuin/api build
-```
-
-Jika frontend auth/token/service worker berubah:
-
-```bash
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/web test
-pnpm --filter @sakuin/web build
-```
-
----
-
-## 33. Manual Security Checklist
+## 36. Manual Security Checklist
 
 Checklist manual setelah perubahan security besar:
 
@@ -1445,53 +1993,54 @@ Checklist manual setelah perubahan security besar:
 [ ] Rate limit register bekerja
 [ ] General rate limit bekerja
 [ ] Production error tidak membocorkan stack trace
+[ ] Response memiliki X-Request-Id
 [ ] PWA tidak cache API private user
+```
+
+Checklist audit trail:
+
+```txt
+[ ] Update profile menghasilkan AuditLog profile.updated
+[ ] Create/update/delete transaction menghasilkan AuditLog transaction.*
+[ ] Create/update/delete category menghasilkan AuditLog category.*
+[ ] Create/update/delete goal menghasilkan AuditLog goal.*
+[ ] Export transaksi menghasilkan AuditLog export.transactions_generated
+[ ] AuditLog metadata tidak memuat token/password/raw body/amount/note/export content
+[ ] Tidak ada audit_log_persist_failed di production log
 ```
 
 ---
 
-## 34. Security Roadmap
+## 37. Security Roadmap
 
-Urutan security roadmap yang disarankan:
+Urutan security roadmap yang disarankan dari kondisi terbaru:
 
 ```txt
-Phase 24C - Security Documentation
-Phase 24D - Security Logging & Audit Trail Design
-Phase 24E - Google Login Design, bukan Gmail reading
-Phase 24F - Gmail Transaction Detection Architecture
-Phase 24G - Distributed Rate Limit / Production Hardening
-Phase 24H - Advanced Auth Security / Cookie Migration Research
+Phase 24D.5 - Security Documentation Sync
+Phase 24E   - Google Login Design, bukan Gmail reading
+Phase 24F   - Gmail Transaction Detection Architecture
+Phase 24G   - Distributed Rate Limit / Production Hardening
+Phase 24H   - Advanced Auth Security / Cookie Migration Research
 ```
 
-### Phase 24C — Security Documentation
+### Phase 24D.5 — Security Documentation Sync
 
 Status:
 
 ```txt
-[✓] docs/SECURITY.md dibuat
-[ ] README.md sinkron
-[ ] docs/API.md sinkron
-[ ] docs/HANDOFF.md sinkron
+[~] Sedang dikerjakan
 ```
 
 Target:
 
 ```txt
-Mendokumentasikan security baseline dan aturan integrasi sensitif sebelum coding Gmail/e-wallet detection.
+[✓] README.md sinkron dengan audit trail terbaru
+[~] docs/SECURITY.md sinkron dengan audit trail terbaru
+[ ] docs/HANDOFF.md sinkron dengan audit trail terbaru
+[ ] docs/API.md sinkron dengan request ID/security notes terbaru
 ```
 
-### Phase 24D — Security Logging & Audit Trail Design
-
-Target:
-
-```txt
-[ ] Request ID
-[ ] Auth event logging
-[ ] Failed login logging
-[ ] Rate limit hit logging
-[ ] No sensitive data in logs
-[ ] Audit event untuk Gmail connect/disconnect/sync
-```
+---
 
 ### Phase 24E — Google Login Design
 
@@ -1503,7 +2052,17 @@ Target:
 [ ] Tentukan account linking strategy
 [ ] Tentukan provider field jika perlu migration
 [ ] Pertimbangkan existing email/password user
+[ ] Tentukan UX login/register
+[ ] Tentukan test coverage
 ```
+
+Important rule:
+
+```txt
+Google Login tidak boleh meminta Gmail read scope.
+```
+
+---
 
 ### Phase 24F — Gmail Transaction Detection Architecture
 
@@ -1518,7 +2077,16 @@ Target:
 [ ] Review UI
 [ ] Disconnect/revoke flow
 [ ] Privacy/data retention policy
+[ ] Audit event policy
 ```
+
+Important rule:
+
+```txt
+Jangan coding Gmail API sebelum desain security/privacy matang.
+```
+
+---
 
 ### Phase 24G — Distributed Rate Limit / Production Hardening
 
@@ -1526,33 +2094,168 @@ Target:
 
 ```txt
 [ ] Redis/Upstash/KV-based rate limit
+[ ] Centralized rate limit store
 [ ] Better session/token strategy
-[ ] Refresh token rotation
 [ ] Optional email verification
 [ ] Optional secure forgot password flow
 ```
 
 ---
 
-## 35. Final Notes
+### Phase 24H — Advanced Auth Security / Cookie Migration Research
 
-Sakuin sudah memiliki security baseline yang cukup baik untuk MVP/production awal, tetapi belum cukup untuk langsung masuk ke integrasi email/Gmail/e-wallet.
-
-Sebelum fitur sensitif dibuat, project harus memiliki:
+Target:
 
 ```txt
-[ ] Security documentation
-[ ] Privacy explanation
-[ ] Consent flow
-[ ] Token encryption design
-[ ] Disconnect/revoke flow
-[ ] Audit logging design
-[ ] Draft-first transaction review
-[ ] Data retention policy
+[ ] Evaluasi httpOnly secure cookie
+[ ] Evaluasi CSRF strategy
+[ ] Evaluasi refresh token rotation
+[ ] Evaluasi session revocation
+[ ] Evaluasi logout server-side
 ```
 
-Prinsip akhir:
+---
+
+## 38. Development Rules for Security-Sensitive Changes
+
+Jika mengubah auth:
 
 ```txt
-Lebih baik fitur sensitif dibuat lambat tetapi aman, daripada cepat tetapi berisiko membocorkan data pribadi user.
+[ ] Test register
+[ ] Test login
+[ ] Test logout
+[ ] Test /api/auth/me
+[ ] Test protected route
+[ ] Test invalid token
+[ ] Test expired token
+[ ] Test deleted user token
+[ ] Evaluasi token/session security
+[ ] Evaluasi CSRF jika pindah ke cookie
+```
+
+Jika mengubah ownership/data isolation:
+
+```txt
+[ ] Test user tidak bisa akses data user lain
+[ ] Test aggregation tidak menghitung data user lain
+[ ] Test export tidak memuat data user lain
+[ ] Test categoryId/goalId/transactionId user lain
+```
+
+Jika mengubah rate limit:
+
+```txt
+[ ] Update rate limit tests
+[ ] Test login rate limit
+[ ] Test register rate limit
+[ ] Test general API rate limit
+[ ] Pastikan 429 headers tetap benar
+[ ] Pastikan tidak log email/password/token
+```
+
+Jika mengubah audit/logging:
+
+```txt
+[ ] Test redaction metadata
+[ ] Test fail-open behavior
+[ ] Test tidak log password/token/raw body
+[ ] Test audit event tidak menyimpan value sensitif
+[ ] Test database sink jika AuditLog berubah
+[ ] Cek production log tidak noisy
+```
+
+Jika mengubah service worker:
+
+```txt
+[ ] Jangan cache API private user
+[ ] Jangan cache auth response
+[ ] Jangan cache transactions/summary/profile/goals/export
+[ ] Test install PWA
+[ ] Test reload production
+[ ] Test behavior update aplikasi
+[ ] Test logout/login ulang
+```
+
+Jika mengubah Prisma schema:
+
+```txt
+[ ] Buat migration
+[ ] Generate Prisma Client
+[ ] Jalankan backend typecheck
+[ ] Jalankan backend tests
+[ ] Jalankan backend build
+[ ] Commit migration
+[ ] Cek CI
+[ ] Cek deploy
+```
+
+---
+
+## 39. Validation Commands
+
+Backend validation:
+
+```bash
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Frontend validation:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+```
+
+Full regression:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Jika hanya dokumentasi Markdown yang berubah:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
+git status
+git diff -- README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
+```
+
+---
+
+## 40. Final Notes
+
+Security Sakuin sudah meningkat signifikan dibanding baseline awal, terutama dengan adanya:
+
+```txt
+[✓] Security headers
+[✓] Request body size limit
+[✓] Rate limiting
+[✓] Data isolation tests
+[✓] Auth/token edge case tests
+[✓] Request ID
+[✓] Safe request logging
+[✓] Safe security event logging
+[✓] Database-backed AuditLog
+[✓] Fail-open audit persistence
+```
+
+Namun security tetap harus diperlakukan sebagai proses berkelanjutan.
+
+Aturan terakhir:
+
+```txt
+Jangan mengklaim aplikasi 100% aman.
+Jangan menambahkan fitur sensitif tanpa security design.
+Jangan menyimpan data sensitif di log atau audit metadata.
+Jangan membaca Gmail/e-wallet/mobile banking data tanpa consent eksplisit.
+Jangan auto-save transaksi dari hasil parser/email detection tanpa user review.
 ```
