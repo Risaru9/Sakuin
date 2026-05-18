@@ -1,3 +1,5 @@
+// apps/api/src/app.ts
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { env } from "./config/env.js";
@@ -6,6 +8,11 @@ import {
   authLoginRateLimitMiddleware,
   authRegisterRateLimitMiddleware
 } from "./middlewares/rate-limit.middleware.js";
+import {
+  getRequestIdForRequest,
+  REQUEST_ID_HEADER,
+  requestIdMiddleware
+} from "./middlewares/request-id.middleware.js";
 import {
   getSecurityHeaders,
   requestSizeLimitMiddleware,
@@ -103,7 +110,21 @@ function getErrorDetails(error: unknown, status: number) {
   return null;
 }
 
-function jsonError(message: string, status: number, errors: unknown = null) {
+function jsonError(
+  message: string,
+  status: number,
+  errors: unknown = null,
+  requestId?: string
+) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...getSecurityHeaders()
+  };
+
+  if (requestId) {
+    headers[REQUEST_ID_HEADER] = requestId;
+  }
+
   return new Response(
     JSON.stringify({
       success: false,
@@ -112,13 +133,12 @@ function jsonError(message: string, status: number, errors: unknown = null) {
     }),
     {
       status,
-      headers: {
-        "Content-Type": "application/json",
-        ...getSecurityHeaders()
-      }
+      headers
     }
   );
 }
+
+app.use("*", requestIdMiddleware);
 
 app.use("*", securityHeadersMiddleware);
 
@@ -127,7 +147,7 @@ app.use(
   cors({
     origin: (origin) => getAllowedOrigin(origin),
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", REQUEST_ID_HEADER],
     credentials: true
   })
 );
@@ -152,16 +172,21 @@ app.get("/health", (c) => {
 
 app.route("/api", apiRoutes);
 
-app.notFound(() => {
-  return jsonError("Route tidak ditemukan", 404);
+app.notFound((c) => {
+  return jsonError(
+    "Route tidak ditemukan",
+    404,
+    null,
+    getRequestIdForRequest(c.req.raw)
+  );
 });
 
-app.onError((error) => {
+app.onError((error, c) => {
   const status = getErrorStatus(error);
   const message = getErrorMessage(error, status);
   const errors = getErrorDetails(error, status);
 
-  return jsonError(message, status, errors);
+  return jsonError(message, status, errors, getRequestIdForRequest(c.req.raw));
 });
 
 export default app;
