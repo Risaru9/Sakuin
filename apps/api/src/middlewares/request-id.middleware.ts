@@ -7,9 +7,9 @@ export const REQUEST_ID_HEADER = "X-Request-Id";
 
 const SAFE_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
-const requestIdStore = new WeakMap<Request, string>();
+const requestIdStore = new WeakMap<object, string>();
 
-function normalizeRequestId(value: string | null) {
+function normalizeRequestId(value: string | null | undefined) {
   const trimmedValue = value?.trim();
 
   if (!trimmedValue) {
@@ -27,18 +27,17 @@ function createRequestId() {
   return randomUUID();
 }
 
-export function getRequestIdForRequest(request: Request) {
+export function getRequestIdForRequest(
+  request: object,
+  incomingRequestId?: string | null
+) {
   const existingRequestId = requestIdStore.get(request);
 
   if (existingRequestId) {
     return existingRequestId;
   }
 
-  const incomingRequestId = normalizeRequestId(
-    request.headers.get(REQUEST_ID_HEADER)
-  );
-
-  const requestId = incomingRequestId ?? createRequestId();
+  const requestId = normalizeRequestId(incomingRequestId) ?? createRequestId();
 
   requestIdStore.set(request, requestId);
 
@@ -71,6 +70,19 @@ function getErrorStatus(error: unknown) {
   }
 
   return 500;
+}
+
+function getResponseStatus(response: unknown) {
+  if (
+    response &&
+    typeof response === "object" &&
+    "status" in response &&
+    typeof (response as { status?: unknown }).status === "number"
+  ) {
+    return (response as { status: number }).status;
+  }
+
+  return 200;
 }
 
 function shouldLogRequest() {
@@ -112,7 +124,10 @@ export const requestIdMiddleware: MiddlewareHandler<AppEnv> = async (
   c,
   next
 ) => {
-  const requestId = getRequestIdForRequest(c.req.raw);
+  const requestId = getRequestIdForRequest(
+    c.req.raw,
+    c.req.header(REQUEST_ID_HEADER)
+  );
   const startedAt = Date.now();
 
   c.header(REQUEST_ID_HEADER, requestId);
@@ -128,7 +143,7 @@ export const requestIdMiddleware: MiddlewareHandler<AppEnv> = async (
       requestId,
       method: c.req.method,
       path: getRequestPath(c.req.url),
-      status: c.res.status || 200,
+      status: getResponseStatus(c.res),
       durationMs
     });
   } catch (error) {

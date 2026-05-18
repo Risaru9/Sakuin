@@ -177,7 +177,7 @@ app.notFound((c) => {
     "Route tidak ditemukan",
     404,
     null,
-    getRequestIdForRequest(c.req.raw)
+    getRequestIdForRequest(c.req.raw, c.req.header(REQUEST_ID_HEADER))
   );
 });
 
@@ -186,7 +186,12 @@ app.onError((error, c) => {
   const message = getErrorMessage(error, status);
   const errors = getErrorDetails(error, status);
 
-  return jsonError(message, status, errors, getRequestIdForRequest(c.req.raw));
+  return jsonError(
+    message,
+    status,
+    errors,
+    getRequestIdForRequest(c.req.raw, c.req.header(REQUEST_ID_HEADER))
+  );
 });
 
 export default app;
