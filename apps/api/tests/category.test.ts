@@ -1,7 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { TransactionType } from "@prisma/client";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AuditEvent } from "../src/utils/audit-event.js";
+import {
+  resetAuditEventSink,
+  setAuditEventSink
+} from "../src/utils/audit-event-recorder.js";
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -260,6 +265,10 @@ beforeAll(async () => {
   usedTransactionId = usedTransaction.body.data.id;
 }, 60000);
 
+afterEach(() => {
+  resetAuditEventSink();
+});
+
 afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
@@ -328,6 +337,12 @@ describe("Category API", () => {
   });
 
   it("POST /api/categories berhasil membuat custom category", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const { response, body } = await createCategory(tokenA, {
       name: `Hiburan ${testRunId}`,
       type: "EXPENSE",
@@ -343,6 +358,31 @@ describe("Category API", () => {
     expect(body.data.icon).toBe("gamepad-2");
     expect(body.data.color).toBe("#ec4899");
     expect(body.data.isDefault).toBe(false);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "category.created",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "category",
+      targetId: body.data.id,
+      metadata: {
+        type: "EXPENSE",
+        hasIcon: true,
+        hasColor: true
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain(`Hiburan ${testRunId}`);
+    expect(serializedAuditEvent).not.toContain("gamepad-2");
+    expect(serializedAuditEvent).not.toContain("#ec4899");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("POST /api/categories gagal tanpa token", async () => {
@@ -413,6 +453,12 @@ describe("Category API", () => {
   });
 
   it("PUT /api/categories/:id berhasil update custom category milik sendiri", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request(`/api/categories/${userACategoryId}`, {
       method: "PUT",
       headers: {
@@ -437,6 +483,36 @@ describe("Category API", () => {
     expect(body.data.color).toBe("#0284c7");
     expect(body.data.type).toBe("EXPENSE");
     expect(body.data.isDefault).toBe(false);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "category.updated",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "category",
+      targetId: userACategoryId,
+      metadata: {
+        changedFields: "name,icon,color",
+        typeProvided: false,
+        iconProvided: true,
+        hasIcon: true,
+        colorProvided: true,
+        hasColor: true
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain(
+      `Transport Harian User A ${testRunId}`
+    );
+    expect(serializedAuditEvent).not.toContain("bus");
+    expect(serializedAuditEvent).not.toContain("#0284c7");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("PUT /api/categories/:id gagal untuk default category", async () => {
@@ -499,6 +575,12 @@ describe("Category API", () => {
   });
 
   it("DELETE /api/categories/:id berhasil hapus custom category yang belum dipakai transaksi", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request(`/api/categories/${categoryForDeleteId}`, {
       method: "DELETE",
       headers: {
@@ -512,6 +594,29 @@ describe("Category API", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Kategori berhasil dihapus");
     expect(body.data.id).toBe(categoryForDeleteId);
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "category.deleted",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "category",
+      targetId: categoryForDeleteId,
+      metadata: {
+        reason: "user_requested"
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+    expect(serializedAuditEvent).not.toContain(`Kategori Delete ${testRunId}`);
+    expect(serializedAuditEvent).not.toContain("trash");
+    expect(serializedAuditEvent).not.toContain("#ef4444");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
   it("DELETE /api/categories/:id gagal untuk default category", async () => {
