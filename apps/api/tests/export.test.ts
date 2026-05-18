@@ -1,7 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { TransactionType } from "@prisma/client";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AuditEvent } from "../src/utils/audit-event.js";
+import {
+  resetAuditEventSink,
+  setAuditEventSink
+} from "../src/utils/audit-event-recorder.js";
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -209,6 +214,10 @@ beforeAll(async () => {
   });
 }, 60000);
 
+afterEach(() => {
+  resetAuditEventSink();
+});
+
 afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
@@ -223,6 +232,12 @@ afterAll(async () => {
 
 describe("Export API", () => {
   it("GET /api/export/transactions?format=json berhasil export transaksi user login", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
     const response = await app.request("/api/export/transactions?format=json", {
       method: "GET",
       headers: {
@@ -249,6 +264,37 @@ describe("Export API", () => {
     expect(notes).toContain("Makan untuk export user A");
     expect(notes).not.toContain("Gaji rahasia user B");
     expect(notes).not.toContain("Makan rahasia user B");
+
+    expect(capturedAuditEvents).toHaveLength(1);
+
+    const [auditEvent] = capturedAuditEvents;
+    const serializedAuditEvent = JSON.stringify(auditEvent);
+
+    expect(auditEvent).toMatchObject({
+      eventType: "export.transactions_generated",
+      status: "success",
+      actorType: "user",
+      actorUserId: userAId,
+      targetType: "export",
+      targetId: "transactions",
+      metadata: {
+        format: "json",
+        typeFilter: null,
+        hasCategoryFilter: false,
+        hasDateRange: false
+      }
+    });
+
+    expect(auditEvent.requestId).toBeTruthy();
+
+    expect(serializedAuditEvent).not.toContain("Gaji untuk export user A");
+    expect(serializedAuditEvent).not.toContain("Makan untuk export user A");
+    expect(serializedAuditEvent).not.toContain("Gaji rahasia user B");
+    expect(serializedAuditEvent).not.toContain("Makan rahasia user B");
+    expect(serializedAuditEvent).not.toContain("1000000.00");
+    expect(serializedAuditEvent).not.toContain("250000.00");
+    expect(serializedAuditEvent).not.toContain("750000.00");
+    expect(serializedAuditEvent).not.toContain(tokenA);
   }, 20000);
 
   it("GET /api/export/transactions?format=json&type=EXPENSE berhasil filter expense", async () => {
@@ -300,7 +346,9 @@ describe("Export API", () => {
     expect(csv).toContain("Total Expense,250000.00");
     expect(csv).toContain("Balance,750000.00");
     expect(csv).toContain("Transaction Count,2");
-    expect(csv).toContain("ID,Tanggal,Tipe,Kategori ID,Kategori,Nominal,Catatan,Created At,Updated At");
+    expect(csv).toContain(
+      "ID,Tanggal,Tipe,Kategori ID,Kategori,Nominal,Catatan,Created At,Updated At"
+    );
 
     expect(csv).toContain("Gaji untuk export user A");
     expect(csv).toContain("Makan untuk export user A");
