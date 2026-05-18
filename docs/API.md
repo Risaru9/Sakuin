@@ -14,7 +14,16 @@ Validation   : Zod
 Auth         : JWT Bearer Token
 Test         : Vitest
 Export       : JSON, CSV, XLSX
-Security     : Security headers, request body size limit, safer production error handling
+Security     : Security headers, request body size limit, CORS allowlist, rate limiting, safer production error handling, data isolation tests
+```
+
+Catatan penting:
+
+```txt
+Dokumentasi ini hanya mencakup API yang sudah ada saat ini.
+Quick Transaction / Catat Cepat adalah fitur frontend/parser yang menyimpan hasil final melalui endpoint transaksi biasa.
+Gmail/e-wallet/mobile banking transaction detection belum diimplementasikan sebagai API.
+Google Login belum diimplementasikan sebagai API.
 ```
 
 ---
@@ -95,7 +104,7 @@ Catatan:
 
 ```txt
 HttpError yang memang aman untuk user tetap boleh mengirim pesan spesifik.
-Contoh: token invalid, route tidak ditemukan, validasi gagal, atau data tidak ditemukan.
+Contoh: token invalid, route tidak ditemukan, validasi gagal, data tidak ditemukan, atau rate limit exceeded.
 ```
 
 ---
@@ -117,20 +126,40 @@ POST /api/auth/register
 POST /api/auth/login
 ```
 
-Frontend tidak perlu mengirim `userId` pada request protected. Backend mengambil identitas user dari JWT token.
+Frontend tidak perlu mengirim `userId` pada request protected.
+
+Backend mengambil identitas user dari JWT token.
 
 Catatan security:
 
 ```txt
 Token saat ini masih disimpan di localStorage pada frontend.
 Untuk security tingkat lanjut, migrasi ke httpOnly secure cookie dapat dipertimbangkan pada fase berbeda.
+Migrasi ke cookie tidak boleh dilakukan tanpa desain CSRF, CORS credentials, logout flow, dan regression test.
 ```
 
 ---
 
 ## Security Notes
 
-Backend sudah menerapkan basic API security hardening.
+Backend sudah menerapkan API security hardening untuk baseline MVP/production awal.
+
+Security bukan kondisi absolut. Project tidak boleh diklaim 100% aman. Target realistis adalah mengurangi risiko:
+
+```txt
+[✓] Brute force login
+[✓] Credential stuffing dasar
+[✓] Token abuse dasar
+[✓] Broken access control
+[✓] IDOR / BOLA
+[✓] Cross-user data leakage
+[✓] Oversized payload abuse
+[✓] CORS misconfiguration
+[✓] Production error leakage
+[✓] Export data leakage
+```
+
+---
 
 ### Security Headers
 
@@ -157,6 +186,8 @@ Tujuan:
 [✓] Mengaktifkan HSTS pada production
 ```
 
+---
+
 ### Request Body Size Limit
 
 Backend membatasi request body berdasarkan `Content-Length`.
@@ -176,6 +207,14 @@ Jika request body melebihi limit, response:
   "errors": null
 }
 ```
+
+Catatan:
+
+```txt
+Jika nanti ada fitur import CSV/XLSX, limit ini harus dievaluasi ulang.
+```
+
+---
 
 ### CORS
 
@@ -207,6 +246,108 @@ PUT
 PATCH
 DELETE
 OPTIONS
+```
+
+Aturan penting:
+
+```txt
+Jangan memakai wildcard origin untuk endpoint yang memakai token.
+Jangan mengubah CORS production tanpa regression test.
+Jangan memakai preview URL yang terkena Vercel Authentication sebagai API production.
+```
+
+---
+
+### Rate Limiting
+
+Backend sudah memiliki baseline rate limiting.
+
+Rate limit yang tersedia:
+
+```txt
+[✓] Login rate limit
+[✓] Register rate limit
+[✓] General API rate limit
+```
+
+Header rate limit:
+
+```txt
+RateLimit-Limit
+RateLimit-Remaining
+RateLimit-Reset
+Retry-After saat 429
+```
+
+Contoh response 429:
+
+```json
+{
+  "success": false,
+  "message": "Terlalu banyak request. Coba lagi nanti.",
+  "errors": null
+}
+```
+
+Catatan:
+
+```txt
+Exact limit/window mengikuti konfigurasi middleware backend.
+Jangan menulis angka limit di dokumentasi ini kecuali sudah diverifikasi dari source code terbaru.
+```
+
+Batasan saat ini:
+
+```txt
+Rate limit menggunakan in-memory store.
+Ini cukup untuk baseline/MVP dan low-scale usage.
+Namun untuk production serverless/multi-instance, in-memory store tidak ideal karena setiap instance dapat memiliki state berbeda.
+Jika traffic meningkat, pertimbangkan Redis/Upstash/KV-based rate limiting.
+```
+
+---
+
+### Data Isolation
+
+Data isolation wajib untuk semua endpoint yang membaca atau memodifikasi data user.
+
+Prinsip:
+
+```txt
+Frontend tidak boleh menentukan userId.
+Backend harus mengambil userId dari JWT token.
+Query backend harus selalu membatasi data berdasarkan userId dari token.
+Jika resource bukan milik user, response sebaiknya sama seperti data tidak ditemukan.
+```
+
+Data isolation yang sudah diterapkan:
+
+```txt
+[✓] User hanya bisa membaca transaksi miliknya sendiri
+[✓] User hanya bisa update transaksi miliknya sendiri
+[✓] User hanya bisa delete transaksi miliknya sendiri
+[✓] User tidak bisa memakai custom category milik user lain
+[✓] User tidak bisa update/delete category milik user lain
+[✓] User tidak bisa akses/update/delete goal milik user lain
+[✓] Summary hanya menghitung data user login
+[✓] Export hanya memuat data user login
+```
+
+---
+
+### Auth and Token Edge Cases
+
+Auth/token behavior yang harus dijaga:
+
+```txt
+[✓] Authorization header wajib ada untuk protected endpoint
+[✓] Format wajib Bearer token
+[✓] Bearer token kosong ditolak
+[✓] Token signature salah ditolak
+[✓] Token expired ditolak
+[✓] Token tanpa userId ditolak
+[✓] Token dengan userId bukan string ditolak
+[✓] Token milik user yang sudah dihapus tidak bisa mengambil profile
 ```
 
 ---
@@ -416,11 +557,29 @@ email    harus unik
 }
 ```
 
+### Error Password Lemah
+
+```json
+{
+  "success": false,
+  "message": "Validasi request gagal",
+  "errors": {
+    "formErrors": [],
+    "fieldErrors": {
+      "password": [
+        "Pesan validasi password"
+      ]
+    }
+  }
+}
+```
+
 ### Catatan
 
 ```txt
 passwordHash tidak pernah dikirim ke frontend.
 Token dari response disimpan frontend untuk request protected.
+Register terkena rate limit.
 ```
 
 ---
@@ -470,6 +629,30 @@ Tidak perlu token.
 }
 ```
 
+### Error Email Tidak Valid
+
+```json
+{
+  "success": false,
+  "message": "Validasi request gagal",
+  "errors": {
+    "formErrors": [],
+    "fieldErrors": {
+      "email": [
+        "Email tidak valid"
+      ]
+    }
+  }
+}
+```
+
+### Catatan
+
+```txt
+Login error dibuat generic agar tidak mudah dipakai untuk user enumeration.
+Login terkena rate limit.
+```
+
 ---
 
 ## GET `/api/auth/me`
@@ -511,7 +694,17 @@ Authorization: Bearer <token>
 }
 ```
 
-### Error Token Invalid
+### Error Format Token Salah
+
+```json
+{
+  "success": false,
+  "message": "Format token harus Bearer token",
+  "errors": null
+}
+```
+
+### Error Token Invalid atau Expired
 
 ```json
 {
@@ -572,6 +765,13 @@ Update nama user dan safe balance limit.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Body
 
@@ -646,6 +846,12 @@ Mengambil daftar kategori yang bisa dipakai user login.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
+
 ### Query Params
 
 ```txt
@@ -704,6 +910,13 @@ Membuat custom category baru.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
 ### Body
 
 ```json
@@ -760,6 +973,13 @@ Update custom category milik user login.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Params
 
@@ -827,6 +1047,12 @@ Menghapus custom category milik user login.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
+
 ### Params
 
 ```txt
@@ -880,6 +1106,12 @@ Category yang sudah dipakai transaksi tidak boleh dihapus agar histori transaksi
 
 # 5. Transactions API
 
+Transaction adalah data pemasukan atau pengeluaran user.
+
+Semua endpoint transaksi wajib user-isolated.
+
+---
+
 ## POST `/api/transactions`
 
 Membuat transaksi baru.
@@ -887,6 +1119,13 @@ Membuat transaksi baru.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Body Expense
 
@@ -972,6 +1211,15 @@ category EXPENSE hanya boleh untuk transaksi EXPENSE
 }
 ```
 
+### Catatan Quick Transaction
+
+```txt
+Quick Transaction / Catat Cepat tidak memiliki endpoint khusus.
+Frontend parser membuat draft transaksi.
+Setelah user review dan approve, frontend menyimpan transaksi final melalui POST /api/transactions.
+Jangan membuat endpoint auto-save untuk parser tanpa draft review.
+```
+
 ---
 
 ## GET `/api/transactions`
@@ -981,6 +1229,12 @@ Mengambil daftar transaksi user login.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Query Params
 
@@ -1078,6 +1332,12 @@ Mengambil detail transaksi.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
+
 ### Params
 
 ```txt
@@ -1130,6 +1390,13 @@ Update transaksi.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Params
 
@@ -1197,6 +1464,12 @@ Hapus transaksi.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
+
 ### Params
 
 ```txt
@@ -1251,6 +1524,12 @@ Mengambil ringkasan keuangan user login.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Response
 
@@ -1325,11 +1604,18 @@ isBelowSafeLimit bernilai true jika balance < safeBalanceLimit
 monthlyTrend berisi data 6 bulan terakhir
 recentTransactions digunakan dashboard
 expenseByCategory dan incomeByCategory digunakan untuk ringkasan kategori
+summary wajib hanya menghitung data user login
 ```
 
 ---
 
 # 7. Goals API
+
+Goal digunakan untuk target tabungan user.
+
+Semua endpoint goal wajib user-isolated.
+
+---
 
 ## POST `/api/goals`
 
@@ -1338,6 +1624,13 @@ Membuat goal tabungan.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Body
 
@@ -1357,7 +1650,7 @@ Wajib token.
 name          wajib
 targetAmount  wajib, lebih dari 0
 currentAmount optional, default 0
-deadline      optional, nullable
+deadline      optional
 description   optional
 ```
 
@@ -1393,11 +1686,17 @@ currentAmount tidak boleh lebih besar dari targetAmount
 
 ## GET `/api/goals`
 
-Mengambil semua goal user login.
+Mengambil daftar goals user login.
 
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Response
 
@@ -1429,6 +1728,12 @@ Mengambil detail goal.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Params
 
@@ -1474,6 +1779,13 @@ Update goal.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ### Params
 
@@ -1524,6 +1836,16 @@ Semua field opsional, tetapi minimal satu field harus dikirim.
 }
 ```
 
+### Error Jika Tidak Ditemukan atau Bukan Milik User
+
+```json
+{
+  "success": false,
+  "message": "Goal tidak ditemukan",
+  "errors": null
+}
+```
+
 ---
 
 ## DELETE `/api/goals/:id`
@@ -1533,6 +1855,12 @@ Hapus goal.
 ### Auth
 
 Wajib token.
+
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
 
 ### Params
 
@@ -1581,6 +1909,12 @@ Export transaksi user login.
 
 Wajib token.
 
+### Headers
+
+```txt
+Authorization: Bearer <token>
+```
+
 ### Query Params
 
 ```txt
@@ -1599,6 +1933,15 @@ GET /api/export/transactions?format=csv
 GET /api/export/transactions?format=xlsx
 GET /api/export/transactions?format=xlsx&type=EXPENSE
 GET /api/export/transactions?format=csv&startDate=2026-05-01&endDate=2026-05-31
+GET /api/export/transactions?format=json&categoryId=custom-category-id
+```
+
+### Catatan Security
+
+```txt
+Export wajib hanya memuat transaksi user login.
+Export tidak boleh memuat transaksi user lain.
+Jika categoryId milik user lain digunakan, export tidak boleh membocorkan data user lain.
 ```
 
 ---
@@ -1618,6 +1961,7 @@ GET /api/export/transactions?format=json
   "success": true,
   "message": "Export transaksi berhasil dibuat",
   "data": {
+    "format": "json",
     "generatedAt": "2026-05-15T00:00:00.000Z",
     "filters": {
       "type": null,
@@ -1625,24 +1969,20 @@ GET /api/export/transactions?format=json
       "startDate": null,
       "endDate": null
     },
-    "summary": {
-      "totalIncome": "3000000.00",
-      "totalExpense": "250000.00",
-      "balance": "2750000.00",
-      "transactionCount": 2
-    },
     "transactions": [
       {
         "id": "transaction-id",
         "type": "EXPENSE",
-        "amount": "250000.00",
+        "amount": "250000",
         "note": "Makan siang",
         "date": "2026-05-15T00:00:00.000Z",
         "category": {
           "id": "cat_expense_food",
           "name": "Makanan",
           "type": "EXPENSE"
-        }
+        },
+        "createdAt": "2026-05-15T00:00:00.000Z",
+        "updatedAt": "2026-05-15T00:00:00.000Z"
       }
     ]
   }
@@ -1661,12 +2001,16 @@ GET /api/export/transactions?format=csv
 
 ### Response
 
-```txt
-File CSV download
-Content-Type: text/csv atau attachment file sesuai implementasi backend
-```
+Response berupa file/blob CSV.
 
-Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
+Frontend harus memakai download helper, bukan parser JSON biasa.
+
+Contoh header response yang mungkin dikirim:
+
+```txt
+Content-Type: text/csv
+Content-Disposition: attachment; filename="transactions.csv"
+```
 
 ---
 
@@ -1680,16 +2024,20 @@ GET /api/export/transactions?format=xlsx
 
 ### Response
 
-```txt
-File XLSX download
-Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet atau attachment file sesuai implementasi backend
-```
+Response berupa file/blob XLSX.
 
-Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
+Frontend harus memakai download helper, bukan parser JSON biasa.
+
+Contoh header response yang mungkin dikirim:
+
+```txt
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename="transactions.xlsx"
+```
 
 ---
 
-### Error Format Tidak Valid
+## Error Format Tidak Valid
 
 ```json
 {
@@ -1705,7 +2053,9 @@ Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
 }
 ```
 
-### Error Date Range Tidak Valid
+---
+
+## Error Date Range Tidak Valid
 
 ```json
 {
@@ -1723,89 +2073,123 @@ Frontend harus membaca response sebagai file/blob menggunakan `apiDownload`.
 
 ---
 
-# 9. HTTP Status Notes
+# 9. API yang Belum Ada
 
-Status umum yang digunakan:
+Fitur berikut belum memiliki endpoint backend saat ini.
+
+## Quick Transaction / Catat Cepat
+
+Status:
 
 ```txt
-200 OK                  : request berhasil
-201 Created             : data berhasil dibuat, jika route memakai created response
-400 Bad Request         : validasi request gagal
-401 Unauthorized        : token tidak ada, format token salah, token invalid, atau token expired
-403 Forbidden           : akses tidak diizinkan
-404 Not Found           : route/data tidak ditemukan
-409 Conflict            : data konflik, misalnya email/category duplikat jika diterapkan
-413 Payload Too Large   : ukuran request body melebihi limit
-500 Internal Server Error : error internal server
+Tidak ada endpoint khusus.
+```
+
+Alur saat ini:
+
+```txt
+1. User mengetik transaksi natural di frontend.
+2. Parser rule-based frontend membuat draft.
+3. User review/edit/hapus draft.
+4. User approve.
+5. Frontend menyimpan transaksi final lewat POST /api/transactions.
+```
+
+Prinsip:
+
+```txt
+Jangan auto-save hasil parser tanpa review user.
 ```
 
 ---
 
-# 10. User Ownership Rules
+## Google Login
 
-Backend harus selalu menentukan user dari JWT token.
-
-Frontend tidak boleh mengirim `userId` untuk endpoint protected.
-
-Rules:
+Status:
 
 ```txt
-[✓] User hanya bisa melihat profile miliknya sendiri.
-[✓] User hanya bisa melihat custom category miliknya sendiri.
-[✓] User hanya bisa membuat/update/delete custom category miliknya sendiri.
-[✓] User hanya bisa melihat transaksi miliknya sendiri.
-[✓] User hanya bisa update/delete transaksi miliknya sendiri.
-[✓] User hanya bisa melihat summary miliknya sendiri.
-[✓] User hanya bisa melihat/mengubah goal miliknya sendiri.
-[✓] User hanya bisa export transaksi miliknya sendiri.
+Belum diimplementasikan.
+```
+
+Catatan:
+
+```txt
+Google Login hanya untuk authentication.
+Google Login tidak sama dengan Gmail API.
+Jika dibuat, scope awal harus openid, email, profile.
+Jangan meminta Gmail scope hanya untuk login.
 ```
 
 ---
 
-# 11. Frontend Integration Notes
+## Gmail / E-wallet / Mobile Banking Detection
 
-Frontend harus menyimpan token dari response login/register.
-
-Setiap request protected harus mengirim:
+Status:
 
 ```txt
-Authorization: Bearer <token>
+Belum diimplementasikan.
 ```
 
-Frontend tidak boleh mengirim `userId` pada request:
+Prinsip sebelum implementasi:
 
 ```txt
-auth/me
-profile
-categories
-transactions
-summary
-goals
-export
+[ ] Buat security/privacy documentation
+[ ] Buat architecture design
+[ ] Tentukan OAuth/consent flow
+[ ] Tentukan scope minimal
+[ ] Tentukan token encryption strategy
+[ ] Tentukan disconnect/revoke flow
+[ ] Tentukan draft-first transaction review flow
+[ ] Jangan simpan raw email
+[ ] Jangan auto-save transaksi final
 ```
 
-Semua data user ditentukan oleh token.
+---
 
-Nominal uang dikirim sebagai string decimal:
+# 10. Frontend Integration Notes
 
-```txt
-"1000000.00"
-```
-
-Frontend boleh menampilkan nominal dengan format Rupiah.
-
-Untuk export CSV/XLSX, frontend harus membaca response sebagai file download/blob.
-
-Frontend Sakuin saat ini memakai:
+Frontend Sakuin memakai:
 
 ```txt
 apiRequest  : request JSON API
 apiDownload : request file/blob API
 ```
 
+Gunakan `apiRequest` untuk:
+
+```txt
+GET /api/auth/me
+GET /api/users/profile
+PATCH /api/users/profile
+GET /api/categories
+POST /api/categories
+PUT /api/categories/:id
+DELETE /api/categories/:id
+GET /api/transactions
+POST /api/transactions
+GET /api/transactions/:id
+PUT /api/transactions/:id
+DELETE /api/transactions/:id
+GET /api/summary
+GET /api/goals
+POST /api/goals
+GET /api/goals/:id
+PUT /api/goals/:id
+DELETE /api/goals/:id
+```
+
+Gunakan `apiDownload` untuk:
+
+```txt
+GET /api/export/transactions?format=csv
+GET /api/export/transactions?format=xlsx
+```
+
+Untuk export JSON, frontend dapat memakai JSON request biasa atau download flow sesuai implementasi frontend saat ini.
+
 ---
 
-# 12. Caching dan Invalidation Notes
+# 11. Caching dan Invalidation Notes
 
 Frontend Sakuin memakai TanStack Query.
 
@@ -1844,9 +2228,16 @@ Logout:
 - remove auth token
 ```
 
+Catatan:
+
+```txt
+Jangan mengganti query key sembarangan karena dipakai lintas fitur.
+Jika API response shape berubah, update frontend types dan tests.
+```
+
 ---
 
-# 13. Manual API Testing Notes
+# 12. Manual API Testing Notes
 
 Urutan testing API manual yang disarankan:
 
@@ -1880,7 +2271,7 @@ Untuk export file, response dapat berupa blob/file sehingga tidak selalu JSON.
 
 ---
 
-# 14. Security Testing Notes
+# 13. Security Testing Notes
 
 Minimal security check setelah perubahan backend:
 
@@ -1890,9 +2281,16 @@ Minimal security check setelah perubahan backend:
 [ ] Login tetap sukses
 [ ] Protected endpoint tanpa token tetap 401
 [ ] Protected endpoint dengan token invalid tetap 401
+[ ] Authorization header format salah tetap ditolak
 [ ] Request body besar mengembalikan 413
 [ ] Response production error 500 tidak membocorkan detail error
 [ ] Header security muncul pada response API
+[ ] CORS tidak memantulkan origin asing
+[ ] Login rate limit bekerja
+[ ] Register rate limit bekerja
+[ ] General API rate limit bekerja
+[ ] Summary tidak menghitung data user lain
+[ ] Export tidak memuat data user lain
 ```
 
 Header yang bisa dicek di browser devtools, Postman, Insomnia, atau curl:
@@ -1909,14 +2307,18 @@ Strict-Transport-Security pada production
 
 ---
 
-# 15. Backend Validation Summary
+# 14. Backend Validation Summary
 
 Validasi penting backend:
 
 ```txt
 [✓] Register email unik
 [✓] Login password valid
+[✓] Login email invalid ditolak sebelum auth service
 [✓] JWT required untuk protected endpoint
+[✓] JWT payload harus valid
+[✓] userId token harus string
+[✓] User yang sudah dihapus tidak bisa memakai token lama untuk profile
 [✓] User hanya bisa membaca/mengubah data miliknya sendiri
 [✓] Transaction amount > 0
 [✓] Transaction amount maksimal 1.000.000.000.000
@@ -1926,13 +2328,14 @@ Validasi penting backend:
 [✓] Goal currentAmount tidak boleh lebih besar dari targetAmount
 [✓] Export date range valid
 [✓] Profile safeBalanceLimit tidak boleh negatif
-[✓] Basic request body size limit aktif
+[✓] Request body size limit aktif
 [✓] Production error handling lebih aman
+[✓] Rate limiting aktif
 ```
 
 ---
 
-# 16. Backend Status
+# 15. Backend Status
 
 Status backend terakhir yang diharapkan sebelum push/release:
 
@@ -1971,9 +2374,16 @@ pnpm --filter @sakuin/api build
 
 ---
 
-# 17. Documentation Finalization
+# 16. Documentation Finalization
 
-Setelah update `docs/API.md`, jalankan minimal:
+Setelah update `docs/API.md`, cek diff:
+
+```bash
+git status
+git diff -- README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
+```
+
+Jika hanya Markdown yang berubah, jalankan minimal:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -1981,12 +2391,22 @@ pnpm --filter @sakuin/api typecheck
 git status
 ```
 
-Jika README, API, dan HANDOFF sudah diupdate:
+Jika ingin full confidence sebelum commit:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Setelah validasi aman:
 
 ```bash
 git status
-git diff -- README.md docs/API.md docs/HANDOFF.md
-git add README.md docs/API.md docs/HANDOFF.md
+git add README.md docs/SECURITY.md docs/HANDOFF.md docs/API.md
 git commit -m "Update documentation for security hardening"
 git push
 ```
@@ -1996,5 +2416,13 @@ Setelah push:
 ```txt
 [ ] Cek GitHub Actions CI
 [ ] Cek Vercel deployment
-[ ] Cek production smoke test singkat
+[ ] Cek production /health
+[ ] Cek production /api/health
+[ ] Cek production smoke test singkat jika perlu
+```
+
+Catatan:
+
+```txt
+Tidak perlu membuat tag baru hanya untuk update dokumentasi, kecuali diputuskan sebagai release milestone.
 ```
