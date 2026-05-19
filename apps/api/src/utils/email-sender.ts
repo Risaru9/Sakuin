@@ -1,3 +1,4 @@
+import * as nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
 export type SendEmailInput = {
@@ -22,10 +23,13 @@ export class EmailSenderError extends Error {
   }
 }
 
-const RESEND_EMAIL_API_URL = "https://api.resend.com/emails";
+type SmtpErrorLike = {
+  code?: unknown;
+  responseCode?: unknown;
+};
 
 function getEmailConfig() {
-  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+  if (!env.SMTP_USER || !env.SMTP_PASS || !env.EMAIL_FROM) {
     throw new EmailSenderError(
       "Email sender belum dikonfigurasi",
       503,
@@ -34,75 +38,92 @@ function getEmailConfig() {
   }
 
   return {
-    apiKey: env.RESEND_API_KEY,
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
     from: env.EMAIL_FROM
   };
 }
 
-function getResponseStatus(response: unknown) {
-  if (
-    response &&
-    typeof response === "object" &&
-    "status" in response &&
-    typeof (response as { status?: unknown }).status === "number"
-  ) {
-    return (response as { status: number }).status;
+function getSmtpErrorCode(error: unknown) {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as SmtpErrorLike).code;
+
+    if (typeof code === "string") {
+      return code;
+    }
+  }
+
+  return null;
+}
+
+function getSmtpResponseCode(error: unknown) {
+  if (error && typeof error === "object" && "responseCode" in error) {
+    const responseCode = (error as SmtpErrorLike).responseCode;
+
+    if (typeof responseCode === "number") {
+      return responseCode;
+    }
   }
 
   return 500;
 }
 
-function responseIsSuccessful(response: unknown) {
-  const status = getResponseStatus(response);
+function getSmtpFailureReason(error: unknown) {
+  const code = getSmtpErrorCode(error);
+  const responseCode = getSmtpResponseCode(error);
 
-  return status >= 200 && status < 300;
-}
-
-function getFailureReason(status: number) {
-  if (status === 401 || status === 403) {
-    return "email_provider_auth_or_domain_rejected";
+  if (code === "EAUTH" || responseCode === 534 || responseCode === 535) {
+    return "smtp_auth_failed";
   }
 
-  if (status === 422) {
-    return "email_provider_validation_error";
+  if (
+    code === "ECONNECTION" ||
+    code === "ETIMEDOUT" ||
+    code === "ESOCKET"
+  ) {
+    return "smtp_connection_failed";
   }
 
-  if (status === 429) {
-    return "email_provider_rate_limited";
+  if (responseCode === 550 || responseCode === 553 || responseCode === 554) {
+    return "smtp_sender_or_recipient_rejected";
   }
 
-  if (status >= 500) {
-    return "email_provider_unavailable";
+  if (responseCode === 421 || responseCode === 450 || responseCode === 451) {
+    return "smtp_provider_temporarily_unavailable";
   }
 
-  return "email_provider_error";
+  return "smtp_email_send_failed";
 }
 
 export const sendEmail: EmailSender = async (input) => {
-  const { apiKey, from } = getEmailConfig();
+  const config = getEmailConfig();
 
-  const response = await fetch(RESEND_EMAIL_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: {
+      user: config.user,
+      pass: config.pass
+    }
+  });
+
+  try {
+    await transporter.sendMail({
+      from: config.from,
+      to: input.to,
       subject: input.subject,
       html: input.html,
       text: input.text
-    })
-  });
-
-  if (!responseIsSuccessful(response)) {
-    const status = getResponseStatus(response);
-
+    });
+  } catch (error) {
     throw new EmailSenderError(
       "Gagal mengirim email",
-      status,
-      getFailureReason(status)
+      getSmtpResponseCode(error),
+      getSmtpFailureReason(error)
     );
   }
 };

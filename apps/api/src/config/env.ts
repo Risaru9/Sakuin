@@ -3,6 +3,22 @@ import { z } from "zod";
 
 config();
 
+const optionalBooleanStringSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (value === "true" || value === true) {
+    return true;
+  }
+
+  if (value === "false" || value === false) {
+    return false;
+  }
+
+  return value;
+}, z.boolean().optional());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(5000),
@@ -14,7 +30,14 @@ const envSchema = z.object({
     .url("FRONTEND_URL harus berupa URL valid")
     .default("http://localhost:3000"),
   GOOGLE_CLIENT_ID: z.string().optional(),
+
   RESEND_API_KEY: z.string().optional(),
+
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_SECURE: optionalBooleanStringSchema.default(true),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional()
 });
 

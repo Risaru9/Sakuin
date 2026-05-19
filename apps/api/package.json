@@ -28,11 +28,13 @@
     "google-auth-library": "^10.6.2",
     "hono": "^4.12.18",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^8.0.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.19.18",
+    "@types/nodemailer": "^8.0.0",
     "prisma": "^6.19.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
