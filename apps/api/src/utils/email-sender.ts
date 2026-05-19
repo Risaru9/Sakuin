@@ -22,6 +22,25 @@ function getEmailConfig() {
   };
 }
 
+function getResponseStatus(response: unknown) {
+  if (
+    response &&
+    typeof response === "object" &&
+    "status" in response &&
+    typeof (response as { status?: unknown }).status === "number"
+  ) {
+    return (response as { status: number }).status;
+  }
+
+  return 500;
+}
+
+function responseIsSuccessful(response: unknown) {
+  const status = getResponseStatus(response);
+
+  return status >= 200 && status < 300;
+}
+
 export const sendEmail: EmailSender = async (input) => {
   const { apiKey, from } = getEmailConfig();
 
@@ -40,7 +59,7 @@ export const sendEmail: EmailSender = async (input) => {
     })
   });
 
-  if (!response.ok) {
+  if (!responseIsSuccessful(response)) {
     throw new Error("Gagal mengirim email");
   }
 };
