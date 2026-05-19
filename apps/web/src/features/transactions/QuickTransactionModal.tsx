@@ -281,96 +281,102 @@ export function QuickTransactionModal({
     };
   }, [drafts]);
 
-  const saveDraftsMutation = useMutation({
-    mutationFn: async (items: QuickTransactionDraft[]) => {
-      const categoryCache = [...categories];
-      let createdCategoryCount = 0;
+    const saveDraftsMutation = useMutation({
+      mutationFn: async (items: QuickTransactionDraft[]) => {
+        const categoryCache = [...categories];
+        let createdCategoryCount = 0;
 
-      const savedTransactions = [];
+        const transactionInputs: CreateTransactionInput[] = [];
 
-      for (const item of items) {
-        let categoryId = item.categoryId;
+        for (const item of items) {
+          let categoryId = item.categoryId;
 
-        if (item.saveAsNewCategory) {
-          const customCategoryName = normalizeCategoryName(
-            item.customCategoryName
-          );
+          if (item.saveAsNewCategory) {
+            const customCategoryName = normalizeCategoryName(
+              item.customCategoryName
+            );
 
-          const existingCategory = findCategoryByName(
-            categoryCache,
-            item.type,
-            customCategoryName
-          );
+            const existingCategory = findCategoryByName(
+              categoryCache,
+              item.type,
+              customCategoryName
+            );
 
-          const category =
-            existingCategory ??
-            (await createCategory({
-              name: customCategoryName,
-              type: item.type,
-              icon: null,
-              color: null
-            }));
+            const category =
+              existingCategory ??
+              (await createCategory({
+                name: customCategoryName,
+                type: item.type,
+                icon: null,
+                color: null
+              }));
 
-          if (!existingCategory) {
-            createdCategoryCount += 1;
-            categoryCache.push(category);
+            if (!existingCategory) {
+              createdCategoryCount += 1;
+              categoryCache.push(category);
+            }
+
+            categoryId = category.id;
           }
 
-          categoryId = category.id;
+          transactionInputs.push({
+            type: item.type,
+            amount: item.amount.trim(),
+            categoryId,
+            date: toIsoDate(item.date),
+            note: item.note.trim()
+          });
         }
 
-        const input: CreateTransactionInput = {
-          type: item.type,
-          amount: item.amount.trim(),
-          categoryId,
-          date: toIsoDate(item.date),
-          note: item.note.trim()
+        const savedTransactions = await Promise.all(
+          transactionInputs.map((input) => createTransaction(input))
+        );
+
+        return {
+          savedTransactions,
+          createdCategoryCount
         };
+      },
+      onSuccess: ({ savedTransactions, createdCategoryCount }) => {
+        addToast({
+          variant: "success",
+          title: "Transaksi cepat berhasil disimpan",
+          description:
+            createdCategoryCount > 0
+              ? `${savedTransactions.length} transaksi dan ${createdCategoryCount} kategori baru berhasil ditambahkan.`
+              : `${savedTransactions.length} transaksi berhasil ditambahkan.`
+        });
 
-        const savedTransaction = await createTransaction(input);
-        savedTransactions.push(savedTransaction);
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.transactions.all
+        });
+
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.summary
+        });
+
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.categories
+        });
+
+        void onSuccess();
+
+        resetModal();
+        onClose();
+      },
+      onError: (caughtError) => {
+        const message = getErrorMessage(caughtError);
+
+        setError(message);
+
+        addToast({
+          variant: "error",
+          title: "Gagal menyimpan transaksi cepat",
+          description:
+            "Draft belum dihapus. Buka Catat Cepat kembali untuk mengecek dan mencoba ulang."
+        });
       }
-
-      return {
-        savedTransactions,
-        createdCategoryCount
-      };
-    },
-    onSuccess: ({ savedTransactions, createdCategoryCount }) => {
-      addToast({
-        variant: "success",
-        title: "Transaksi cepat berhasil disimpan",
-        description:
-          createdCategoryCount > 0
-            ? `${savedTransactions.length} transaksi dan ${createdCategoryCount} kategori baru berhasil ditambahkan.`
-            : `${savedTransactions.length} transaksi berhasil ditambahkan.`
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.all
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.summary
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.categories
-      });
-
-      void onSuccess();
-
-      resetModal();
-      onClose();
-    },
-    onError: (caughtError) => {
-      addToast({
-        variant: "error",
-        title: "Gagal menyimpan transaksi cepat",
-        description: getErrorMessage(caughtError)
-      });
-    }
-  });
+    });
 
   const isSaving = saveDraftsMutation.isPending;
 
@@ -503,8 +509,14 @@ export function QuickTransactionModal({
       return;
     }
 
+    const submittedDrafts = drafts.map((draft) => ({
+      ...draft
+    }));
+
     setError(null);
-    saveDraftsMutation.mutate(drafts);
+    onClose();
+
+    saveDraftsMutation.mutate(submittedDrafts);
   }
 
   if (!open) {
