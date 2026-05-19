@@ -2,9 +2,11 @@ import { apiRequest } from "../../lib/api-client";
 import type {
   AuthResponse,
   AuthUser,
+  ForgotPasswordInput,
   GoogleLoginInput,
   LoginInput,
-  RegisterInput
+  RegisterInput,
+  ResetPasswordInput
 } from "./auth.types";
 
 export function loginUser(input: LoginInput) {
@@ -25,6 +27,22 @@ export function registerUser(input: RegisterInput) {
 
 export function googleLoginUser(input: GoogleLoginInput) {
   return apiRequest<AuthResponse>("/api/auth/google", {
+    method: "POST",
+    body: input,
+    token: null
+  });
+}
+
+export function requestPasswordReset(input: ForgotPasswordInput) {
+  return apiRequest<null>("/api/auth/forgot-password", {
+    method: "POST",
+    body: input,
+    token: null
+  });
+}
+
+export function resetPasswordUser(input: ResetPasswordInput) {
+  return apiRequest<null>("/api/auth/reset-password", {
     method: "POST",
     body: input,
     token: null

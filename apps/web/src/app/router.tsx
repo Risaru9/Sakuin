@@ -37,6 +37,18 @@ const RegisterPage = lazy(() =>
   }))
 );
 
+const ForgotPasswordPage = lazy(() =>
+  import("../features/auth/pages/ForgotPasswordPage").then((module) => ({
+    default: module.ForgotPasswordPage
+  }))
+);
+
+const ResetPasswordPage = lazy(() =>
+  import("../features/auth/pages/ResetPasswordPage").then((module) => ({
+    default: module.ResetPasswordPage
+  }))
+);
+
 const DashboardPage = lazy(() =>
   import("../features/dashboard/DashboardPage").then((module) => ({
     default: module.DashboardPage
@@ -569,6 +581,22 @@ export const router = createBrowserRouter([
       </GuestRoute>
     )
   },
+  {
+  path: "/forgot-password",
+  element: (
+    <GuestRoute>
+      <ForgotPasswordPage />
+    </GuestRoute>
+  )
+},
+{
+  path: "/reset-password",
+  element: (
+    <GuestRoute>
+      <ResetPasswordPage />
+    </GuestRoute>
+  )
+},
   {
     path: "/dashboard",
     element: (

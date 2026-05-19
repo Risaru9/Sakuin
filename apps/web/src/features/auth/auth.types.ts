@@ -24,3 +24,12 @@ export type RegisterInput = {
 export type GoogleLoginInput = {
   credential: string;
 };
+
+export type ForgotPasswordInput = {
+  email: string;
+};
+
+export type ResetPasswordInput = {
+  token: string;
+  password: string;
+};

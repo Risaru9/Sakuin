@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,7 +27,13 @@ function getErrorMessage(error: unknown) {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
+
+  const locationState = location.state as { resetPasswordSuccess?: boolean } | null;
+  const successMessage = locationState?.resetPasswordSuccess
+    ? "Password berhasil direset. Silakan login dengan password baru."
+    : null;
 
   const [form, setForm] = useState({
     email: "",
@@ -173,9 +179,9 @@ export function LoginPage() {
               </p>
             </div>
 
-            {error ? (
-              <div className="mb-4 break-words rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
-                {error}
+            {successMessage && !error ? (
+              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-green)]/20 bg-[var(--sakuin-green-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-green)]">
+                {successMessage}
               </div>
             ) : null}
 
@@ -226,6 +232,15 @@ export function LoginPage() {
                   }))
                 }
               />
+
+              <div className="flex justify-end">
+                <Link
+                  className="text-sm font-bold text-[var(--sakuin-purple)] hover:underline"
+                  to="/forgot-password"
+                >
+                  Lupa password?
+                </Link>
+              </div>
 
               <Button
                 className="w-full"
