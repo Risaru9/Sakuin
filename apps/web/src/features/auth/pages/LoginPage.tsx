@@ -83,19 +83,29 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
-      <section className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-6xl items-center justify-center lg:grid lg:min-h-[calc(100dvh-3rem)] lg:grid-cols-[1fr_0.9fr] lg:gap-8">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-purple-500/30">
+      
+      {/* 1. BACKGROUND AMBIENT EFFECT (Selaras dengan HomePage) */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[10%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.07),transparent_60%)]"></div>
+        <div className="absolute -right-[10%] top-[20%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05),transparent_60%)]"></div>
+        <div className="absolute -bottom-[20%] left-[20%] h-[50rem] w-[50rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.05),transparent_60%)]"></div>
+      </div>
+
+      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-6xl items-center justify-center px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[1fr_0.9fr] lg:gap-12 lg:px-8">
+        
+        {/* LEFT COLUMN - Branding & Info */}
         <div className="hidden min-w-0 lg:block">
-          <div className="mb-8 flex flex-col items-start gap-3">
-            <Link className="inline-flex items-center gap-2" to="/">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+          <div className="mb-8 flex flex-col items-start gap-4">
+            <Link className="inline-flex items-center gap-3 group" to="/">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm transition-transform group-hover:scale-105">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="text-xl font-black tracking-tight">Sakuin</span>
+              <span className="text-2xl font-black tracking-tight text-slate-900">Sakuin</span>
             </Link>
 
             <Link
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-4 py-2 text-xs font-black text-[var(--sakuin-muted)] shadow-sm transition hover:text-[var(--sakuin-text)]"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/60 px-4 py-2 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
               to="/"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -103,41 +113,41 @@ export function LoginPage() {
             </Link>
           </div>
 
-          <div className="rounded-[2rem] border border-[var(--sakuin-border)] bg-white p-8 shadow-xl shadow-black/5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--sakuin-purple-soft)] px-3 py-2 text-xs font-bold text-[var(--sakuin-purple)]">
+          <div className="rounded-[2.5rem] border border-slate-200/60 bg-white/50 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200/60 bg-purple-50/60 px-3.5 py-1.5 text-xs font-bold text-purple-700 shadow-sm backdrop-blur-md">
               <ShieldCheck className="h-4 w-4" />
               Aman dan personal
             </div>
 
-            <h1 className="mt-6 max-w-xl text-5xl font-black tracking-tight text-[var(--sakuin-text)]">
+            <h1 className="mt-6 max-w-xl text-5xl font-black tracking-tight text-slate-900 leading-[1.1]">
               Lanjutkan perjalanan finansialmu.
             </h1>
 
-            <p className="mt-5 max-w-lg text-base leading-7 text-[var(--sakuin-muted)]">
+            <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
               Masuk untuk melihat dashboard, mencatat transaksi, memantau goals,
               dan mengatur batas saldo aman.
             </p>
 
-            <div className="mt-8 grid gap-3">
-              <div className="flex min-w-0 items-center gap-3 rounded-[1.5rem] bg-[var(--sakuin-surface-soft)] p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)]">
-                  <WalletCards className="h-5 w-5" />
+            <div className="mt-10 grid gap-4">
+              <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-slate-200/50 bg-white/60 p-4 shadow-sm backdrop-blur-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100/70 text-emerald-600">
+                  <WalletCards className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold">Semua transaksi tersimpan</p>
-                  <p className="text-xs text-[var(--sakuin-muted)]">
+                  <p className="text-base font-bold text-slate-900">Semua transaksi tersimpan</p>
+                  <p className="mt-0.5 text-sm text-slate-500">
                     Data dipisahkan berdasarkan akun login.
                   </p>
                 </div>
               </div>
 
-              <div className="flex min-w-0 items-center gap-3 rounded-[1.5rem] bg-[var(--sakuin-surface-soft)] p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-purple-soft)] text-[var(--sakuin-purple)]">
-                  <LockKeyhole className="h-5 w-5" />
+              <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-slate-200/50 bg-white/60 p-4 shadow-sm backdrop-blur-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-100/70 text-purple-600">
+                  <LockKeyhole className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold">Protected dashboard</p>
-                  <p className="text-xs text-[var(--sakuin-muted)]">
+                  <p className="text-base font-bold text-slate-900">Protected dashboard</p>
+                  <p className="mt-0.5 text-sm text-slate-500">
                     Dashboard hanya bisa dibuka setelah login.
                   </p>
                 </div>
@@ -146,46 +156,56 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div className="w-full min-w-0 max-w-[28rem] py-2 sm:py-4 lg:py-0">
-          <div className="mb-4 flex min-w-0 items-center justify-between gap-3 lg:hidden">
-            <Link className="inline-flex min-w-0 items-center gap-2" to="/">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
+        {/* RIGHT COLUMN - Login Form */}
+        <div className="w-full min-w-0 max-w-[28rem] py-4 lg:py-0">
+          
+          {/* Mobile Header (Hidden on Desktop) */}
+          <div className="mb-6 flex min-w-0 items-center justify-between gap-3 lg:hidden">
+            <Link className="inline-flex min-w-0 items-center gap-3" to="/">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm sm:h-11 sm:w-11">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="truncate text-lg font-black tracking-tight sm:text-xl">
+              <span className="truncate text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
                 Sakuin
               </span>
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 px-3.5 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
               to="/"
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
               Beranda
             </Link>
           </div>
 
-          <div className="w-full min-w-0 rounded-[1.5rem] border border-[var(--sakuin-border)] bg-white p-4 shadow-xl shadow-black/5 sm:rounded-[2rem] sm:p-8">
-            <div className="mb-5 sm:mb-6">
-              <p className="text-sm font-bold text-[var(--sakuin-purple)]">
+          {/* Form Container */}
+          <div className="w-full min-w-0 rounded-[2rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl sm:p-10">
+            <div className="mb-8">
+              <p className="text-sm font-bold uppercase tracking-wider text-purple-600">
                 Selamat datang kembali
               </p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
                 Login
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--sakuin-muted)]">
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 Masukkan email dan password untuk masuk ke akun Sakuin.
               </p>
             </div>
 
             {successMessage && !error ? (
-              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-green)]/20 bg-[var(--sakuin-green-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-green)]">
+              <div className="mb-6 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 px-4 py-3.5 text-sm font-bold text-emerald-700 shadow-sm backdrop-blur-sm">
                 {successMessage}
               </div>
             ) : null}
 
-            <div className="mb-4 min-w-0">
+            {error ? (
+              <div className="mb-6 rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3.5 text-sm font-bold text-rose-700 shadow-sm backdrop-blur-sm">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="mb-6 min-w-0">
               <GoogleAuthButton
                 text="signin_with"
                 disabled={isSubmitting || isGoogleSubmitting}
@@ -194,15 +214,15 @@ export function LoginPage() {
               />
             </div>
 
-            <div className="mb-4 flex min-w-0 items-center gap-3">
-              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
-              <span className="shrink-0 text-[11px] font-bold text-[var(--sakuin-muted)] sm:text-xs">
+            <div className="mb-6 flex min-w-0 items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="shrink-0 text-xs font-bold text-slate-400">
                 atau login dengan email
               </span>
-              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <Input
                 label="Email"
                 name="email"
@@ -233,9 +253,9 @@ export function LoginPage() {
                 }
               />
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-1">
                 <Link
-                  className="text-sm font-bold text-[var(--sakuin-purple)] hover:underline"
+                  className="text-sm font-bold text-purple-600 transition hover:text-purple-700 hover:underline"
                   to="/forgot-password"
                 >
                   Lupa password?
@@ -243,22 +263,22 @@ export function LoginPage() {
               </div>
 
               <Button
-                className="w-full"
+                className="w-full rounded-xl"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={isGoogleSubmitting}
               >
-                Login
-                <ArrowRight className="h-4 w-4" />
+                <span>Login</span>
+                {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 
-            <div className="mt-6 space-y-3 text-center text-sm text-[var(--sakuin-muted)]">
+            <div className="mt-8 space-y-4 text-center text-sm font-medium text-slate-500">
               <p>
                 Belum punya akun?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-purple)] hover:underline"
+                  className="font-bold text-purple-600 transition hover:text-purple-700 hover:underline"
                   to="/register"
                 >
                   Buat akun
@@ -268,7 +288,7 @@ export function LoginPage() {
               <p>
                 Ingin lihat halaman utama?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-text)] hover:underline"
+                  className="font-bold text-slate-900 transition hover:underline"
                   to="/"
                 >
                   Kembali ke Beranda
@@ -277,6 +297,7 @@ export function LoginPage() {
             </div>
           </div>
         </div>
+
       </section>
     </main>
   );

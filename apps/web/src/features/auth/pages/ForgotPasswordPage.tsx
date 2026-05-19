@@ -49,68 +49,79 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
-      <section className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-6xl items-center justify-center lg:min-h-[calc(100dvh-3rem)]">
-        <div className="w-full min-w-0 max-w-[28rem] py-2 sm:py-4">
-          <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
-            <Link className="inline-flex min-w-0 items-center gap-2" to="/">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-purple-500/30">
+      
+      {/* BACKGROUND AMBIENT EFFECT */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[10%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.07),transparent_60%)]"></div>
+        <div className="absolute -right-[10%] top-[20%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05),transparent_60%)]"></div>
+        <div className="absolute -bottom-[20%] left-[20%] h-[50rem] w-[50rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.05),transparent_60%)]"></div>
+      </div>
+
+      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md items-center justify-center px-4 py-6 sm:px-6">
+        <div className="w-full min-w-0 py-4">
+          
+          {/* Header */}
+          <div className="mb-6 flex min-w-0 items-center justify-between gap-3">
+            <Link className="inline-flex min-w-0 items-center gap-3 group" to="/">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm transition-transform group-hover:scale-105 sm:h-11 sm:w-11">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="truncate text-lg font-black tracking-tight sm:text-xl">
+              <span className="truncate text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
                 Sakuin
               </span>
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 px-3.5 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
               to="/login"
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
               Login
             </Link>
           </div>
 
-          <div className="w-full min-w-0 rounded-[1.5rem] border border-[var(--sakuin-border)] bg-white p-4 shadow-xl shadow-black/5 sm:rounded-[2rem] sm:p-8">
-            <div className="mb-5 sm:mb-6">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--sakuin-purple-soft)] text-[var(--sakuin-purple)]">
-                <Mail className="h-6 w-6" />
+          {/* Form Container */}
+          <div className="w-full min-w-0 rounded-[2rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl sm:p-10">
+            <div className="mb-8">
+              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100/70 text-purple-600 shadow-inner">
+                <Mail className="h-7 w-7" />
               </div>
 
-              <p className="text-sm font-bold text-[var(--sakuin-purple)]">
+              <p className="text-sm font-bold uppercase tracking-wider text-purple-600">
                 Reset password
               </p>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
                 Lupa password?
               </h1>
-              <p className="mt-2 text-sm leading-6 text-[var(--sakuin-muted)]">
+              <p className="mt-3 text-sm leading-relaxed text-slate-500">
                 Masukkan email akun Sakuin kamu. Jika email terdaftar, kami akan
                 mengirim link untuk membuat password baru.
               </p>
             </div>
 
             {successMessage ? (
-              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-green)]/20 bg-[var(--sakuin-green-soft)] px-4 py-4 text-sm text-[var(--sakuin-green)]">
-                <p className="font-bold">{successMessage}</p>
+              <div className="mb-6 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 p-5 text-sm text-emerald-800 shadow-sm backdrop-blur-sm">
+                <p className="font-bold text-emerald-700">{successMessage}</p>
 
-                <div className="mt-3 rounded-2xl bg-white/70 p-3 text-[13px] leading-6 text-[var(--sakuin-text)]">
-                  <p className="font-bold">Silakan cek email kamu dengan teliti:</p>
+                <div className="mt-4 rounded-xl bg-white/60 p-4 text-[13px] leading-relaxed text-slate-700 shadow-inner border border-emerald-100/50">
+                  <p className="font-bold text-slate-900">Silakan cek email kamu dengan teliti:</p>
 
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[var(--sakuin-muted)]">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
                     <li>Periksa Inbox atau Kotak Masuk.</li>
                     <li>Periksa folder Spam.</li>
                     <li>Periksa tab Promosi, Sosial, atau Pembaruan.</li>
                     <li>Periksa menu Semua Email jika tersedia.</li>
                     <li>
                       Cari email dengan subjek{" "}
-                      <span className="font-bold text-[var(--sakuin-text)]">
+                      <span className="font-bold text-slate-900">
                         Reset password akun Sakuin
                       </span>
                       .
                     </li>
                   </ul>
 
-                  <p className="mt-3 text-[var(--sakuin-muted)]">
+                  <p className="mt-3 text-slate-600">
                     Jika email belum terlihat, tunggu 1–5 menit lalu cek kembali.
                     Jika masuk Spam, tandai sebagai bukan spam agar email Sakuin
                     berikutnya lebih mudah ditemukan.
@@ -120,12 +131,12 @@ export function ForgotPasswordPage() {
             ) : null}
 
             {error ? (
-              <div className="mb-4 break-words rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
+              <div className="mb-6 break-words rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3.5 text-sm font-bold text-rose-700 shadow-sm backdrop-blur-sm">
                 {error}
               </div>
             ) : null}
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <Input
                 label="Email"
                 name="email"
@@ -137,21 +148,21 @@ export function ForgotPasswordPage() {
               />
 
               <Button
-                className="w-full"
+                className="w-full rounded-xl mt-2"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
               >
-                Kirim link reset
-                <ShieldCheck className="h-4 w-4" />
+                <span>Kirim link reset</span>
+                {!isSubmitting && <ShieldCheck className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 
-            <div className="mt-6 space-y-3 text-center text-sm text-[var(--sakuin-muted)]">
+            <div className="mt-8 space-y-4 text-center text-sm font-medium text-slate-500">
               <p>
                 Ingat password?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-purple)] hover:underline"
+                  className="font-bold text-purple-600 transition hover:text-purple-700 hover:underline"
                   to="/login"
                 >
                   Kembali login
@@ -161,7 +172,7 @@ export function ForgotPasswordPage() {
               <p>
                 Belum punya akun?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-text)] hover:underline"
+                  className="font-bold text-slate-900 transition hover:underline"
                   to="/register"
                 >
                   Buat akun

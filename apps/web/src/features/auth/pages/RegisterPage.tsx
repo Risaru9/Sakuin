@@ -79,48 +79,61 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
-      <section className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-6xl items-center justify-center lg:grid lg:min-h-[calc(100dvh-3rem)] lg:grid-cols-[0.9fr_1fr] lg:gap-8">
-        <div className="w-full min-w-0 max-w-[28rem] py-2 sm:py-4 lg:py-0">
-          <div className="mb-4 flex min-w-0 items-center justify-between gap-3 lg:hidden">
-            <Link className="inline-flex min-w-0 items-center gap-2" to="/">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-purple-500/30">
+      
+      {/* 1. BACKGROUND AMBIENT EFFECT */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[10%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.07),transparent_60%)]"></div>
+        <div className="absolute -right-[10%] top-[20%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05),transparent_60%)]"></div>
+        <div className="absolute -bottom-[20%] left-[20%] h-[50rem] w-[50rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.05),transparent_60%)]"></div>
+      </div>
+
+      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-6xl items-center justify-center px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[0.9fr_1fr] lg:gap-12 lg:px-8">
+        
+        {/* LEFT COLUMN - Register Form */}
+        <div className="w-full min-w-0 max-w-[28rem] py-4 lg:py-0">
+          
+          {/* Mobile Header (Hidden on Desktop) */}
+          <div className="mb-6 flex min-w-0 items-center justify-between gap-3 lg:hidden">
+            <Link className="inline-flex min-w-0 items-center gap-3" to="/">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm sm:h-11 sm:w-11">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="truncate text-lg font-black tracking-tight sm:text-xl">
+              <span className="truncate text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
                 Sakuin
               </span>
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 px-3.5 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
               to="/"
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
               Beranda
             </Link>
           </div>
 
-          <div className="w-full min-w-0 rounded-[1.5rem] border border-[var(--sakuin-border)] bg-white p-4 shadow-xl shadow-black/5 sm:rounded-[2rem] sm:p-8">
-            <div className="mb-5 sm:mb-6">
-              <p className="text-sm font-bold text-[var(--sakuin-purple)]">
+          {/* Form Container */}
+          <div className="w-full min-w-0 rounded-[2rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl sm:p-10">
+            <div className="mb-8">
+              <p className="text-sm font-bold uppercase tracking-wider text-purple-600">
                 Mulai sekarang
               </p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
                 Buat akun
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--sakuin-muted)]">
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 Daftar untuk mulai mencatat transaksi dan target tabunganmu.
               </p>
             </div>
 
             {error ? (
-              <div className="mb-4 break-words rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
+              <div className="mb-6 break-words rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3.5 text-sm font-bold text-rose-700 shadow-sm backdrop-blur-sm">
                 {error}
               </div>
             ) : null}
 
-            <div className="mb-4 min-w-0">
+            <div className="mb-6 min-w-0">
               <GoogleAuthButton
                 text="signup_with"
                 disabled={isSubmitting || isGoogleSubmitting}
@@ -129,15 +142,15 @@ export function RegisterPage() {
               />
             </div>
 
-            <div className="mb-4 flex min-w-0 items-center gap-3">
-              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
-              <span className="shrink-0 text-[11px] font-bold text-[var(--sakuin-muted)] sm:text-xs">
+            <div className="mb-6 flex min-w-0 items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="shrink-0 text-xs font-bold text-slate-400">
                 atau daftar dengan email
               </span>
-              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <Input
                 label="Nama"
                 name="name"
@@ -184,22 +197,22 @@ export function RegisterPage() {
               />
 
               <Button
-                className="w-full"
+                className="w-full rounded-xl mt-2"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={isGoogleSubmitting}
               >
-                Register
-                <ArrowRight className="h-4 w-4" />
+                <span>Register</span>
+                {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 
-            <div className="mt-6 space-y-3 text-center text-sm text-[var(--sakuin-muted)]">
+            <div className="mt-8 space-y-4 text-center text-sm font-medium text-slate-500">
               <p>
                 Sudah punya akun?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-purple)] hover:underline"
+                  className="font-bold text-purple-600 transition hover:text-purple-700 hover:underline"
                   to="/login"
                 >
                   Login
@@ -209,7 +222,7 @@ export function RegisterPage() {
               <p>
                 Ingin lihat halaman utama?{" "}
                 <Link
-                  className="font-bold text-[var(--sakuin-text)] hover:underline"
+                  className="font-bold text-slate-900 transition hover:underline"
                   to="/"
                 >
                   Kembali ke Beranda
@@ -219,17 +232,18 @@ export function RegisterPage() {
           </div>
         </div>
 
+        {/* RIGHT COLUMN - Branding & Info */}
         <div className="hidden min-w-0 lg:block">
-          <div className="mb-8 flex flex-col items-start gap-3">
-            <Link className="inline-flex items-center gap-2" to="/">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+          <div className="mb-8 flex flex-col items-start gap-4">
+            <Link className="inline-flex items-center gap-3 group" to="/">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm transition-transform group-hover:scale-105">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="text-xl font-black tracking-tight">Sakuin</span>
+              <span className="text-2xl font-black tracking-tight text-slate-900">Sakuin</span>
             </Link>
 
             <Link
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-4 py-2 text-xs font-black text-[var(--sakuin-muted)] shadow-sm transition hover:text-[var(--sakuin-text)]"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/60 px-4 py-2 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
               to="/"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -237,40 +251,45 @@ export function RegisterPage() {
             </Link>
           </div>
 
-          <div className="rounded-[2rem] border border-[var(--sakuin-border)] bg-white p-8 shadow-xl shadow-black/5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--sakuin-purple-soft)] px-3 py-2 text-xs font-bold text-[var(--sakuin-purple)]">
+          <div className="rounded-[2.5rem] border border-slate-200/60 bg-white/50 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200/60 bg-purple-50/60 px-3.5 py-1.5 text-xs font-bold text-purple-700 shadow-sm backdrop-blur-md">
               <Sparkles className="h-4 w-4" />
               Finance in your pocket
             </div>
 
-            <h1 className="mt-6 max-w-xl text-5xl font-black tracking-tight text-[var(--sakuin-text)]">
+            <h1 className="mt-6 max-w-xl text-5xl font-black tracking-tight text-slate-900 leading-[1.1]">
               Bangun kebiasaan finansial yang lebih rapi.
             </h1>
 
-            <p className="mt-5 max-w-lg text-base leading-7 text-[var(--sakuin-muted)]">
+            <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
               Sakuin membantu kamu memahami arus uang, memantau target tabungan,
               dan menjaga batas saldo aman.
             </p>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] bg-[var(--sakuin-surface-soft)] p-5">
-                <BarChart3 className="h-6 w-6 text-[var(--sakuin-green)]" />
-                <p className="mt-4 text-sm font-bold">Dashboard ringkas</p>
-                <p className="mt-2 text-xs leading-5 text-[var(--sakuin-muted)]">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200/50 bg-white/60 p-5 shadow-sm backdrop-blur-sm">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100/70 text-emerald-600">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+                <p className="text-base font-bold text-slate-900">Dashboard ringkas</p>
+                <p className="mt-1 text-sm text-slate-500">
                   Lihat income, expense, balance, dan trend.
                 </p>
               </div>
 
-              <div className="rounded-[1.5rem] bg-[var(--sakuin-surface-soft)] p-5">
-                <PiggyBank className="h-6 w-6 text-[var(--sakuin-purple)]" />
-                <p className="mt-4 text-sm font-bold">Goals tabungan</p>
-                <p className="mt-2 text-xs leading-5 text-[var(--sakuin-muted)]">
+              <div className="rounded-2xl border border-slate-200/50 bg-white/60 p-5 shadow-sm backdrop-blur-sm">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100/70 text-purple-600">
+                  <PiggyBank className="h-6 w-6" />
+                </div>
+                <p className="text-base font-bold text-slate-900">Goals tabungan</p>
+                <p className="mt-1 text-sm text-slate-500">
                   Pantau progress target tabunganmu.
                 </p>
               </div>
             </div>
           </div>
         </div>
+
       </section>
     </main>
   );
