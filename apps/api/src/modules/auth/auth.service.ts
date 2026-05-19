@@ -96,6 +96,52 @@ function createPasswordResetExpiry() {
   return expiresAt;
 }
 
+function hashEmailForLog(email: string) {
+  return createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex");
+}
+
+function shouldWritePasswordResetDiagnosticLog() {
+  return env.NODE_ENV !== "test";
+}
+
+function writePasswordResetLog(
+  event: string,
+  metadata: Record<string, string | number | boolean | null>
+) {
+  if (!shouldWritePasswordResetDiagnosticLog()) {
+    return;
+  }
+
+  console.info(
+    JSON.stringify({
+      level: "info",
+      event,
+      ...metadata,
+      timestamp: new Date().toISOString()
+    })
+  );
+}
+
+function writePasswordResetErrorLog(
+  event: string,
+  metadata: Record<string, string | number | boolean | null>
+) {
+  if (!shouldWritePasswordResetDiagnosticLog()) {
+    return;
+  }
+
+  console.error(
+    JSON.stringify({
+      level: "error",
+      event,
+      ...metadata,
+      timestamp: new Date().toISOString()
+    })
+  );
+}
+
 function logPasswordResetEmailFailure(userId: string, error: unknown) {
   const status = error instanceof EmailSenderError ? error.status : 500;
   const reason =
@@ -103,16 +149,11 @@ function logPasswordResetEmailFailure(userId: string, error: unknown) {
       ? error.reason
       : "password_reset_email_unknown_error";
 
-  console.error(
-    JSON.stringify({
-      level: "error",
-      event: "password_reset_email_failed",
-      userId,
-      status,
-      reason,
-      timestamp: new Date().toISOString()
-    })
-  );
+  writePasswordResetErrorLog("password_reset_email_failed", {
+    userId,
+    status,
+    reason
+  });
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResponse> {
@@ -259,6 +300,12 @@ export async function requestPasswordReset(
   input: ForgotPasswordInput,
   emailSender: PasswordResetEmailSender = sendPasswordResetEmail
 ): Promise<void> {
+  const identifierHash = hashEmailForLog(input.email);
+
+  writePasswordResetLog("password_reset_requested", {
+    identifierHash
+  });
+
   const user = await prisma.user.findUnique({
     where: {
       email: input.email
@@ -271,6 +318,10 @@ export async function requestPasswordReset(
   });
 
   if (!user) {
+    writePasswordResetLog("password_reset_user_not_found", {
+      identifierHash
+    });
+
     return;
   }
 
@@ -287,11 +338,19 @@ export async function requestPasswordReset(
     }
   });
 
+  writePasswordResetLog("password_reset_email_attempted", {
+    userId: user.id
+  });
+
   try {
     await emailSender({
       to: user.email,
       name: user.name,
       token
+    });
+
+    writePasswordResetLog("password_reset_email_sent", {
+      userId: user.id
     });
   } catch (error) {
     await prisma.user.update({
@@ -308,9 +367,7 @@ export async function requestPasswordReset(
   }
 }
 
-export async function resetPassword(
-  input: ResetPasswordInput
-): Promise<void> {
+export async function resetPassword(input: ResetPasswordInput): Promise<void> {
   const tokenHash = hashPasswordResetToken(input.token);
   const now = new Date();
 
@@ -327,7 +384,10 @@ export async function resetPassword(
   });
 
   if (!user) {
-    throw new HttpError("Token reset password tidak valid atau sudah kedaluwarsa", 400);
+    throw new HttpError(
+      "Token reset password tidak valid atau sudah kedaluwarsa",
+      400
+    );
   }
 
   const passwordHash = await bcrypt.hash(input.password, PASSWORD_SALT_ROUNDS);
