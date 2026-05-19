@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../db/prisma.js";
@@ -8,17 +9,28 @@ import {
   type GoogleIdTokenVerifier,
   type VerifiedGoogleIdentity
 } from "../../utils/google-id-token.js";
+import {
+  sendPasswordResetEmail,
+  type PasswordResetEmailSender
+} from "../../utils/password-reset-email.js";
 import type {
   AuthResponse,
   AuthUser,
+  ForgotPasswordInput,
   GoogleLoginInput,
   LoginInput,
-  RegisterInput
+  RegisterInput,
+  ResetPasswordInput
 } from "./auth.types.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
 const TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
+const RESET_PASSWORD_TOKEN_BYTES = 32;
+const RESET_PASSWORD_EXPIRES_IN_MINUTES = 30;
 const GOOGLE_PROVIDER = "google";
+
+export const FORGOT_PASSWORD_SUCCESS_MESSAGE =
+  "Jika email terdaftar, link reset password akan dikirim.";
 
 type AuthUserEntity = {
   id: string;
@@ -63,6 +75,35 @@ function createAuthResponse(user: AuthUserEntity): AuthResponse {
     token: signAccessToken(user.id),
     user: toAuthUser(user)
   };
+}
+
+function createPasswordResetToken() {
+  return randomBytes(RESET_PASSWORD_TOKEN_BYTES).toString("hex");
+}
+
+function hashPasswordResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function createPasswordResetExpiry() {
+  const expiresAt = new Date();
+
+  expiresAt.setMinutes(
+    expiresAt.getMinutes() + RESET_PASSWORD_EXPIRES_IN_MINUTES
+  );
+
+  return expiresAt;
+}
+
+function logPasswordResetEmailFailure(userId: string) {
+  console.error(
+    JSON.stringify({
+      level: "error",
+      event: "password_reset_email_failed",
+      userId,
+      timestamp: new Date().toISOString()
+    })
+  );
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResponse> {
@@ -203,6 +244,95 @@ export async function loginWithGoogle(
   });
 
   return createAuthResponse(user);
+}
+
+export async function requestPasswordReset(
+  input: ForgotPasswordInput,
+  emailSender: PasswordResetEmailSender = sendPasswordResetEmail
+): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: {
+      email: input.email
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true
+    }
+  });
+
+  if (!user) {
+    return;
+  }
+
+  const token = createPasswordResetToken();
+  const tokenHash = hashPasswordResetToken(token);
+
+  await prisma.user.update({
+    where: {
+      id: user.id
+    },
+    data: {
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: createPasswordResetExpiry()
+    }
+  });
+
+  try {
+    await emailSender({
+      to: user.email,
+      name: user.name,
+      token
+    });
+  } catch {
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        resetPasswordToken: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    logPasswordResetEmailFailure(user.id);
+  }
+}
+
+export async function resetPassword(
+  input: ResetPasswordInput
+): Promise<void> {
+  const tokenHash = hashPasswordResetToken(input.token);
+  const now = new Date();
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: {
+        gt: now
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!user) {
+    throw new HttpError("Token reset password tidak valid atau sudah kedaluwarsa", 400);
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, PASSWORD_SALT_ROUNDS);
+
+  await prisma.user.update({
+    where: {
+      id: user.id
+    },
+    data: {
+      passwordHash,
+      resetPasswordToken: null,
+      resetPasswordExpires: null
+    }
+  });
 }
 
 export async function getCurrentUser(userId: string): Promise<AuthUser> {

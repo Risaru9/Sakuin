@@ -29,3 +29,19 @@ export const loginSchema = z.object({
 export const googleLoginSchema = z.object({
   credential: z.string().trim().min(1, "Google credential wajib diisi")
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Email tidak valid")
+    .transform((email) => email.toLowerCase())
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "Token reset password wajib diisi"),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .regex(/[0-9]/, "Password harus mengandung angka")
+});

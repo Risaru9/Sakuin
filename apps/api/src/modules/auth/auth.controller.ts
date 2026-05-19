@@ -7,15 +7,20 @@ import {
   logSecurityEventFromContext
 } from "../../utils/security-event-logger.js";
 import type {
+  ForgotPasswordInput,
   GoogleLoginInput,
   LoginInput,
-  RegisterInput
+  RegisterInput,
+  ResetPasswordInput
 } from "./auth.types.js";
 import {
+  FORGOT_PASSWORD_SUCCESS_MESSAGE,
   getCurrentUser,
   loginUser,
   loginWithGoogle,
-  registerUser
+  registerUser,
+  requestPasswordReset,
+  resetPassword
 } from "./auth.service.js";
 
 export async function registerController(c: Context<AppEnv>) {
@@ -54,6 +59,22 @@ export async function googleLoginController(c: Context<AppEnv>) {
   const result = await loginWithGoogle(input);
 
   return successResponse(c, "Login Google berhasil", result);
+}
+
+export async function forgotPasswordController(c: Context<AppEnv>) {
+  const input = c.get("validatedJson") as ForgotPasswordInput;
+
+  await requestPasswordReset(input);
+
+  return successResponse(c, FORGOT_PASSWORD_SUCCESS_MESSAGE, null);
+}
+
+export async function resetPasswordController(c: Context<AppEnv>) {
+  const input = c.get("validatedJson") as ResetPasswordInput;
+
+  await resetPassword(input);
+
+  return successResponse(c, "Password berhasil direset", null);
 }
 
 export async function meController(c: Context<AppEnv>) {

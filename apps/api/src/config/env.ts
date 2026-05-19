@@ -13,7 +13,9 @@ const envSchema = z.object({
     .string()
     .url("FRONTEND_URL harus berupa URL valid")
     .default("http://localhost:3000"),
-  GOOGLE_CLIENT_ID: z.string().optional()
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
