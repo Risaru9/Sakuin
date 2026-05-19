@@ -6,8 +6,17 @@ import {
   createSecurityHash,
   logSecurityEventFromContext
 } from "../../utils/security-event-logger.js";
-import type { LoginInput, RegisterInput } from "./auth.types.js";
-import { getCurrentUser, loginUser, registerUser } from "./auth.service.js";
+import type {
+  GoogleLoginInput,
+  LoginInput,
+  RegisterInput
+} from "./auth.types.js";
+import {
+  getCurrentUser,
+  loginUser,
+  loginWithGoogle,
+  registerUser
+} from "./auth.service.js";
 
 export async function registerController(c: Context<AppEnv>) {
   const input = c.get("validatedJson") as RegisterInput;
@@ -37,6 +46,14 @@ export async function loginController(c: Context<AppEnv>) {
 
     throw error;
   }
+}
+
+export async function googleLoginController(c: Context<AppEnv>) {
+  const input = c.get("validatedJson") as GoogleLoginInput;
+
+  const result = await loginWithGoogle(input);
+
+  return successResponse(c, "Login Google berhasil", result);
 }
 
 export async function meController(c: Context<AppEnv>) {

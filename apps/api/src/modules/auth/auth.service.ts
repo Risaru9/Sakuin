@@ -3,22 +3,31 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
+import {
+  verifyGoogleIdToken,
+  type GoogleIdTokenVerifier,
+  type VerifiedGoogleIdentity
+} from "../../utils/google-id-token.js";
 import type {
   AuthResponse,
   AuthUser,
+  GoogleLoginInput,
   LoginInput,
   RegisterInput
 } from "./auth.types.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
 const TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
+const GOOGLE_PROVIDER = "google";
 
-function toAuthUser(user: {
+type AuthUserEntity = {
   id: string;
   name: string;
   email: string;
   safeBalanceLimit: { toNumber: () => number };
-}): AuthUser {
+};
+
+function toAuthUser(user: AuthUserEntity): AuthUser {
   return {
     id: user.id,
     name: user.name,
@@ -37,6 +46,23 @@ function signAccessToken(userId: string): string {
       expiresIn: TOKEN_EXPIRES_IN_SECONDS
     }
   );
+}
+
+function buildGoogleUserName(identity: VerifiedGoogleIdentity) {
+  if (identity.name) {
+    return identity.name;
+  }
+
+  const [emailName] = identity.email.split("@");
+
+  return emailName || "Pengguna Google";
+}
+
+function createAuthResponse(user: AuthUserEntity): AuthResponse {
+  return {
+    token: signAccessToken(user.id),
+    user: toAuthUser(user)
+  };
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResponse> {
@@ -69,12 +95,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     }
   });
 
-  const token = signAccessToken(user.id);
-
-  return {
-    token,
-    user: toAuthUser(user)
-  };
+  return createAuthResponse(user);
 }
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse> {
@@ -101,12 +122,87 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse> {
     throw new HttpError("Email atau password salah", 401);
   }
 
-  const token = signAccessToken(user.id);
+  return createAuthResponse(user);
+}
 
-  return {
-    token,
-    user: toAuthUser(user)
-  };
+export async function loginWithGoogle(
+  input: GoogleLoginInput,
+  verifier: GoogleIdTokenVerifier = verifyGoogleIdToken
+): Promise<AuthResponse> {
+  const identity = await verifier(input.credential);
+
+  if (!identity.emailVerified) {
+    throw new HttpError("Google email belum terverifikasi", 401);
+  }
+
+  const existingOauthAccount = await prisma.oauthAccount.findUnique({
+    where: {
+      provider_providerAccountId: {
+        provider: GOOGLE_PROVIDER,
+        providerAccountId: identity.providerAccountId
+      }
+    },
+    select: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          safeBalanceLimit: true
+        }
+      }
+    }
+  });
+
+  if (existingOauthAccount) {
+    return createAuthResponse(existingOauthAccount.user);
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      email: identity.email
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      safeBalanceLimit: true
+    }
+  });
+
+  if (existingUser) {
+    await prisma.oauthAccount.create({
+      data: {
+        userId: existingUser.id,
+        provider: GOOGLE_PROVIDER,
+        providerAccountId: identity.providerAccountId
+      }
+    });
+
+    return createAuthResponse(existingUser);
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: buildGoogleUserName(identity),
+      email: identity.email,
+      passwordHash: null,
+      oauthAccounts: {
+        create: {
+          provider: GOOGLE_PROVIDER,
+          providerAccountId: identity.providerAccountId
+        }
+      }
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      safeBalanceLimit: true
+    }
+  });
+
+  return createAuthResponse(user);
 }
 
 export async function getCurrentUser(userId: string): Promise<AuthUser> {

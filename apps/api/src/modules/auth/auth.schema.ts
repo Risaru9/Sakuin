@@ -25,3 +25,7 @@ export const loginSchema = z.object({
     .transform((email) => email.toLowerCase()),
   password: z.string().min(1, "Password wajib diisi")
 });
+
+export const googleLoginSchema = z.object({
+  credential: z.string().trim().min(1, "Google credential wajib diisi")
+});

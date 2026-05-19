@@ -8,13 +8,12 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL wajib diisi"),
   DIRECT_URL: z.string().optional(),
-  JWT_SECRET: z
-    .string()
-    .min(32, "JWT_SECRET minimal 32 karakter"),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET minimal 32 karakter"),
   FRONTEND_URL: z
     .string()
     .url("FRONTEND_URL harus berupa URL valid")
-    .default("http://localhost:3000")
+    .default("http://localhost:3000"),
+  GOOGLE_CLIENT_ID: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

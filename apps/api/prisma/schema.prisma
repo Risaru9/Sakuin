@@ -25,12 +25,12 @@ model User {
   goals                Goal[]
   categories           Category[]
   auditLogs            AuditLog[]
-  oauthAccounts        OAuthAccount[]
+  oauthAccounts        OauthAccount[]
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 }
 
-model OAuthAccount {
+model OauthAccount {
   id                String   @id @default(cuid())
   userId            String
   provider          String
@@ -42,6 +42,7 @@ model OAuthAccount {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
+  @@map("OAuthAccount")
 }
 
 model Transaction {
