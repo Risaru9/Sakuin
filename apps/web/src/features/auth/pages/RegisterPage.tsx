@@ -5,11 +5,11 @@ import {
   ArrowRight,
   BarChart3,
   PiggyBank,
-  Sparkles,
-  WalletCards
+  Sparkles
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { SakuinLogo } from "../../../components/brand/SakuinLogo";
 import { ApiClientError } from "../../../lib/api-client";
 import { GoogleAuthButton } from "../components/google-auth-button";
 import { useAuth } from "../auth-context";
@@ -95,14 +95,12 @@ export function RegisterPage() {
           
           {/* Mobile Header (Hidden on Desktop) */}
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3 lg:hidden">
-            <Link className="inline-flex min-w-0 items-center gap-3" to="/">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm sm:h-11 sm:w-11">
-                <WalletCards className="h-5 w-5" />
-              </div>
-              <span className="truncate text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                Sakuin
-              </span>
-            </Link>
+          <Link
+            className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
+            to="/"
+          >
+            <SakuinLogo subtitle="Personal finance app" size="sm" />
+          </Link>
 
             <Link
               className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 px-3.5 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
@@ -235,12 +233,12 @@ export function RegisterPage() {
         {/* RIGHT COLUMN - Branding & Info */}
         <div className="hidden min-w-0 lg:block">
           <div className="mb-8 flex flex-col items-start gap-4">
-            <Link className="inline-flex items-center gap-3 group" to="/">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm transition-transform group-hover:scale-105">
-                <WalletCards className="h-5 w-5" />
-              </div>
-              <span className="text-2xl font-black tracking-tight text-slate-900">Sakuin</span>
-            </Link>
+          <Link
+            className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
+            to="/"
+          >
+            <SakuinLogo subtitle="Personal finance app" size="md" />
+          </Link>
 
             <Link
               className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/60 px-4 py-2 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"

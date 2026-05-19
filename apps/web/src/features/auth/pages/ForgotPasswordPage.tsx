@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, ShieldCheck, WalletCards } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { SakuinLogo } from "../../../components/brand/SakuinLogo";
 import { ApiClientError } from "../../../lib/api-client";
 import { requestPasswordReset } from "../auth.service";
 
@@ -63,13 +64,11 @@ export function ForgotPasswordPage() {
           
           {/* Header */}
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3">
-            <Link className="inline-flex min-w-0 items-center gap-3 group" to="/">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm transition-transform group-hover:scale-105 sm:h-11 sm:w-11">
-                <WalletCards className="h-5 w-5" />
-              </div>
-              <span className="truncate text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                Sakuin
-              </span>
+            <Link
+            className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
+            to="/"
+            >
+            <SakuinLogo subtitle="Personal finance app" size="md" />
             </Link>
 
             <Link

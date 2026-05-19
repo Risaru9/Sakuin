@@ -5,9 +5,9 @@ import {
   Download,
   Home,
   Settings,
-  Target,
-  WalletCards
+  Target
 } from "lucide-react";
+import { SakuinLogo } from "../brand/SakuinLogo";
 import { useAuth } from "../../features/auth/auth-context";
 
 type AppShellProps = {
@@ -72,20 +72,12 @@ export function AppShell({
     <main className="min-h-screen bg-slate-50 pb-24 text-slate-950 lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
-          <Link className="mb-9 flex items-center gap-3 px-1" to="/dashboard">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
-              <WalletCards className="h-5 w-5" />
-            </div>
-
-            <div>
-              <p className="text-lg font-black leading-none tracking-tight text-slate-950">
-                Sakuin
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Finance app
-              </p>
-            </div>
-          </Link>
+        <Link
+          className="mb-9 rounded-[1.35rem] px-1 py-1 transition hover:bg-slate-50"
+          to="/dashboard"
+        >
+          <SakuinLogo subtitle="Personal finance app" size="md" />
+        </Link>
 
           <nav className="grid flex-1 content-start gap-1.5">
             {navigationItems.map((item) => {

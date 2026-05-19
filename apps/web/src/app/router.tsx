@@ -14,6 +14,7 @@ import {
   Target,
   WalletCards
 } from "lucide-react";
+import { SakuinLogo } from "../components/brand/SakuinLogo";
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { buttonClassName } from "../components/ui/button";
 import { useAuth } from "../features/auth/auth-context";
@@ -193,14 +194,9 @@ function HomePage() {
         
         {/* HEADER */}
         <header className="sticky top-4 z-50 flex items-center justify-between rounded-full border border-slate-200/60 bg-white/80 px-4 py-2.5 shadow-md backdrop-blur-xl sm:px-6">
-          <Link className="flex min-w-0 items-center gap-3" to="/">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-sm">
-              <WalletCards className="h-5 w-5" />
-            </div>
-            <span className="block truncate text-lg font-black tracking-tight text-slate-900">
-              Sakuin
-            </span>
-          </Link>
+        <Link className="min-w-0" to="/">
+          <SakuinLogo subtitle="Personal finance web app" size="md" />
+        </Link>
 
           <div className="flex shrink-0 items-center gap-2.5">
             <Link
