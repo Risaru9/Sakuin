@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 
 type GoogleAuthButtonText = "signin_with" | "signup_with" | "continue_with";
@@ -17,10 +18,51 @@ export function GoogleAuthButton({
   onCredential,
   onFailure
 }: GoogleAuthButtonProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [buttonWidth, setButtonWidth] = useState(300);
+
+  useEffect(() => {
+    function updateButtonWidth() {
+      const currentElement = containerRef.current;
+
+      if (!currentElement) {
+        return;
+      }
+
+      const width = currentElement.getBoundingClientRect().width;
+      const nextWidth = Math.max(180, Math.min(360, Math.floor(width)));
+
+      setButtonWidth(nextWidth);
+    }
+
+    const observedElement = containerRef.current;
+
+    if (!observedElement) {
+      return;
+    }
+
+    updateButtonWidth();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateButtonWidth);
+
+      return () => {
+        window.removeEventListener("resize", updateButtonWidth);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(updateButtonWidth);
+    resizeObserver.observe(observedElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   if (!googleClientId) {
     return (
       <button
-        className="flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-surface-soft)] px-4 text-sm font-bold text-[var(--sakuin-muted)]"
+        className="flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-surface-soft)] px-4 text-center text-sm font-bold text-[var(--sakuin-muted)]"
         type="button"
         disabled
       >
@@ -30,15 +72,22 @@ export function GoogleAuthButton({
   }
 
   return (
-    <div className={disabled ? "pointer-events-none opacity-60" : undefined}>
+    <div
+      ref={containerRef}
+      className={
+        disabled
+          ? "pointer-events-none w-full min-w-0 opacity-60"
+          : "w-full min-w-0"
+      }
+    >
       <GoogleOAuthProvider clientId={googleClientId}>
-        <div className="flex min-h-11 w-full justify-center overflow-hidden rounded-2xl border border-[var(--sakuin-border)] bg-white px-2 py-1 shadow-sm">
+        <div className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden rounded-2xl border border-[var(--sakuin-border)] bg-white px-1 py-1 shadow-sm">
           <GoogleLogin
             text={text}
             size="large"
             theme="outline"
             shape="pill"
-            width="320"
+            width={`${buttonWidth}`}
             onSuccess={(credentialResponse) => {
               const credential = credentialResponse.credential;
 

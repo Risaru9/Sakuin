@@ -79,19 +79,21 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-4 py-5 sm:px-6 lg:px-8">
-      <section className="mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[0.9fr_1fr]">
-        <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between gap-3 lg:hidden">
-            <Link className="inline-flex items-center gap-2" to="/">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),var(--sakuin-bg)] px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
+      <section className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-6xl items-center justify-center lg:grid lg:min-h-[calc(100dvh-3rem)] lg:grid-cols-[0.9fr_1fr] lg:gap-8">
+        <div className="w-full min-w-0 max-w-[28rem] py-2 sm:py-4 lg:py-0">
+          <div className="mb-4 flex min-w-0 items-center justify-between gap-3 lg:hidden">
+            <Link className="inline-flex min-w-0 items-center gap-2" to="/">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
                 <WalletCards className="h-5 w-5" />
               </div>
-              <span className="text-xl font-black tracking-tight">Sakuin</span>
+              <span className="truncate text-lg font-black tracking-tight sm:text-xl">
+                Sakuin
+              </span>
             </Link>
 
             <Link
-              className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-xs font-black text-[var(--sakuin-muted)] shadow-sm"
               to="/"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
@@ -99,12 +101,12 @@ export function RegisterPage() {
             </Link>
           </div>
 
-          <div className="rounded-[2rem] border border-[var(--sakuin-border)] bg-white p-5 shadow-xl shadow-black/5 sm:p-8">
-            <div className="mb-6">
+          <div className="w-full min-w-0 rounded-[1.5rem] border border-[var(--sakuin-border)] bg-white p-4 shadow-xl shadow-black/5 sm:rounded-[2rem] sm:p-8">
+            <div className="mb-5 sm:mb-6">
               <p className="text-sm font-bold text-[var(--sakuin-purple)]">
                 Mulai sekarang
               </p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-[var(--sakuin-text)]">
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
                 Buat akun
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--sakuin-muted)]">
@@ -113,12 +115,12 @@ export function RegisterPage() {
             </div>
 
             {error ? (
-              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
+              <div className="mb-4 break-words rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
                 {error}
               </div>
             ) : null}
 
-            <div className="mb-4">
+            <div className="mb-4 min-w-0">
               <GoogleAuthButton
                 text="signup_with"
                 disabled={isSubmitting || isGoogleSubmitting}
@@ -127,9 +129,9 @@ export function RegisterPage() {
               />
             </div>
 
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex min-w-0 items-center gap-3">
               <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
-              <span className="text-xs font-bold text-[var(--sakuin-muted)]">
+              <span className="shrink-0 text-[11px] font-bold text-[var(--sakuin-muted)] sm:text-xs">
                 atau daftar dengan email
               </span>
               <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
@@ -193,29 +195,31 @@ export function RegisterPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-[var(--sakuin-muted)]">
-              Sudah punya akun?{" "}
-              <Link
-                className="font-bold text-[var(--sakuin-purple)] hover:underline"
-                to="/login"
-              >
-                Login
-              </Link>
-            </p>
+            <div className="mt-6 space-y-3 text-center text-sm text-[var(--sakuin-muted)]">
+              <p>
+                Sudah punya akun?{" "}
+                <Link
+                  className="font-bold text-[var(--sakuin-purple)] hover:underline"
+                  to="/login"
+                >
+                  Login
+                </Link>
+              </p>
 
-            <p className="mt-3 text-center text-sm text-[var(--sakuin-muted)]">
-              Ingin lihat halaman utama?{" "}
-              <Link
-                className="font-bold text-[var(--sakuin-text)] hover:underline"
-                to="/"
-              >
-                Kembali ke Beranda
-              </Link>
-            </p>
+              <p>
+                Ingin lihat halaman utama?{" "}
+                <Link
+                  className="font-bold text-[var(--sakuin-text)] hover:underline"
+                  to="/"
+                >
+                  Kembali ke Beranda
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="hidden lg:block">
+        <div className="hidden min-w-0 lg:block">
           <div className="mb-8 flex flex-col items-start gap-3">
             <Link className="inline-flex items-center gap-2" to="/">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
