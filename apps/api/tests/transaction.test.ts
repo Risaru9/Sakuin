@@ -503,9 +503,16 @@ describe("Transaction API", () => {
     });
 
     expect(auditEvent.requestId).toBeTruthy();
-    expect(serializedAuditEvent).not.toContain("10000");
-    expect(serializedAuditEvent).not.toContain("Transaksi untuk delete");
-    expect(serializedAuditEvent).not.toContain(tokenA);
+
+    expect(auditEvent.metadata).toEqual({
+      reason: "user_requested"
+    });
+
+    const serializedAuditMetadata = JSON.stringify(auditEvent.metadata);
+
+    expect(serializedAuditMetadata).not.toContain("10000");
+    expect(serializedAuditMetadata).not.toContain("Transaksi untuk delete");
+    expect(serializedAuditMetadata).not.toContain(tokenA);
   });
 
   it("Delete transaction user lain gagal", async () => {
