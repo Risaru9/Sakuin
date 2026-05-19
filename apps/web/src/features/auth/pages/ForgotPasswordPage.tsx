@@ -7,7 +7,7 @@ import { ApiClientError } from "../../../lib/api-client";
 import { requestPasswordReset } from "../auth.service";
 
 const FORGOT_PASSWORD_SUCCESS_MESSAGE =
-  "Jika email terdaftar, link reset password akan dikirim.";
+  "Jika email terdaftar, link reset password sudah dikirim.";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -90,8 +90,32 @@ export function ForgotPasswordPage() {
             </div>
 
             {successMessage ? (
-              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-green)]/20 bg-[var(--sakuin-green-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-green)]">
-                {successMessage}
+              <div className="mb-4 rounded-[1.25rem] border border-[var(--sakuin-green)]/20 bg-[var(--sakuin-green-soft)] px-4 py-4 text-sm text-[var(--sakuin-green)]">
+                <p className="font-bold">{successMessage}</p>
+
+                <div className="mt-3 rounded-2xl bg-white/70 p-3 text-[13px] leading-6 text-[var(--sakuin-text)]">
+                  <p className="font-bold">Silakan cek email kamu dengan teliti:</p>
+
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[var(--sakuin-muted)]">
+                    <li>Periksa Inbox atau Kotak Masuk.</li>
+                    <li>Periksa folder Spam.</li>
+                    <li>Periksa tab Promosi, Sosial, atau Pembaruan.</li>
+                    <li>Periksa menu Semua Email jika tersedia.</li>
+                    <li>
+                      Cari email dengan subjek{" "}
+                      <span className="font-bold text-[var(--sakuin-text)]">
+                        Reset password akun Sakuin
+                      </span>
+                      .
+                    </li>
+                  </ul>
+
+                  <p className="mt-3 text-[var(--sakuin-muted)]">
+                    Jika email belum terlihat, tunggu 1–5 menit lalu cek kembali.
+                    Jika masuk Spam, tandai sebagai bukan spam agar email Sakuin
+                    berikutnya lebih mudah ditemukan.
+                  </p>
+                </div>
               </div>
             ) : null}
 
