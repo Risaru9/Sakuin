@@ -3,7 +3,12 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
-import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from "./auth.types.js";
+import type {
+  AuthResponse,
+  AuthUser,
+  LoginInput,
+  RegisterInput
+} from "./auth.types.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
 const TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
@@ -86,7 +91,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse> {
     }
   });
 
-  if (!user) {
+  if (!user?.passwordHash) {
     throw new HttpError("Email atau password salah", 401);
   }
 

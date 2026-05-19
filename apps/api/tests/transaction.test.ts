@@ -270,7 +270,10 @@ describe("Transaction API", () => {
     });
 
     expect(auditEvent.requestId).toBeTruthy();
-    expect(serializedAuditEvent).not.toContain("30000");
+    expect(auditEvent.metadata).not.toHaveProperty("amount");
+    expect(auditEvent.metadata).not.toHaveProperty("note");
+    expect(auditEvent.metadata).not.toHaveProperty("categoryId");
+
     expect(serializedAuditEvent).not.toContain("Create transaction berhasil");
     expect(serializedAuditEvent).not.toContain("cat_expense_food");
     expect(serializedAuditEvent).not.toContain(tokenA);

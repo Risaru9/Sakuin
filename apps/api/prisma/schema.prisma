@@ -14,19 +14,34 @@ enum TransactionType {
 }
 
 model User {
-  id                   String        @id @default(cuid())
+  id                   String         @id @default(cuid())
   name                 String
-  email                String        @unique
-  passwordHash         String
-  safeBalanceLimit     Decimal       @default(0) @db.Decimal(18, 2)
+  email                String         @unique
+  passwordHash         String?
+  safeBalanceLimit     Decimal        @default(0) @db.Decimal(18, 2)
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
   transactions         Transaction[]
   goals                Goal[]
   categories           Category[]
   auditLogs            AuditLog[]
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  oauthAccounts        OAuthAccount[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Transaction {
