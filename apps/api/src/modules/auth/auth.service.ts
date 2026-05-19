@@ -9,6 +9,7 @@ import {
   type GoogleIdTokenVerifier,
   type VerifiedGoogleIdentity
 } from "../../utils/google-id-token.js";
+import { EmailSenderError } from "../../utils/email-sender.js";
 import {
   sendPasswordResetEmail,
   type PasswordResetEmailSender
@@ -95,12 +96,20 @@ function createPasswordResetExpiry() {
   return expiresAt;
 }
 
-function logPasswordResetEmailFailure(userId: string) {
+function logPasswordResetEmailFailure(userId: string, error: unknown) {
+  const status = error instanceof EmailSenderError ? error.status : 500;
+  const reason =
+    error instanceof EmailSenderError
+      ? error.reason
+      : "password_reset_email_unknown_error";
+
   console.error(
     JSON.stringify({
       level: "error",
       event: "password_reset_email_failed",
       userId,
+      status,
+      reason,
       timestamp: new Date().toISOString()
     })
   );
@@ -284,7 +293,7 @@ export async function requestPasswordReset(
       name: user.name,
       token
     });
-  } catch {
+  } catch (error) {
     await prisma.user.update({
       where: {
         id: user.id
@@ -295,7 +304,7 @@ export async function requestPasswordReset(
       }
     });
 
-    logPasswordResetEmailFailure(user.id);
+    logPasswordResetEmailFailure(user.id, error);
   }
 }
 

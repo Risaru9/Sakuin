@@ -9,11 +9,28 @@ export type SendEmailInput = {
 
 export type EmailSender = (input: SendEmailInput) => Promise<void>;
 
+export class EmailSenderError extends Error {
+  status: number;
+  reason: string;
+
+  constructor(message: string, status = 500, reason = "email_provider_error") {
+    super(message);
+
+    this.name = "EmailSenderError";
+    this.status = status;
+    this.reason = reason;
+  }
+}
+
 const RESEND_EMAIL_API_URL = "https://api.resend.com/emails";
 
 function getEmailConfig() {
   if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
-    throw new Error("Email sender belum dikonfigurasi");
+    throw new EmailSenderError(
+      "Email sender belum dikonfigurasi",
+      503,
+      "email_sender_not_configured"
+    );
   }
 
   return {
@@ -41,6 +58,26 @@ function responseIsSuccessful(response: unknown) {
   return status >= 200 && status < 300;
 }
 
+function getFailureReason(status: number) {
+  if (status === 401 || status === 403) {
+    return "email_provider_auth_or_domain_rejected";
+  }
+
+  if (status === 422) {
+    return "email_provider_validation_error";
+  }
+
+  if (status === 429) {
+    return "email_provider_rate_limited";
+  }
+
+  if (status >= 500) {
+    return "email_provider_unavailable";
+  }
+
+  return "email_provider_error";
+}
+
 export const sendEmail: EmailSender = async (input) => {
   const { apiKey, from } = getEmailConfig();
 
@@ -60,6 +97,12 @@ export const sendEmail: EmailSender = async (input) => {
   });
 
   if (!responseIsSuccessful(response)) {
-    throw new Error("Gagal mengirim email");
+    const status = getResponseStatus(response);
+
+    throw new EmailSenderError(
+      "Gagal mengirim email",
+      status,
+      getFailureReason(status)
+    );
   }
 };
