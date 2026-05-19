@@ -11,6 +11,7 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { ApiClientError } from "../../../lib/api-client";
+import { GoogleAuthButton } from "../components/google-auth-button";
 import { useAuth } from "../auth-context";
 
 function getErrorMessage(error: unknown) {
@@ -27,7 +28,7 @@ function getErrorMessage(error: unknown) {
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -37,6 +38,7 @@ export function RegisterPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,6 +56,25 @@ export function RegisterPage() {
       setError(getErrorMessage(caughtError));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setError(null);
+    setIsGoogleSubmitting(true);
+
+    try {
+      await loginWithGoogle({
+        credential
+      });
+
+      navigate("/dashboard", {
+        replace: true
+      });
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsGoogleSubmitting(false);
     }
   }
 
@@ -96,6 +117,23 @@ export function RegisterPage() {
                 {error}
               </div>
             ) : null}
+
+            <div className="mb-4">
+              <GoogleAuthButton
+                text="signup_with"
+                disabled={isSubmitting || isGoogleSubmitting}
+                onCredential={handleGoogleCredential}
+                onFailure={setError}
+              />
+            </div>
+
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
+              <span className="text-xs font-bold text-[var(--sakuin-muted)]">
+                atau daftar dengan email
+              </span>
+              <div className="h-px flex-1 bg-[var(--sakuin-border)]" />
+            </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input
@@ -148,6 +186,7 @@ export function RegisterPage() {
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
+                disabled={isGoogleSubmitting}
               >
                 Register
                 <ArrowRight className="h-4 w-4" />

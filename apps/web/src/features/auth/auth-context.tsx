@@ -12,11 +12,13 @@ import {
 } from "../../lib/auth-storage";
 import {
   getCurrentUser,
+  googleLoginUser,
   loginUser,
   registerUser
 } from "./auth.service";
 import type {
   AuthUser,
+  GoogleLoginInput,
   LoginInput,
   RegisterInput
 } from "./auth.types";
@@ -27,6 +29,7 @@ type AuthContextValue = {
   isInitializing: boolean;
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
+  loginWithGoogle: (input: GoogleLoginInput) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateAuthUser: (input: Partial<AuthUser>) => void;
@@ -70,6 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }
 
+  async function loginWithGoogle(input: GoogleLoginInput) {
+    const result = await googleLoginUser(input);
+
+    setStoredToken(result.token);
+    setUser(result.user);
+  }
+
   function logout() {
     removeStoredToken();
     setUser(null);
@@ -104,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isInitializing,
         login,
         register,
+        loginWithGoogle,
         logout,
         refreshUser,
         updateAuthUser

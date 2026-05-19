@@ -20,3 +20,7 @@ export type RegisterInput = {
   email: string;
   password: string;
 };
+
+export type GoogleLoginInput = {
+  credential: string;
+};

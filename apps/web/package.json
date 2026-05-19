@@ -12,6 +12,7 @@
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "@sakuin/shared": "workspace:*",
     "@tanstack/react-query": "^5.100.10",
     "@vitejs/plugin-react": "^5.0.0",
