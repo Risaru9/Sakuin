@@ -8,6 +8,7 @@ import { goalRoutes } from "./goals/goal.route.js";
 import { userRoutes } from "./users/user.route.js";
 import { exportRoutes } from "./export/export.route.js";
 import { categoryRoutes } from "./categories/category.route.js";
+import { aiRoutes } from "./ai/ai.routes.js";
 
 export const apiRoutes = new Hono<AppEnv>();
 
@@ -32,3 +33,4 @@ apiRoutes.route("/goals", goalRoutes);
 apiRoutes.route("/users", userRoutes);
 apiRoutes.route("/export", exportRoutes);
 apiRoutes.route("/categories", categoryRoutes);
+apiRoutes.route("/ai", aiRoutes);
