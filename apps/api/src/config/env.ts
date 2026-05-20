@@ -31,6 +31,9 @@ const envSchema = z.object({
     .default("http://localhost:3000"),
   GOOGLE_CLIENT_ID: z.string().optional(),
 
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
+
   SMTP_HOST: z.string().default("smtp.gmail.com"),
   SMTP_PORT: z.coerce.number().int().positive().default(465),
   SMTP_SECURE: optionalBooleanStringSchema.default(true),
