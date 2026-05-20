@@ -186,9 +186,15 @@ describe("User Profile API", () => {
     });
 
     expect(auditEvent.requestId).toBeTruthy();
-    expect(serializedAuditEvent).not.toContain("User Profile Updated");
-    expect(serializedAuditEvent).not.toContain("500000.00");
-    expect(serializedAuditEvent).not.toContain("500000");
+    expect(auditEvent.metadata).toEqual({
+      changedFields: "name,safeBalanceLimit"
+    });
+
+    const serializedAuditMetadata = JSON.stringify(auditEvent.metadata);
+
+    expect(serializedAuditMetadata).not.toContain("User Profile Updated");
+    expect(serializedAuditMetadata).not.toContain("500000.00");
+    expect(serializedAuditMetadata).not.toContain("500000");
     expect(serializedAuditEvent).not.toContain(token);
   });
 

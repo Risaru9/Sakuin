@@ -5,27 +5,28 @@ import {
   ArrowLeft,
   Bot,
   Loader2,
-  MessageCircle,
   Send,
   Sparkles,
   UserRound
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "../../../components/layout/AppShell";
 import { ApiClientError } from "../../../lib/api-client";
+import { queryKeys } from "../../../lib/query-keys";
 import { useAuth } from "../../auth/auth-context";
 import { getUserProfile } from "../../profile/profile.service";
 import { sendAiChatMessage } from "../ai.service";
 import type { AiChatMessage, AiChatResponse } from "../ai.types";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../../lib/query-keys";
 
 const SUGGESTED_PROMPTS = [
-  "Pengeluaran saya bulan ini gimana?",
+  "Pengeluaran bulan ini gimana?",
   "Saya boros di mana?",
-  "Bandingkan bulan ini dengan bulan lalu",
+  "Bandingkan bulan ini dan bulan lalu",
   "Kasih saran hemat",
   "Analisis goals saya"
 ];
+
+const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -55,47 +56,57 @@ function createAssistantMessage(response: AiChatResponse): AiChatMessage {
   };
 }
 
+function formatIntentLabel(intent?: string) {
+  if (!intent) {
+    return "";
+  }
+
+  return intent
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function IntentBadge({ intent }: { intent?: string }) {
   if (!intent) {
     return null;
   }
 
-  const label = intent
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
   return (
-    <span className="inline-flex w-fit rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-700 ring-1 ring-violet-100">
-      {label}
+    <span className="inline-flex w-fit rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700 ring-1 ring-violet-100">
+      {formatIntentLabel(intent)}
     </span>
   );
 }
 
-function ChatBubble({ message }: { message: AiChatMessage }) {
+function ChatBubble({
+  message,
+  onSuggestionClick,
+  disabled
+}: {
+  message: AiChatMessage;
+  onSuggestionClick: (suggestion: string) => void;
+  disabled: boolean;
+}) {
   const isUser = message.role === "user";
+  const visibleSuggestions =
+    message.suggestions?.slice(0, MAX_VISIBLE_MESSAGE_SUGGESTIONS) ?? [];
 
   return (
-    <div
-      className={
-        isUser
-          ? "flex justify-end"
-          : "flex justify-start"
-      }
-    >
+    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
       <div
         className={
           isUser
-            ? "flex max-w-[92%] flex-row-reverse items-start gap-3 sm:max-w-[76%]"
-            : "flex max-w-[92%] items-start gap-3 sm:max-w-[76%]"
+            ? "flex max-w-[88%] flex-row-reverse items-start gap-2 sm:max-w-[74%] sm:gap-3"
+            : "flex max-w-[94%] items-start gap-2 sm:max-w-[78%] sm:gap-3"
         }
       >
         <div
           className={
             isUser
-              ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white"
-              : "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20"
+              ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white sm:h-9 sm:w-9"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 sm:h-9 sm:w-9"
           }
         >
           {isUser ? (
@@ -108,8 +119,8 @@ function ChatBubble({ message }: { message: AiChatMessage }) {
         <div
           className={
             isUser
-              ? "rounded-[1.35rem] rounded-tr-md bg-slate-950 px-4 py-3 text-white shadow-sm"
-              : "rounded-[1.35rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-800 shadow-sm shadow-slate-950/5"
+              ? "rounded-[1.15rem] rounded-tr-md bg-slate-950 px-4 py-3 text-white shadow-sm"
+              : "rounded-[1.15rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-800 shadow-sm shadow-slate-950/5"
           }
         >
           {!isUser ? (
@@ -118,21 +129,21 @@ function ChatBubble({ message }: { message: AiChatMessage }) {
             </div>
           ) : null}
 
-          <p className="whitespace-pre-line text-sm font-medium leading-6">
+          <p className="whitespace-pre-line text-[13px] font-semibold leading-6 sm:text-sm">
             {message.content}
           </p>
 
           {!isUser && message.cards && message.cards.length > 0 ? (
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               {message.cards.map((card) => (
                 <div
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-3"
+                  className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5"
                   key={`${message.id}-${card.label}`}
                 >
-                  <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                  <p className="truncate text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
                     {card.label}
                   </p>
-                  <p className="mt-1 text-sm font-black text-slate-950">
+                  <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
                     {card.value}
                   </p>
                 </div>
@@ -140,15 +151,18 @@ function ChatBubble({ message }: { message: AiChatMessage }) {
             </div>
           ) : null}
 
-          {!isUser && message.suggestions && message.suggestions.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {message.suggestions.slice(0, 4).map((suggestion) => (
-                <span
-                  className="rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-black text-violet-700"
+          {!isUser && visibleSuggestions.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {visibleSuggestions.map((suggestion) => (
+                <button
+                  className="rounded-full bg-violet-50 px-3 py-1.5 text-left text-[10px] font-black leading-4 text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={disabled}
                   key={`${message.id}-${suggestion}`}
+                  onClick={() => onSuggestionClick(suggestion)}
+                  type="button"
                 >
                   {suggestion}
-                </span>
+                </button>
               ))}
             </div>
           ) : null}
@@ -168,9 +182,18 @@ export function AsistenPage() {
       id: "welcome-message",
       role: "assistant",
       content:
-        "Halo, saya Asisten Sakuin. Saya bisa membantu menjawab pertanyaan seputar pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.",
+        "Halo, saya Asisten Sakuin. Saya bisa membantu membaca pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.\n\nCatatan: saya hanya menjawab topik keuangan pribadi. Saya bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
       intent: "FINANCIAL_SUMMARY",
-      cards: [],
+      cards: [
+        {
+          label: "Mode",
+          value: "Financial only"
+        },
+        {
+          label: "Status",
+          value: "Rule-based awal"
+        }
+      ],
       suggestions: SUGGESTED_PROMPTS,
       createdAt: new Date().toISOString()
     }
@@ -264,60 +287,62 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="relative isolate mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/85 shadow-xl shadow-slate-950/5 backdrop-blur-xl">
-        <div className="pointer-events-none absolute inset-x-0 top-[-12rem] -z-10 h-80 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-indigo-100 blur-3xl" />
+      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] max-w-5xl flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:h-[calc(100dvh-10rem)] lg:h-[calc(100vh-4rem)]">
+        <header className="shrink-0 border-b border-slate-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start gap-3">
+            <Link
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+              to="/dashboard"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
 
-        <header className="border-b border-slate-100 bg-white/80 p-4 backdrop-blur-xl sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <Link
-                className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
-                to="/dashboard"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-
-              <div className="min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
                   <Sparkles className="h-3.5 w-3.5" />
                   Asisten Sakuin
                 </p>
 
-                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                  Tanya kondisi keuanganmu
-                </h1>
-
-                <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-                  Asisten ini hanya menjawab topik keuangan pribadi di Sakuin,
-                  seperti transaksi, pengeluaran, pemasukan, goals, dan saran
-                  hemat ringan.
-                </p>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">
+                  Financial only
+                </span>
               </div>
-            </div>
 
-            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-xs font-bold text-violet-800">
-              Mode awal: rule-based
+              <h1 className="mt-2 text-xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                Tanya kondisi keuanganmu
+              </h1>
+
+              <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-500 sm:text-sm sm:leading-6">
+                Tanyakan pengeluaran, pemasukan, goals, perbandingan periode,
+                atau saran hemat ringan berdasarkan data Sakuin.
+              </p>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-slate-50/60 p-4 sm:p-6">
-          <div className="space-y-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 py-4 sm:px-6 sm:py-6">
+          <div className="space-y-4">
             {messages.map((message) => (
-              <ChatBubble key={message.id} message={message} />
+              <ChatBubble
+                disabled={isSubmitting}
+                key={message.id}
+                message={message}
+                onSuggestionClick={handlePromptClick}
+              />
             ))}
 
             {isSubmitting ? (
               <div className="flex justify-start">
-                <div className="flex max-w-[92%] items-start gap-3 sm:max-w-[76%]">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20">
+                <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[78%] sm:gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 sm:h-9 sm:w-9">
                     <Bot className="h-4 w-4" />
                   </div>
 
-                  <div className="rounded-[1.35rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-600 shadow-sm shadow-slate-950/5">
-                    <div className="flex items-center gap-2 text-sm font-bold">
+                  <div className="rounded-[1.15rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-600 shadow-sm shadow-slate-950/5">
+                    <div className="flex items-center gap-2 text-[13px] font-bold">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Asisten sedang membaca data Sakuin...
+                      Membaca data Sakuin...
                     </div>
                   </div>
                 </div>
@@ -328,9 +353,9 @@ export function AsistenPage() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 bg-white/90 p-4 backdrop-blur-xl sm:p-5">
+        <footer className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 sm:px-5 sm:py-4">
           {error ? (
-            <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">
+            <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold leading-5 text-rose-700 sm:text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -339,7 +364,7 @@ export function AsistenPage() {
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
-                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
                 disabled={isSubmitting}
                 key={prompt}
                 onClick={() => handlePromptClick(prompt)}
@@ -350,19 +375,19 @@ export function AsistenPage() {
             ))}
           </div>
 
-          <form className="flex items-end gap-3" onSubmit={handleSubmit}>
+          <form className="flex items-end gap-2 sm:gap-3" onSubmit={handleSubmit}>
             <div className="min-w-0 flex-1">
               <textarea
-                className="max-h-36 min-h-12 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={isSubmitting}
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
-                placeholder="Tanya tentang pengeluaran, pemasukan, goals, atau kondisi keuanganmu..."
+                placeholder="Tanya tentang pengeluaran, pemasukan, goals..."
                 rows={1}
                 value={input}
               />
-              <p className="mt-1 text-right text-[11px] font-semibold text-slate-400">
+              <p className="mt-1 text-right text-[10px] font-semibold text-slate-400">
                 {input.length}/1000
               </p>
             </div>
@@ -379,16 +404,7 @@ export function AsistenPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-slate-50 p-3 text-xs font-medium leading-5 text-slate-500">
-            <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
-            <p>
-              Asisten Sakuin belum memberi nasihat investasi, pinjaman, pajak,
-              atau hukum. Jawaban dibuat untuk membantu memahami data keuangan
-              pribadi di Sakuin.
-            </p>
-          </div>
-        </div>
+        </footer>
       </div>
     </AppShell>
   );
