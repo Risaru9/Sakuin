@@ -31,15 +31,18 @@ const envSchema = z.object({
     .default("http://localhost:3000"),
   GOOGLE_CLIENT_ID: z.string().optional(),
 
-  GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
-
   SMTP_HOST: z.string().default("smtp.gmail.com"),
   SMTP_PORT: z.coerce.number().int().positive().default(465),
   SMTP_SECURE: optionalBooleanStringSchema.default(true),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  EMAIL_FROM: z.string().optional()
+  EMAIL_FROM: z.string().optional(),
+
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().optional(),
+  GEMINI_MODEL_DEFAULT: z.string().optional(),
+  GEMINI_MODEL_COMPLEX: z.string().optional(),
+  GEMINI_MODEL_FALLBACK: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -51,4 +54,22 @@ if (!parsedEnv.success) {
   throw new Error("Konfigurasi environment tidak valid.");
 }
 
-export const env = parsedEnv.data;
+const parsedData = parsedEnv.data;
+
+export const env = {
+  ...parsedData,
+  GEMINI_MODEL_DEFAULT:
+    parsedData.GEMINI_MODEL_DEFAULT ??
+    parsedData.GEMINI_MODEL ??
+    "gemini-3.1-flash-lite",
+  GEMINI_MODEL_COMPLEX:
+    parsedData.GEMINI_MODEL_COMPLEX ??
+    parsedData.GEMINI_MODEL_DEFAULT ??
+    parsedData.GEMINI_MODEL ??
+    "gemini-3.5-flash",
+  GEMINI_MODEL_FALLBACK:
+    parsedData.GEMINI_MODEL_FALLBACK ??
+    parsedData.GEMINI_MODEL_DEFAULT ??
+    parsedData.GEMINI_MODEL ??
+    "gemini-3.1-flash-lite"
+};

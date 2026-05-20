@@ -4,6 +4,7 @@ import {
   type AiTextProvider
 } from "./ai.provider.js";
 import { classifyAiIntent } from "./ai.intent.js";
+import { selectAiModelPlan } from "./ai-model-router.js";
 import {
   getAiFinancialContext,
   type AiFinancialContext
@@ -641,9 +642,15 @@ async function enhanceFinancialResponseWithAi(input: {
     return input.baseResponse;
   }
 
-  try {
-    const provider = input.provider ?? createGeminiTextProvider();
+  const modelPlan = selectAiModelPlan({
+    intent: input.intent,
+    userMessage: input.userMessage,
+    history: input.history
+  });
 
+  const provider = input.provider ?? createGeminiTextProvider();
+
+  async function generateWithModel(model: string) {
     const result = await provider.generateText({
       systemInstruction: buildFinancialSystemInstruction(),
       prompt: buildFinancialPrompt({
@@ -652,36 +659,88 @@ async function enhanceFinancialResponseWithAi(input: {
         context: input.context,
         baseResponse: input.baseResponse,
         history: input.history
-      })
+      }),
+      model,
+      maxOutputTokens: modelPlan.maxOutputTokens,
+      temperature: modelPlan.temperature
     });
 
     const aiReply = normalizeAiReply(result.text);
 
     if (!aiReply) {
-      logAiProviderEvent("ai.provider_fallback", {
-        intent: input.intent,
-        reason: "empty_ai_reply"
-      });
-
-      return input.baseResponse;
+      throw new Error("EmptyAiReply");
     }
+
+    return {
+      reply: aiReply,
+      model: result.model
+    };
+  }
+
+  try {
+    const result = await generateWithModel(modelPlan.primaryModel);
 
     logAiProviderEvent("ai.provider_used", {
       intent: input.intent,
-      model: result.model
+      route: modelPlan.route,
+      reason: modelPlan.reason,
+      model: result.model,
+      fallback: false
     });
 
     return {
       ...input.baseResponse,
-      reply: aiReply
+      reply: result.reply
     };
-  } catch (error) {
+  } catch (primaryError) {
+    const shouldTryFallback =
+      modelPlan.fallbackModel &&
+      modelPlan.fallbackModel !== modelPlan.primaryModel;
+
     logAiProviderEvent("ai.provider_fallback", {
       intent: input.intent,
-      reason: error instanceof Error ? error.name : "UnknownAiProviderError"
+      route: modelPlan.route,
+      reason:
+        primaryError instanceof Error
+          ? primaryError.name
+          : "UnknownAiProviderError",
+      model: modelPlan.primaryModel,
+      fallbackModel: shouldTryFallback ? modelPlan.fallbackModel : null
     });
 
-    return input.baseResponse;
+    if (!shouldTryFallback) {
+      return input.baseResponse;
+    }
+
+    try {
+      const fallbackResult = await generateWithModel(modelPlan.fallbackModel);
+
+      logAiProviderEvent("ai.provider_used", {
+        intent: input.intent,
+        route: "default",
+        reason: "fallback_model_used",
+        model: fallbackResult.model,
+        fallback: true
+      });
+
+      return {
+        ...input.baseResponse,
+        reply: fallbackResult.reply
+      };
+    } catch (fallbackError) {
+      logAiProviderEvent("ai.provider_fallback", {
+        intent: input.intent,
+        route: "default",
+        reason:
+          fallbackError instanceof Error
+            ? fallbackError.name
+            : "UnknownAiProviderFallbackError",
+        model: modelPlan.fallbackModel,
+        fallbackModel: null
+      });
+
+      return input.baseResponse;
+    }
   }
 }
 
