@@ -6,6 +6,11 @@ import {
 import { classifyAiIntent } from "./ai.intent.js";
 import { selectAiModelPlan } from "./ai-model-router.js";
 import {
+  analyzeFinancialScenario,
+  buildFinancialScenarioPromptContext,
+  type FinancialScenarioAnalysis
+} from "./ai-financial-scenario.js";
+import {
   getAiFinancialContext,
   type AiFinancialContext
 } from "./ai-financial-context.js";
@@ -32,6 +37,39 @@ const TRANSACTION_DRAFT_SUGGESTIONS = [
   "Catat bensin 30000 kemarin",
   "Catat dikasih kakak 100000",
   "Lihat pengeluaran bulan ini"
+];
+
+const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
+  "kalau",
+  "kalo",
+  "bagaimana jika",
+  "gimana jika",
+  "jika",
+  "berarti",
+  "itu",
+  "tersebut",
+  "opsi",
+  "alternatif",
+  "lebih realistis",
+  "lebih aman",
+  "low risk",
+  "risiko",
+  "risk",
+  "bulan",
+  "tahun",
+  "deadline",
+  "target",
+  "harga",
+  "seharga",
+  "beli",
+  "membeli",
+  "android",
+  "iphone",
+  "handphone",
+  "hp",
+  "motor",
+  "mobil",
+  "laptop"
 ];
 
 type AiChatServiceOptions = {
@@ -84,38 +122,6 @@ function buildConversationHistoryText(history: AiChatHistoryMessage[] = []) {
     })
     .join("\n");
 }
-
-const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
-  "kalau",
-  "kalo",
-  "bagaimana jika",
-  "gimana jika",
-  "jika",
-  "berarti",
-  "itu",
-  "tersebut",
-  "opsi",
-  "alternatif",
-  "lebih realistis",
-  "lebih aman",
-  "low risk",
-  "risiko",
-  "risk",
-  "bulan",
-  "tahun",
-  "deadline",
-  "target",
-  "harga",
-  "seharga",
-  "beli",
-  "membeli",
-  "android",
-  "iphone",
-  "handphone",
-  "hp",
-  "motor",
-  "laptop"
-];
 
 function looksLikeContextualFinancialFollowUp(message: string) {
   const normalizedMessage = message.toLowerCase();
@@ -197,6 +203,92 @@ function hasCurrentMonthTransactions(context: AiFinancialContext) {
 
 function buildCards(items: AiChatCard[]) {
   return items;
+}
+
+function buildScenarioCards(
+  scenario: FinancialScenarioAnalysis
+): AiChatCard[] {
+  if (!scenario.detected) {
+    return [];
+  }
+
+  const cards: AiChatCard[] = [];
+
+  if (scenario.targetAmount) {
+    cards.push({
+      label: "Target",
+      value: formatRupiah(scenario.targetAmount)
+    });
+  }
+
+  if (scenario.monthlyIncome) {
+    cards.push({
+      label: "Pendapatan",
+      value: formatRupiah(scenario.monthlyIncome)
+    });
+  }
+
+  if (scenario.options.length > 0) {
+    const lowestRiskOption = [...scenario.options].sort(
+      (a, b) => a.monthlyRequired - b.monthlyRequired
+    )[0];
+
+    const highestRiskOption = [...scenario.options].sort(
+      (a, b) => b.monthlyRequired - a.monthlyRequired
+    )[0];
+
+    if (scenario.options.length === 1) {
+      cards.push({
+        label: "Butuh / Bulan",
+        value: formatRupiah(lowestRiskOption.monthlyRequired)
+      });
+
+      cards.push({
+        label: "Verdict",
+        value: lowestRiskOption.verdict
+      });
+    } else {
+      cards.push({
+        label: "Termurah / Bulan",
+        value: formatRupiah(lowestRiskOption.monthlyRequired)
+      });
+
+      cards.push({
+        label: "Terberat / Bulan",
+        value: formatRupiah(highestRiskOption.monthlyRequired)
+      });
+    }
+  } else if (scenario.missingFields.length > 0) {
+    cards.push({
+      label: "Data Kurang",
+      value: scenario.missingFields.join(", ")
+    });
+  }
+
+  return cards;
+}
+
+function mergeUniqueCards(cards: AiChatCard[], extraCards: AiChatCard[]) {
+  const existingLabels = new Set(cards.map((card) => card.label));
+
+  return [
+    ...cards,
+    ...extraCards.filter((card) => !existingLabels.has(card.label))
+  ];
+}
+
+function enrichResponseWithScenario(
+  response: AiChatResponse,
+  scenario: FinancialScenarioAnalysis
+): AiChatResponse {
+  if (!scenario.detected) {
+    return response;
+  }
+
+  return {
+    ...response,
+    cards: mergeUniqueCards(response.cards, buildScenarioCards(scenario))
+  };
 }
 
 function buildOutOfScopeResponse(): AiChatResponse {
@@ -562,6 +654,12 @@ function buildFinancialSystemInstruction() {
     "Gunakan recent conversation context untuk memahami follow-up user seperti 'kalau 8 bulan gimana', 'kalau targetnya naik', atau 'kalau begitu apa saranmu'.",
     "Jika follow-up user merujuk pada konteks sebelumnya, pakai konteks sebelumnya selama masih relevan dengan keuangan pribadi.",
     "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
+    "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
+    "Jika user memberi angka skenario seperti gaji, target harga, tenor, atau deadline, angka user mengalahkan data historis Sakuin untuk analisis skenario tersebut.",
+    "Jangan menyimpulkan realistis hanya dari cashflow historis Sakuin. Untuk skenario pembelian/kredit, selalu cek rasio kebutuhan bulanan terhadap pendapatan skenario.",
+    "Untuk tenor atau deadline range, bandingkan opsi yang paling berat dan paling ringan.",
+    "Jika bunga kredit tidak diketahui, jelaskan bahwa hitungan masih pokok/estimasi kasar dan total biaya bisa lebih tinggi.",
+    "Untuk skenario pembelian/kredit, jangan langsung menyuruh user membeli. Beri analisis risiko dan syarat aman.",
     "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context atau tidak disebut user.",
     "Boleh melakukan perhitungan sederhana dari angka yang ada di context atau angka yang user berikan.",
     "Jika user bertanya apakah target/goal realistis, wajib beri verdict eksplisit: Realistis, Berat, Tidak realistis, atau Butuh data tambahan.",
@@ -588,6 +686,7 @@ function buildFinancialPrompt(input: {
   context: AiFinancialContext;
   baseResponse: AiChatResponse;
   history?: AiChatHistoryMessage[];
+  scenario?: FinancialScenarioAnalysis;
 }) {
   return [
     "RECENT CONVERSATION CONTEXT:",
@@ -598,6 +697,11 @@ function buildFinancialPrompt(input: {
     "",
     "DETECTED INTENT:",
     input.intent,
+    "",
+    "FINANCIAL SCENARIO ANALYSIS:",
+    input.scenario
+      ? buildFinancialScenarioPromptContext(input.scenario)
+      : "Tidak ada skenario finansial terstruktur terdeteksi.",
     "",
     "SAFE FINANCIAL CONTEXT:",
     JSON.stringify(input.context, null, 2),
@@ -611,12 +715,13 @@ function buildFinancialPrompt(input: {
     "- Jika user bertanya realistis/tidak, mulai jawaban dengan verdict.",
     "- Jika user bertanya target tabungan, hitung kebutuhan tabungan per bulan bila data tersedia.",
     "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
-    "- Angka penting harus konsisten dengan context atau angka yang user berikan.",
+    "- Angka penting harus konsisten dengan context, financial scenario analysis, atau angka yang user berikan.",
+    "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
     "- Cards di frontend sudah menampilkan angka utama, jadi reply fokus pada interpretasi dan saran.",
     "",
     "TASK:",
-    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context dan deterministic backend summary.",
-    "Gunakan angka yang sama seperti context/backend summary atau angka yang disebut user.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial scenario analysis, dan deterministic backend summary.",
+    "Gunakan angka yang sama seperti context/backend summary/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",
     "Berikan insight dan saran yang langsung bisa dilakukan user."
@@ -637,6 +742,7 @@ async function enhanceFinancialResponseWithAi(input: {
   context: AiFinancialContext;
   baseResponse: AiChatResponse;
   history?: AiChatHistoryMessage[];
+  scenario?: FinancialScenarioAnalysis;
 }) {
   if (env.NODE_ENV === "test" && !input.provider) {
     return input.baseResponse;
@@ -658,7 +764,8 @@ async function enhanceFinancialResponseWithAi(input: {
         intent: input.intent,
         context: input.context,
         baseResponse: input.baseResponse,
-        history: input.history
+        history: input.history,
+        scenario: input.scenario
       }),
       model,
       maxOutputTokens: modelPlan.maxOutputTokens,
@@ -750,10 +857,10 @@ export async function getAiChatResponse(
 ): Promise<AiChatResponse> {
   const normalizedMessage = input.message.trim();
 
-    const classification = classifyAiChatMessage(
+  const classification = classifyAiChatMessage(
     normalizedMessage,
     input.history ?? []
-    );
+  );
 
   if (classification.intent === "OUT_OF_SCOPE") {
     return buildOutOfScopeResponse();
@@ -764,9 +871,14 @@ export async function getAiChatResponse(
   }
 
   const financialContext = await getAiFinancialContext(input.userId);
-  const baseResponse = buildFinancialResponse(
-    classification.intent,
-    financialContext
+  const scenario = analyzeFinancialScenario(
+    normalizedMessage,
+    input.history ?? []
+  );
+
+  const baseResponse = enrichResponseWithScenario(
+    buildFinancialResponse(classification.intent, financialContext),
+    scenario
   );
 
   return enhanceFinancialResponseWithAi({
@@ -775,6 +887,7 @@ export async function getAiChatResponse(
     intent: classification.intent,
     context: financialContext,
     baseResponse,
-    history: input.history
+    history: input.history,
+    scenario
   });
 }
