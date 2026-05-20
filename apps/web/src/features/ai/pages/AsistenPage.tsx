@@ -8,7 +8,8 @@ import {
   Send,
   Sparkles,
   Trash2,
-  UserRound
+  UserRound,
+  X
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "../../../components/layout/AppShell";
@@ -17,7 +18,11 @@ import { queryKeys } from "../../../lib/query-keys";
 import { useAuth } from "../../auth/auth-context";
 import { getUserProfile } from "../../profile/profile.service";
 import { sendAiChatMessage } from "../ai.service";
-import type { AiChatMessage, AiChatResponse } from "../ai.types";
+import type {
+  AiChatHistoryMessage,
+  AiChatMessage,
+  AiChatResponse
+} from "../ai.types";
 
 const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
 
@@ -31,6 +36,7 @@ const SUGGESTED_PROMPTS = [
 
 const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
 const MAX_STORED_MESSAGES = 80;
+const MAX_HISTORY_MESSAGES_SENT = 12;
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -121,6 +127,17 @@ function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
       typeof candidate.createdAt === "string"
     );
   });
+}
+
+function buildRecentHistory(messages: AiChatMessage[]): AiChatHistoryMessage[] {
+  return messages
+    .filter((message) => message.id !== "welcome-message")
+    .filter((message) => message.content.trim().length > 0)
+    .slice(-MAX_HISTORY_MESSAGES_SENT)
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim().slice(0, 1500)
+    }));
 }
 
 function IntentBadge({ intent }: { intent?: string }) {
@@ -227,6 +244,64 @@ function ChatBubble({
   );
 }
 
+function ClearHistoryDialog({
+  open,
+  onClose,
+  onConfirm
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-lg font-black text-slate-950">
+              Hapus riwayat chat?
+            </p>
+            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+              Riwayat chat Asisten Sakuin di perangkat ini akan dihapus. Data
+              transaksi, goals, dan akun kamu tidak akan terhapus.
+            </p>
+          </div>
+
+          <button
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+            onClick={onClose}
+            type="button"
+          >
+            Batal
+          </button>
+
+          <button
+            className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-rose-700"
+            onClick={onConfirm}
+            type="button"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AsistenPage() {
   const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -238,6 +313,8 @@ export function AsistenPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
+    useState(false);
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
@@ -310,6 +387,8 @@ export function AsistenPage() {
       return;
     }
 
+    const history = buildRecentHistory(messages);
+
     const userMessage: AiChatMessage = {
       id: createMessageId(),
       role: "user",
@@ -324,7 +403,8 @@ export function AsistenPage() {
 
     try {
       const response = await sendAiChatMessage({
-        message: normalizedMessage
+        message: normalizedMessage,
+        history
       });
 
       setMessages((currentMessages) => [
@@ -372,15 +452,7 @@ export function AsistenPage() {
     void submitMessage(input);
   }
 
-  function handleClearHistory() {
-    const confirmed = window.confirm(
-      "Hapus riwayat chat Asisten Sakuin di perangkat ini?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  function handleConfirmClearHistory() {
     const storageKey = getChatHistoryStorageKey(user?.id);
 
     if (storageKey) {
@@ -389,6 +461,7 @@ export function AsistenPage() {
 
     setMessages([createWelcomeMessage()]);
     setError(null);
+    setIsClearHistoryDialogOpen(false);
   }
 
   return (
@@ -427,7 +500,7 @@ export function AsistenPage() {
 
             <button
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-              onClick={handleClearHistory}
+              onClick={() => setIsClearHistoryDialogOpen(true)}
               title="Hapus riwayat chat"
               type="button"
             >
@@ -521,6 +594,12 @@ export function AsistenPage() {
           </form>
         </footer>
       </div>
+
+      <ClearHistoryDialog
+        onClose={() => setIsClearHistoryDialogOpen(false)}
+        onConfirm={handleConfirmClearHistory}
+        open={isClearHistoryDialogOpen}
+      />
     </AppShell>
   );
 }

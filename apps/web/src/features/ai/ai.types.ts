@@ -13,8 +13,14 @@ export type AiChatCard = {
   value: string;
 };
 
+export type AiChatHistoryMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export type AiChatRequest = {
   message: string;
+  history?: AiChatHistoryMessage[];
 };
 
 export type AiChatResponse = {

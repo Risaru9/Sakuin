@@ -10,6 +10,7 @@ import {
 } from "./ai-financial-context.js";
 import type {
   AiChatCard,
+  AiChatHistoryMessage,
   AiChatResponse,
   AiChatServiceInput,
   AiIntent
@@ -48,6 +49,39 @@ function logAiProviderEvent(
       timestamp: new Date().toISOString()
     })
   );
+}
+
+function sanitizeChatHistory(history: AiChatHistoryMessage[] = []) {
+  return history
+    .filter((message) => {
+      const content = message.content.trim();
+
+      return (
+        content.length > 0 &&
+        (message.role === "user" || message.role === "assistant")
+      );
+    })
+    .slice(-12)
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim().slice(0, 1500)
+    }));
+}
+
+function buildConversationHistoryText(history: AiChatHistoryMessage[] = []) {
+  const sanitizedHistory = sanitizeChatHistory(history);
+
+  if (sanitizedHistory.length === 0) {
+    return "Tidak ada konteks percakapan sebelumnya.";
+  }
+
+  return sanitizedHistory
+    .map((message, index) => {
+      const speaker = message.role === "user" ? "USER" : "ASSISTANT";
+
+      return `${index + 1}. ${speaker}: ${message.content}`;
+    })
+    .join("\n");
 }
 
 function toNumber(value: string | number | null | undefined) {
@@ -452,6 +486,9 @@ function buildFinancialSystemInstruction() {
     "Kamu adalah Asisten Sakuin, financial helper untuk aplikasi pencatatan keuangan pribadi Sakuin.",
     "Jawab hanya topik keuangan pribadi di Sakuin: transaksi, pemasukan, pengeluaran, goals, budget, safe balance, cashflow, dan saran hemat ringan.",
     "Jawab pertanyaan user secara langsung. Jangan mengalihkan jawaban ke topik lain.",
+    "Gunakan recent conversation context untuk memahami follow-up user seperti 'kalau 8 bulan gimana', 'kalau targetnya naik', atau 'kalau begitu apa saranmu'.",
+    "Jika follow-up user merujuk pada konteks sebelumnya, pakai konteks sebelumnya selama masih relevan dengan keuangan pribadi.",
+    "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
     "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context atau tidak disebut user.",
     "Boleh melakukan perhitungan sederhana dari angka yang ada di context atau angka yang user berikan.",
     "Jika user bertanya apakah target/goal realistis, wajib beri verdict eksplisit: Realistis, Berat, Tidak realistis, atau Butuh data tambahan.",
@@ -476,8 +513,12 @@ function buildFinancialPrompt(input: {
   intent: AiIntent;
   context: AiFinancialContext;
   baseResponse: AiChatResponse;
+  history?: AiChatHistoryMessage[];
 }) {
   return [
+    "RECENT CONVERSATION CONTEXT:",
+    buildConversationHistoryText(input.history),
+    "",
     "USER QUESTION:",
     input.userMessage,
     "",
@@ -521,6 +562,7 @@ async function enhanceFinancialResponseWithAi(input: {
   intent: Exclude<AiIntent, "OUT_OF_SCOPE" | "TRANSACTION_DRAFT">;
   context: AiFinancialContext;
   baseResponse: AiChatResponse;
+  history?: AiChatHistoryMessage[];
 }) {
   if (env.NODE_ENV === "test" && !input.provider) {
     return input.baseResponse;
@@ -535,7 +577,8 @@ async function enhanceFinancialResponseWithAi(input: {
         userMessage: input.userMessage,
         intent: input.intent,
         context: input.context,
-        baseResponse: input.baseResponse
+        baseResponse: input.baseResponse,
+        history: input.history
       })
     });
 
@@ -596,6 +639,7 @@ export async function getAiChatResponse(
     userMessage: normalizedMessage,
     intent: classification.intent,
     context: financialContext,
-    baseResponse
+    baseResponse,
+    history: input.history
   });
 }

@@ -19,8 +19,16 @@ export type AiIntentClassification = {
   reason: string;
 };
 
+export type AiChatHistoryRole = "user" | "assistant";
+
+export type AiChatHistoryMessage = {
+  role: AiChatHistoryRole;
+  content: string;
+};
+
 export type AiChatRequest = {
   message: string;
+  history?: AiChatHistoryMessage[];
 };
 
 export type AiChatCard = {
@@ -38,4 +46,5 @@ export type AiChatResponse = {
 export type AiChatServiceInput = {
   userId: string;
   message: string;
+  history?: AiChatHistoryMessage[];
 };

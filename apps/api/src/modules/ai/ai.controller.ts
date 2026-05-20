@@ -21,7 +21,8 @@ export async function aiChatController(c: Context<AppEnv>) {
 
   const response = await getAiChatResponse({
     userId,
-    message: input.message
+    message: input.message,
+    history: input.history ?? []
   });
 
   return successResponse(c, "Response Asisten Sakuin berhasil dibuat", response);
