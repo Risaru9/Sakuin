@@ -153,19 +153,19 @@ describe("AI Chat API", () => {
     expect(serializedBody).not.toContain(token);
   });
 
-  it("POST /api/ai/chat membalas financial intent dengan contract response", async () => {
+    it("POST /api/ai/chat membalas financial intent dengan data response aman", async () => {
     const user = await createTestUser("financial-summary");
     const token = createTestToken(user.id);
 
     const response = await app.request("/api/ai/chat", {
-      method: "POST",
-      headers: {
+        method: "POST",
+        headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
+        },
+        body: JSON.stringify({
         message: "pengeluaran saya bulan ini gimana?"
-      })
+        })
     });
 
     const body = await readJson<ApiSuccessResponse<AiChatResponse>>(response);
@@ -174,21 +174,15 @@ describe("AI Chat API", () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.intent).toBe("SPENDING_ANALYSIS");
-    expect(body.data.reply).toContain("menganalisis pengeluaran");
-    expect(body.data.cards).toEqual([
-      {
-        label: "Topik",
-        value: "Analisis Pengeluaran"
-      },
-      {
-        label: "Status",
-        value: "Siap dihubungkan ke data Sakuin"
-      }
-    ]);
+    expect(body.data.reply).toContain("Belum ada data pengeluaran");
+    expect(body.data.cards.some((card) => card.label === "Total Pengeluaran")).toBe(
+        true
+    );
+    expect(body.data.cards.some((card) => card.value === "Belum ada")).toBe(true);
     expect(body.data.suggestions).toContain("Saya boros di mana?");
 
     expect(serializedBody).not.toContain(user.id);
     expect(serializedBody).not.toContain(user.email);
     expect(serializedBody).not.toContain(token);
-  });
+    });
 });
