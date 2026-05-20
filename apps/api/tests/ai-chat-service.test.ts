@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/db/prisma.js";
 import { getAiChatResponse } from "../src/modules/ai/ai.service.js";
 
@@ -61,6 +61,116 @@ afterEach(async () => {
 });
 
 describe("AI chat service contract", () => {
+
+    it("menggunakan AI provider untuk memperjelas financial response jika provider tersedia", async () => {
+  const user = await createTestUser("ai-provider");
+
+  const incomeCategory = await createCategory({
+    userId: user.id,
+    name: "Gaji",
+    type: "INCOME"
+  });
+
+  const foodCategory = await createCategory({
+    userId: user.id,
+    name: "Makanan",
+    type: "EXPENSE"
+  });
+
+  await prisma.transaction.createMany({
+    data: [
+      {
+        userId: user.id,
+        categoryId: incomeCategory.id,
+        type: "INCOME",
+        amount: "1500000",
+        note: "Gaji sensitif tidak boleh bocor",
+        date: getCurrentMonthDate(2)
+      },
+      {
+        userId: user.id,
+        categoryId: foodCategory.id,
+        type: "EXPENSE",
+        amount: "300000",
+        note: "Makanan sensitif tidak boleh bocor",
+        date: getCurrentMonthDate(5)
+      }
+    ]
+  });
+
+  const generateText = vi.fn().mockResolvedValue({
+    text: "Bulan ini pengeluaranmu masih terkendali, tetapi kategori Makanan menjadi pengeluaran utama. Coba tetapkan batas mingguan agar pengeluaran tetap stabil."
+  });
+
+  const response = await getAiChatResponse(
+    {
+      userId: user.id,
+      message: "saya boros di mana bulan ini?"
+    },
+    {
+      provider: {
+        generateText
+      }
+    }
+  );
+
+  expect(response.intent).toBe("SPENDING_ANALYSIS");
+  expect(response.reply).toContain("kategori Makanan");
+  expect(generateText).toHaveBeenCalledTimes(1);
+
+  const providerInput = generateText.mock.calls[0]?.[0];
+  const serializedProviderInput = JSON.stringify(providerInput);
+
+  expect(serializedProviderInput).toContain("SAFE FINANCIAL CONTEXT");
+  expect(serializedProviderInput).toContain("DETERMINISTIC BACKEND SUMMARY");
+  expect(serializedProviderInput).not.toContain(user.id);
+  expect(serializedProviderInput).not.toContain(user.email);
+  expect(serializedProviderInput).not.toContain("Gaji sensitif tidak boleh bocor");
+  expect(serializedProviderInput).not.toContain("Makanan sensitif tidak boleh bocor");
+});
+
+it("fallback ke rule-based response jika AI provider gagal", async () => {
+  const user = await createTestUser("ai-provider-fallback");
+
+  const foodCategory = await createCategory({
+    userId: user.id,
+    name: "Makanan",
+    type: "EXPENSE"
+  });
+
+  await prisma.transaction.create({
+    data: {
+      userId: user.id,
+      categoryId: foodCategory.id,
+      type: "EXPENSE",
+      amount: "100000",
+      note: "Fallback note sensitif",
+      date: getCurrentMonthDate(5)
+    }
+  });
+
+  const response = await getAiChatResponse(
+    {
+      userId: user.id,
+      message: "saya boros di mana bulan ini?"
+    },
+    {
+      provider: {
+        generateText: vi.fn().mockRejectedValue(new Error("AI provider down"))
+      }
+    }
+  );
+
+  const serializedResponse = JSON.stringify(response);
+
+  expect(response.intent).toBe("SPENDING_ANALYSIS");
+  expect(response.reply).toContain("Pengeluaranmu bulan ini");
+  expect(response.cards.some((card) => card.label === "Total Pengeluaran")).toBe(
+    true
+  );
+  expect(serializedResponse).not.toContain("Fallback note sensitif");
+});
+
   it("menolak pertanyaan di luar finansial tanpa mengambil data user", async () => {
     const response = await getAiChatResponse({
       userId: "user-tidak-perlu-ada",

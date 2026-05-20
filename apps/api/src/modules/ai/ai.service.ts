@@ -1,3 +1,8 @@
+import { env } from "../../config/env.js";
+import {
+  createGeminiTextProvider,
+  type AiTextProvider
+} from "./ai.provider.js";
 import { classifyAiIntent } from "./ai.intent.js";
 import {
   getAiFinancialContext,
@@ -16,7 +21,7 @@ const OUT_OF_SCOPE_REPLY =
 const DEFAULT_SUGGESTIONS = [
   "Pengeluaran saya bulan ini gimana?",
   "Saya boros di mana?",
-  "Bandingkan bulan ini dengan bulan lalu",
+  "Bandingkan pengeluaran bulan ini dengan bulan lalu",
   "Kasih saran hemat"
 ];
 
@@ -26,6 +31,24 @@ const TRANSACTION_DRAFT_SUGGESTIONS = [
   "Catat dikasih kakak 100000",
   "Lihat pengeluaran bulan ini"
 ];
+
+type AiChatServiceOptions = {
+  provider?: AiTextProvider;
+};
+
+function logAiProviderEvent(
+  event: "ai.provider_used" | "ai.provider_fallback",
+  metadata: Record<string, unknown>
+) {
+  console.log(
+    JSON.stringify({
+      level: "info",
+      event,
+      ...metadata,
+      timestamp: new Date().toISOString()
+    })
+  );
+}
 
 function toNumber(value: string | number | null | undefined) {
   const numberValue = Number(value ?? 0);
@@ -214,7 +237,7 @@ function buildSpendingAnalysisResponse(
     ]),
     suggestions: [
       "Kasih saran hemat",
-      "Bandingkan bulan ini dengan bulan lalu",
+      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
       "Lihat ringkasan keuangan",
       "Analisis goals saya"
     ]
@@ -350,7 +373,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
       }
     ]),
     suggestions: [
-      "Bandingkan bulan ini dengan bulan lalu",
+      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
       "Lihat pengeluaran bulan ini",
       "Analisis goals saya",
       "Lihat ringkasan keuangan"
@@ -398,7 +421,7 @@ function buildGoalAnalysisResponse(context: AiFinancialContext): AiChatResponse 
     suggestions: [
       "Kasih saran hemat",
       "Lihat ringkasan keuangan",
-      "Bandingkan bulan ini dengan bulan lalu",
+      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
       "Saya boros di mana?"
     ]
   };
@@ -424,8 +447,117 @@ function buildFinancialResponse(
   }
 }
 
+function buildFinancialSystemInstruction() {
+  return [
+    "Kamu adalah Asisten Sakuin, financial helper untuk aplikasi pencatatan keuangan pribadi Sakuin.",
+    "Jawab hanya berdasarkan financial context yang diberikan backend.",
+    "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context.",
+    "Jangan menyebut database, backend, JSON, model, API, prompt, atau detail teknis internal.",
+    "Jangan memberi nasihat investasi, pinjaman, pajak, hukum, atau keputusan finansial profesional.",
+    "Jangan menghakimi user. Hindari kalimat seperti gaji kamu kecil.",
+    "Jika data belum cukup, katakan data belum cukup dan sarankan user mencatat transaksi lebih lengkap.",
+    "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, singkat, dan praktis.",
+    "Format jawaban maksimal 3 paragraf pendek.",
+    "Paragraf pertama: ringkasan utama.",
+    "Paragraf kedua: insight dari angka penting.",
+    "Paragraf ketiga: saran praktis yang aman.",
+    "Tidak perlu membuat tabel markdown."
+  ].join("\n");
+}
+
+function buildFinancialPrompt(input: {
+  userMessage: string;
+  intent: AiIntent;
+  context: AiFinancialContext;
+  baseResponse: AiChatResponse;
+}) {
+  return [
+    "USER QUESTION:",
+    input.userMessage,
+    "",
+    "DETECTED INTENT:",
+    input.intent,
+    "",
+    "SAFE FINANCIAL CONTEXT:",
+    JSON.stringify(input.context, null, 2),
+    "",
+    "DETERMINISTIC BACKEND SUMMARY:",
+    input.baseResponse.reply,
+    "",
+    "TASK:",
+    "Ubah deterministic backend summary dan safe financial context menjadi jawaban yang lebih natural, jelas, dan membantu.",
+    "Tetap gunakan angka yang sama seperti context/backend summary.",
+    "Jangan tambahkan angka baru yang tidak ada di context.",
+    "Jangan terlalu panjang.",
+    "Jangan gunakan bullet terlalu banyak.",
+    "Berikan insight dan saran yang langsung bisa dilakukan user."
+  ].join("\n");
+}
+
+function normalizeAiReply(text: string) {
+  return text
+    .trim()
+    .replace(/\n{3,}/g, "\n\n")
+    .slice(0, 1200);
+}
+
+async function enhanceFinancialResponseWithAi(input: {
+  provider?: AiTextProvider;
+  userMessage: string;
+  intent: Exclude<AiIntent, "OUT_OF_SCOPE" | "TRANSACTION_DRAFT">;
+  context: AiFinancialContext;
+  baseResponse: AiChatResponse;
+}) {
+  if (env.NODE_ENV === "test" && !input.provider) {
+    return input.baseResponse;
+  }
+
+  try {
+    const provider = input.provider ?? createGeminiTextProvider();
+
+    const result = await provider.generateText({
+      systemInstruction: buildFinancialSystemInstruction(),
+      prompt: buildFinancialPrompt({
+        userMessage: input.userMessage,
+        intent: input.intent,
+        context: input.context,
+        baseResponse: input.baseResponse
+      })
+    });
+
+    const aiReply = normalizeAiReply(result.text);
+
+    if (!aiReply) {
+      logAiProviderEvent("ai.provider_fallback", {
+        intent: input.intent,
+        reason: "empty_ai_reply"
+      });
+
+      return input.baseResponse;
+    }
+
+    logAiProviderEvent("ai.provider_used", {
+      intent: input.intent,
+      model: result.model
+    });
+
+    return {
+      ...input.baseResponse,
+      reply: aiReply
+    };
+  } catch (error) {
+    logAiProviderEvent("ai.provider_fallback", {
+      intent: input.intent,
+      reason: error instanceof Error ? error.name : "UnknownAiProviderError"
+    });
+
+    return input.baseResponse;
+  }
+}
+
 export async function getAiChatResponse(
-  input: AiChatServiceInput
+  input: AiChatServiceInput,
+  options: AiChatServiceOptions = {}
 ): Promise<AiChatResponse> {
   const normalizedMessage = input.message.trim();
 
@@ -440,6 +572,16 @@ export async function getAiChatResponse(
   }
 
   const financialContext = await getAiFinancialContext(input.userId);
+  const baseResponse = buildFinancialResponse(
+    classification.intent,
+    financialContext
+  );
 
-  return buildFinancialResponse(classification.intent, financialContext);
+  return enhanceFinancialResponseWithAi({
+    provider: options.provider,
+    userMessage: normalizedMessage,
+    intent: classification.intent,
+    context: financialContext,
+    baseResponse
+  });
 }

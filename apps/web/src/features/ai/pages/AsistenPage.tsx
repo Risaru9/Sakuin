@@ -97,9 +97,9 @@ function ChatBubble({
     <div className={isUser ? "flex justify-end" : "flex justify-start"}>
       <div
         className={
-          isUser
-            ? "flex max-w-[88%] flex-row-reverse items-start gap-2 sm:max-w-[74%] sm:gap-3"
-            : "flex max-w-[94%] items-start gap-2 sm:max-w-[78%] sm:gap-3"
+            isUser
+            ? "flex max-w-[92%] flex-row-reverse items-start gap-2 sm:max-w-[78%] sm:gap-3 lg:max-w-[70%]"
+            : "flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]"
         }
       >
         <div
@@ -184,16 +184,16 @@ export function AsistenPage() {
       content:
         "Halo, saya Asisten Sakuin. Saya bisa membantu membaca pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.\n\nCatatan: saya hanya menjawab topik keuangan pribadi. Saya bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
       intent: "FINANCIAL_SUMMARY",
-      cards: [
+        cards: [
         {
-          label: "Mode",
-          value: "Financial only"
+            label: "Mode",
+            value: "Financial only"
         },
         {
-          label: "Status",
-          value: "Rule-based awal"
+            label: "Status",
+            value: "Asisten aktif"
         }
-      ],
+        ],
       suggestions: SUGGESTED_PROMPTS,
       createdAt: new Date().toISOString()
     }
@@ -287,8 +287,8 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] max-w-5xl flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:h-[calc(100dvh-10rem)] lg:h-[calc(100vh-4rem)]">
-        <header className="shrink-0 border-b border-slate-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
+      <div className="-mx-3 -my-3 flex h-[calc(100dvh-5.75rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:-mx-5 sm:-my-5 sm:h-[calc(100dvh-4rem)] sm:rounded-[1.75rem] lg:mx-auto lg:my-0 lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem]">
+        <header className="shrink-0 border-b border-slate-100 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
           <div className="flex items-start gap-3">
             <Link
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
@@ -309,7 +309,7 @@ export function AsistenPage() {
                 </span>
               </div>
 
-              <h1 className="mt-2 text-xl font-black tracking-tight text-slate-950 sm:text-3xl">
+              <h1 className="mt-2 text-lg font-black tracking-tight text-slate-950 sm:text-2xl lg:text-3xl">
                 Tanya kondisi keuanganmu
               </h1>
 
@@ -321,7 +321,7 @@ export function AsistenPage() {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 py-4 sm:px-6 sm:py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
           <div className="space-y-4">
             {messages.map((message) => (
               <ChatBubble
@@ -334,7 +334,7 @@ export function AsistenPage() {
 
             {isSubmitting ? (
               <div className="flex justify-start">
-                <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[78%] sm:gap-3">
+                <div className="flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 sm:h-9 sm:w-9">
                     <Bot className="h-4 w-4" />
                   </div>
@@ -353,7 +353,7 @@ export function AsistenPage() {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 sm:px-5 sm:py-4">
+        <footer className="shrink-0 border-t border-slate-100 bg-white px-3 py-2.5 sm:px-5 sm:py-3">
           {error ? (
             <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold leading-5 text-rose-700 sm:text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
