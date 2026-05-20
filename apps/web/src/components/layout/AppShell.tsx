@@ -7,6 +7,7 @@ import {
   Settings,
   Target
 } from "lucide-react";
+import { FloatingAiButton } from "../ai/FloatingAiButton";
 import { SakuinLogo } from "../brand/SakuinLogo";
 import { useAuth } from "../../features/auth/auth-context";
 
@@ -72,12 +73,12 @@ export function AppShell({
     <main className="min-h-screen bg-slate-50 pb-24 text-slate-950 lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
-        <Link
-          className="mb-9 rounded-[1.35rem] px-1 py-1 transition hover:bg-slate-50"
-          to="/dashboard"
-        >
-          <SakuinLogo subtitle="Personal finance app" size="md" />
-        </Link>
+          <Link
+            className="mb-9 rounded-[1.35rem] px-1 py-1 transition hover:bg-slate-50"
+            to="/dashboard"
+          >
+            <SakuinLogo subtitle="Personal finance app" size="md" />
+          </Link>
 
           <nav className="grid flex-1 content-start gap-1.5">
             {navigationItems.map((item) => {
@@ -124,6 +125,8 @@ export function AppShell({
           {children}
         </section>
       </div>
+
+      <FloatingAiButton />
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">

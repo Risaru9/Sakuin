@@ -84,6 +84,12 @@ const CategoriesPage = lazy(() =>
   }))
 );
 
+const AsistenPage = lazy(() =>
+  import("../features/ai/pages/AsistenPage").then((module) => ({
+    default: module.AsistenPage
+  }))
+);
+
 function LoadingScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50/50 px-4 backdrop-blur-sm">
@@ -578,6 +584,14 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
+    {
+    path: "/asisten",
+    element: (
+      <ProtectedRoute>
+        <AsistenPage />
+      </ProtectedRoute>
+    )
+  },
   {
     path: "/transactions",
     element: (
@@ -621,5 +635,5 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <Navigate to="/" replace />
-  }
+  },
 ]);
