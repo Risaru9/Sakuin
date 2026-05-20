@@ -62,6 +62,50 @@ afterEach(async () => {
 
 describe("AI chat service contract", () => {
 
+    it("memahami follow-up finansial dari chat history", async () => {
+  const user = await createTestUser("context-follow-up");
+
+  const generateText = vi.fn().mockResolvedValue({
+    text: "Opsi Android Rp10 juta lebih ringan dibanding iPhone Rp16 juta. Dengan gaji Rp6 juta, risikonya lebih rendah karena kebutuhan tabungan relatif lebih kecil, tetapi tetap perlu menentukan deadline agar bisa dinilai lebih akurat."
+  });
+
+  const response = await getAiChatResponse(
+    {
+      userId: user.id,
+      message:
+        "Bagaimana jika saya membeli handphone android seharga 10 juta saja apakah mungkin lebih realistis dan low risk?",
+      history: [
+        {
+          role: "user",
+          content:
+            "Apa pendapat anda jika saya memiliki gaji 6 juta namun ingin membeli handphone iPhone yang seharga 16 jutaan, apa saran anda?"
+        },
+        {
+          role: "assistant",
+          content:
+            "Butuh data tambahan seperti deadline, tetapi pembelian iPhone Rp16 juta dengan gaji Rp6 juta perlu direncanakan agar tidak mengganggu stabilitas keuangan."
+        }
+      ]
+    },
+    {
+      provider: {
+        generateText
+      }
+    }
+  );
+
+  expect(response.intent).toBe("GOAL_ANALYSIS");
+  expect(response.reply).toContain("Android");
+  expect(generateText).toHaveBeenCalledTimes(1);
+
+  const providerInput = generateText.mock.calls[0]?.[0];
+  const serializedProviderInput = JSON.stringify(providerInput);
+
+  expect(serializedProviderInput).toContain("RECENT CONVERSATION CONTEXT");
+  expect(serializedProviderInput).toContain("iPhone");
+  expect(serializedProviderInput).toContain("Rp16 juta");
+});
+
     it("menggunakan AI provider untuk memperjelas financial response jika provider tersedia", async () => {
   const user = await createTestUser("ai-provider");
 

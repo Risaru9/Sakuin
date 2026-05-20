@@ -1,278 +1,343 @@
 import type { AiIntentClassification } from "./ai.types.js";
 
-const FINANCIAL_KEYWORDS = [
-  "uang",
-  "keuangan",
-  "saldo",
-  "transaksi",
-  "pemasukan",
-  "pengeluaran",
-  "pendapatan",
-  "income",
-  "expense",
-  "belanja",
-  "jajan",
-  "boros",
-  "hemat",
-  "budget",
-  "anggaran",
-  "kategori",
-  "makan",
-  "makanan",
-  "transport",
-  "bensin",
-  "gaji",
-  "tabungan",
-  "goal",
-  "target",
-  "safe balance",
-  "batas aman",
-  "rekening",
-  "dompet",
-  "bayar",
-  "dibayar",
-  "dikasih",
-  "diberi",
-  "transfer",
-  "qris",
-  "cash",
-  "tunai"
-];
-
-const OUT_OF_SCOPE_KEYWORDS = [
-  "cerpen",
-  "puisi",
-  "sejarah",
-  "politik",
-  "presiden",
-  "cuaca",
-  "film",
-  "anime",
-  "game",
-  "kode",
-  "coding",
-  "react",
-  "javascript",
-  "typescript",
-  "python",
-  "skripsi",
-  "matematika",
-  "fisika",
-  "kimia",
-  "translate",
-  "terjemahkan"
-];
-
-const TRANSACTION_VERBS = [
+const TRANSACTION_DRAFT_KEYWORDS = [
   "catat",
-  "tambahkan",
-  "tambah",
+  "catetin",
   "input",
   "masukkan",
-  "masukin",
-  "simpan"
+  "tambah transaksi",
+  "tambah pengeluaran",
+  "tambah pemasukan",
+  "simpan transaksi",
+  "record transaksi",
+  "habis beli",
+  "barusan beli",
+  "baru beli",
+  "dikasih",
+  "di kasih",
+  "dapat uang",
+  "dapet uang",
+  "terima uang"
 ];
 
-const PERIOD_COMPARISON_KEYWORDS = [
-  "banding",
-  "bandingkan",
-  "dibanding",
-  "compare",
-  "bulan lalu",
-  "minggu lalu",
-  "periode lalu",
-  "sebelumnya",
-  "naik",
-  "turun",
-  "lebih besar",
-  "lebih kecil"
-];
-
-const SPENDING_KEYWORDS = [
+const SPENDING_ANALYSIS_KEYWORDS = [
   "pengeluaran",
   "expense",
-  "keluar",
-  "boros",
   "belanja",
-  "jajan",
+  "boros",
   "habis",
-  "habisin",
-  "kategori terbesar",
-  "paling banyak",
-  "makanan",
+  "keluar",
+  "kategori pengeluaran",
+  "spending",
+  "jajan",
   "makan",
-  "transport",
-  "bensin"
+  "minum"
 ];
 
-const INCOME_KEYWORDS = [
+const INCOME_ANALYSIS_KEYWORDS = [
   "pemasukan",
   "income",
   "pendapatan",
   "gaji",
   "uang masuk",
-  "dikasih",
-  "diberi",
-  "bonus"
+  "bonus",
+  "honor",
+  "bayaran"
 ];
 
-const SAVING_KEYWORDS = [
+const PERIOD_COMPARISON_KEYWORDS = [
+  "bandingkan",
+  "dibanding",
+  "perbandingan",
+  "compare",
+  "lebih besar",
+  "lebih kecil",
+  "naik",
+  "turun",
+  "selisih"
+];
+
+const PERIOD_CONTEXT_KEYWORDS = [
+  "bulan ini",
+  "bulan lalu",
+  "minggu ini",
+  "minggu lalu",
+  "hari ini",
+  "kemarin",
+  "periode ini",
+  "periode lalu",
+  "tahun ini",
+  "tahun lalu"
+];
+
+const SAVING_ADVICE_KEYWORDS = [
   "saran",
   "hemat",
-  "kurangi",
+  "menghemat",
+  "menekan",
   "mengurangi",
-  "tips",
+  "kurangi",
+  "kontrol",
+  "prioritas",
   "budget",
   "anggaran",
   "batas",
   "limit",
+  "low risk",
+  "risiko rendah",
+  "lebih aman",
   "aman"
 ];
 
-const GOAL_KEYWORDS = [
+const GOAL_ANALYSIS_KEYWORDS = [
   "goal",
   "goals",
   "target",
   "tabungan",
-  "dana darurat",
-  "progres",
-  "progress"
+  "menabung",
+  "deadline",
+  "jangka waktu",
+  "realistis",
+  "tidak realistis",
+  "masuk akal",
+  "mungkin",
+  "worth it",
+  "layak",
+  "tercapai",
+  "membeli",
+  "beli",
+  "rencana beli",
+  "harga",
+  "seharga"
 ];
 
-const SUMMARY_KEYWORDS = [
-  "ringkasan",
-  "rekap",
-  "summary",
-  "kondisi",
-  "keuangan",
+const FINANCIAL_SUMMARY_KEYWORDS = [
+  "kondisi keuangan",
+  "ringkasan keuangan",
+  "summary keuangan",
+  "keuangan saya",
   "saldo",
-  "bulan ini",
-  "minggu ini",
-  "hari ini",
-  "aman"
+  "cashflow",
+  "arus kas",
+  "balance",
+  "safe balance",
+  "keuangan bulan ini"
+];
+
+const FINANCIAL_CONTEXT_KEYWORDS = [
+  ...FINANCIAL_SUMMARY_KEYWORDS,
+  ...SPENDING_ANALYSIS_KEYWORDS,
+  ...INCOME_ANALYSIS_KEYWORDS,
+  ...SAVING_ADVICE_KEYWORDS,
+  ...GOAL_ANALYSIS_KEYWORDS,
+  "uang",
+  "duit",
+  "sakuin",
+  "transaksi",
+  "kategori",
+  "tagihan",
+  "kebutuhan",
+  "risk"
+];
+
+const PURCHASE_KEYWORDS = [
+  "beli",
+  "membeli",
+  "pembelian",
+  "harga",
+  "seharga",
+  "iphone",
+  "android",
+  "handphone",
+  "hp",
+  "ponsel",
+  "motor",
+  "mobil",
+  "laptop",
+  "barang",
+  "device",
+  "produk"
+];
+
+const PURCHASE_PLANNING_CONTEXT_KEYWORDS = [
+  "gaji",
+  "pendapatan",
+  "pemasukan",
+  "uang",
+  "target",
+  "deadline",
+  "bulan",
+  "tahun",
+  "realistis",
+  "masuk akal",
+  "risiko",
+  "risk",
+  "low risk",
+  "aman",
+  "saran",
+  "hemat",
+  "budget",
+  "anggaran",
+  "tabungan",
+  "menabung"
 ];
 
 function normalizeMessage(message: string) {
-  return message
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return message.trim().toLowerCase();
 }
 
 function includesAnyKeyword(message: string, keywords: string[]) {
   return keywords.some((keyword) => message.includes(keyword));
 }
 
-function containsAmountLikeText(message: string) {
-  return (
-    /\b\d+([.,]\d+)?\b/.test(message) ||
-    /\b\d+\s?(rb|ribu|jt|juta)\b/.test(message)
+function containsMoneyLikeValue(message: string) {
+  return /\b(rp\s*)?\d+([.,]\d+)?\s*(juta|jt|ribu|rb|k|miliar|m)?\b/i.test(
+    message
   );
 }
 
-function isOutOfScope(message: string) {
-  return includesAnyKeyword(message, OUT_OF_SCOPE_KEYWORDS);
+function createClassification(
+  intent: AiIntentClassification["intent"],
+  reason: string,
+  confidence: AiIntentClassification["confidence"] = "high"
+): AiIntentClassification {
+  return {
+    intent,
+    confidence,
+    reason
+  };
+}
+
+function isTransactionDraftMessage(message: string) {
+  const hasTransactionDraftKeyword = includesAnyKeyword(
+    message,
+    TRANSACTION_DRAFT_KEYWORDS
+  );
+
+  if (!hasTransactionDraftKeyword) {
+    return false;
+  }
+
+  return containsMoneyLikeValue(message) || message.includes("transaksi");
+}
+
+function isPurchasePlanningMessage(message: string) {
+  const hasPurchaseKeyword = includesAnyKeyword(message, PURCHASE_KEYWORDS);
+  const hasPlanningContext = includesAnyKeyword(
+    message,
+    PURCHASE_PLANNING_CONTEXT_KEYWORDS
+  );
+
+  return (
+    hasPurchaseKeyword &&
+    (hasPlanningContext || containsMoneyLikeValue(message))
+  );
 }
 
 function isFinancialMessage(message: string) {
-  return includesAnyKeyword(message, FINANCIAL_KEYWORDS);
+  return (
+    includesAnyKeyword(message, FINANCIAL_CONTEXT_KEYWORDS) ||
+    isPurchasePlanningMessage(message)
+  );
+}
+
+function isPeriodComparisonMessage(message: string) {
+  return (
+    includesAnyKeyword(message, PERIOD_COMPARISON_KEYWORDS) &&
+    includesAnyKeyword(message, PERIOD_CONTEXT_KEYWORDS)
+  );
+}
+
+function isGoalAnalysisMessage(message: string) {
+  return (
+    includesAnyKeyword(message, GOAL_ANALYSIS_KEYWORDS) ||
+    isPurchasePlanningMessage(message)
+  );
+}
+
+function isSavingAdviceMessage(message: string) {
+  return (
+    includesAnyKeyword(message, SAVING_ADVICE_KEYWORDS) &&
+    isFinancialMessage(message)
+  );
 }
 
 export function classifyAiIntent(message: string): AiIntentClassification {
   const normalizedMessage = normalizeMessage(message);
 
   if (!normalizedMessage) {
-    return {
-      intent: "OUT_OF_SCOPE",
-      confidence: "high",
-      reason: "empty_message"
-    };
+    return createClassification("OUT_OF_SCOPE", "empty_message", "high");
   }
 
-  const hasFinancialContext = isFinancialMessage(normalizedMessage);
-
-  if (isOutOfScope(normalizedMessage) && !hasFinancialContext) {
-    return {
-      intent: "OUT_OF_SCOPE",
-      confidence: "high",
-      reason: "non_financial_topic"
-    };
+  if (isTransactionDraftMessage(normalizedMessage)) {
+    return createClassification(
+      "TRANSACTION_DRAFT",
+      "transaction_draft_detected",
+      "high"
+    );
   }
 
-  if (!hasFinancialContext) {
-    return {
-      intent: "OUT_OF_SCOPE",
-      confidence: "medium",
-      reason: "missing_financial_context"
-    };
+  if (isPeriodComparisonMessage(normalizedMessage)) {
+    return createClassification(
+      "PERIOD_COMPARISON",
+      "period_comparison_detected",
+      "high"
+    );
   }
 
-  if (
-    includesAnyKeyword(normalizedMessage, TRANSACTION_VERBS) &&
-    containsAmountLikeText(normalizedMessage)
-  ) {
-    return {
-      intent: "TRANSACTION_DRAFT",
-      confidence: "high",
-      reason: "transaction_verb_and_amount_detected"
-    };
+  if (isGoalAnalysisMessage(normalizedMessage)) {
+    return createClassification(
+      "GOAL_ANALYSIS",
+      "goal_or_purchase_feasibility_detected",
+      "high"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, PERIOD_COMPARISON_KEYWORDS)) {
-    return {
-      intent: "PERIOD_COMPARISON",
-      confidence: "high",
-      reason: "period_comparison_detected"
-    };
+  if (isSavingAdviceMessage(normalizedMessage)) {
+    return createClassification(
+      "SAVING_ADVICE",
+      "saving_advice_detected",
+      "high"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, SAVING_KEYWORDS)) {
-    return {
-      intent: "SAVING_ADVICE",
-      confidence: "high",
-      reason: "saving_advice_detected"
-    };
+  if (includesAnyKeyword(normalizedMessage, SPENDING_ANALYSIS_KEYWORDS)) {
+    return createClassification(
+      "SPENDING_ANALYSIS",
+      "spending_analysis_detected",
+      "high"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, GOAL_KEYWORDS)) {
-    return {
-      intent: "GOAL_ANALYSIS",
-      confidence: "high",
-      reason: "goal_analysis_detected"
-    };
+  if (includesAnyKeyword(normalizedMessage, INCOME_ANALYSIS_KEYWORDS)) {
+    return createClassification(
+      "INCOME_ANALYSIS",
+      "income_analysis_detected",
+      "high"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, SPENDING_KEYWORDS)) {
-    return {
-      intent: "SPENDING_ANALYSIS",
-      confidence: "high",
-      reason: "spending_analysis_detected"
-    };
+  if (includesAnyKeyword(normalizedMessage, FINANCIAL_SUMMARY_KEYWORDS)) {
+    return createClassification(
+      "FINANCIAL_SUMMARY",
+      "general_financial_context_detected",
+      "medium"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, INCOME_KEYWORDS)) {
-    return {
-      intent: "INCOME_ANALYSIS",
-      confidence: "high",
-      reason: "income_analysis_detected"
-    };
+  if (isFinancialMessage(normalizedMessage)) {
+    return createClassification(
+      "FINANCIAL_SUMMARY",
+      "general_financial_context_detected",
+      "medium"
+    );
   }
 
-  if (includesAnyKeyword(normalizedMessage, SUMMARY_KEYWORDS)) {
-    return {
-      intent: "FINANCIAL_SUMMARY",
-      confidence: "medium",
-      reason: "financial_summary_detected"
-    };
-  }
-
-  return {
-    intent: "FINANCIAL_SUMMARY",
-    confidence: "low",
-    reason: "financial_context_detected"
-  };
+  return createClassification(
+    "OUT_OF_SCOPE",
+    "no_financial_context_detected",
+    "high"
+  );
 }
 
 export function isAiIntentAllowed(message: string) {

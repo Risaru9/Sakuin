@@ -84,6 +84,78 @@ function buildConversationHistoryText(history: AiChatHistoryMessage[] = []) {
     .join("\n");
 }
 
+const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
+  "kalau",
+  "kalo",
+  "bagaimana jika",
+  "gimana jika",
+  "jika",
+  "berarti",
+  "itu",
+  "tersebut",
+  "opsi",
+  "alternatif",
+  "lebih realistis",
+  "lebih aman",
+  "low risk",
+  "risiko",
+  "risk",
+  "bulan",
+  "tahun",
+  "deadline",
+  "target",
+  "harga",
+  "seharga",
+  "beli",
+  "membeli",
+  "android",
+  "iphone",
+  "handphone",
+  "hp",
+  "motor",
+  "laptop"
+];
+
+function looksLikeContextualFinancialFollowUp(message: string) {
+  const normalizedMessage = message.toLowerCase();
+
+  return (
+    CONTEXTUAL_FOLLOW_UP_KEYWORDS.some((keyword) =>
+      normalizedMessage.includes(keyword)
+    ) || /\d/.test(normalizedMessage)
+  );
+}
+
+function classifyAiChatMessage(
+  message: string,
+  history: AiChatHistoryMessage[] = []
+) {
+  const directClassification = classifyAiIntent(message);
+
+  if (directClassification.intent !== "OUT_OF_SCOPE") {
+    return directClassification;
+  }
+
+  if (!looksLikeContextualFinancialFollowUp(message) || history.length === 0) {
+    return directClassification;
+  }
+
+  const recentContext = buildConversationHistoryText(history);
+
+  const contextualClassification = classifyAiIntent(
+    `${recentContext}\nFOLLOW UP USER MESSAGE:\n${message}`
+  );
+
+  if (contextualClassification.intent === "OUT_OF_SCOPE") {
+    return directClassification;
+  }
+
+  return {
+    ...contextualClassification,
+    reason: `contextual_${contextualClassification.reason}`
+  };
+}
+
 function toNumber(value: string | number | null | undefined) {
   const numberValue = Number(value ?? 0);
 
@@ -504,6 +576,7 @@ function buildFinancialSystemInstruction() {
     "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, ringkas, dan praktis.",
     "Format jawaban maksimal 4 paragraf pendek.",
     "Untuk pertanyaan analisis kompleks, boleh memakai bullet pendek maksimal 4 poin.",
+    "Jangan gunakan format markdown seperti **bold**, heading markdown, atau tabel markdown. Gunakan teks biasa yang rapi.",
     "Jangan membuat tabel markdown."
   ].join("\n");
 }
@@ -618,7 +691,10 @@ export async function getAiChatResponse(
 ): Promise<AiChatResponse> {
   const normalizedMessage = input.message.trim();
 
-  const classification = classifyAiIntent(normalizedMessage);
+    const classification = classifyAiChatMessage(
+    normalizedMessage,
+    input.history ?? []
+    );
 
   if (classification.intent === "OUT_OF_SCOPE") {
     return buildOutOfScopeResponse();
