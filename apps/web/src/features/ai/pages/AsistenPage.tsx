@@ -7,6 +7,7 @@ import {
   Loader2,
   Send,
   Sparkles,
+  Trash2,
   UserRound
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,18 +19,51 @@ import { getUserProfile } from "../../profile/profile.service";
 import { sendAiChatMessage } from "../ai.service";
 import type { AiChatMessage, AiChatResponse } from "../ai.types";
 
+const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
+
 const SUGGESTED_PROMPTS = [
   "Pengeluaran bulan ini gimana?",
   "Saya boros di mana?",
-  "Bandingkan bulan ini dan bulan lalu",
-  "Kasih saran hemat",
+  "Bandingkan pengeluaran bulan ini dan bulan lalu",
+  "Target tabungan saya realistis?",
   "Analisis goals saya"
 ];
 
 const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
+const MAX_STORED_MESSAGES = 80;
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getChatHistoryStorageKey(userId: string | undefined) {
+  if (!userId) {
+    return null;
+  }
+
+  return `${CHAT_HISTORY_STORAGE_PREFIX}:${userId}`;
+}
+
+function createWelcomeMessage(): AiChatMessage {
+  return {
+    id: "welcome-message",
+    role: "assistant",
+    content:
+      "Halo, saya Asisten Sakuin. Saya bisa membantu membaca pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.\n\nCatatan: saya hanya menjawab topik keuangan pribadi. Saya bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
+    intent: "FINANCIAL_SUMMARY",
+    cards: [
+      {
+        label: "Mode",
+        value: "Financial only"
+      },
+      {
+        label: "Status",
+        value: "Asisten aktif"
+      }
+    ],
+    suggestions: SUGGESTED_PROMPTS,
+    createdAt: new Date().toISOString()
+  };
 }
 
 function getErrorMessage(error: unknown) {
@@ -68,6 +102,27 @@ function formatIntentLabel(intent?: string) {
     .join(" ");
 }
 
+function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  return value.every((message) => {
+    if (!message || typeof message !== "object") {
+      return false;
+    }
+
+    const candidate = message as Partial<AiChatMessage>;
+
+    return (
+      typeof candidate.id === "string" &&
+      (candidate.role === "user" || candidate.role === "assistant") &&
+      typeof candidate.content === "string" &&
+      typeof candidate.createdAt === "string"
+    );
+  });
+}
+
 function IntentBadge({ intent }: { intent?: string }) {
   if (!intent) {
     return null;
@@ -97,7 +152,7 @@ function ChatBubble({
     <div className={isUser ? "flex justify-end" : "flex justify-start"}>
       <div
         className={
-            isUser
+          isUser
             ? "flex max-w-[92%] flex-row-reverse items-start gap-2 sm:max-w-[78%] sm:gap-3 lg:max-w-[70%]"
             : "flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]"
         }
@@ -178,28 +233,11 @@ export function AsistenPage() {
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AiChatMessage[]>([
-    {
-      id: "welcome-message",
-      role: "assistant",
-      content:
-        "Halo, saya Asisten Sakuin. Saya bisa membantu membaca pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.\n\nCatatan: saya hanya menjawab topik keuangan pribadi. Saya bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
-      intent: "FINANCIAL_SUMMARY",
-        cards: [
-        {
-            label: "Mode",
-            value: "Financial only"
-        },
-        {
-            label: "Status",
-            value: "Asisten aktif"
-        }
-        ],
-      suggestions: SUGGESTED_PROMPTS,
-      createdAt: new Date().toISOString()
-    }
+    createWelcomeMessage()
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
@@ -208,6 +246,55 @@ export function AsistenPage() {
 
   const displayedName = profileQuery.data?.name ?? user?.name ?? "User";
   const displayedEmail = profileQuery.data?.email ?? user?.email ?? "-";
+
+  useEffect(() => {
+    const storageKey = getChatHistoryStorageKey(user?.id);
+
+    if (!storageKey) {
+      setMessages([createWelcomeMessage()]);
+      setHistoryLoaded(true);
+      return;
+    }
+
+    try {
+      const storedHistory = localStorage.getItem(storageKey);
+
+      if (!storedHistory) {
+        setMessages([createWelcomeMessage()]);
+        setHistoryLoaded(true);
+        return;
+      }
+
+      const parsedHistory = JSON.parse(storedHistory) as unknown;
+
+      if (isValidStoredMessages(parsedHistory) && parsedHistory.length > 0) {
+        setMessages(parsedHistory.slice(-MAX_STORED_MESSAGES));
+      } else {
+        setMessages([createWelcomeMessage()]);
+      }
+    } catch {
+      setMessages([createWelcomeMessage()]);
+    } finally {
+      setHistoryLoaded(true);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const storageKey = getChatHistoryStorageKey(user?.id);
+
+    if (!historyLoaded || !storageKey) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(messages.slice(-MAX_STORED_MESSAGES))
+      );
+    } catch {
+      // Local storage can fail in private mode or if quota is full.
+    }
+  }, [historyLoaded, messages, user?.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -285,9 +372,28 @@ export function AsistenPage() {
     void submitMessage(input);
   }
 
+  function handleClearHistory() {
+    const confirmed = window.confirm(
+      "Hapus riwayat chat Asisten Sakuin di perangkat ini?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const storageKey = getChatHistoryStorageKey(user?.id);
+
+    if (storageKey) {
+      localStorage.removeItem(storageKey);
+    }
+
+    setMessages([createWelcomeMessage()]);
+    setError(null);
+  }
+
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="-mx-3 -my-3 flex h-[calc(100dvh-5.75rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:-mx-5 sm:-my-5 sm:h-[calc(100dvh-4rem)] sm:rounded-[1.75rem] lg:mx-auto lg:my-0 lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem]">
+      <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-slate-200 lg:shadow-xl lg:shadow-slate-950/5">
         <header className="shrink-0 border-b border-slate-100 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
           <div className="flex items-start gap-3">
             <Link
@@ -318,6 +424,15 @@ export function AsistenPage() {
                 atau saran hemat ringan berdasarkan data Sakuin.
               </p>
             </div>
+
+            <button
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              onClick={handleClearHistory}
+              title="Hapus riwayat chat"
+              type="button"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         </header>
 

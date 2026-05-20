@@ -22,7 +22,7 @@ const DEFAULT_SUGGESTIONS = [
   "Pengeluaran saya bulan ini gimana?",
   "Saya boros di mana?",
   "Bandingkan pengeluaran bulan ini dengan bulan lalu",
-  "Kasih saran hemat"
+  "Target tabungan saya realistis?"
 ];
 
 const TRANSACTION_DRAFT_SUGGESTIONS = [
@@ -239,7 +239,7 @@ function buildSpendingAnalysisResponse(
       "Kasih saran hemat",
       "Bandingkan pengeluaran bulan ini dengan bulan lalu",
       "Lihat ringkasan keuangan",
-      "Analisis goals saya"
+      "Target tabungan saya realistis?"
     ]
   };
 }
@@ -450,18 +450,24 @@ function buildFinancialResponse(
 function buildFinancialSystemInstruction() {
   return [
     "Kamu adalah Asisten Sakuin, financial helper untuk aplikasi pencatatan keuangan pribadi Sakuin.",
-    "Jawab hanya berdasarkan financial context yang diberikan backend.",
-    "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context.",
+    "Jawab hanya topik keuangan pribadi di Sakuin: transaksi, pemasukan, pengeluaran, goals, budget, safe balance, cashflow, dan saran hemat ringan.",
+    "Jawab pertanyaan user secara langsung. Jangan mengalihkan jawaban ke topik lain.",
+    "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context atau tidak disebut user.",
+    "Boleh melakukan perhitungan sederhana dari angka yang ada di context atau angka yang user berikan.",
+    "Jika user bertanya apakah target/goal realistis, wajib beri verdict eksplisit: Realistis, Berat, Tidak realistis, atau Butuh data tambahan.",
+    "Untuk analisis target/goal, gunakan struktur: verdict, hitungan singkat, risiko utama, saran aksi.",
+    "Jika user memberi gaji, target nominal, dan jangka waktu, hitung kebutuhan menabung per bulan.",
+    "Jika user tidak memberi target nominal atau deadline, jangan mengarang. Minta data yang kurang secara singkat.",
+    "Jika context punya income, expense, dan net cashflow, pakai itu untuk menilai kemampuan menabung.",
+    "Jika user memberi angka hipotetis, analisis angka tersebut sebagai skenario, tetapi jelaskan bahwa hasil bergantung pada konsistensi pencatatan dan pengeluaran aktual.",
     "Jangan menyebut database, backend, JSON, model, API, prompt, atau detail teknis internal.",
     "Jangan memberi nasihat investasi, pinjaman, pajak, hukum, atau keputusan finansial profesional.",
     "Jangan menghakimi user. Hindari kalimat seperti gaji kamu kecil.",
-    "Jika data belum cukup, katakan data belum cukup dan sarankan user mencatat transaksi lebih lengkap.",
-    "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, singkat, dan praktis.",
-    "Format jawaban maksimal 3 paragraf pendek.",
-    "Paragraf pertama: ringkasan utama.",
-    "Paragraf kedua: insight dari angka penting.",
-    "Paragraf ketiga: saran praktis yang aman.",
-    "Tidak perlu membuat tabel markdown."
+    "Jika data belum cukup, katakan data belum cukup dan sebutkan data apa yang perlu ditambahkan.",
+    "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, ringkas, dan praktis.",
+    "Format jawaban maksimal 4 paragraf pendek.",
+    "Untuk pertanyaan analisis kompleks, boleh memakai bullet pendek maksimal 4 poin.",
+    "Jangan membuat tabel markdown."
   ].join("\n");
 }
 
@@ -484,12 +490,20 @@ function buildFinancialPrompt(input: {
     "DETERMINISTIC BACKEND SUMMARY:",
     input.baseResponse.reply,
     "",
+    "ANSWER QUALITY RULES:",
+    "- Jawab pertanyaan user secara langsung dan on-point.",
+    "- Jangan membahas hal yang tidak ditanya kecuali benar-benar relevan.",
+    "- Jika user bertanya realistis/tidak, mulai jawaban dengan verdict.",
+    "- Jika user bertanya target tabungan, hitung kebutuhan tabungan per bulan bila data tersedia.",
+    "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
+    "- Angka penting harus konsisten dengan context atau angka yang user berikan.",
+    "- Cards di frontend sudah menampilkan angka utama, jadi reply fokus pada interpretasi dan saran.",
+    "",
     "TASK:",
-    "Ubah deterministic backend summary dan safe financial context menjadi jawaban yang lebih natural, jelas, dan membantu.",
-    "Tetap gunakan angka yang sama seperti context/backend summary.",
-    "Jangan tambahkan angka baru yang tidak ada di context.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context dan deterministic backend summary.",
+    "Gunakan angka yang sama seperti context/backend summary atau angka yang disebut user.",
+    "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",
-    "Jangan gunakan bullet terlalu banyak.",
     "Berikan insight dan saran yang langsung bisa dilakukan user."
   ].join("\n");
 }
@@ -498,7 +512,7 @@ function normalizeAiReply(text: string) {
   return text
     .trim()
     .replace(/\n{3,}/g, "\n\n")
-    .slice(0, 1200);
+    .slice(0, 1400);
 }
 
 async function enhanceFinancialResponseWithAi(input: {
