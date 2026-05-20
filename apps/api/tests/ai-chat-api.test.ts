@@ -3,6 +3,23 @@ import { afterEach, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { env } from "../src/config/env.js";
 import { prisma } from "../src/db/prisma.js";
+import type { AiChatResponse } from "../src/modules/ai/ai.types.js";
+
+type ApiSuccessResponse<T> = {
+  success: true;
+  message: string;
+  data: T;
+};
+
+type ApiErrorResponse = {
+  success: false;
+  message: string;
+  errors: unknown;
+};
+
+async function readJson<T>(response: Response): Promise<T> {
+  return (await response.json()) as T;
+}
 
 function createTestToken(userId: string) {
   return jwt.sign(
@@ -54,7 +71,7 @@ describe("AI Chat API", () => {
       })
     });
 
-    const body = await response.json();
+    const body = await readJson<ApiErrorResponse>(response);
 
     expect(response.status).toBe(401);
     expect(body.success).toBe(false);
@@ -75,7 +92,7 @@ describe("AI Chat API", () => {
       })
     });
 
-    const body = await response.json();
+    const body = await readJson<ApiErrorResponse>(response);
 
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
@@ -97,7 +114,7 @@ describe("AI Chat API", () => {
       })
     });
 
-    const body = await response.json();
+    const body = await readJson<ApiErrorResponse>(response);
 
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
@@ -121,7 +138,7 @@ describe("AI Chat API", () => {
       })
     });
 
-    const body = await response.json();
+    const body = await readJson<ApiSuccessResponse<AiChatResponse>>(response);
     const serializedBody = JSON.stringify(body);
 
     expect(response.status).toBe(200);
@@ -151,7 +168,7 @@ describe("AI Chat API", () => {
       })
     });
 
-    const body = await response.json();
+    const body = await readJson<ApiSuccessResponse<AiChatResponse>>(response);
     const serializedBody = JSON.stringify(body);
 
     expect(response.status).toBe(200);
