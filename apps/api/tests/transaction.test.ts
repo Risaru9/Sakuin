@@ -436,9 +436,17 @@ describe("Transaction API", () => {
     });
 
     expect(auditEvent.requestId).toBeTruthy();
-    expect(serializedAuditEvent).not.toContain("40000");
-    expect(serializedAuditEvent).not.toContain("Transaksi user A updated");
-    expect(serializedAuditEvent).not.toContain(tokenA);
+
+    expect(auditEvent.metadata).toEqual({
+      changedFields: "amount,note",
+      hasNote: true
+    });
+
+    const serializedAuditMetadata = JSON.stringify(auditEvent.metadata);
+
+    expect(serializedAuditMetadata).not.toContain("40000");
+    expect(serializedAuditMetadata).not.toContain("Transaksi user A updated");
+    expect(serializedAuditMetadata).not.toContain(tokenA);
   });
 
   it("Update transaction user lain gagal", async () => {
