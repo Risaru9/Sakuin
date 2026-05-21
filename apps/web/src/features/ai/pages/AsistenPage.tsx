@@ -51,6 +51,16 @@ const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
 const MAX_STORED_MESSAGES = 80;
 const MAX_HISTORY_MESSAGES_SENT = 12;
 
+type TransactionDraftEntry = {
+  draft: AiTransactionDraft;
+  draftIndex: number;
+  draftKey: string;
+};
+
+type SavableTransactionDraftEntry = TransactionDraftEntry & {
+  categoryId: string;
+};
+
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -258,6 +268,87 @@ function hasStoredDraftState(
   );
 }
 
+function getDraftEntries(message: AiChatMessage): TransactionDraftEntry[] {
+  return getMessageTransactionDrafts(message).map((draft, draftIndex) => ({
+    draft,
+    draftIndex,
+    draftKey: createDraftKey(message.id, draftIndex)
+  }));
+}
+
+function getSavableDraftEntries(
+  message: AiChatMessage,
+  savedDraftIds: Set<string>,
+  cancelledDraftIds: Set<string>,
+  savingDraftIds: Set<string>
+) {
+  return getDraftEntries(message).reduce<SavableTransactionDraftEntry[]>(
+    (entries, entry) => {
+      const categoryId = entry.draft.categoryId;
+
+      if (!categoryId) {
+        return entries;
+      }
+
+      if (!isTransactionDraftReadyToSave(entry.draft)) {
+        return entries;
+      }
+
+      if (
+        hasStoredDraftState(savedDraftIds, message.id, entry.draftIndex) ||
+        hasStoredDraftState(cancelledDraftIds, message.id, entry.draftIndex) ||
+        savingDraftIds.has(entry.draftKey)
+      ) {
+        return entries;
+      }
+
+      entries.push({
+        ...entry,
+        categoryId
+      });
+
+      return entries;
+    },
+    []
+  );
+}
+
+function getDraftAmountTotal(drafts: AiTransactionDraft[]) {
+  return drafts.reduce((total, draft) => {
+    const amount = Number(draft.amount);
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      return total;
+    }
+
+    return total + amount;
+  }, 0);
+}
+
+function isDraftActionSuggestion(suggestion: string) {
+  const normalizedSuggestion = suggestion.trim().toLowerCase().replace(/\s+/g, " ");
+
+  const blockedSuggestions = new Set([
+    "simpan",
+    "simpan draft",
+    "simpan semua",
+    "simpan semua draft",
+    "simpan semuanya",
+    "save",
+    "save draft",
+    "save all",
+    "save all drafts"
+  ]);
+
+  if (blockedSuggestions.has(normalizedSuggestion)) {
+    return true;
+  }
+
+  return /^(simpan|save)\s+(semua|all|draft|semuanya)/.test(
+    normalizedSuggestion
+  );
+}
+
 function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
   if (!Array.isArray(value)) {
     return false;
@@ -432,9 +523,11 @@ function TransactionDraftPanel({
             ? "Sudah disimpan"
             : isCancelled
               ? "Dibatalkan"
-              : isReadyToSave
-                ? "Siap direview"
-                : "Perlu dilengkapi"}
+              : isSaving
+                ? "Menyimpan"
+                : isReadyToSave
+                  ? "Siap direview"
+                  : "Perlu dilengkapi"}
         </span>
       </div>
 
@@ -591,8 +684,9 @@ function ChatBubble({
   onSuggestionClick,
   onSaveDraft,
   onCancelDraft,
+  onSaveAllDrafts,
   disabled,
-  savingDraftMessageId,
+  savingDraftIds,
   savedDraftMessageIds,
   cancelledDraftMessageIds
 }: {
@@ -610,15 +704,31 @@ function ChatBubble({
     draftKey: string,
     draftIndex: number
   ) => void;
+  onSaveAllDrafts: (message: AiChatMessage) => void | Promise<void>;
   disabled: boolean;
-  savingDraftMessageId: string | null;
+  savingDraftIds: Set<string>;
   savedDraftMessageIds: Set<string>;
   cancelledDraftMessageIds: Set<string>;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
-    message.suggestions?.slice(0, MAX_VISIBLE_MESSAGE_SUGGESTIONS) ?? [];
+    message.suggestions
+      ?.filter((suggestion) => !isDraftActionSuggestion(suggestion))
+      .slice(0, MAX_VISIBLE_MESSAGE_SUGGESTIONS) ?? [];
   const transactionDrafts = getMessageTransactionDrafts(message);
+  const draftEntries = getDraftEntries(message);
+  const savableDraftEntries = getSavableDraftEntries(
+    message,
+    savedDraftMessageIds,
+    cancelledDraftMessageIds,
+    savingDraftIds
+  );
+  const isAnyDraftSaving = draftEntries.some((entry) =>
+    savingDraftIds.has(entry.draftKey)
+  );
+  const savableTotal = getDraftAmountTotal(
+    savableDraftEntries.map((entry) => entry.draft)
+  );
 
   return (
     <div className={isUser ? "flex justify-end" : "flex justify-start"}>
@@ -660,6 +770,50 @@ function ChatBubble({
             {message.content}
           </p>
 
+          {!isUser && transactionDrafts.length > 1 ? (
+            <div className="mt-3 rounded-[1.1rem] border border-emerald-100 bg-emerald-50/80 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700">
+                    Aksi cepat multi draft
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">
+                    {savableDraftEntries.length > 0
+                      ? `${savableDraftEntries.length} draft siap disimpan sekaligus. Total ${formatDraftAmount(
+                          String(savableTotal)
+                        )}.`
+                      : "Tidak ada draft aktif yang siap disimpan."}
+                  </p>
+                </div>
+
+                <button
+                  className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 sm:w-auto sm:text-sm"
+                  disabled={
+                    disabled ||
+                    isAnyDraftSaving ||
+                    savableDraftEntries.length === 0
+                  }
+                  onClick={() => {
+                    void onSaveAllDrafts(message);
+                  }}
+                  type="button"
+                >
+                  {isAnyDraftSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Simpan Semua Draft
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {!isUser && transactionDrafts.length > 0 ? (
             <div className="mt-3 space-y-3">
               {transactionDrafts.map((draft, draftIndex) => {
@@ -680,7 +834,7 @@ function ChatBubble({
                     draft={draft}
                     isCancelled={isCancelled}
                     isSaved={isSaved}
-                    isSaving={savingDraftMessageId === draftKey}
+                    isSaving={savingDraftIds.has(draftKey)}
                     key={draftKey}
                     onCancel={() =>
                       onCancelDraft(message, draft, draftKey, draftIndex)
@@ -806,8 +960,8 @@ export function AsistenPage() {
     createWelcomeMessage()
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [savingDraftMessageId, setSavingDraftMessageId] = useState<string | null>(
-    null
+  const [savingDraftIds, setSavingDraftIds] = useState<Set<string>>(
+    () => new Set()
   );
   const [savedDraftMessageIds, setSavedDraftMessageIds] = useState<Set<string>>(
     () => new Set()
@@ -984,7 +1138,7 @@ export function AsistenPage() {
       behavior: "smooth",
       block: "end"
     });
-  }, [messages, isSubmitting, savingDraftMessageId]);
+  }, [messages, isSubmitting, savingDraftIds]);
 
   function cancelDraftMessage(
     message: AiChatMessage,
@@ -994,7 +1148,8 @@ export function AsistenPage() {
   ) {
     if (
       hasStoredDraftState(savedDraftMessageIds, message.id, draftIndex) ||
-      hasStoredDraftState(cancelledDraftMessageIds, message.id, draftIndex)
+      hasStoredDraftState(cancelledDraftMessageIds, message.id, draftIndex) ||
+      savingDraftIds.has(draftKey)
     ) {
       return;
     }
@@ -1040,7 +1195,7 @@ export function AsistenPage() {
   async function submitMessage(message: string) {
     const normalizedMessage = message.trim();
 
-    if (!normalizedMessage || isSubmitting || savingDraftMessageId) {
+    if (!normalizedMessage || isSubmitting) {
       return;
     }
 
@@ -1224,12 +1379,16 @@ export function AsistenPage() {
 
     if (
       hasStoredDraftState(savedDraftMessageIds, message.id, draftIndex) ||
-      savingDraftMessageId
+      savingDraftIds.has(draftKey)
     ) {
       return;
     }
 
-    setSavingDraftMessageId(draftKey);
+    setSavingDraftIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      nextIds.add(draftKey);
+      return nextIds;
+    });
     setError(null);
 
     try {
@@ -1298,7 +1457,160 @@ export function AsistenPage() {
         }
       ]);
     } finally {
-      setSavingDraftMessageId(null);
+      setSavingDraftIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(draftKey);
+        return nextIds;
+      });
+    }
+  }
+
+  async function handleSaveAllDrafts(message: AiChatMessage) {
+    const savableDraftEntries = getSavableDraftEntries(
+      message,
+      savedDraftMessageIds,
+      cancelledDraftMessageIds,
+      savingDraftIds
+    );
+
+    if (savableDraftEntries.length === 0) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Tidak ada draft aktif yang siap disimpan. Draft mungkin sudah tersimpan, sudah dibatalkan, atau belum lengkap.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [
+            {
+              label: "Status",
+              value: "Tidak ada draft siap"
+            }
+          ],
+          suggestions: ["Catat transaksi lain", "Lihat pengeluaran bulan ini"],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+
+      return;
+    }
+
+    setSavingDraftIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      savableDraftEntries.forEach((entry) => {
+        nextIds.add(entry.draftKey);
+      });
+
+      return nextIds;
+    });
+    setError(null);
+
+    try {
+      const results = await Promise.allSettled(
+        savableDraftEntries.map((entry) =>
+          createTransaction({
+            type: entry.draft.type,
+            amount: entry.draft.amount,
+            categoryId: entry.categoryId,
+            note: entry.draft.note?.trim() || undefined,
+            date: entry.draft.date
+          })
+        )
+      );
+
+      const successfulEntries = savableDraftEntries.filter(
+        (_, index) => results[index].status === "fulfilled"
+      );
+      const failedCount = results.length - successfulEntries.length;
+
+      if (successfulEntries.length > 0) {
+        await queryClient.invalidateQueries();
+
+        setSavedDraftMessageIds((currentIds) => {
+          const nextIds = new Set(currentIds);
+
+          successfulEntries.forEach((entry) => {
+            nextIds.add(entry.draftKey);
+          });
+
+          return nextIds;
+        });
+      }
+
+      if (failedCount > 0) {
+        setError(
+          `${failedCount} draft belum berhasil disimpan. Coba simpan ulang draft yang masih aktif.`
+        );
+      }
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            failedCount > 0
+              ? `${successfulEntries.length} draft berhasil disimpan, tetapi ${failedCount} draft belum berhasil. Draft yang gagal masih bisa dicoba lagi.`
+              : `${successfulEntries.length} draft transaksi berhasil disimpan sekaligus. Data dashboard dan transaksi akan ikut diperbarui.`,
+          intent: "TRANSACTION_DRAFT",
+          cards: [
+            {
+              label: "Berhasil",
+              value: String(successfulEntries.length)
+            },
+            {
+              label: "Gagal",
+              value: String(failedCount)
+            },
+            {
+              label: "Total tersimpan",
+              value: formatDraftAmount(
+                String(
+                  getDraftAmountTotal(
+                    successfulEntries.map((entry) => entry.draft)
+                  )
+                )
+              )
+            }
+          ],
+          suggestions: [
+            "Catat transaksi lain",
+            "Lihat pengeluaran bulan ini",
+            "Saya boros di mana?"
+          ],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    } catch (caughtError) {
+      const messageText = getErrorMessage(caughtError);
+
+      setError(messageText);
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Draft transaksi belum berhasil disimpan. Cek koneksi atau coba ulangi beberapa saat lagi.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [],
+          suggestions: ["Coba catat ulang", "Lihat pengeluaran bulan ini"],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    } finally {
+      setSavingDraftIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+
+        savableDraftEntries.forEach((entry) => {
+          nextIds.delete(entry.draftKey);
+        });
+
+        return nextIds;
+      });
     }
   }
 
@@ -1340,6 +1652,7 @@ export function AsistenPage() {
     setMessages([createWelcomeMessage()]);
     setSavedDraftMessageIds(new Set());
     setCancelledDraftMessageIds(new Set());
+    setSavingDraftIds(new Set());
     setError(null);
     setIsClearHistoryDialogOpen(false);
   }
@@ -1394,14 +1707,15 @@ export function AsistenPage() {
             {messages.map((message) => (
               <ChatBubble
                 cancelledDraftMessageIds={cancelledDraftMessageIds}
-                disabled={isSubmitting || savingDraftMessageId !== null}
+                disabled={isSubmitting}
                 key={message.id}
                 message={message}
                 onCancelDraft={cancelDraftMessage}
+                onSaveAllDrafts={handleSaveAllDrafts}
                 onSaveDraft={handleSaveDraft}
                 onSuggestionClick={handlePromptClick}
                 savedDraftMessageIds={savedDraftMessageIds}
-                savingDraftMessageId={savingDraftMessageId}
+                savingDraftIds={savingDraftIds}
               />
             ))}
 
@@ -1438,7 +1752,7 @@ export function AsistenPage() {
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
                 className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
-                disabled={isSubmitting || savingDraftMessageId !== null}
+                disabled={isSubmitting}
                 key={prompt}
                 onClick={() => handlePromptClick(prompt)}
                 type="button"
@@ -1452,7 +1766,7 @@ export function AsistenPage() {
             <div className="min-w-0 flex-1">
               <textarea
                 className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-                disabled={isSubmitting || savingDraftMessageId !== null}
+                disabled={isSubmitting}
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
@@ -1467,11 +1781,7 @@ export function AsistenPage() {
 
             <button
               className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={
-                isSubmitting ||
-                savingDraftMessageId !== null ||
-                input.trim().length === 0
-              }
+              disabled={isSubmitting || input.trim().length === 0}
               type="submit"
             >
               {isSubmitting ? (
