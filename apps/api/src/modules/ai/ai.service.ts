@@ -5,6 +5,7 @@ import {
 } from "./ai.provider.js";
 import { classifyAiIntent } from "./ai.intent.js";
 import { selectAiModelPlan } from "./ai-model-router.js";
+import { buildRuleBasedTransactionDraft } from "./ai-transaction-draft.js";
 import {
   analyzeFinancialScenario,
   buildFinancialScenarioPromptContext,
@@ -19,7 +20,8 @@ import type {
   AiChatHistoryMessage,
   AiChatResponse,
   AiChatServiceInput,
-  AiIntent
+  AiIntent,
+  AiTransactionDraft
 } from "./ai.types.js";
 
 const OUT_OF_SCOPE_REPLY =
@@ -300,18 +302,42 @@ function buildOutOfScopeResponse(): AiChatResponse {
   };
 }
 
-function buildTransactionDraftPlaceholderResponse(): AiChatResponse {
+function buildTransactionDraftResponse(
+  draft: AiTransactionDraft
+): AiChatResponse {
+  const isReadyToSave = draft.missingFields.length === 0;
+
   return {
     intent: "TRANSACTION_DRAFT",
-    reply:
-      "Saya bisa membantu membuat draft transaksi dari chat natural. Nantinya transaksi tetap harus kamu review dulu sebelum disimpan.",
-    cards: [
+    reply: isReadyToSave
+      ? "Saya sudah membuat draft transaksi. Silakan review dulu sebelum disimpan."
+      : "Saya sudah mencoba membuat draft transaksi, tetapi masih ada data yang perlu dilengkapi sebelum bisa disimpan.",
+    cards: buildCards([
+      {
+        label: "Tipe",
+        value: draft.type === "INCOME" ? "Pemasukan" : "Pengeluaran"
+      },
+      {
+        label: "Nominal",
+        value: draft.amount ? formatRupiah(draft.amount) : "Belum terdeteksi"
+      },
+      {
+        label: "Kategori",
+        value: draft.categoryName ?? "Perlu dipilih"
+      },
+      {
+        label: "Tanggal",
+        value: draft.date
+      },
       {
         label: "Status",
-        value: "Draft transaksi belum diaktifkan"
+        value: isReadyToSave ? "Siap direview" : "Perlu dilengkapi"
       }
-    ],
-    suggestions: TRANSACTION_DRAFT_SUGGESTIONS
+    ]),
+    suggestions: isReadyToSave
+      ? ["Simpan draft ini", "Edit draft", "Batalkan draft", "Catat transaksi lain"]
+      : ["Lengkapi nominal", "Pilih kategori", "Batalkan draft"],
+    transactionDraft: draft
   };
 }
 
@@ -867,7 +893,12 @@ export async function getAiChatResponse(
   }
 
   if (classification.intent === "TRANSACTION_DRAFT") {
-    return buildTransactionDraftPlaceholderResponse();
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: input.userId,
+      message: normalizedMessage
+    });
+
+    return buildTransactionDraftResponse(draft);
   }
 
   const financialContext = await getAiFinancialContext(input.userId);

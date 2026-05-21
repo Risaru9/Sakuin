@@ -383,32 +383,45 @@ describe("AI chat service contract", () => {
     );
   });
 
-  it("mengembalikan transaction draft placeholder tanpa auto-save", async () => {
-    const user = await createTestUser("transaction-draft");
+  it("mengembalikan rule-based transaction draft tanpa auto-save", async () => {
+  const user = await createTestUser("transaction-draft");
 
-    const beforeCount = await prisma.transaction.count({
-      where: {
-        userId: user.id
-      }
-    });
-
-    const response = await getAiChatResponse({
-      userId: user.id,
-      message: "catat makan ayam geprek 15000 tadi siang"
-    });
-
-    const afterCount = await prisma.transaction.count({
-      where: {
-        userId: user.id
-      }
-    });
-
-    expect(response.intent).toBe("TRANSACTION_DRAFT");
-    expect(response.reply).toContain("draft transaksi");
-    expect(response.cards.some((card) => card.label === "Status")).toBe(true);
-    expect(beforeCount).toBe(0);
-    expect(afterCount).toBe(0);
+  const foodCategory = await createCategory({
+    userId: user.id,
+    name: "Makanan",
+    type: "EXPENSE"
   });
+
+  const beforeCount = await prisma.transaction.count({
+    where: {
+      userId: user.id
+    }
+  });
+
+  const response = await getAiChatResponse({
+    userId: user.id,
+    message: "catat makan ayam geprek 15000 tadi siang"
+  });
+
+  const afterCount = await prisma.transaction.count({
+    where: {
+      userId: user.id
+    }
+  });
+
+  expect(response.intent).toBe("TRANSACTION_DRAFT");
+  expect(response.reply).toContain("draft transaksi");
+  expect(response.transactionDraft).toBeTruthy();
+  expect(response.transactionDraft?.type).toBe("EXPENSE");
+  expect(response.transactionDraft?.amount).toBe("15000");
+  expect(response.transactionDraft?.categoryId).toBe(foodCategory.id);
+  expect(response.transactionDraft?.categoryName).toBe("Makanan");
+  expect(response.transactionDraft?.note).toContain("ayam");
+  expect(response.transactionDraft?.note).toContain("geprek");
+  expect(response.cards.some((card) => card.label === "Status")).toBe(true);
+  expect(beforeCount).toBe(0);
+  expect(afterCount).toBe(0);
+});
 
   it("tidak membocorkan userId pada response financial summary", async () => {
     const user = await createTestUser("safe-summary");

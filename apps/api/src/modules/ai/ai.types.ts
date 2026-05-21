@@ -36,11 +36,24 @@ export type AiChatCard = {
   value: string;
 };
 
+export type AiTransactionDraft = {
+  type: "INCOME" | "EXPENSE";
+  amount: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  note: string | null;
+  date: string;
+  confidence: "low" | "medium" | "high";
+  missingFields: string[];
+  warnings: string[];
+};
+
 export type AiChatResponse = {
-  reply: string;
   intent: AiIntent;
+  reply: string;
   cards: AiChatCard[];
   suggestions: string[];
+  transactionDraft?: AiTransactionDraft;
 };
 
 export type AiChatServiceInput = {
