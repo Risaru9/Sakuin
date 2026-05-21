@@ -5,7 +5,7 @@ import {
 } from "./ai.provider.js";
 import { classifyAiIntent } from "./ai.intent.js";
 import { selectAiModelPlan } from "./ai-model-router.js";
-import { buildRuleBasedTransactionDraft } from "./ai-transaction-draft.js";
+import { buildRuleBasedTransactionDrafts } from "./ai-transaction-draft.js";
 import {
   analyzeFinancialScenario,
   buildFinancialScenarioPromptContext,
@@ -303,41 +303,94 @@ function buildOutOfScopeResponse(): AiChatResponse {
 }
 
 function buildTransactionDraftResponse(
-  draft: AiTransactionDraft
+  drafts: AiTransactionDraft[]
 ): AiChatResponse {
-  const isReadyToSave = draft.missingFields.length === 0;
+  const primaryDraft = drafts[0];
+  const isMultiDraft = drafts.length > 1;
+  const readyDraftCount = drafts.filter(
+    (draft) => draft.missingFields.length === 0
+  ).length;
+
+  const totalAmount = drafts.reduce((total, draft) => {
+    return total + toNumber(draft.amount);
+  }, 0);
+
+  const isPrimaryReadyToSave = primaryDraft.missingFields.length === 0;
+  const isEveryDraftReadyToSave = drafts.every(
+    (draft) => draft.missingFields.length === 0
+  );
+
+  if (isMultiDraft) {
+    return {
+      intent: "TRANSACTION_DRAFT",
+      reply: isEveryDraftReadyToSave
+        ? `Saya menemukan ${drafts.length} draft transaksi dari pesanmu. Silakan review masing-masing draft sebelum disimpan.`
+        : `Saya menemukan ${drafts.length} draft transaksi dari pesanmu, tetapi ada draft yang masih perlu dilengkapi sebelum bisa disimpan.`,
+      cards: buildCards([
+        {
+          label: "Jumlah Draft",
+          value: String(drafts.length)
+        },
+        {
+          label: "Siap Disimpan",
+          value: `${readyDraftCount}/${drafts.length}`
+        },
+        {
+          label: "Total Nominal",
+          value: formatRupiah(totalAmount)
+        },
+        {
+          label: "Status",
+          value: isEveryDraftReadyToSave ? "Siap direview" : "Perlu dilengkapi"
+        }
+      ]),
+      suggestions: isEveryDraftReadyToSave
+        ? [
+            "Simpan semua draft",
+            "Review draft dulu",
+            "Batalkan draft",
+            "Catat transaksi lain"
+          ]
+        : ["Lengkapi draft", "Batalkan draft", "Catat transaksi lain"],
+      transactionDraft: primaryDraft,
+      transactionDrafts: drafts
+    };
+  }
 
   return {
     intent: "TRANSACTION_DRAFT",
-    reply: isReadyToSave
+    reply: isPrimaryReadyToSave
       ? "Saya sudah membuat draft transaksi. Silakan review dulu sebelum disimpan."
       : "Saya sudah mencoba membuat draft transaksi, tetapi masih ada data yang perlu dilengkapi sebelum bisa disimpan.",
     cards: buildCards([
       {
         label: "Tipe",
-        value: draft.type === "INCOME" ? "Pemasukan" : "Pengeluaran"
+        value: primaryDraft.type === "INCOME" ? "Pemasukan" : "Pengeluaran"
       },
       {
         label: "Nominal",
-        value: draft.amount ? formatRupiah(draft.amount) : "Belum terdeteksi"
+        value: primaryDraft.amount
+          ? formatRupiah(primaryDraft.amount)
+          : "Belum terdeteksi"
       },
       {
         label: "Kategori",
-        value: draft.categoryName ?? "Perlu dipilih"
+        value: primaryDraft.categoryName ?? "Perlu dipilih"
       },
       {
         label: "Tanggal",
-        value: draft.date
+        value: primaryDraft.date
       },
       {
         label: "Status",
-        value: isReadyToSave ? "Siap direview" : "Perlu dilengkapi"
+        value: isPrimaryReadyToSave ? "Siap direview" : "Perlu dilengkapi"
       }
     ]),
-    suggestions: isReadyToSave
+    suggestions: isPrimaryReadyToSave
       ? ["Simpan draft ini", "Edit draft", "Batalkan draft", "Catat transaksi lain"]
       : ["Lengkapi nominal", "Pilih kategori", "Batalkan draft"],
-    transactionDraft: draft
+    transactionDraft: primaryDraft,
+    transactionDrafts: drafts
   };
 }
 
@@ -893,12 +946,12 @@ export async function getAiChatResponse(
   }
 
   if (classification.intent === "TRANSACTION_DRAFT") {
-    const draft = await buildRuleBasedTransactionDraft({
+    const drafts = await buildRuleBasedTransactionDrafts({
       userId: input.userId,
-      message: normalizedMessage
+      message: input.message
     });
 
-    return buildTransactionDraftResponse(draft);
+    return buildTransactionDraftResponse(drafts);
   }
 
   const financialContext = await getAiFinancialContext(input.userId);

@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/db/prisma.js";
-import { buildRuleBasedTransactionDraft } from "../src/modules/ai/ai-transaction-draft.js";
+import {
+  buildRuleBasedTransactionDraft,
+  buildRuleBasedTransactionDrafts
+} from "../src/modules/ai/ai-transaction-draft.js";
 
 type CategoryType = "INCOME" | "EXPENSE";
 
@@ -82,29 +85,49 @@ afterEach(async () => {
 });
 
 describe("AI rule-based transaction draft", () => {
-  it("membuat draft pengeluaran makanan dari chat natural", async () => {
-    const user = await createTestUser("expense-food");
+  it("membuat beberapa draft dari satu prompt multi transaksi", async () => {
+  const user = await createTestUser("multi-expense");
 
-    const foodCategory = await createCategory({
-      userId: user.id,
-      name: "Makanan",
-      type: "EXPENSE"
-    });
-
-    const draft = await buildRuleBasedTransactionDraft({
-      userId: user.id,
-      message: "catat makan ayam geprek 15000 tadi siang"
-    });
-
-    expect(draft.type).toBe("EXPENSE");
-    expect(draft.amount).toBe("15000");
-    expect(draft.categoryId).toBe(foodCategory.id);
-    expect(draft.categoryName).toBe("Makanan");
-    expect(draft.note).toContain("ayam");
-    expect(draft.note).toContain("geprek");
-    expect(draft.confidence).toBe("high");
-    expect(draft.missingFields).toEqual([]);
+  await createCategory({
+    userId: user.id,
+    name: "Makanan",
+    type: "EXPENSE"
   });
+
+  await createCategory({
+    userId: user.id,
+    name: "Minuman",
+    type: "EXPENSE"
+  });
+
+  const drafts = await buildRuleBasedTransactionDrafts({
+    userId: user.id,
+    message: "catat makan 12000 minum 4000 cimol 4000 cireng 5000"
+  });
+
+  expect(drafts).toHaveLength(4);
+
+  expect(drafts[0].amount).toBe("12000");
+  expect(drafts[0].categoryName).toBe("Makanan");
+  expect(drafts[0].note).toContain("makan");
+
+  expect(drafts[1].amount).toBe("4000");
+  expect(drafts[1].categoryName).toBe("Minuman");
+  expect(drafts[1].note).toContain("minum");
+
+  expect(drafts[2].amount).toBe("4000");
+  expect(drafts[2].categoryName).toBe("Makanan");
+  expect(drafts[2].note).toContain("cimol");
+
+  expect(drafts[3].amount).toBe("5000");
+  expect(drafts[3].categoryName).toBe("Makanan");
+  expect(drafts[3].note).toContain("cireng");
+
+  for (const draft of drafts) {
+    expect(draft.type).toBe("EXPENSE");
+    expect(draft.missingFields).toEqual([]);
+  }
+});
 
   it("membuat draft pemasukan dari variasi dikasih uang", async () => {
     const user = await createTestUser("income-gift");

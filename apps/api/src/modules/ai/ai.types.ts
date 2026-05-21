@@ -54,6 +54,7 @@ export type AiChatResponse = {
   cards: AiChatCard[];
   suggestions: string[];
   transactionDraft?: AiTransactionDraft;
+  transactionDrafts?: AiTransactionDraft[];
 };
 
 export type AiChatServiceInput = {

@@ -80,10 +80,22 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
     "mie",
     "bakso",
     "seblak",
+    "cimol",
+    "cireng",
+    "jajan",
+    "snack",
+    "cemilan"
+  ],
+  minuman: [
+    "minum",
+    "minuman",
+    "es teh",
+    "teh",
     "kopi",
     "coffee",
-    "minum",
-    "jajan"
+    "susu",
+    "jus",
+    "boba"
   ],
   transportasi: [
     "transport",
@@ -96,22 +108,38 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
     "parkir",
     "tol"
   ],
+  bensin: ["bensin", "bbm", "pertalite", "pertamax", "solar"],
   belanja: ["belanja", "shopping", "alfamart", "indomaret", "market"],
-  tagihan: ["tagihan", "listrik", "air", "internet", "wifi", "pulsa", "paket data"],
+  tagihan: [
+    "tagihan",
+    "listrik",
+    "air",
+    "internet",
+    "wifi",
+    "pulsa",
+    "paket data"
+  ],
   kos: ["kos", "kost", "kontrakan", "sewa"],
   gaji: ["gaji", "salary", "upah"],
   bonus: ["bonus", "thr", "insentif"],
   hadiah: ["dikasih", "di kasih", "hadiah", "gift", "diberi", "di beri"],
-  pemasukan: ["pemasukan", "income", "uang masuk", "terima uang", "dapat uang", "dapet uang"]
+  pemasukan: [
+    "pemasukan",
+    "income",
+    "uang masuk",
+    "terima uang",
+    "dapat uang",
+    "dapet uang"
+  ]
 };
 
 const DATE_KEYWORDS = [
   "hari ini",
-  "tadi",
   "tadi pagi",
   "tadi siang",
   "tadi sore",
   "tadi malam",
+  "tadi",
   "kemarin",
   "kemaren"
 ];
@@ -483,6 +511,7 @@ export async function buildRuleBasedTransactionDraft(
   });
 
   const amount = selectedMoney?.value ?? null;
+
   const missingFields = buildMissingFields({
     amount,
     category: finalCategory
@@ -509,4 +538,208 @@ export async function buildRuleBasedTransactionDraft(
     missingFields,
     warnings
   };
+}
+
+type MultiDraftMoneyMatch = {
+  raw: string;
+  index: number;
+  endIndex: number;
+};
+
+const MULTI_DRAFT_INCOME_KEYWORDS = [
+  "dikasih",
+  "di kasih",
+  "diberi",
+  "di beri",
+  "dapat uang",
+  "dapet uang",
+  "terima uang",
+  "menerima uang",
+  "gaji",
+  "bonus",
+  "honor",
+  "fee",
+  "pemasukan",
+  "uang masuk",
+  "income",
+  "masuk"
+];
+
+const MULTI_DRAFT_EXPENSE_HINTS = [
+  "catat",
+  "catetin",
+  "catatkan",
+  "input",
+  "tambah",
+  "transaksi",
+  "pengeluaran",
+  "beli",
+  "bayar",
+  "makan",
+  "minum",
+  "jajan",
+  "cimol",
+  "cireng",
+  "bensin",
+  "belanja"
+];
+
+function normalizeMultiDraftText(value: string) {
+  return value.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function hasAnyMultiDraftKeyword(text: string, keywords: string[]) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function parseMultiDraftMoneyValue(rawNumber: string, unit: string | undefined) {
+  const normalizedNumber = Number(rawNumber.replace(/\./g, "").replace(",", "."));
+
+  if (Number.isNaN(normalizedNumber)) {
+    return null;
+  }
+
+  const normalizedUnit = unit?.toLowerCase();
+
+  if (normalizedUnit === "miliar") {
+    return normalizedNumber * 1_000_000_000;
+  }
+
+  if (
+    normalizedUnit === "juta" ||
+    normalizedUnit === "jt" ||
+    normalizedUnit === "m"
+  ) {
+    return normalizedNumber * 1_000_000;
+  }
+
+  if (
+    normalizedUnit === "ribu" ||
+    normalizedUnit === "rb" ||
+    normalizedUnit === "k"
+  ) {
+    return normalizedNumber * 1_000;
+  }
+
+  return normalizedNumber;
+}
+
+function extractMultiDraftMoneyMatches(message: string): MultiDraftMoneyMatch[] {
+  const pattern =
+    /\b(rp\s*)?(\d+(?:[.,]\d{1,3})*)\s*(miliar|juta|jt|ribu|rb|k|m)?\b/gi;
+
+  const matches: MultiDraftMoneyMatch[] = [];
+
+  for (const match of message.matchAll(pattern)) {
+    const raw = match[0];
+    const hasRp = Boolean(match[1]);
+    const numberPart = match[2];
+    const unit = match[3];
+    const index = match.index ?? 0;
+    const endIndex = index + raw.length;
+
+    const before = message.slice(Math.max(0, index - 12), index);
+    const after = message.slice(endIndex, endIndex + 12);
+
+    if (/tanggal\s*$/i.test(before)) {
+      continue;
+    }
+
+    if (/^\s*(bulan|bln|tahun|thn)/i.test(after)) {
+      continue;
+    }
+
+    const value = parseMultiDraftMoneyValue(numberPart, unit);
+
+    if (value === null) {
+      continue;
+    }
+
+    if (!hasRp && !unit && value < 1000) {
+      continue;
+    }
+
+    matches.push({
+      raw,
+      index,
+      endIndex
+    });
+  }
+
+  return matches.sort((a, b) => a.index - b.index);
+}
+
+function shouldBuildMultiTransactionDrafts(
+  message: string,
+  matches: MultiDraftMoneyMatch[]
+) {
+  if (matches.length < 2) {
+    return false;
+  }
+
+  const normalizedMessage = normalizeMultiDraftText(message);
+
+  if (hasAnyMultiDraftKeyword(normalizedMessage, MULTI_DRAFT_INCOME_KEYWORDS)) {
+    return false;
+  }
+
+  return hasAnyMultiDraftKeyword(
+    normalizedMessage,
+    MULTI_DRAFT_EXPENSE_HINTS
+  );
+}
+
+function cleanMultiDraftSegment(segment: string) {
+  return normalizeMultiDraftText(segment)
+    .replace(/^(dan|lalu|terus|sama|,|;)+\s+/i, "")
+    .trim();
+}
+
+function buildMultiDraftSegments(
+  message: string,
+  matches: MultiDraftMoneyMatch[]
+) {
+  return matches
+    .map((match, index) => {
+      const previousMatch = index > 0 ? matches[index - 1] : null;
+      const startIndex = previousMatch ? previousMatch.endIndex : 0;
+      const endIndex = match.endIndex;
+
+      return cleanMultiDraftSegment(message.slice(startIndex, endIndex));
+    })
+    .filter((segment) => segment.length > 0);
+}
+
+export async function buildRuleBasedTransactionDrafts(
+  input: BuildTransactionDraftInput
+): Promise<AiTransactionDraft[]> {
+  const normalizedMessage = normalizeMultiDraftText(input.message);
+  const moneyMatches = extractMultiDraftMoneyMatches(normalizedMessage);
+
+  if (!shouldBuildMultiTransactionDrafts(normalizedMessage, moneyMatches)) {
+    const draft = await buildRuleBasedTransactionDraft(input);
+
+    return [draft];
+  }
+
+  const segments = buildMultiDraftSegments(normalizedMessage, moneyMatches);
+
+  if (segments.length < 2) {
+    const draft = await buildRuleBasedTransactionDraft(input);
+
+    return [draft];
+  }
+
+  const drafts: AiTransactionDraft[] = [];
+
+  for (const segment of segments) {
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: input.userId,
+      message: segment
+    });
+
+    drafts.push(draft);
+  }
+
+  return drafts;
 }
