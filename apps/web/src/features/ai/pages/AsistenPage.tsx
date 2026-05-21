@@ -21,17 +21,18 @@ import { sendAiChatMessage } from "../ai.service";
 import type {
   AiChatHistoryMessage,
   AiChatMessage,
-  AiChatResponse
+  AiChatResponse,
+  AiTransactionDraft
 } from "../ai.types";
 
 const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
 
 const SUGGESTED_PROMPTS = [
+  "Catat makan ayam geprek 15000",
   "Pengeluaran bulan ini gimana?",
   "Saya boros di mana?",
   "Bandingkan pengeluaran bulan ini dan bulan lalu",
-  "Target tabungan saya realistis?",
-  "Analisis goals saya"
+  "Target tabungan saya realistis?"
 ];
 
 const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
@@ -92,6 +93,7 @@ function createAssistantMessage(response: AiChatResponse): AiChatMessage {
     intent: response.intent,
     cards: response.cards,
     suggestions: response.suggestions,
+    transactionDraft: response.transactionDraft,
     createdAt: new Date().toISOString()
   };
 }
@@ -106,6 +108,82 @@ function formatIntentLabel(intent?: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatDraftType(type: AiTransactionDraft["type"]) {
+  return type === "INCOME" ? "Pemasukan" : "Pengeluaran";
+}
+
+function formatDraftAmount(amount: string) {
+  const value = Number(amount);
+
+  if (!amount || Number.isNaN(value) || value <= 0) {
+    return "Belum terdeteksi";
+  }
+
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function formatDraftDate(date: string) {
+  const parsedDate = new Date(`${date}T12:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date;
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(parsedDate);
+}
+
+function formatDraftConfidence(confidence: AiTransactionDraft["confidence"]) {
+  if (confidence === "high") {
+    return "Tinggi";
+  }
+
+  if (confidence === "medium") {
+    return "Sedang";
+  }
+
+  return "Rendah";
+}
+
+function getDraftConfidenceClass(confidence: AiTransactionDraft["confidence"]) {
+  if (confidence === "high") {
+    return "bg-emerald-50 text-emerald-700 ring-emerald-100";
+  }
+
+  if (confidence === "medium") {
+    return "bg-amber-50 text-amber-700 ring-amber-100";
+  }
+
+  return "bg-rose-50 text-rose-700 ring-rose-100";
+}
+
+function formatMissingField(field: string) {
+  if (field === "amount") {
+    return "Nominal";
+  }
+
+  if (field === "categoryId") {
+    return "Kategori";
+  }
+
+  if (field === "date") {
+    return "Tanggal";
+  }
+
+  if (field === "type") {
+    return "Tipe";
+  }
+
+  return field;
 }
 
 function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
@@ -149,6 +227,118 @@ function IntentBadge({ intent }: { intent?: string }) {
     <span className="inline-flex w-fit rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700 ring-1 ring-violet-100">
       {formatIntentLabel(intent)}
     </span>
+  );
+}
+
+function TransactionDraftPanel({
+  draft
+}: {
+  draft: AiTransactionDraft;
+}) {
+  const isReadyToSave = draft.missingFields.length === 0;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-violet-100/80 px-3 py-3">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-wide text-violet-700">
+            Draft transaksi
+          </p>
+          <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+            Belum disimpan otomatis. Review dulu sebelum masuk ke transaksi.
+          </p>
+        </div>
+
+        <span
+          className={[
+            "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
+            isReadyToSave
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+              : "bg-amber-50 text-amber-700 ring-amber-100"
+          ].join(" ")}
+        >
+          {isReadyToSave ? "Siap direview" : "Perlu dilengkapi"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
+          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+            Tipe
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+            {formatDraftType(draft.type)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
+          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+            Nominal
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+            {formatDraftAmount(draft.amount)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
+          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+            Kategori
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+            {draft.categoryName ?? "Perlu dipilih"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
+          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+            Tanggal
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+            {formatDraftDate(draft.date)}
+          </p>
+        </div>
+
+        <div className="col-span-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
+          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+            Catatan
+          </p>
+          <p className="mt-1 text-xs font-black leading-5 text-slate-950 sm:text-sm">
+            {draft.note ?? "Belum ada catatan"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-violet-100/80 px-3 py-3">
+        <span
+          className={[
+            "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
+            getDraftConfidenceClass(draft.confidence)
+          ].join(" ")}
+        >
+          Confidence: {formatDraftConfidence(draft.confidence)}
+        </span>
+
+        {draft.missingFields.length > 0 ? (
+          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-700 ring-1 ring-amber-100">
+            Kurang: {draft.missingFields.map(formatMissingField).join(", ")}
+          </span>
+        ) : null}
+      </div>
+
+      {draft.warnings.length > 0 ? (
+        <div className="space-y-2 border-t border-violet-100/80 px-3 py-3">
+          {draft.warnings.map((warning) => (
+            <div
+              className="flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-800"
+              key={warning}
+            >
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{warning}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -204,6 +394,10 @@ function ChatBubble({
           <p className="whitespace-pre-line text-[13px] font-semibold leading-6 sm:text-sm">
             {message.content}
           </p>
+
+          {!isUser && message.transactionDraft ? (
+            <TransactionDraftPanel draft={message.transactionDraft} />
+          ) : null}
 
           {!isUser && message.cards && message.cards.length > 0 ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -494,7 +688,7 @@ export function AsistenPage() {
 
               <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-500 sm:text-sm sm:leading-6">
                 Tanyakan pengeluaran, pemasukan, goals, perbandingan periode,
-                atau saran hemat ringan berdasarkan data Sakuin.
+                atau buat draft transaksi dari chat natural.
               </p>
             </div>
 
@@ -571,7 +765,7 @@ export function AsistenPage() {
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
-                placeholder="Tanya tentang pengeluaran, pemasukan, goals..."
+                placeholder="Tanya keuangan atau catat transaksi..."
                 rows={1}
                 value={input}
               />

@@ -18,6 +18,18 @@ export type AiChatHistoryMessage = {
   content: string;
 };
 
+export type AiTransactionDraft = {
+  type: "INCOME" | "EXPENSE";
+  amount: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  note: string | null;
+  date: string;
+  confidence: "low" | "medium" | "high";
+  missingFields: string[];
+  warnings: string[];
+};
+
 export type AiChatRequest = {
   message: string;
   history?: AiChatHistoryMessage[];
@@ -28,6 +40,7 @@ export type AiChatResponse = {
   intent: AiIntent;
   cards: AiChatCard[];
   suggestions: string[];
+  transactionDraft?: AiTransactionDraft;
 };
 
 export type AiChatMessage = {
@@ -37,5 +50,6 @@ export type AiChatMessage = {
   intent?: AiIntent;
   cards?: AiChatCard[];
   suggestions?: string[];
+  transactionDraft?: AiTransactionDraft;
   createdAt: string;
 };
