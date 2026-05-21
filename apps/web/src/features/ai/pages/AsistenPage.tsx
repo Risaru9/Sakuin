@@ -1,10 +1,4 @@
-import {
-  FormEvent,
-  KeyboardEvent,
-  useEffect,
-  useRef,
-  useState
-} from "react";
+import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -474,6 +468,56 @@ function IntentBadge({ intent }: { intent?: string }) {
   );
 }
 
+function TypewriterContent({
+  content,
+  shouldAnimate
+}: {
+  content: string;
+  shouldAnimate: boolean;
+}) {
+  const tokens = content.split(/(\s+)/);
+  const [visibleTokenCount, setVisibleTokenCount] = useState(
+    shouldAnimate ? 0 : tokens.length
+  );
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setVisibleTokenCount(tokens.length);
+      return;
+    }
+
+    setVisibleTokenCount(0);
+
+    if (tokens.length === 0) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setVisibleTokenCount((currentCount) => {
+        if (currentCount >= tokens.length) {
+          window.clearInterval(intervalId);
+          return currentCount;
+        }
+
+        return currentCount + 1;
+      });
+    }, 22);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [content, shouldAnimate, tokens.length]);
+
+  return (
+    <>
+      {tokens.slice(0, visibleTokenCount).join("")}
+      {shouldAnimate && visibleTokenCount < tokens.length ? (
+        <span className="ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-slate-400 align-middle" />
+      ) : null}
+    </>
+  );
+}
+
 function TransactionDraftPanel({
   draft,
   title = "Draft transaksi",
@@ -688,7 +732,8 @@ function ChatBubble({
   disabled,
   savingDraftIds,
   savedDraftMessageIds,
-  cancelledDraftMessageIds
+  cancelledDraftMessageIds,
+  shouldAnimateContent
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
@@ -709,6 +754,7 @@ function ChatBubble({
   savingDraftIds: Set<string>;
   savedDraftMessageIds: Set<string>;
   cancelledDraftMessageIds: Set<string>;
+  shouldAnimateContent: boolean;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
@@ -767,7 +813,10 @@ function ChatBubble({
           ) : null}
 
           <p className="whitespace-pre-line text-[13px] font-semibold leading-6 sm:text-sm">
-            {message.content}
+            <TypewriterContent
+              content={message.content}
+              shouldAnimate={shouldAnimateContent}
+            />
           </p>
 
           {!isUser && transactionDrafts.length > 1 ? (
@@ -953,7 +1002,6 @@ function ClearHistoryDialog({
 export function AsistenPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AiChatMessage[]>([
@@ -983,6 +1031,11 @@ export function AsistenPage() {
 
   const displayedName = profileQuery.data?.name ?? user?.name ?? "User";
   const displayedEmail = profileQuery.data?.email ?? user?.email ?? "-";
+  const latestAssistantMessageId =
+    [...messages]
+      .reverse()
+      .find((message) => message.role === "assistant" && message.id !== "welcome-message")
+      ?.id ?? null;
 
   useEffect(() => {
     const storageKey = getChatHistoryStorageKey(user?.id);
@@ -1132,13 +1185,6 @@ export function AsistenPage() {
       // Local storage can fail in private mode or if quota is full.
     }
   }, [cancelledDraftIdsLoaded, cancelledDraftMessageIds, user?.id]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end"
-    });
-  }, [messages, isSubmitting, savingDraftIds]);
 
   function cancelDraftMessage(
     message: AiChatMessage,
@@ -1716,6 +1762,10 @@ export function AsistenPage() {
                 onSuggestionClick={handlePromptClick}
                 savedDraftMessageIds={savedDraftMessageIds}
                 savingDraftIds={savingDraftIds}
+                shouldAnimateContent={
+                  message.role === "assistant" &&
+                  message.id === latestAssistantMessageId
+                }
               />
             ))}
 
@@ -1735,8 +1785,6 @@ export function AsistenPage() {
                 </div>
               </div>
             ) : null}
-
-            <div ref={bottomRef} />
           </div>
         </div>
 
