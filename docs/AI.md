@@ -1,23 +1,25 @@
 # Sakuin AI Specification
 
-Dokumen ini menjelaskan spesifikasi awal fitur **Asisten Sakuin**, yaitu AI financial helper untuk membantu user memahami kondisi keuangan pribadi, bertanya tentang transaksi, melihat ringkasan pemasukan/pengeluaran, mendapatkan saran hemat, dan nantinya membuat draft transaksi dari chat natural.
+Dokumen ini menjelaskan spesifikasi fitur **Asisten Sakuin**, yaitu AI financial helper di dalam Sakuin yang membantu user memahami kondisi keuangan pribadi, membaca ringkasan pemasukan/pengeluaran, menganalisis transaksi, membaca goals, memberi saran hemat ringan, menganalisis skenario finansial sederhana, dan membuat draft transaksi dari chat natural.
 
-Dokumen ini wajib menjadi acuan sebelum implementasi backend atau frontend AI.
+Dokumen ini wajib menjadi acuan sebelum mengubah backend atau frontend AI.
 
 ---
 
 ## 1. Product Goal
 
-Asisten Sakuin dibuat untuk membuat Sakuin lebih dari sekadar aplikasi pencatat transaksi.
+Asisten Sakuin dibuat agar Sakuin tidak hanya menjadi aplikasi pencatat transaksi seperti spreadsheet.
 
 Tujuan utama:
 
 ```txt
 [✓] Membantu user memahami kondisi keuangan pribadi
-[✓] Membantu user melihat pengeluaran, pemasukan, dan saldo dengan bahasa sederhana
+[✓] Membantu user melihat pengeluaran, pemasukan, saldo, dan goals dengan bahasa sederhana
 [✓] Memberi insight dan saran hemat yang ringan, aman, dan tidak menghakimi
 [✓] Membantu user bertanya bebas tanpa harus menghafal command
-[✓] Nantinya membantu user membuat draft transaksi dari chat natural
+[✓] Membantu user membuat draft transaksi dari chat natural
+[✓] Membantu user mencatat banyak transaksi sekaligus dari satu prompt
+[✓] Mengurangi effort input manual agar Sakuin lebih efektif daripada pencatatan spreadsheet
 ```
 
 Asisten Sakuin bukan:
@@ -27,14 +29,56 @@ Asisten Sakuin bukan:
 [✗] penasihat pinjaman
 [✗] penasihat pajak/hukum
 [✗] AI umum untuk menjawab semua pertanyaan
-[✗] sistem yang menyimpan transaksi otomatis tanpa review user
+[✗] sistem auto-save transaksi tanpa review user
+[✗] sistem yang boleh mengarang data transaksi, goals, saldo, atau kategori
+[✗] sistem yang boleh membaca atau menampilkan data user lain
 ```
 
 ---
 
-## 2. Feature Name
+## 2. Current AI Status
 
-Nama fitur:
+Status Asisten Sakuin saat ini:
+
+```txt
+[✓] Route /asisten tersedia
+[✓] Floating AI launcher tersedia di authenticated pages
+[✓] Financial-only intent classifier tersedia
+[✓] Out-of-scope guardrail tersedia
+[✓] Backend Gemini provider foundation tersedia
+[✓] AI provider router tersedia
+[✓] Default/complex/fallback model routing tersedia
+[✓] Safe AI financial context aggregation tersedia
+[✓] AI chat endpoint tersedia
+[✓] AI chat endpoint security tests tersedia
+[✓] Rule-based fallback response tersedia
+[✓] Financial scenario analyzer tersedia
+[✓] Chat history lokal tersedia di /asisten
+[✓] Clear chat history dialog tersedia
+[✓] Follow-up context dari chat history tersedia
+[✓] Transaction draft engine rule-based tersedia
+[✓] Single transaction draft tersedia
+[✓] Multi transaction draft tersedia
+[✓] transactionDraft backward compatibility tersedia
+[✓] transactionDrafts array tersedia
+[✓] Draft bisa disimpan satu per satu
+[✓] Draft bisa dibatalkan satu per satu
+[✓] Banyak draft bisa disimpan sekaligus melalui Simpan Semua Draft
+[✓] Draft yang dibatalkan tidak bisa disimpan
+[✓] Draft yang sudah tersimpan tidak bisa disimpan ulang
+[✓] AI transaction draft tidak auto-save
+[✓] AI transaction draft tidak memanggil Gemini
+[✓] UI /asisten tidak auto-scroll saat save/cancel/save all
+[✓] Assistant message memakai typewriter effect ringan tanpa memaksa scroll user
+[✓] GitHub Actions CI passed
+[✓] Vercel deployment passed
+```
+
+---
+
+## 3. Feature Name
+
+Nama fitur user-facing:
 
 ```txt
 Asisten Sakuin
@@ -46,11 +90,23 @@ Nama internal:
 Sakuin AI Financial Helper
 ```
 
+Route utama:
+
+```txt
+/asisten
+```
+
+Endpoint utama:
+
+```txt
+POST /api/ai/chat
+```
+
 ---
 
-## 3. UI Placement
+## 4. UI Placement
 
-Asisten Sakuin akan ditempatkan sebagai floating action button di seluruh halaman authenticated.
+Asisten Sakuin ditempatkan sebagai floating action button di halaman authenticated.
 
 Halaman yang menampilkan floating button:
 
@@ -90,11 +146,11 @@ Route `/asisten` adalah room chat utama Asisten Sakuin.
 
 ---
 
-## 4. Main User Experience
+## 5. Main User Experience
 
-User tidak wajib menggunakan slash command.
+User tidak wajib memakai slash command.
 
-User bisa bertanya natural, misalnya:
+User bisa bertanya natural:
 
 ```txt
 pengeluaran saya bulan ini gimana?
@@ -102,16 +158,37 @@ saya boros di mana minggu ini?
 bandingkan bulan ini dengan bulan lalu
 apakah saldo saya masih aman?
 apa saran hemat untuk bulan ini?
+goal saya realistis nggak?
+gaji saya 8 juta ingin beli motor 30 juta, realistis nggak?
 catat makan ayam geprek 15000 tadi siang
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+dikasih kakak 100000
+bensin 30000 kemarin
 ```
 
-Sistem backend akan mengklasifikasikan maksud user menjadi intent internal.
+Backend mengklasifikasikan maksud user menjadi intent internal.
+
+Frontend menampilkan:
+
+```txt
+[✓] User bubble
+[✓] Assistant bubble
+[✓] Intent badge
+[✓] Cards ringkasan
+[✓] Suggested prompts
+[✓] Transaction draft panel
+[✓] Multi draft panel
+[✓] Simpan Draft
+[✓] Batalkan Draft
+[✓] Simpan Semua Draft
+[✓] Clear chat history dialog
+```
 
 ---
 
-## 5. Supported Intents
+## 6. Supported Intents
 
-MVP intent:
+Intent yang didukung:
 
 ```txt
 FINANCIAL_SUMMARY
@@ -133,6 +210,7 @@ Contoh:
 ```txt
 pengeluaran dan pemasukan saya bulan ini gimana?
 keuangan saya bulan ini aman nggak?
+saldo saya aman nggak?
 ```
 
 ### SPENDING_ANALYSIS
@@ -145,6 +223,7 @@ Contoh:
 saya boros di mana?
 pengeluaran terbesar saya apa?
 kategori apa yang paling banyak bulan ini?
+kenapa pengeluaran saya besar?
 ```
 
 ### INCOME_ANALYSIS
@@ -156,6 +235,7 @@ Contoh:
 ```txt
 pemasukan saya bulan ini berapa?
 pemasukan saya naik atau turun?
+sumber pemasukan terbesar saya apa?
 ```
 
 ### PERIOD_COMPARISON
@@ -167,40 +247,60 @@ Contoh:
 ```txt
 bandingkan bulan ini dengan bulan lalu
 pengeluaran minggu ini dibanding minggu lalu gimana?
+bulan ini lebih boros atau lebih hemat?
 ```
 
 ### SAVING_ADVICE
 
-Memberi saran hemat yang aman.
+Memberi saran hemat yang aman dan ringan.
 
 Contoh:
 
 ```txt
 kasih saran hemat
 apa yang harus saya kurangi bulan ini?
+bagaimana cara menekan pengeluaran?
 ```
 
 ### GOAL_ANALYSIS
 
-Membantu membaca goal tabungan.
+Membantu membaca goal tabungan dan skenario finansial sederhana.
 
 Contoh:
 
 ```txt
 goal saya aman nggak?
 target dana darurat saya progresnya gimana?
+gaji saya 8 juta ingin beli motor 30 juta, realistis nggak?
+kalau 8 bulan gimana?
+kalau tenor 12 sampai 32 bulan gimana?
 ```
 
 ### TRANSACTION_DRAFT
 
 Membuat draft transaksi dari chat natural.
 
-Contoh:
+Contoh single draft:
 
 ```txt
-catat makan ayam geprek 15000 tadi siang
+catat makan ayam geprek 15000
 dikasih kakak 100000
 bensin 30000 kemarin
+```
+
+Contoh multi draft:
+
+```txt
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+```
+
+Output multi draft harus menghasilkan beberapa draft:
+
+```txt
+Draft 1: makan, Rp12.000
+Draft 2: minum, Rp4.000
+Draft 3: cimol, Rp4.000
+Draft 4: cireng, Rp5.000
 ```
 
 Penting:
@@ -208,6 +308,7 @@ Penting:
 ```txt
 AI hanya membuat draft.
 AI tidak boleh langsung menyimpan transaksi final tanpa review user.
+AI transaction draft wajib rule-based dan tidak memanggil Gemini.
 ```
 
 ### OUT_OF_SCOPE
@@ -220,6 +321,7 @@ Contoh:
 buatkan cerpen
 jelaskan sejarah Majapahit
 buatkan kode React
+siapa istri Naruto?
 siapa presiden sekarang?
 ```
 
@@ -231,7 +333,7 @@ Maaf, Asisten Sakuin hanya bisa membantu pertanyaan seputar keuangan pribadi di 
 
 ---
 
-## 6. Financial-Only Guardrail
+## 7. Financial-Only Guardrail
 
 Asisten Sakuin hanya boleh menjawab topik:
 
@@ -244,8 +346,10 @@ goals
 budget
 safe balance
 ringkasan keuangan
+perbandingan periode
 saran hemat ringan
 draft transaksi
+skenario finansial pribadi sederhana
 ```
 
 Asisten Sakuin harus menolak:
@@ -254,17 +358,21 @@ Asisten Sakuin harus menolak:
 pertanyaan umum di luar finansial
 coding
 politik
+hiburan
 kesehatan
 hukum
 pajak profesional
 investasi spesifik
-pinjaman
+pinjaman spesifik
 prediksi finansial pasti
+permintaan yang meminta AI mengarang data pribadi
 ```
+
+Out-of-scope tidak boleh memanggil Gemini.
 
 ---
 
-## 7. Advice Policy
+## 8. Advice Policy
 
 AI boleh memberi:
 
@@ -274,6 +382,9 @@ AI boleh memberi:
 [✓] saran membuat batas mingguan
 [✓] saran mengevaluasi transaksi kecil
 [✓] saran melihat kategori terbesar
+[✓] analisis rasio sederhana terhadap pemasukan
+[✓] peringatan risiko ringan untuk skenario pembelian
+[✓] saran membuat prioritas tabungan
 ```
 
 AI tidak boleh memberi:
@@ -281,9 +392,12 @@ AI tidak boleh memberi:
 ```txt
 [✗] rekomendasi investasi spesifik
 [✗] rekomendasi pinjaman
+[✗] rekomendasi tenor pinjaman sebagai keputusan final
 [✗] klaim pasti tentang kondisi finansial masa depan
+[✗] saran pajak/hukum profesional
 [✗] saran yang menghakimi user
 [✗] komentar seperti "gaji kamu kecil"
+[✗] keputusan final seperti "wajib beli" atau "pasti aman"
 ```
 
 Contoh kalimat yang benar:
@@ -300,13 +414,14 @@ Gaji kamu kecil, jadi kamu harus berhenti membeli makanan di luar.
 
 ---
 
-## 8. Response Style
+## 9. Response Style
 
 Jawaban default harus:
 
 ```txt
 singkat
 jelas
+langsung ke inti
 tidak overwhelming
 tidak terlalu teknis
 tidak memakai istilah database/provider
@@ -322,23 +437,33 @@ Format default:
 3. Saran singkat
 ```
 
-Contoh:
+Jika user bertanya realistis/tidak, jawaban harus dimulai dengan verdict:
 
 ```txt
-Pengeluaranmu bulan ini Rp500.000 dari 24 transaksi.
+Cukup realistis, tetapi perlu dijaga.
+Berisiko, karena cicilan/target bulanannya terlalu besar.
+Belum bisa disimpulkan karena data nominalnya belum lengkap.
+```
 
-Kategori terbesar adalah Makanan sebesar Rp300.000. Jika pemasukan bulan ini Rp1.500.000, maka pengeluaran makanan sekitar 20% dari pemasukan.
+Untuk skenario pembelian/kredit/tenor:
 
-Saran: coba batasi pengeluaran makanan sekitar Rp70.000 per minggu agar saldo tetap lebih aman.
+```txt
+[✓] Hitung kebutuhan per bulan
+[✓] Bandingkan dengan pemasukan jika user memberi pemasukan
+[✓] Jelaskan risiko utama
+[✓] Jelaskan bahwa bunga/biaya tambahan belum dihitung jika memang belum ada
+[✓] Beri saran aman dan ringan
+[✗] Jangan langsung menyuruh user membeli
+[✗] Jangan memberi keputusan finansial profesional
 ```
 
 ---
 
-## 9. Data Sent to AI
+## 10. Data Sent to AI
 
 Backend tidak boleh langsung mengirim semua transaksi mentah.
 
-Data yang boleh dikirim untuk MVP:
+Data yang boleh dikirim untuk konteks finansial:
 
 ```json
 {
@@ -359,11 +484,18 @@ Data yang boleh dikirim untuk MVP:
   "incomeThisMonth": 1500000,
   "expenseThisMonth": 500000,
   "previousPeriodExpense": 450000,
-  "previousPeriodIncome": 1400000
+  "previousPeriodIncome": 1400000,
+  "goalsSummary": {
+    "totalGoals": 3,
+    "completedGoals": 1,
+    "activeGoals": 2,
+    "totalTargetAmount": 5000000,
+    "totalCurrentAmount": 2000000
+  }
 }
 ```
 
-Data yang tidak boleh dikirim ke AI:
+Data yang tidak boleh dikirim ke AI provider:
 
 ```txt
 email user
@@ -377,36 +509,17 @@ requestId
 SMTP secret
 Google credential
 data user lain
+full export content
+raw audit metadata
 ```
 
----
-
-## 10. Transaction Draft Policy
-
-Jika user meminta AI mencatat transaksi, AI hanya boleh membuat draft.
-
-Contoh response:
+Catatan:
 
 ```txt
-Saya menemukan 3 draft transaksi:
-
-1. Pengeluaran — Makanan — Rp15.000 — ayam geprek
-2. Pemasukan — Hadiah/Keluarga — Rp100.000 — dikasih kakak
-3. Pengeluaran — Transport — Rp30.000 — bensin
-
-Silakan cek dulu sebelum disimpan.
+Financial context harus berupa agregasi aman.
+AI tidak boleh menerima seluruh daftar transaksi mentah untuk MVP.
+Jika di masa depan diperlukan detail transaksi, harus melalui desain privacy khusus.
 ```
-
-Frontend wajib menyediakan review flow:
-
-```txt
-[ ] edit draft
-[ ] hapus draft
-[ ] simpan draft
-[ ] batal
-```
-
-AI tidak boleh auto-save transaksi.
 
 ---
 
@@ -425,9 +538,11 @@ Backend auth middleware
   ↓
 AI intent classifier
   ↓
+Out-of-scope guardrail
+  ↓
 Financial data aggregation
   ↓
-AI provider abstraction
+Provider router / rule-based engine
   ↓
 Output validation
   ↓
@@ -438,7 +553,7 @@ API key AI hanya disimpan di backend environment variable.
 
 ---
 
-## 12. Provider
+## 12. Provider and Routing
 
 Provider awal:
 
@@ -446,31 +561,44 @@ Provider awal:
 Gemini API
 ```
 
-Model awal:
+Provider dipanggil hanya dari backend.
 
-```txt
-gemini-2.5-flash-lite
-```
+Frontend tidak boleh menerima API key AI.
 
-Jika hasil kurang bagus, evaluasi:
-
-```txt
-gemini-2.5-flash
-```
-
-Environment variable backend:
+Environment backend:
 
 ```env
 GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
 ```
 
-Jangan pernah memakai prefix `VITE_` untuk secret AI.
+Aturan routing:
+
+```txt
+Simple financial assistant  : default model
+Complex financial analysis  : complex model
+Provider error              : fallback model atau rule-based fallback
+Out-of-scope                : tidak memanggil provider
+Transaction draft           : tidak memanggil provider, wajib rule-based
+```
+
+Alasan transaction draft tidak memakai Gemini:
+
+```txt
+[✓] Lebih hemat rate limit
+[✓] Lebih deterministik
+[✓] Lebih mudah dites
+[✓] Lebih aman untuk pencatatan transaksi
+[✓] Mengurangi risiko AI mengarang nominal/kategori
+```
 
 ---
 
 ## 13. Backend Endpoint
 
-Endpoint MVP:
+Endpoint:
 
 ```txt
 POST /api/ai/chat
@@ -486,11 +614,21 @@ Request body:
 
 ```json
 {
-  "message": "pengeluaran saya bulan ini gimana?"
+  "message": "pengeluaran saya bulan ini gimana?",
+  "history": [
+    {
+      "role": "user",
+      "content": "goal saya gimana?"
+    },
+    {
+      "role": "assistant",
+      "content": "Goal kamu masih berjalan..."
+    }
+  ]
 }
 ```
 
-Response body:
+Response body umum:
 
 ```json
 {
@@ -514,71 +652,264 @@ Response body:
 }
 ```
 
----
+Response body single transaction draft:
 
-## 14. Rate Limit
-
-Endpoint AI harus punya rate limit.
-
-Rekomendasi awal:
-
-```txt
-10 request per user per hari
+```json
+{
+  "reply": "Saya membuat 1 draft transaksi. Silakan review dulu sebelum disimpan.",
+  "intent": "TRANSACTION_DRAFT",
+  "cards": [
+    {
+      "label": "Jumlah draft",
+      "value": "1"
+    }
+  ],
+  "suggestions": [
+    "Catat transaksi lain",
+    "Lihat pengeluaran bulan ini"
+  ],
+  "transactionDraft": {
+    "type": "EXPENSE",
+    "amount": "15000",
+    "categoryId": "category-id",
+    "categoryName": "Makanan",
+    "note": "ayam geprek",
+    "date": "2026-05-21",
+    "confidence": "high",
+    "missingFields": [],
+    "warnings": []
+  },
+  "transactionDrafts": [
+    {
+      "type": "EXPENSE",
+      "amount": "15000",
+      "categoryId": "category-id",
+      "categoryName": "Makanan",
+      "note": "ayam geprek",
+      "date": "2026-05-21",
+      "confidence": "high",
+      "missingFields": [],
+      "warnings": []
+    }
+  ]
+}
 ```
 
-Untuk development bisa lebih longgar.
+Response body multi transaction draft:
+
+```json
+{
+  "reply": "Saya menemukan 4 draft transaksi. Silakan review dulu sebelum disimpan.",
+  "intent": "TRANSACTION_DRAFT",
+  "cards": [
+    {
+      "label": "Jumlah draft",
+      "value": "4"
+    },
+    {
+      "label": "Siap disimpan",
+      "value": "4"
+    },
+    {
+      "label": "Total nominal",
+      "value": "Rp25.000"
+    }
+  ],
+  "suggestions": [
+    "Catat transaksi lain",
+    "Lihat pengeluaran bulan ini"
+  ],
+  "transactionDraft": {
+    "type": "EXPENSE",
+    "amount": "12000",
+    "categoryId": "category-id",
+    "categoryName": "Makanan",
+    "note": "makan",
+    "date": "2026-05-21",
+    "confidence": "high",
+    "missingFields": [],
+    "warnings": []
+  },
+  "transactionDrafts": [
+    {
+      "type": "EXPENSE",
+      "amount": "12000",
+      "categoryId": "category-id",
+      "categoryName": "Makanan",
+      "note": "makan",
+      "date": "2026-05-21",
+      "confidence": "high",
+      "missingFields": [],
+      "warnings": []
+    },
+    {
+      "type": "EXPENSE",
+      "amount": "4000",
+      "categoryId": "category-id",
+      "categoryName": "Minuman",
+      "note": "minum",
+      "date": "2026-05-21",
+      "confidence": "high",
+      "missingFields": [],
+      "warnings": []
+    }
+  ]
+}
+```
+
+Catatan compatibility:
+
+```txt
+transactionDraft tetap dikirim sebagai draft pertama untuk backward compatibility.
+transactionDrafts adalah sumber utama untuk multi draft.
+Frontend harus mendukung keduanya.
+```
+
+---
+
+## 14. Transaction Draft Policy
+
+Jika user meminta AI mencatat transaksi, AI hanya boleh membuat draft.
+
+AI tidak boleh langsung menyimpan transaksi.
+
+Prinsip:
+
+```txt
+[✓] Draft-first
+[✓] User review first
+[✓] User-controlled save
+[✓] User-controlled cancel
+[✓] No auto-save
+[✓] No Gemini call for transaction draft
+[✓] Rule-based parser
+[✓] Deterministic behavior
+```
+
+Frontend wajib menyediakan review flow:
+
+```txt
+[✓] Simpan Draft
+[✓] Batalkan Draft
+[✓] Simpan Semua Draft untuk multi draft
+[✓] Status Sudah disimpan
+[✓] Status Dibatalkan
+[✓] Draft belum lengkap tidak bisa disimpan
+[✓] Draft yang dibatalkan tidak bisa disimpan
+[✓] Draft yang sudah disimpan tidak bisa disimpan ulang
+```
+
+Frontend saat ini belum wajib menyediakan:
+
+```txt
+[ ] Edit draft langsung dari chat
+[ ] Ubah kategori langsung dari chat draft panel
+[ ] Ubah nominal langsung dari chat draft panel
+[ ] Merge/split draft dari UI chat
+```
+
+Fitur edit draft dapat menjadi fase lanjutan karena lebih kompleks dan perlu desain UX khusus.
+
+---
+
+## 15. Multi Transaction Draft UX
+
+Contoh input:
+
+```txt
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+```
+
+Target hasil:
+
+```txt
+Draft 1: makan, Rp12.000, Makanan
+Draft 2: minum, Rp4.000, Minuman
+Draft 3: cimol, Rp4.000, Makanan
+Draft 4: cireng, Rp5.000, Makanan
+```
+
+UI harus menyediakan:
+
+```txt
+[✓] Panel per draft
+[✓] Simpan Draft per item
+[✓] Batalkan Draft per item
+[✓] Simpan Semua Draft
+[✓] Ringkasan jumlah draft siap disimpan
+[✓] Total nominal draft yang siap disimpan
+[✓] Save batch secara parallel
+[✓] Input chat tidak dikunci saat draft sedang disimpan
+[✓] Suggestion "Simpan semua" tidak boleh muncul sebagai prompt AI
+```
+
+State saved/cancelled harus berbasis draft key:
+
+```txt
+${message.id}:${draftIndex}
+```
+
+Contoh:
+
+```txt
+message-abc:0
+message-abc:1
+message-abc:2
+message-abc:3
+```
 
 Alasan:
 
 ```txt
-mengontrol biaya
-mencegah spam
-mencegah abuse
-menjaga latency
+Satu assistant message bisa memuat banyak draft.
+Jika state hanya memakai message.id, maka semua draft akan dianggap sama.
+```
+
+Backward compatibility:
+
+```txt
+Untuk localStorage lama, draft index 0 boleh tetap membaca message.id lama.
 ```
 
 ---
 
-## 15. Logging and Audit
+## 16. Cancel Draft Policy
 
-Log AI tidak boleh menyimpan data sensitif.
-
-Boleh log:
+Draft bisa dibatalkan melalui:
 
 ```txt
-event type
-intent
-status
-userId
-requestId
-durationMs
-timestamp
+[✓] Tombol Batalkan Draft
+[✓] Chat command natural
 ```
 
-Tidak boleh log:
+Contoh command batal:
 
 ```txt
-raw message penuh jika mengandung data transaksi
-AI API key
-token
-email
-raw financial detail
-full AI response jika terlalu sensitif
+batal
+batalkan
+cancel
+batalin
+hapus draft
+batalkan draft
+tidak jadi
+ga jadi
+gak jadi
+nggak jadi
 ```
 
-Audit event kandidat:
+Behavior:
 
 ```txt
-ai.chat_requested
-ai.chat_completed
-ai.chat_failed
-ai.out_of_scope_blocked
-ai.transaction_draft_generated
+[✓] Draft aktif terakhir dibatalkan
+[✓] Jika multi draft aktif, semua draft aktif di message terakhir dapat dibatalkan
+[✓] Draft yang sudah dibatalkan tidak bisa disimpan
+[✓] Assistant memberi konfirmasi natural
+[✓] Cancel draft tidak dianggap out-of-scope
 ```
 
 ---
 
-## 16. Frontend UI
+## 17. Frontend Chat UX Rules
 
 Route:
 
@@ -586,13 +917,7 @@ Route:
 /asisten
 ```
 
-Floating button:
-
-```txt
-AppShell bottom-right
-```
-
-Chat page layout:
+Layout:
 
 ```txt
 Header:
@@ -608,99 +933,350 @@ Suggested prompts:
 Chat:
 User bubble
 AI bubble
+Transaction draft panel
+Multi draft action panel
 
 Input:
-"Tanya tentang transaksi, pengeluaran, pemasukan, goals..."
+"Tanya keuangan atau catat transaksi..."
+```
+
+UX rules:
+
+```txt
+[✓] Header dan input tetap nyaman di mobile
+[✓] Chat history tersimpan lokal
+[✓] User bisa hapus chat history
+[✓] Draft saved/cancelled state tersimpan lokal
+[✓] Assistant message boleh memakai typewriter effect ringan
+[✓] Typewriter effect tidak boleh memaksa scroll otomatis
+[✓] Save draft tidak boleh memaksa scroll otomatis
+[✓] Cancel draft tidak boleh memaksa scroll otomatis
+[✓] Save all draft tidak boleh memaksa scroll otomatis
+[✓] User tetap memegang kontrol posisi scroll
+```
+
+Dilarang:
+
+```txt
+[✗] Auto-scroll setiap messages berubah
+[✗] Auto-scroll saat save draft
+[✗] Auto-scroll saat cancel draft
+[✗] Auto-scroll saat save all draft
+[✗] Mengunci input chat hanya karena draft sedang disimpan
+[✗] Mengirim "Simpan semua" sebagai prompt ke AI
 ```
 
 ---
 
-## 17. MVP Scope
+## 18. Local Storage Policy
 
-Phase AI MVP:
+Data yang boleh disimpan di localStorage frontend:
 
 ```txt
-[✓] Floating button
-[✓] /asisten page
-[✓] Financial-only chat
-[✓] Out-of-scope rejection
-[✓] Summary/pengeluaran/pemasukan analysis
-[✓] Saran hemat ringan
-[✓] Backend Gemini provider
-[✓] Rate limit
-[✓] Safe logging
+chat history lokal
+saved draft keys
+cancelled draft keys
+goal priority lokal jika masih dipakai
+auth token saat ini masih MVP behavior
 ```
 
-Tidak masuk MVP pertama:
+AI chat localStorage keys:
 
 ```txt
-[ ] cronjob mingguan
-[ ] Telegram/WhatsApp notification
-[ ] auto-save transaksi
-[ ] full free-form financial report panjang
-[ ] investment advice
-[ ] Gmail/e-wallet transaction detection
+sakuin_ai_chat_history_v1:<userId>
+sakuin_ai_saved_draft_ids_v1:<userId>
+sakuin_ai_cancelled_draft_ids_v1:<userId>
+```
+
+Catatan:
+
+```txt
+Chat history lokal hanya untuk UX di perangkat user.
+Chat history tidak boleh dianggap sebagai sumber data utama backend.
+Clear chat history harus menghapus chat history dan draft state lokal.
 ```
 
 ---
 
-## 18. Implementation Phases
+## 19. Rate Limit
 
-### Phase 26A — Specification
+Endpoint AI harus punya rate limit.
+
+Tujuan:
 
 ```txt
-[ ] docs/AI.md dibuat
-[ ] scope AI disepakati
-[ ] provider disepakati
-[ ] route disepakati
-[ ] guardrail disepakati
+mengontrol biaya
+mencegah spam
+mencegah abuse
+menjaga latency
+mengurangi risiko Gemini quota habis
+```
+
+Rekomendasi:
+
+```txt
+Development : boleh lebih longgar
+Production  : batasi berdasarkan user/IP sesuai kebutuhan
+```
+
+Catatan:
+
+```txt
+Out-of-scope sebaiknya diproses murah dan tidak memanggil Gemini.
+Transaction draft rule-based sehingga tidak memakai Gemini quota.
+```
+
+---
+
+## 20. Logging and Audit
+
+Log AI tidak boleh menyimpan data sensitif.
+
+Boleh log:
+
+```txt
+event type
+intent
+status
+userId
+requestId
+durationMs
+timestamp
+provider route
+model name aman
+fallback status
+```
+
+Tidak boleh log:
+
+```txt
+raw message penuh jika mengandung data transaksi
+AI API key
+token
+email
+raw financial detail
+full AI response jika terlalu sensitif
+password
+Authorization header
+raw request body
+```
+
+Audit event kandidat:
+
+```txt
+ai.chat_requested
+ai.chat_completed
+ai.chat_failed
+ai.out_of_scope_blocked
+ai.transaction_draft_generated
+ai.provider_used
+ai.provider_fallback
+```
+
+Jika audit event AI disimpan ke database:
+
+```txt
+[✓] metadata harus disanitasi
+[✓] jangan simpan prompt penuh
+[✓] jangan simpan response penuh
+[✓] jangan simpan nominal/detail transaksi mentah tanpa alasan kuat
+[✓] jangan simpan token/email/Authorization/raw body
+```
+
+---
+
+## 21. Validation and Testing
+
+Backend AI validation commands:
+
+```bash
+pnpm --filter @sakuin/api test -- tests/ai-intent.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-chat-service.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-financial-scenario.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-transaction-draft.test.ts
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
+Frontend AI validation commands:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+```
+
+Manual test AI transaction draft:
+
+```txt
+catat makan ayam geprek 15000
+dikasih kakak 100000
+bensin 30000 kemarin
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+```
+
+Manual checklist:
+
+```txt
+[ ] Single draft muncul
+[ ] Multi draft muncul
+[ ] Simpan Draft bekerja
+[ ] Batalkan Draft bekerja
+[ ] Simpan Semua Draft bekerja
+[ ] Draft yang sudah disimpan tidak bisa disimpan ulang
+[ ] Draft yang dibatalkan tidak bisa disimpan
+[ ] Refresh page mempertahankan state saved/cancelled
+[ ] Clear chat history membersihkan chat dan draft state
+[ ] Tidak ada auto-scroll saat save/cancel/save all
+[ ] Tidak ada suggestion "Simpan semua" sebagai prompt AI
+[ ] Halaman Transactions menampilkan transaksi yang disimpan
+[ ] CI passed
+[ ] Deployment passed
+```
+
+Manual test guardrail:
+
+```txt
+siapa istri Naruto?
+buatkan cerpen
+buatkan kode React
+jelaskan sejarah Majapahit
+```
+
+Expected:
+
+```txt
+Asisten menolak dengan sopan karena topik di luar finansial Sakuin.
+```
+
+Manual test financial scenario:
+
+```txt
+gaji saya 8 juta ingin beli motor 30 juta, realistis nggak?
+kalau 8 bulan gimana?
+kalau tenor 12 sampai 32 bulan gimana?
+```
+
+Expected:
+
+```txt
+Asisten memberi verdict, hitungan kebutuhan per bulan, risiko utama, dan saran aman.
+```
+
+---
+
+## 22. Implementation Phases
+
+### Phase 26A — AI Specification
+
+```txt
+[✓] docs/AI.md dibuat
+[✓] scope AI disepakati
+[✓] provider disepakati
+[✓] route disepakati
+[✓] guardrail disepakati
 ```
 
 ### Phase 26B — Backend Foundation
 
 ```txt
-[ ] GEMINI_API_KEY env schema
-[ ] AI module structure
-[ ] AI provider abstraction
-[ ] financial-only intent classifier
-[ ] POST /api/ai/chat
-[ ] rate limit
-[ ] tests
+[✓] AI intent classifier
+[✓] Gemini provider foundation
+[✓] AI provider abstraction
+[✓] Provider router
+[✓] Default/complex/fallback route
+[✓] POST /api/ai/chat
+[✓] AI chat service contract
+[✓] Endpoint security tests
+[✓] Safe financial context aggregation
+[✓] Rule-based fallback response
+[✓] Financial scenario analyzer
 ```
 
 ### Phase 26C — Frontend Foundation
 
 ```txt
-[ ] route /asisten
-[ ] Floating AI button di AppShell
-[ ] AsistenPage
-[ ] chat UI
-[ ] suggested prompts
-[ ] loading/error states
+[✓] route /asisten
+[✓] Floating AI button di AppShell
+[✓] AsistenPage
+[✓] chat UI
+[✓] suggested prompts
+[✓] loading/error states
+[✓] local chat history
+[✓] clear history dialog
+[✓] mobile chat layout polish
+[✓] typewriter effect ringan tanpa auto-scroll
 ```
 
-### Phase 26D — Financial Data Integration
+### Phase 26D — AI Transaction Draft
 
 ```txt
-[ ] aggregate monthly summary
-[ ] aggregate category breakdown
-[ ] period comparison
-[ ] goal summary
-[ ] response cards
+[✓] TRANSACTION_DRAFT intent
+[✓] Rule-based transaction draft parser
+[✓] Single draft response
+[✓] Multi draft response
+[✓] transactionDraft backward compatibility
+[✓] transactionDrafts array
+[✓] Frontend render single draft
+[✓] Frontend render multi draft
+[✓] Simpan Draft per item
+[✓] Batalkan Draft per item
+[✓] Simpan Semua Draft
+[✓] Saved/cancelled state per draft key
+[✓] Cancel draft via chat text
+[✓] No auto-save
+[✓] No Gemini call for transaction draft
+[✓] No auto-scroll saat draft action
 ```
 
-### Phase 26E — Transaction Draft
+### Phase 26E — Complex Financial Analysis
+
+Status:
 
 ```txt
-[ ] AI transaction draft intent
-[ ] draft response format
-[ ] review before save
-[ ] integration with Quick Transaction flow
+[ ] Belum dimulai sebagai fase penuh
+```
+
+Target:
+
+```txt
+[ ] financial health snapshot
+[ ] cashflow bulanan
+[ ] kategori boros 3-6 bulan
+[ ] tren pengeluaran
+[ ] rasio pengeluaran terhadap pemasukan
+[ ] deteksi kenaikan tidak biasa
+[ ] rekomendasi batas mingguan
+[ ] analisis progress goals
+[ ] saran prioritas tabungan
+[ ] financial health score sederhana
 ```
 
 ---
 
-## 19. Non-Negotiable Rules
+## 23. Current Decision
+
+Keputusan saat ini:
+
+```txt
+Feature name       : Asisten Sakuin
+Route              : /asisten
+Entry point        : floating button di AppShell
+Provider           : Gemini API via backend only
+Routing            : default/complex/fallback provider routing
+Transaction draft  : rule-based only, no Gemini call
+Scope              : financial-only personal finance assistant
+Output style       : short, practical, non-overwhelming
+Data policy        : aggregated financial context only
+Save policy        : draft-first, user review, no auto-save
+Multi draft policy : supports transactionDrafts array and Simpan Semua Draft
+UX policy          : no forced auto-scroll; user controls scroll position
+```
+
+---
+
+## 24. Non-Negotiable Rules
 
 ```txt
 Jangan panggil AI provider dari frontend.
@@ -709,25 +1285,165 @@ Jangan jawab pertanyaan di luar finansial Sakuin.
 Jangan kirim semua transaksi mentah ke AI untuk MVP.
 Jangan kirim token/email/password ke AI.
 Jangan auto-save transaksi dari AI.
-Jangan memberi saran investasi/pinjaman/pajak/hukum.
+Jangan memakai Gemini untuk transaction draft.
+Jangan memberi saran investasi/pinjaman/pajak/hukum profesional.
 Jangan membuat output panjang secara default.
 Jangan tampilkan ID database/internal ke user.
+Jangan mengarang data transaksi/goals/saldo.
+Jangan mencampur data user lain.
+Jangan membuat log/audit berisi prompt penuh jika sensitif.
+Jangan membuat UX yang memaksa auto-scroll saat user sedang membaca chat.
 ```
 
 ---
 
-## 20. Current Decision
+## 25. Known Limitations
 
-Keputusan awal:
+Keterbatasan saat ini:
 
 ```txt
-Feature name   : Asisten Sakuin
-Route          : /asisten
-Entry point    : floating button di AppShell
-Provider       : Gemini API
-Model awal     : gemini-2.5-flash-lite
-Scope          : financial-only personal finance assistant
-Output style   : short, practical, non-overwhelming
-First MVP      : chat insight + out-of-scope guardrail
-Later phase    : transaction draft via AI
+[ ] Edit draft langsung dari chat belum tersedia
+[ ] Ubah kategori draft langsung dari chat belum tersedia
+[ ] Ubah nominal draft langsung dari chat belum tersedia
+[ ] Persistent server-side chat history belum tersedia
+[ ] AI memory lintas device belum tersedia
+[ ] Financial health score belum tersedia
+[ ] Insight 3-6 bulan belum tersedia
+[ ] Budgeting per category belum tersedia
+[ ] Gmail/e-wallet transaction detection belum tersedia
+[ ] AI belum boleh membaca transaksi mentah lengkap
+```
+
+Catatan:
+
+```txt
+Keterbatasan ini disengaja agar fitur AI tetap aman, murah, deterministik, dan mudah divalidasi.
+```
+
+---
+
+## 26. Future Roadmap
+
+Prioritas lanjutan yang direkomendasikan:
+
+```txt
+1. Final documentation sync:
+   [ ] docs/AI.md
+   [ ] docs/API.md
+   [ ] docs/HANDOFF.md
+   [ ] docs/SECURITY.md jika perlu
+
+2. Phase 26E.1 — Financial Health Snapshot:
+   [ ] ringkasan kesehatan finansial sederhana
+   [ ] rasio pengeluaran/pemasukan
+   [ ] safe balance awareness
+   [ ] status aman/waspada/berisiko
+
+3. Phase 26E.2 — Spending Pattern Insight:
+   [ ] kategori boros
+   [ ] tren 3-6 bulan
+   [ ] kenaikan tidak biasa
+   [ ] rekomendasi batas mingguan
+
+4. Phase 26E.3 — Goal and Purchase Scenario Polish:
+   [ ] analisis goals lebih detail
+   [ ] skenario pembelian
+   [ ] estimasi kebutuhan tabungan bulanan
+   [ ] risiko jika target terlalu agresif
+
+5. Phase 26F — Transaction Draft Editing:
+   [ ] edit draft amount
+   [ ] edit draft category
+   [ ] edit draft date
+   [ ] edit draft note
+   [ ] save edited draft
+
+6. Future sensitive integrations:
+   [ ] Gmail transaction detection
+   [ ] e-wallet transaction detection
+   [ ] bank statement import
+   [ ] privacy policy
+   [ ] explicit user consent
+   [ ] token encryption jika diperlukan
+```
+
+---
+
+## 27. Developer Notes
+
+File penting backend:
+
+```txt
+apps/api/src/modules/ai/ai.intent.ts
+apps/api/src/modules/ai/ai.provider.ts
+apps/api/src/modules/ai/ai.provider-router.ts
+apps/api/src/modules/ai/ai.service.ts
+apps/api/src/modules/ai/ai.types.ts
+apps/api/src/modules/ai/ai-financial-context.ts
+apps/api/src/modules/ai/ai-financial-scenario.ts
+apps/api/src/modules/ai/ai-transaction-draft.ts
+apps/api/src/modules/ai/ai.route.ts
+```
+
+File penting frontend:
+
+```txt
+apps/web/src/features/ai/ai.types.ts
+apps/web/src/features/ai/ai.service.ts
+apps/web/src/features/ai/pages/AsistenPage.tsx
+apps/web/src/components/layout/AppShell.tsx
+```
+
+Test penting:
+
+```txt
+apps/api/tests/ai-intent.test.ts
+apps/api/tests/ai-chat-service.test.ts
+apps/api/tests/ai-financial-scenario.test.ts
+apps/api/tests/ai-transaction-draft.test.ts
+```
+
+Aturan sebelum mengubah AI:
+
+```txt
+[ ] Pahami apakah perubahan menyentuh backend, frontend, atau keduanya
+[ ] Jangan ubah parser transaction draft tanpa test
+[ ] Jangan ubah provider router tanpa test
+[ ] Jangan ubah guardrail tanpa out-of-scope regression
+[ ] Jangan ubah schema response tanpa update frontend type
+[ ] Jangan ubah frontend draft state tanpa test manual refresh/localStorage
+[ ] Jangan ubah database/migration untuk AI kecuali benar-benar perlu
+```
+
+---
+
+## 28. Documentation Update Checklist
+
+Setelah mengubah AI feature, update dokumen terkait:
+
+```txt
+[ ] docs/AI.md
+[ ] docs/API.md jika response endpoint berubah
+[ ] docs/HANDOFF.md jika status fase berubah
+[ ] docs/SECURITY.md jika ada perubahan security/privacy
+[ ] README.md jika ada perubahan produk besar
+```
+
+Untuk perubahan dokumentasi saja, validasi minimal:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
+git status
+```
+
+Jika ingin regression penuh:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
 ```

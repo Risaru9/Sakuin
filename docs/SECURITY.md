@@ -1,8 +1,8 @@
 # Sakuin Security Documentation
 
-Dokumen ini menjelaskan security baseline, prinsip keamanan, batasan, risiko, audit trail, dan roadmap security untuk project **Sakuin**.
+Dokumen ini menjelaskan security baseline, prinsip keamanan, batasan, risiko, audit trail, AI safety, dan roadmap security untuk project **Sakuin**.
 
-Sakuin adalah web app pengelola keuangan pribadi. Karena aplikasi ini menyimpan data sensitif seperti transaksi, saldo, kategori, target tabungan, profile user, dan export laporan keuangan, security harus dikembangkan secara bertahap, hati-hati, dan terdokumentasi.
+Sakuin adalah web app pengelola keuangan pribadi. Karena aplikasi ini menyimpan data sensitif seperti transaksi, saldo, kategori, target tabungan, profile user, export laporan keuangan, dan konteks AI finansial, security harus dikembangkan secara bertahap, hati-hati, dan terdokumentasi.
 
 Dokumen ini tidak boleh dipahami sebagai klaim bahwa Sakuin sudah 100% aman. Target realistis security Sakuin adalah:
 
@@ -10,7 +10,7 @@ Dokumen ini tidak boleh dipahami sebagai klaim bahwa Sakuin sudah 100% aman. Tar
 Mengurangi risiko.
 Mencegah kesalahan umum.
 Menjaga data user tetap terisolasi.
-Mencegah data sensitif bocor melalui response, log, audit metadata, export, atau cache.
+Mencegah data sensitif bocor melalui response, log, audit metadata, export, cache, atau AI context.
 Membuat fondasi yang cukup aman sebelum masuk ke fitur yang lebih sensitif.
 ```
 
@@ -45,6 +45,12 @@ Status security terbaru:
 [✓] Data isolation tests aktif
 [✓] Auth/token edge case tests aktif
 [✓] Rate limit/API abuse tests aktif
+[✓] Asisten Sakuin financial-only guardrail aktif
+[✓] AI provider hanya dipanggil dari backend
+[✓] AI financial context user-only dan teragregasi
+[✓] AI transaction draft rule-based tanpa Gemini
+[✓] AI transaction draft tidak auto-save
+[✓] Multi transaction draft tetap user-reviewed sebelum disimpan
 ```
 
 Security yang masih menjadi backlog:
@@ -57,6 +63,8 @@ Security yang masih menjadi backlog:
 [ ] CSRF strategy jika memakai cookie
 [ ] Session invalidation/logout server-side
 [ ] Email verification untuk akun email/password
+[ ] Password change flow untuk user login
+[ ] Cleanup unused Resend env/config reference jika masih ada
 [ ] OAuth token encryption jika nanti memakai provider API sensitif
 [ ] Gmail disconnect/revoke mechanism jika Gmail API dibuat
 [ ] Privacy policy untuk integrasi sensitif
@@ -79,14 +87,27 @@ Security harus mengutamakan data isolation antar user.
 Security harus menghindari penyimpanan data sensitif yang tidak perlu.
 Security harus mengutamakan consent user untuk fitur otomatisasi.
 Security harus menyediakan review user sebelum data otomatis disimpan.
+Security harus menjaga AI agar tidak mengarang, menyimpan otomatis, atau membocorkan data pribadi.
 ```
 
 Prinsip khusus untuk fitur otomatisasi:
 
 ```txt
 Fitur otomatisasi tidak boleh langsung membuat transaksi final tanpa review user.
-Parser, AI, Gmail/e-wallet detection, atau financial assistant harus menghasilkan draft terlebih dahulu.
-User harus dapat melihat, mengubah, dan menyetujui hasil sebelum disimpan.
+Parser, AI, Gmail/e-wallet detection, bank statement import, atau financial assistant harus menghasilkan draft terlebih dahulu.
+User harus dapat melihat, membatalkan, dan menyetujui hasil sebelum disimpan.
+```
+
+Prinsip khusus untuk AI:
+
+```txt
+AI tidak boleh menjadi sumber kebocoran data.
+AI tidak boleh menerima semua transaksi mentah untuk MVP.
+AI tidak boleh menerima token, email, password, credential, requestId, atau raw body.
+AI tidak boleh membaca data user lain.
+AI tidak boleh auto-save transaksi.
+AI tidak boleh memakai Gemini untuk transaction draft.
+AI tidak boleh menjawab topik di luar finansial Sakuin.
 ```
 
 ---
@@ -100,6 +121,8 @@ Frontend : https://sakuin-web.vercel.app
 Backend  : https://sakuin-api.vercel.app
 Database : Supabase PostgreSQL
 CI/CD    : GitHub Actions + Vercel Deploy
+Email    : Gmail SMTP / Nodemailer
+AI       : Gemini API via backend only
 ```
 
 Health check:
@@ -122,6 +145,8 @@ Status umum:
 [✓] Password reset production aktif
 [✓] Gmail SMTP email sender aktif
 [✓] AuditLog table aktif
+[✓] Asisten Sakuin aktif
+[✓] AI transaction draft aktif
 ```
 
 ---
@@ -448,6 +473,8 @@ Rules:
 [✓] User hanya bisa melihat goal miliknya sendiri
 [✓] User hanya bisa update/delete goal miliknya sendiri
 [✓] User hanya bisa export transaksi miliknya sendiri
+[✓] User hanya bisa membuat AI context dari data miliknya sendiri
+[✓] User hanya bisa membuat draft AI berdasarkan akun login miliknya sendiri
 ```
 
 Prinsip error untuk unauthorized ownership:
@@ -488,7 +515,11 @@ Summary
 Export
 Profile
 Dashboard
+Quick Transaction
+AI financial context
+AI assistant response
 Future insight/advisor
+Future Gmail/e-wallet extraction
 ```
 
 Area rawan data leakage:
@@ -502,6 +533,10 @@ Export CSV
 Export XLSX
 Filter berdasarkan categoryId
 Dashboard data
+AI financial context aggregation
+AI provider prompt/context
+AI assistant response
+AI transaction draft category matching
 Future financial insight/advisor
 Future Gmail/e-wallet extraction
 ```
@@ -517,6 +552,7 @@ Tests yang sudah tersedia:
 [✓] Export CSV tidak memuat catatan/transaksi/custom category user lain
 [✓] Export XLSX tidak memuat catatan/transaksi/custom category user lain
 [✓] Export filter type tetap hanya menghitung transaksi user login
+[✓] AI financial context hanya mengambil data user login
 ```
 
 Aturan pengembangan:
@@ -526,6 +562,7 @@ Setiap endpoint baru yang membaca data user harus memiliki ownership filter berd
 Setiap endpoint agregasi harus diuji agar tidak menghitung data user lain.
 Setiap endpoint export harus diuji agar tidak memuat data user lain.
 Setiap fitur insight/AI harus diuji agar tidak mencampur data antar user.
+Setiap fitur import/extraction harus menghasilkan draft dan tetap user-reviewed.
 ```
 
 ---
@@ -571,6 +608,8 @@ Endpoint baru wajib punya schema validation jika menerima body/query/params.
 Validasi penting tidak boleh hanya di frontend.
 Frontend validation membantu UX.
 Backend validation wajib untuk security dan data integrity.
+AI endpoint wajib validasi message/history.
+Transaction draft hasil parser tetap harus melewati validasi createTransaction ketika disimpan.
 ```
 
 ---
@@ -599,7 +638,7 @@ Alasan:
 
 ```txt
 Payload Sakuin saat ini kecil.
-Auth, profile, categories, transactions, goals, dan export request tidak membutuhkan body besar.
+Auth, profile, categories, transactions, goals, AI chat, dan export request tidak membutuhkan body besar.
 Limit ini membantu mengurangi risiko request payload abuse.
 ```
 
@@ -607,6 +646,7 @@ Catatan:
 
 ```txt
 Jika nanti ada fitur import CSV/XLSX, limit ini harus dievaluasi ulang secara khusus.
+Jika nanti ada Gmail/e-wallet extraction, payload harus tetap dibatasi dan diproses hati-hati.
 ```
 
 ---
@@ -741,6 +781,7 @@ Request terlalu besar
 Rate limit exceeded
 Token reset password tidak valid atau sudah kedaluwarsa
 Google email belum terverifikasi
+AI chat belum bisa diproses
 ```
 
 Aturan pengembangan:
@@ -749,6 +790,7 @@ Aturan pengembangan:
 Jangan mengirim stack trace ke frontend production.
 Jangan mengirim raw database error ke frontend production.
 Jangan mengirim secret/env/token ke response.
+Jangan mengirim provider AI error mentah ke frontend.
 ```
 
 ---
@@ -763,6 +805,7 @@ Rate limit yang tersedia:
 Login rate limit
 Register rate limit
 General API rate limit
+AI endpoint rate limit
 ```
 
 Header rate limit:
@@ -780,7 +823,8 @@ Tujuan:
 Mengurangi brute force login.
 Mengurangi spam register.
 Mengurangi request abuse umum.
-Memberikan sinyal retry ke client.
+Mengontrol biaya AI provider.
+Mengurangi risiko Gemini quota habis.
 ```
 
 Batasan saat ini:
@@ -803,9 +847,10 @@ Backlog:
 Aturan:
 
 ```txt
-Jangan menghapus rate limit tanpa mengganti dengan mekanisme yang setara atau lebih baik.
-Jika mengubah rate limit, update test terkait.
-Jangan log email mentah pada rate limit hit.
+Jangan menghapus rate limit auth.
+Jangan menghapus rate limit general API tanpa pengganti.
+Jangan membuat endpoint AI tanpa rate limit.
+Jangan membuat endpoint import/extraction tanpa rate limit.
 ```
 
 ---
@@ -814,36 +859,26 @@ Jangan log email mentah pada rate limit hit.
 
 Backend menambahkan request ID pada response.
 
-Header:
+Header response:
 
 ```txt
-X-Request-Id
+X-Request-Id: <request-id>
+```
+
+Client boleh mengirim request ID sendiri selama formatnya aman:
+
+```txt
+X-Request-Id: client-request-123
 ```
 
 Behavior:
 
 ```txt
-[✓] Jika client mengirim X-Request-Id yang aman, backend dapat memakai request ID tersebut
-[✓] Jika client tidak mengirim X-Request-Id, backend membuat request ID baru
-[✓] Jika client mengirim request ID yang tidak aman, backend mengganti dengan request ID baru
-[✓] Response membawa X-Request-Id
-```
-
-Tujuan:
-
-```txt
-Mempermudah debugging production.
-Menghubungkan request log, security event, dan audit event.
-Membantu tracing tanpa menyimpan token/body sensitif.
-```
-
-Request ID tidak boleh dianggap sebagai:
-
-```txt
-Token
-Session ID
-Secret
-User identifier
+[✓] Jika client mengirim X-Request-Id yang aman, backend dapat memakai request ID tersebut.
+[✓] Jika client tidak mengirim X-Request-Id, backend membuat request ID baru.
+[✓] Jika client mengirim X-Request-Id yang tidak aman, backend mengganti dengan request ID baru.
+[✓] Response membawa X-Request-Id.
+[✓] Request ID dipakai untuk request log, security event, dan audit event.
 ```
 
 Request ID tidak boleh berisi:
@@ -851,19 +886,22 @@ Request ID tidak boleh berisi:
 ```txt
 password
 token
-email
 Authorization header
 cookie
+email
 raw body
+data transaksi pribadi
+AI prompt
+AI response
 ```
 
 ---
 
-## 18. Safe Logging
+## 18. Safe Request Logging
 
 Backend memiliki safe request logging.
 
-Safe request log boleh mencatat:
+Boleh log:
 
 ```txt
 requestId
@@ -872,9 +910,10 @@ path
 status
 durationMs
 timestamp
+environment
 ```
 
-Safe request log tidak boleh mencatat:
+Tidak boleh log:
 
 ```txt
 Authorization header
@@ -892,9 +931,25 @@ export content
 Google credential
 SMTP_PASS
 reset token
+GEMINI_API_KEY
+AI prompt penuh jika sensitif
+AI response penuh jika sensitif
 ```
 
-Safe security event yang didukung:
+Aturan:
+
+```txt
+Log harus membantu debugging tanpa menjadi sumber kebocoran data baru.
+Jika ragu apakah data sensitif, jangan log data tersebut.
+```
+
+---
+
+## 19. Safe Security Event Logging
+
+Security event logger dipakai untuk event keamanan yang aman.
+
+Security-related safe events:
 
 ```txt
 auth.login_failed
@@ -912,24 +967,43 @@ password_reset_email_sent
 password_reset_email_failed
 ```
 
-Aturan:
+Candidate AI events:
 
 ```txt
-Jika butuh identifikasi email dalam log, gunakan hash identifier.
-Jangan log email mentah.
-Jangan log reset token.
-Jangan log body request.
+ai.chat_requested
+ai.chat_completed
+ai.chat_failed
+ai.out_of_scope_blocked
+ai.transaction_draft_generated
+ai.provider_used
+ai.provider_fallback
+```
+
+Metadata security event harus disanitasi.
+
+Tidak boleh menyimpan:
+
+```txt
+password
+token
+Authorization header
+raw body
+email mentah
+reset token
+Google credential
+SMTP secret
+GEMINI_API_KEY
+AI prompt penuh
+AI response penuh
 ```
 
 ---
 
-## 19. Audit Trail
+## 20. Audit Trail
 
 Backend memiliki database-backed audit trail menggunakan Prisma model `AuditLog`.
 
-Audit trail berjalan internal dan belum memiliki endpoint publik.
-
-Business audit events yang sudah dicatat:
+Audit events yang sudah dicatat:
 
 ```txt
 profile.updated
@@ -945,12 +1019,16 @@ category.updated
 category.deleted
 ```
 
-Security-related safe events:
+Candidate audit events untuk AI:
 
 ```txt
-auth.login_failed
-auth.auth_failed
-rate_limit.hit
+ai.chat_requested
+ai.chat_completed
+ai.chat_failed
+ai.out_of_scope_blocked
+ai.transaction_draft_generated
+ai.provider_used
+ai.provider_fallback
 ```
 
 Audit persistence bersifat fail-open:
@@ -973,6 +1051,7 @@ Google credential
 Google access token
 Google refresh token
 SMTP_PASS
+GEMINI_API_KEY
 transaction amount
 transaction note
 goal name
@@ -982,62 +1061,348 @@ category name
 category icon value
 category color value
 export content
+AI prompt penuh
+AI response penuh
+```
+
+Audit metadata yang aman:
+
+```txt
+changedFields
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
+reason
+status
+intent
+providerRoute
+fallbackUsed
+safe count/boolean fields
 ```
 
 ---
 
-## 20. PWA and Cache Security
+## 21. AI Security and Privacy
 
-Sakuin memiliki basic PWA support.
+Asisten Sakuin adalah fitur financial-only AI helper.
 
-Aturan penting:
+Prinsip utama:
 
 ```txt
-Service worker tidak boleh cache API private user.
-Service worker tidak boleh cache response auth.
-Service worker tidak boleh cache transaksi, profile, goals, summary, export, atau endpoint yang memuat data personal.
-Offline fallback boleh bersifat statis dan tidak memuat data user.
+AI hanya boleh membantu topik keuangan pribadi di Sakuin.
+AI tidak boleh menjawab pertanyaan umum.
+AI tidak boleh dipakai sebagai penasihat investasi/pinjaman/pajak/hukum profesional.
+AI tidak boleh mengarang data.
+AI tidak boleh membaca data user lain.
+AI tidak boleh menyimpan transaksi otomatis.
+```
+
+Topik yang boleh dijawab:
+
+```txt
+transaksi
+pemasukan
+pengeluaran
+kategori
+goals
+budget
+safe balance
+ringkasan keuangan
+perbandingan periode
+saran hemat ringan
+draft transaksi
+skenario finansial pribadi sederhana
+```
+
+Topik yang harus ditolak:
+
+```txt
+coding
+politik
+hiburan
+kesehatan
+hukum
+pajak profesional
+investasi spesifik
+pinjaman spesifik
+pertanyaan umum di luar finansial Sakuin
+permintaan mengarang data pribadi
+```
+
+Out-of-scope behavior:
+
+```txt
+Out-of-scope harus ditolak dengan sopan.
+Out-of-scope tidak boleh memanggil Gemini.
+Out-of-scope harus diproses murah dan aman.
+```
+
+Data yang boleh masuk ke AI provider:
+
+```txt
+Ringkasan pemasukan/pengeluaran teragregasi
+Top expense categories teragregasi
+Perbandingan periode teragregasi
+Goals summary teragregasi
+Safe balance status
+Signal statistik aman
+```
+
+Data yang tidak boleh masuk ke AI provider:
+
+```txt
+email user
+password
+JWT token
+Authorization header
+raw request body
+semua note transaksi mentah
+semua ID database
+requestId
+SMTP secret
+Google credential
+data user lain
+full export content
+raw audit metadata
+```
+
+---
+
+## 22. AI Provider Security
+
+Provider awal:
+
+```txt
+Gemini API
+```
+
+Aturan:
+
+```txt
+Gemini hanya boleh dipanggil dari backend.
+Frontend tidak boleh memanggil Gemini.
+GEMINI_API_KEY tidak boleh memakai prefix VITE_.
+GEMINI_API_KEY tidak boleh masuk repository.
+GEMINI_API_KEY tidak boleh masuk log.
+GEMINI_API_KEY tidak boleh dikirim ke frontend.
+```
+
+Environment backend:
+
+```env
+GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
+```
+
+Provider routing:
+
+```txt
+Simple financial assistant  : default model
+Complex financial analysis  : complex model
+Provider error              : fallback model atau rule-based fallback
+Out-of-scope                : tidak memanggil provider
+Transaction draft           : tidak memanggil provider, wajib rule-based
+```
+
+Jika provider error:
+
+```txt
+Jangan bocorkan raw provider error ke frontend.
+Gunakan pesan error aman.
+Fallback boleh dipakai jika tersedia.
+Log error harus aman dan tidak memuat prompt penuh/secret.
+```
+
+---
+
+## 23. AI Transaction Draft Security
+
+AI transaction draft adalah fitur yang mengubah chat natural menjadi draft transaksi.
+
+Contoh:
+
+```txt
+catat makan ayam geprek 15000
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+dikasih kakak 100000
+bensin 30000 kemarin
+```
+
+Policy:
+
+```txt
+AI hanya membuat draft.
+AI tidak boleh auto-save transaksi.
+AI transaction draft tidak boleh memanggil Gemini.
+AI transaction draft harus rule-based.
+User harus review sebelum simpan.
+User bisa membatalkan draft.
+User bisa menyimpan draft satu per satu.
+User bisa menyimpan semua draft melalui Simpan Semua Draft.
+```
+
+Alasan rule-based:
+
+```txt
+Lebih deterministik.
+Lebih mudah dites.
+Lebih murah.
+Lebih aman untuk nominal transaksi.
+Mengurangi risiko hallucination dari AI provider.
+```
+
+Frontend security/UX rules:
+
+```txt
+Draft yang sudah disimpan tidak bisa disimpan ulang.
+Draft yang sudah dibatalkan tidak bisa disimpan.
+Draft belum lengkap tidak bisa disimpan.
+Simpan Semua Draft hanya menyimpan draft yang valid dan aktif.
+Simpan Semua Draft memakai createTransaction existing.
+Save batch dilakukan parallel tetapi tetap melalui endpoint protected.
+State saved/cancelled disimpan lokal per user.
+No auto-scroll saat save/cancel/save all.
+```
+
+State saved/cancelled key:
+
+```txt
+${message.id}:${draftIndex}
+```
+
+Backward compatibility:
+
+```txt
+Draft index 0 masih dapat membaca old message.id state dari localStorage lama.
+```
+
+Data validation:
+
+```txt
+Draft yang disimpan tetap harus melewati validasi backend POST /api/transactions.
+Validasi frontend tidak cukup untuk security.
+```
+
+---
+
+## 24. Local Storage Security
+
+Frontend saat ini memakai localStorage untuk beberapa data UX.
+
+Data yang disimpan:
+
+```txt
+JWT token
+AI chat history lokal
+AI saved draft keys
+AI cancelled draft keys
+PWA/user preference tertentu jika ada
+```
+
+AI chat localStorage keys:
+
+```txt
+sakuin_ai_chat_history_v1:<userId>
+sakuin_ai_saved_draft_ids_v1:<userId>
+sakuin_ai_cancelled_draft_ids_v1:<userId>
 ```
 
 Risiko:
 
 ```txt
-Jika API private di-cache, data user bisa tersimpan di device/browser secara tidak aman.
-Jika user logout tetapi cache private masih ada, data bisa bocor.
+localStorage dapat dibaca jika terjadi XSS.
+Chat history lokal dapat berisi teks yang user ketik.
+Token localStorage dapat dicuri jika halaman terkena script injection.
 ```
 
-Aturan pengembangan:
+Mitigasi saat ini:
 
 ```txt
-Setiap perubahan service worker harus direview dari sisi security.
-Jangan menambahkan cache strategy untuk endpoint /api/* tanpa desain security.
+Tidak ada dangerouslySetInnerHTML untuk chat content.
+Chat content dirender sebagai teks biasa.
+Tidak menyimpan secret backend di frontend.
+Clear chat history tersedia.
+```
+
+Backlog:
+
+```txt
+[ ] Migrasi auth token ke httpOnly secure cookie
+[ ] Evaluasi apakah AI chat history perlu opsi disable
+[ ] Evaluasi server-side encrypted chat history jika fitur memory lintas device dibuat
 ```
 
 ---
 
-## 21. Export Security
+## 25. PWA Security
 
-Export adalah area sensitif karena dapat memuat seluruh transaksi user.
+Sakuin mendukung PWA installable.
 
-Aturan:
+Aturan service worker:
+
+```txt
+Service worker tidak boleh cache API private user.
+Service worker tidak boleh cache auth response.
+Service worker tidak boleh cache transactions.
+Service worker tidak boleh cache summary.
+Service worker tidak boleh cache profile.
+Service worker tidak boleh cache goals.
+Service worker tidak boleh cache export.
+Service worker tidak boleh cache AI chat response.
+```
+
+Boleh cache:
+
+```txt
+static assets
+icons
+manifest
+offline page
+non-sensitive frontend shell
+```
+
+Alasan:
+
+```txt
+Data keuangan user tidak boleh tersimpan di cache yang sulit dikontrol.
+```
+
+---
+
+## 26. Export Security
+
+Export adalah fitur sensitif karena menghasilkan data transaksi user.
+
+Rules:
 
 ```txt
 Export wajib protected.
-Export wajib memakai userId dari token.
+Export wajib user-only.
 Export tidak boleh menerima userId dari frontend.
-Export tidak boleh memuat transaksi user lain.
+Export harus memakai userId dari token.
 Export filter categoryId milik user lain tidak boleh membocorkan data.
-Export content tidak boleh dicatat di log.
+Export content tidak boleh masuk log.
 Export content tidak boleh masuk audit metadata.
 ```
 
-Audit event untuk export:
+Format export:
+
+```txt
+JSON
+CSV
+XLSX
+```
+
+Audit event:
 
 ```txt
 export.transactions_generated
 ```
 
-Metadata audit export hanya boleh menyimpan informasi non-sensitif seperti:
+Audit metadata aman:
 
 ```txt
 format
@@ -1046,130 +1411,106 @@ hasCategoryFilter
 hasDateRange
 ```
 
-Tidak boleh menyimpan:
+Audit metadata tidak boleh menyimpan:
 
 ```txt
-transaction notes
-amounts
-export contents
-raw query
-token
+transaction amount
+transaction note
+export file content
+raw query lengkap jika berisi detail sensitif
 ```
 
 ---
 
-## 22. Sensitive Integration Policy
+## 27. Database Safety
 
-Fitur berikut belum boleh dibuat sembarangan:
+Pernah terjadi risiko karena local/CI test bisa diarahkan ke production database jika environment salah.
+
+Aturan keras:
 
 ```txt
-Gmail transaction detection
-E-wallet transaction detection
-Mobile banking transaction detection
-Financial assistant/advisor berbasis data pribadi
+Jangan menjalankan automated test ke production database.
+Jangan memakai DATABASE_URL production untuk test.
+Jangan menghapus database safety guard.
+Jangan menghapus SAKUIN_DATABASE_TARGET.
+Jangan menghapus SAKUIN_PRODUCTION_DATABASE_PROJECT_REF.
 ```
 
-Sebelum fitur tersebut dibuat, harus ada desain untuk:
+CI secrets harus memakai database test:
 
-```txt
-Consent
-Privacy notice
-Scope minimization
-Token storage
-Token encryption
-Token revocation
-Disconnect flow
-Audit event
-Data retention
-Draft-first review
-User approval
-Error handling
-Security testing
+```env
+CI_DATABASE_URL="postgresql://..."
+CI_DIRECT_URL="postgresql://..."
+CI_JWT_SECRET="minimum_32_characters_secret"
 ```
 
----
+Safety env:
 
-## 23. Google Login vs Gmail API
-
-Google Login dan Gmail API adalah dua hal berbeda.
-
-Google Login saat ini:
-
-```txt
-[✓] Dipakai untuk login/register
-[✓] Memakai Google ID token
-[✓] Tidak meminta Gmail scope
-[✓] Tidak membaca email
-[✓] Tidak menyimpan access token
-[✓] Tidak menyimpan refresh token
+```env
+SAKUIN_DATABASE_TARGET="test"
+SAKUIN_PRODUCTION_DATABASE_PROJECT_REF="bwzxtjgrerjimcuyslci"
 ```
 
-Gmail API future integration:
+CI memiliki step:
 
 ```txt
-[ ] Akan membutuhkan OAuth consent khusus
-[ ] Akan membutuhkan Gmail scope
-[ ] Akan membutuhkan token storage aman
-[ ] Akan membutuhkan disconnect/revoke flow
-[ ] Akan membutuhkan privacy policy yang jelas
-[ ] Akan membutuhkan draft-first transaction detection
+Verify CI database safety
 ```
 
-Aturan:
+Tujuan:
 
 ```txt
-Jangan mencampur Google Login dengan Gmail reading.
-Jangan menambahkan Gmail scope ke Google Login biasa.
-Jangan menyimpan OAuth token sebelum desain token encryption siap.
+Mencegah test cleanup/deleteMany menyentuh database production.
+Mencegah false confidence dari test yang berjalan di environment salah.
 ```
 
 ---
 
-## 24. Secret Management
+## 28. Secrets Management
 
-Secret tidak boleh disimpan di repository.
+Secret tidak boleh masuk repository.
 
-Secret yang wajib dijaga:
+Secret yang dilarang commit:
 
 ```txt
 DATABASE_URL
 DIRECT_URL
 JWT_SECRET
-GOOGLE_CLIENT_ID
-SMTP_USER
 SMTP_PASS
-EMAIL_FROM
-VITE_GOOGLE_CLIENT_ID
-VITE_API_BASE_URL
+SMTP_USER jika dianggap sensitif
+GOOGLE_CLIENT_ID boleh public-ish tetapi tetap jangan hardcode sembarangan
+GEMINI_API_KEY
+RESEND_API_KEY jika masih ada
+Vercel token
+Supabase password
+Google credential
+Gmail App Password
 ```
 
-Catatan:
+File yang tidak boleh dicommit jika berisi secret:
 
 ```txt
-VITE_* akan terekspos ke frontend build.
-Jangan pernah menyimpan secret backend dengan prefix VITE_.
-GOOGLE_CLIENT_ID bukan secret seperti client secret, tetapi tetap harus dikonfigurasi dengan origin yang benar.
-SMTP_PASS adalah secret sensitif.
-DATABASE_URL dan DIRECT_URL adalah secret sensitif.
-JWT_SECRET adalah secret sensitif.
+.env
+.env.local
+.env.production
+.env.development
+.env.test jika berisi credential nyata
 ```
 
 Aturan:
 
 ```txt
-Jangan commit .env.
-Jangan kirim secret ke chat.
-Jangan menulis secret di README/docs.
 Gunakan Vercel Environment Variables untuk production.
 Gunakan GitHub Actions Secrets untuk CI.
-Redeploy setelah mengubah environment variable Vercel.
+Gunakan .env lokal hanya di mesin developer.
+Jika secret bocor, revoke/rotate segera.
 ```
 
 ---
 
-## 25. Environment Variables
+## 29. Environment Variables
 
-Backend production membutuhkan:
+### Backend Required
 
 ```env
 NODE_ENV="production"
@@ -1177,8 +1518,23 @@ DATABASE_URL="postgresql://..."
 DIRECT_URL="postgresql://..."
 JWT_SECRET="minimum_32_characters_secret"
 FRONTEND_URL="https://sakuin-web.vercel.app"
-GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
 
+### Google Login
+
+```env
+GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
+
+Frontend:
+
+```env
+VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
+
+### Gmail SMTP / Nodemailer
+
+```env
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="465"
 SMTP_SECURE="true"
@@ -1187,45 +1543,56 @@ SMTP_PASS="gmail_app_password_16_karakter_tanpa_spasi"
 EMAIL_FROM="Sakuin <email_pengirim@gmail.com>"
 ```
 
-Frontend production membutuhkan:
+### AI / Gemini
+
+```env
+GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
+```
+
+Aturan AI env:
+
+```txt
+GEMINI_API_KEY hanya boleh di backend.
+Jangan membuat VITE_GEMINI_API_KEY.
+Frontend tidak boleh memanggil Gemini langsung.
+Transaction draft tidak memakai Gemini.
+```
+
+### Frontend
 
 ```env
 VITE_API_BASE_URL="https://sakuin-api.vercel.app"
 VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
 
-Catatan:
-
-```txt
-SMTP_PASS harus menggunakan Gmail App Password.
-EMAIL_FROM sebaiknya memakai alamat yang sama dengan SMTP_USER.
-RESEND_API_KEY tidak lagi dipakai untuk runtime reset password dan sebaiknya dihapus dari Vercel saat cleanup.
-```
-
 ---
 
-## 26. Security Testing
+## 30. Security Testing
 
-Security-related tests yang harus dipertahankan:
+Security-related test yang sudah/harus dijaga:
 
 ```txt
 Auth tests
 Auth token edge case tests
-Security headers tests
-Request body size limit tests
 Rate limit tests
-Rate limit abuse edge case tests
+API abuse edge case tests
 Data isolation tests
-Summary isolation tests
 Export isolation tests
-Audit event contract tests
-Audit recorder tests
+Request ID tests
+Security event logger tests
+Audit event metadata tests
 Audit sink tests
-Password reset tests
-Google Login tests
+AI intent tests
+AI chat service tests
+AI transaction draft tests
+AI financial context tests jika tersedia
+AI scenario tests
 ```
 
-Validasi backend:
+Backend validation:
 
 ```bash
 pnpm --filter @sakuin/api typecheck
@@ -1233,7 +1600,16 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
-Validasi frontend jika auth UI berubah:
+AI-specific validation:
+
+```bash
+pnpm --filter @sakuin/api test -- tests/ai-intent.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-chat-service.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-financial-scenario.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-transaction-draft.test.ts
+```
+
+Frontend validation:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -1241,104 +1617,222 @@ pnpm --filter @sakuin/web test
 pnpm --filter @sakuin/web build
 ```
 
+Documentation-only minimal validation:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/api typecheck
+git status
+```
+
+Full regression:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
+```
+
 ---
 
-## 27. Security Regression Checklist
+## 31. Manual Security Regression Checklist
 
-Sebelum merge/push fitur auth/security:
+### Auth
 
 ```txt
 [ ] Register email/password normal
 [ ] Login email/password normal
+[ ] Login error tetap generic
 [ ] Login Google normal
 [ ] Register Google normal
-[ ] Forgot password normal
+[ ] Forgot password response tetap generic
 [ ] Reset password normal
-[ ] Token reset tidak bisa dipakai ulang
-[ ] Token invalid/expired ditolak
-[ ] Protected endpoint menolak request tanpa token
-[ ] Protected endpoint menolak token invalid
-[ ] Data user lain tidak bocor
-[ ] Export hanya memuat data user login
-[ ] Log tidak memuat password/token/email mentah
-[ ] Audit metadata tidak memuat data sensitif
-[ ] CI passed
-[ ] Frontend deployment passed
-[ ] Backend deployment passed
-[ ] Production /health normal
-[ ] Production /api/health normal
+[ ] Reset token tidak bisa dipakai ulang
+[ ] Logout normal
+```
+
+### Protected API
+
+```txt
+[ ] Endpoint protected gagal tanpa token
+[ ] Endpoint protected gagal dengan token invalid
+[ ] Endpoint protected gagal dengan format Authorization salah
+[ ] Endpoint private hanya mengembalikan data user login
+```
+
+### Export
+
+```txt
+[ ] Export JSON hanya data user login
+[ ] Export CSV hanya data user login
+[ ] Export XLSX hanya data user login
+[ ] Export filter categoryId user lain tidak bocor
+```
+
+### AI
+
+```txt
+[ ] /asisten hanya bisa diakses user login
+[ ] Prompt financial dijawab
+[ ] Prompt out-of-scope ditolak
+[ ] Transaction draft tidak auto-save
+[ ] Single draft muncul
+[ ] Multi draft muncul
+[ ] Simpan Draft bekerja
+[ ] Batalkan Draft bekerja
+[ ] Simpan Semua Draft bekerja
+[ ] Draft batal tidak bisa disimpan
+[ ] Draft tersimpan tidak bisa disimpan ulang
+[ ] Tidak ada auto-scroll saat save/cancel/save all
+[ ] Transactions page hanya menampilkan transaksi user login
+```
+
+Out-of-scope test:
+
+```txt
+siapa istri Naruto?
+buatkan cerpen
+buatkan kode React
+jelaskan sejarah Majapahit
+```
+
+Transaction draft test:
+
+```txt
+catat makan ayam geprek 15000
+dikasih kakak 100000
+bensin 30000 kemarin
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
 ```
 
 ---
 
-## 28. Future Security Roadmap
+## 32. Future Sensitive Integrations
 
-Prioritas security lanjutan:
+Fitur seperti Gmail/e-wallet/mobile banking detection sangat sensitif.
+
+Tidak boleh dibuat sebelum ada desain untuk:
 
 ```txt
-[ ] Cleanup unused Resend env/code reference jika sudah tidak dibutuhkan
+Explicit user consent
+Data minimization
+Token handling
+Token encryption jika token disimpan
+Disconnect/revoke flow
+Draft-first extraction
+User review before save
+Audit event aman
+Data retention policy
+Privacy policy
+Rate limiting
+Provider error handling
+Data isolation tests
+Manual regression checklist
+```
+
+Aturan:
+
+```txt
+Jangan langsung membaca Gmail user hanya karena Google Login sudah ada.
+Google Login saat ini hanya untuk autentikasi.
+Sakuin tidak meminta Gmail scope.
+Jika Gmail integration dibuat, harus menjadi fase security besar tersendiri.
+```
+
+---
+
+## 33. Security Backlog
+
+Prioritas backlog:
+
+```txt
+[ ] Cleanup unused Resend env/config reference jika masih ada
 [ ] Distributed rate limiting
-[ ] Better session strategy
 [ ] httpOnly secure cookie migration
-[ ] CSRF strategy
-[ ] Password change flow
-[ ] Email verification
-[ ] Account deletion/export privacy flow
-[ ] Audit log viewer policy
+[ ] CSRF strategy jika memakai cookie
+[ ] Refresh token strategy
+[ ] Server-side session invalidation
+[ ] Email verification untuk akun email/password
+[ ] Password change flow untuk user login
 [ ] Frontend CSP hardening
-[ ] Security review for future financial assistant
-[ ] Security review for future Gmail/e-wallet/mobile banking integration
+[ ] Formal privacy policy
+[ ] Data retention policy
+[ ] Audit log viewer/admin policy
+[ ] Financial AI audit events yang aman
+[ ] Persistent AI chat history privacy design
+[ ] Import/export security review
+[ ] Gmail/e-wallet integration security design
+[ ] Formal penetration testing
 ```
 
 ---
 
-## 29. Non-Negotiable Security Rules
-
-Aturan yang tidak boleh dilanggar:
+## 34. Non-Negotiable Security Rules
 
 ```txt
-Jangan log password.
-Jangan log JWT token.
-Jangan log Authorization header.
-Jangan log raw request body.
-Jangan log email mentah jika tidak benar-benar perlu.
-Jangan log reset password token.
-Jangan log Google credential.
-Jangan log SMTP_PASS.
-Jangan menyimpan OAuth access/refresh token tanpa encryption design.
-Jangan membaca Gmail hanya karena user login dengan Google.
+Jangan commit secret.
+Jangan jalankan test ke production database.
+Jangan expose JWT token ke log.
+Jangan expose password/reset token ke response/log.
+Jangan expose SMTP_PASS.
+Jangan expose GEMINI_API_KEY.
+Jangan buat VITE_GEMINI_API_KEY.
+Jangan panggil AI provider dari frontend.
+Jangan kirim semua transaksi mentah ke AI provider.
+Jangan auto-save transaksi dari AI.
+Jangan pakai Gemini untuk transaction draft.
+Jangan jawab out-of-scope dengan provider call.
 Jangan cache API private user di service worker.
-Jangan membuat transaksi otomatis final tanpa review user.
-Jangan memakai userId dari frontend untuk ownership.
-Jangan menghapus data isolation tests.
-Jangan menghapus rate limit tanpa pengganti.
-Jangan klaim aplikasi 100% aman.
+Jangan log export content.
+Jangan simpan prompt/response AI penuh jika sensitif.
+Jangan mencampur data user lain dalam summary/export/AI context.
+Jangan membuat integrasi Gmail/e-wallet tanpa explicit consent dan security design.
 ```
 
 ---
 
-## 30. Summary
+## 35. Current Security Summary
 
-Security Sakuin saat ini sudah memiliki baseline yang layak untuk MVP/production awal:
+Sakuin saat ini sudah memiliki security baseline yang cukup baik untuk MVP/production awal:
 
 ```txt
-Authentication berjalan.
-Google Login berjalan.
-Reset password berjalan.
-Data isolation berjalan.
-Safe logging berjalan.
-Audit trail berjalan.
-Security tests berjalan.
+[✓] Auth protected
+[✓] Google Login aman untuk autentikasi
+[✓] Password reset token di-hash
+[✓] Gmail SMTP berjalan dengan App Password
+[✓] Data isolation diterapkan
+[✓] Request validation diterapkan
+[✓] Rate limit baseline diterapkan
+[✓] Request ID diterapkan
+[✓] Safe request logging diterapkan
+[✓] Safe security event logging diterapkan
+[✓] AuditLog database-backed diterapkan
+[✓] Production error masking diterapkan
+[✓] AI guardrail diterapkan
+[✓] AI provider hanya backend
+[✓] AI financial context teragregasi
+[✓] AI transaction draft no auto-save
+[✓] AI transaction draft rule-based
 ```
 
-Namun security harus terus dikembangkan secara bertahap.
-
-Fokus terdekat:
+Namun beberapa hal masih perlu ditingkatkan sebelum fitur makin sensitif:
 
 ```txt
-[ ] Cleanup unused secret/config
-[ ] Dokumentasi tetap sinkron
-[ ] Session hardening
-[ ] Distributed rate limiting
-[ ] Privacy/security design sebelum integrasi sensitif
+[ ] Token masih di localStorage
+[ ] Rate limit masih in-memory
+[ ] Belum ada httpOnly cookie/session hardening
+[ ] Belum ada privacy policy formal
+[ ] Belum ada data retention policy
+[ ] Belum ada formal penetration testing
+[ ] Belum ada security design untuk Gmail/e-wallet extraction
+```
+
+Kesimpulan:
+
+```txt
+Sakuin boleh lanjut pengembangan fitur non-sensitif dengan tetap menjalankan validasi.
+Untuk fitur sensitif, lakukan security design dulu sebelum coding.
 ```

@@ -25,6 +25,10 @@ Aplikasi ini membantu user untuk:
 [✓] Login dengan email/password
 [✓] Login/register menggunakan akun Google
 [✓] Reset password melalui email
+[✓] Bertanya ke Asisten Sakuin tentang kondisi keuangan pribadi
+[✓] Membuat draft transaksi dari chat natural
+[✓] Membuat banyak draft transaksi dari satu prompt
+[✓] Menyimpan semua draft transaksi AI sekaligus dengan review user
 ```
 
 Arah produk Sakuin bukan hanya menjadi pencatat transaksi seperti spreadsheet. Sakuin diarahkan agar lebih bernilai dari Excel/manual tracking dengan membantu user:
@@ -33,9 +37,11 @@ Arah produk Sakuin bukan hanya menjadi pencatat transaksi seperti spreadsheet. S
 [✓] Mencatat transaksi lebih cepat
 [✓] Mengurangi effort input manual
 [✓] Memahami kondisi keuangan pribadi
+[✓] Mendapat insight pengeluaran/pemasukan
 [✓] Menjaga keamanan data keuangan
 [✓] Memiliki audit trail untuk aksi penting
-[ ] Ke depannya menjadi financial assistant/advisor yang aman
+[✓] Memakai AI assistant yang aman, financial-only, dan user-controlled
+[ ] Ke depannya menjadi financial assistant/advisor ringan yang tetap aman dan tidak memberi nasihat profesional berisiko
 ```
 
 Project dibuat dengan struktur **monorepo** agar frontend, backend, dan shared package dapat dikelola dalam satu repository secara rapi.
@@ -80,6 +86,10 @@ Status terakhir:
 [✓] Google Login berjalan di production
 [✓] Reset password berjalan di production
 [✓] Gmail SMTP/Nodemailer email sender berjalan
+[✓] Asisten Sakuin berjalan di production
+[✓] AI transaction draft single berjalan
+[✓] AI transaction draft multi berjalan
+[✓] Simpan Semua Draft berjalan
 [✓] Semua fitur utama berjalan normal di production
 ```
 
@@ -118,33 +128,59 @@ Aturan:
 ```txt
 Jangan lanjut coding fitur baru jika working tree masih berisi perubahan yang belum jelas.
 Pisahkan perubahan fitur, security, bugfix, dan dokumentasi jika memungkinkan.
-Jangan commit secret, .env, token, database URL, SMTP_PASS, atau credential lain.
+Jangan commit secret, .env, token, database URL, SMTP_PASS, GEMINI_API_KEY, atau credential lain.
+Sebelum commit, selalu cek git status dan git diff --stat.
+Saat stage file, sebutkan file secara eksplisit agar tidak ada file penting terlewat.
 ```
 
 ---
 
-## 4. Current Documentation Status
+## 4. Development Workflow Preference
 
-Dokumentasi terbaru yang sedang/sudah disinkronkan:
+User bekerja di Windows PowerShell, root project biasanya:
 
 ```txt
-[✓] README.md diperbarui sebagai perkenalan produk, bukan dokumentasi teknis panjang
-[✓] docs/API.md diperbarui untuk Google Login, forgot/reset password, Gmail SMTP, dan endpoint terbaru
-[✓] docs/SECURITY.md diperbarui untuk Google Login, reset password, Gmail SMTP/Nodemailer, dan risk policy
-[✓] docs/HANDOFF.md diperbarui sebagai konteks lanjutan developer/agent berikutnya
+D:\sakuin
 ```
 
-Setelah semua file `.md` selesai diperbarui, lakukan commit dokumentasi.
+Preferensi workflow user:
 
-Rekomendasi commit message:
-
-```bash
-git add README.md docs/API.md docs/SECURITY.md docs/HANDOFF.md
-git commit -m "Update documentation for auth and password reset"
-git push
+```txt
+[✓] Instruksi harus step-by-step dan jelas
+[✓] Untuk pembuatan file/folder baru, gunakan command terminal
+[✓] Untuk code replacement besar, user lebih suka full code replacement
+[✓] Untuk dokumentasi .md, kirim full markdown dalam satu markdown block agar mudah disalin
+[✓] Jangan commit sebelum validasi penting lulus
+[✓] Jangan meminta user commit .env atau secret
+[✓] Jangan menjalankan test ke production database
+[✓] Jika ada error validasi, minta user kirim full log terminal
 ```
 
-Validasi ringan untuk perubahan dokumentasi:
+Aturan saat memberi code:
+
+```txt
+[✓] Pastikan code block rapi
+[✓] Jangan mencampur citation/internal token ke dalam code
+[✓] Jangan mengirim potongan yang ambigu untuk file besar jika user meminta full code
+[✓] Jaga code reusable, clean, mudah debug, maintainable, dan mudah extend
+[✓] Hindari komentar path di awal file seperti // apps/api/... jika tidak perlu
+```
+
+---
+
+## 5. Current Documentation Status
+
+Dokumentasi yang sedang disinkronkan setelah fase AI transaction draft:
+
+```txt
+[✓] docs/AI.md diperbarui untuk Asisten Sakuin terbaru, multi draft, Simpan Semua Draft, no auto-scroll, provider routing, dan policy AI
+[✓] docs/API.md diperbarui untuk /api/ai/chat, transactionDrafts, transaction draft policy, dan AI security notes
+[~] docs/HANDOFF.md sedang diperbarui melalui dokumen ini
+[ ] docs/SECURITY.md perlu dicek/update jika ada detail AI privacy/security yang belum sinkron
+[ ] README.md opsional jika ingin update ringkasan produk besar
+```
+
+Setelah semua file `.md` selesai diperbarui, lakukan validasi ringan:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -163,9 +199,25 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
+Rekomendasi commit setelah semua dokumentasi selesai:
+
+```bash
+git add docs/AI.md docs/API.md docs/HANDOFF.md docs/SECURITY.md
+git commit -m "Update documentation for AI transaction drafts"
+git push
+```
+
+Jika README.md juga diperbarui:
+
+```bash
+git add README.md docs/AI.md docs/API.md docs/HANDOFF.md docs/SECURITY.md
+git commit -m "Update documentation for AI assistant features"
+git push
+```
+
 ---
 
-## 5. Latest Phase Status
+## 6. Latest Phase Status
 
 Status fase besar terbaru:
 
@@ -197,28 +249,33 @@ Status fase besar terbaru:
 [✓] Auth final regression
 [✓] Auth pages mobile responsiveness
 [✓] Password reset email delivery guidance
-[~] Documentation sync after auth/reset password
+[✓] Asisten Sakuin backend foundation
+[✓] Asisten Sakuin frontend chat UI
+[✓] Gemini provider foundation
+[✓] AI provider router and usage control
+[✓] Financial scenario analyzer
+[✓] Rule-based AI transaction draft parser
+[✓] Frontend single transaction draft rendering
+[✓] Frontend multi transaction draft rendering
+[✓] Simpan Semua Draft
+[✓] AI chat no forced auto-scroll UX fix
+[~] Documentation sync after AI transaction draft
 ```
 
-Auth final regression sudah dikonfirmasi aman:
+Latest confirmed status:
 
 ```txt
-[✓] Login email/password normal
-[✓] Register email/password normal
-[✓] Login Google normal
-[✓] Register Google normal
-[✓] Forgot password normal
-[✓] Reset password normal
-[✓] Reset password email terkirim
-[✓] User diarahkan untuk cek Inbox/Spam/Promotions/Social/Updates/All Mail
-[✓] Frontend deployment hijau
-[✓] Backend deployment hijau
-[✓] GitHub Actions CI hijau
+[✓] Frontend validation passed
+[✓] Backend validation passed when relevant
+[✓] User committed latest AI UX changes
+[✓] GitHub Actions CI passed
+[✓] Vercel deployment passed
+[✓] Production manual test passed
 ```
 
 ---
 
-## 6. Release Context
+## 7. Release Context
 
 Release tag yang sudah tercatat:
 
@@ -235,13 +292,14 @@ Catatan:
 Tag hanya dibuat ketika ada penambahan fitur besar, perbaikan penting, atau release milestone.
 Jangan membuat tag hanya untuk perubahan kecil yang belum layak release.
 Jangan update tag hanya karena dokumentasi kecil kecuali memang diputuskan sebagai release milestone.
+User sebelumnya memutuskan tag hanya diperbarui ketika ada fitur/fix besar.
 ```
 
-Setelah dokumentasi auth/reset password selesai dan semua CI/deploy hijau, boleh dipertimbangkan apakah perlu release tag baru. Namun jika hanya dokumentasi, tidak wajib membuat tag.
+Untuk fitur Asisten Sakuin, tag baru dapat dipertimbangkan setelah dokumentasi selesai dan semua regression aman, tetapi tidak wajib jika belum diputuskan sebagai milestone release.
 
 ---
 
-## 7. Tech Stack
+## 8. Tech Stack
 
 ### Monorepo
 
@@ -284,6 +342,7 @@ bcryptjs
 google-auth-library
 Nodemailer
 ExcelJS
+Gemini API integration
 Vitest
 ```
 
@@ -295,11 +354,12 @@ Backend  : Vercel serverless function
 Database : Supabase PostgreSQL
 CI       : GitHub Actions
 Email    : Gmail SMTP using App Password
+AI       : Gemini API via backend only
 ```
 
 ---
 
-## 8. Project Structure
+## 9. Project Structure
 
 ```txt
 sakuin/
@@ -313,6 +373,7 @@ sakuin/
 │  │  │  ├─ db/
 │  │  │  ├─ middlewares/
 │  │  │  ├─ modules/
+│  │  │  │  ├─ ai/
 │  │  │  │  ├─ auth/
 │  │  │  │  ├─ categories/
 │  │  │  │  ├─ export/
@@ -339,6 +400,7 @@ sakuin/
 │     │  │  ├─ toast/
 │     │  │  └─ ui/
 │     │  ├─ features/
+│     │  │  ├─ ai/
 │     │  │  ├─ auth/
 │     │  │  ├─ categories/
 │     │  │  ├─ dashboard/
@@ -357,6 +419,7 @@ sakuin/
 │  └─ shared/
 │
 ├─ docs/
+│  ├─ AI.md
 │  ├─ API.md
 │  ├─ HANDOFF.md
 │  └─ SECURITY.md
@@ -370,7 +433,7 @@ sakuin/
 
 ---
 
-## 9. Core Features Status
+## 10. Core Features Status
 
 ### Authentication
 
@@ -436,6 +499,7 @@ Migrasi ke httpOnly secure cookie dapat menjadi fase security lanjutan.
 [✓] Cache/background refetch
 [✓] Ownership protection
 [✓] Audit event create/update/delete transaksi
+[✓] Transaksi dari AI draft disimpan menggunakan createTransaction existing
 ```
 
 Validasi nominal transaksi:
@@ -584,105 +648,339 @@ Service worker tidak boleh cache API private user seperti auth, transactions, su
 
 ---
 
-## 10. Auth and Password Reset Context
+## 11. Asisten Sakuin Status
 
-### Google Login
-
-Google Login sudah selesai dan berjalan di production.
-
-Behavior:
+Asisten Sakuin adalah fitur AI financial helper yang tersedia di:
 
 ```txt
-[✓] Frontend memakai Google Identity
-[✓] Frontend mengirim Google credential ke backend
-[✓] Backend verify ID token memakai google-auth-library
-[✓] Backend memastikan emailVerified
-[✓] Backend menyimpan OAuthAccount
-[✓] Existing email/password user dapat di-link dengan Google account
-[✓] Google-only user memiliki passwordHash null
-[✓] Backend tidak menyimpan Google access token
-[✓] Backend tidak menyimpan Google refresh token
-[✓] Backend tidak meminta Gmail scope
+/asisten
 ```
 
-Environment:
+Entry point:
 
-```env
-GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
-VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```txt
+Floating AI launcher di halaman authenticated melalui AppShell.
+```
+
+Tujuan Asisten Sakuin:
+
+```txt
+[✓] Menjawab ringkasan keuangan user
+[✓] Menganalisis pengeluaran
+[✓] Menganalisis pemasukan
+[✓] Membandingkan periode
+[✓] Memberi saran hemat ringan
+[✓] Menganalisis goals
+[✓] Menganalisis skenario finansial sederhana
+[✓] Membuat draft transaksi dari chat natural
+[✓] Membuat banyak draft transaksi dari satu prompt
+[✓] Menolak topik di luar finansial Sakuin
+```
+
+Status fitur AI:
+
+```txt
+[✓] AI intent classifier
+[✓] Gemini provider foundation
+[✓] AI provider abstraction
+[✓] AI provider router
+[✓] Default/complex/fallback model routing
+[✓] Usage control
+[✓] Financial context aggregation
+[✓] AI chat endpoint
+[✓] AI chat security tests
+[✓] Financial scenario analyzer
+[✓] Rule-based transaction draft engine
+[✓] Single transaction draft
+[✓] Multi transaction draft
+[✓] transactionDraft backward compatibility
+[✓] transactionDrafts array
+[✓] Frontend /asisten chat UI
+[✓] Floating AI launcher
+[✓] Local chat history
+[✓] Clear chat history dialog
+[✓] Cancel draft via button
+[✓] Cancel draft via natural text command
+[✓] Save draft per item
+[✓] Simpan Semua Draft
+[✓] No auto-scroll saat save/cancel/save all
+[✓] Typewriter effect ringan tanpa memaksa scroll
 ```
 
 ---
 
-### Password Reset
+## 12. AI Architecture
 
-Password reset sudah selesai dan berjalan end-to-end.
+Frontend tidak boleh memanggil AI provider secara langsung.
 
-Flow:
-
-```txt
-User submit email di /forgot-password
-Backend return response generic
-Jika email terdaftar, backend membuat reset token
-Token asli dikirim lewat email
-Database hanya menyimpan hash token
-Token punya expiry
-User membuka /reset-password?token=...
-User membuat password baru
-Backend validasi token hash dan expiry
-Backend update passwordHash
-Backend hapus reset token
-Token tidak bisa dipakai ulang
-```
-
-Email sender:
+Arsitektur:
 
 ```txt
-Current runtime email sender: Gmail SMTP / Nodemailer
-Provider Resend tidak dipakai lagi untuk runtime reset password karena membutuhkan verified domain untuk pengiriman umum.
+Frontend /asisten
+  ↓
+POST /api/ai/chat
+  ↓
+Backend auth middleware
+  ↓
+AI intent classifier
+  ↓
+Out-of-scope guardrail
+  ↓
+Financial data aggregation
+  ↓
+Provider router / rule-based engine
+  ↓
+Output validation
+  ↓
+Response to frontend
 ```
 
-Environment:
+Provider:
+
+```txt
+Gemini API
+```
+
+Environment backend:
 
 ```env
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="465"
-SMTP_SECURE="true"
-SMTP_USER="email_pengirim@gmail.com"
-SMTP_PASS="gmail_app_password_16_karakter_tanpa_spasi"
-EMAIL_FROM="Sakuin <email_pengirim@gmail.com>"
+GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
 ```
 
-Catatan delivery:
+Aturan penting:
 
 ```txt
-Email reset password dapat masuk ke Spam, Promotions, Social, Updates, atau All Mail.
-ForgotPasswordPage sudah memberi instruksi profesional kepada user untuk mengecek folder-folder tersebut.
-```
-
-Safe diagnostic logs:
-
-```txt
-password_reset_requested
-password_reset_user_not_found
-password_reset_email_attempted
-password_reset_email_sent
-password_reset_email_failed
-```
-
-Log tidak boleh memuat:
-
-```txt
-email mentah
-password
-reset token
-SMTP_PASS
-isi email
+GEMINI_API_KEY hanya boleh ada di backend.
+Jangan membuat VITE_GEMINI_API_KEY.
+Frontend tidak boleh menerima secret AI.
+Out-of-scope tidak boleh memanggil Gemini.
+Transaction draft tidak boleh memanggil Gemini.
+Transaction draft harus rule-based.
 ```
 
 ---
 
-## 11. Security Status
+## 13. AI Transaction Draft Status
+
+Fitur AI transaction draft sekarang mendukung single dan multi draft.
+
+Contoh single draft:
+
+```txt
+catat makan ayam geprek 15000
+```
+
+Contoh multi draft:
+
+```txt
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+```
+
+Target hasil multi draft:
+
+```txt
+Draft 1: makan, Rp12.000, Makanan
+Draft 2: minum, Rp4.000, Minuman
+Draft 3: cimol, Rp4.000, Makanan
+Draft 4: cireng, Rp5.000, Makanan
+```
+
+Backend response:
+
+```txt
+[✓] transactionDraft tetap dikirim sebagai draft pertama untuk backward compatibility
+[✓] transactionDrafts dikirim sebagai array semua draft
+[✓] cards menampilkan jumlah draft, draft siap disimpan, dan total nominal jika tersedia
+[✓] suggestions tidak boleh berisi action palsu seperti "Simpan semua"
+```
+
+Frontend behavior:
+
+```txt
+[✓] Render single draft
+[✓] Render multi draft
+[✓] Simpan Draft per item
+[✓] Batalkan Draft per item
+[✓] Simpan Semua Draft
+[✓] Save batch dilakukan parallel melalui createTransaction existing
+[✓] Draft saved/cancelled state disimpan di localStorage
+[✓] State saved/cancelled memakai draft key ${message.id}:${draftIndex}
+[✓] Refresh page mempertahankan state saved/cancelled
+[✓] Clear chat history membersihkan chat history dan draft state
+[✓] Input chat tidak dikunci hanya karena draft sedang disimpan
+[✓] No auto-scroll saat save/cancel/save all
+```
+
+Policy:
+
+```txt
+AI tidak boleh auto-save transaksi.
+AI hanya membuat draft.
+User harus review dan klik simpan.
+Draft yang dibatalkan tidak bisa disimpan.
+Draft yang sudah disimpan tidak bisa disimpan ulang.
+Transaction draft tidak memanggil Gemini.
+```
+
+---
+
+## 14. AI Guardrail
+
+Asisten Sakuin hanya boleh menjawab topik:
+
+```txt
+transaksi
+pemasukan
+pengeluaran
+kategori
+goals
+budget
+safe balance
+ringkasan keuangan
+perbandingan periode
+saran hemat ringan
+draft transaksi
+skenario finansial pribadi sederhana
+```
+
+Asisten Sakuin harus menolak:
+
+```txt
+pertanyaan umum di luar finansial
+coding
+politik
+hiburan
+kesehatan
+hukum
+pajak profesional
+investasi spesifik
+pinjaman spesifik
+prediksi finansial pasti
+permintaan yang meminta AI mengarang data pribadi
+```
+
+Contoh yang harus ditolak:
+
+```txt
+siapa istri Naruto?
+buatkan cerpen
+buatkan kode React
+jelaskan sejarah Majapahit
+```
+
+Contoh yang harus diterima:
+
+```txt
+Gaji saya 8 juta, ingin beli motor 30 juta, realistis nggak?
+Kalau 8 bulan gimana?
+Kalau tenor 12 sampai 32 bulan gimana?
+Kalau saya tekan pengeluaran apa yang harus dilakukan?
+Bagaimana kalau beli HP 10 juta, low risk atau tidak?
+```
+
+Pedoman jawaban skenario finansial:
+
+```txt
+[✓] Jawab dengan verdict terlebih dahulu
+[✓] Hitung kebutuhan per bulan jika ada target/tenor/deadline
+[✓] Bandingkan dengan pemasukan jika user memberi pemasukan
+[✓] Jelaskan risiko utama
+[✓] Jelaskan jika bunga/biaya tambahan belum dihitung
+[✓] Beri saran aman dan ringan
+[✗] Jangan memberi keputusan profesional
+[✗] Jangan langsung menyuruh user membeli
+[✗] Jangan mengarang data Sakuin
+```
+
+---
+
+## 15. AI Files
+
+File penting backend:
+
+```txt
+apps/api/src/modules/ai/ai.intent.ts
+apps/api/src/modules/ai/ai.provider.ts
+apps/api/src/modules/ai/ai.provider-router.ts
+apps/api/src/modules/ai/ai.service.ts
+apps/api/src/modules/ai/ai.types.ts
+apps/api/src/modules/ai/ai-financial-context.ts
+apps/api/src/modules/ai/ai-financial-scenario.ts
+apps/api/src/modules/ai/ai-transaction-draft.ts
+apps/api/src/modules/ai/ai.route.ts
+```
+
+File penting frontend:
+
+```txt
+apps/web/src/features/ai/ai.types.ts
+apps/web/src/features/ai/ai.service.ts
+apps/web/src/features/ai/pages/AsistenPage.tsx
+apps/web/src/components/layout/AppShell.tsx
+```
+
+Test penting:
+
+```txt
+apps/api/tests/ai-intent.test.ts
+apps/api/tests/ai-chat-service.test.ts
+apps/api/tests/ai-financial-scenario.test.ts
+apps/api/tests/ai-transaction-draft.test.ts
+```
+
+---
+
+## 16. Database Safety Context
+
+Pernah terjadi masalah karena local test sempat memakai database production.
+
+Konteks:
+
+```txt
+Local .env dan Vercel sempat memakai database URL production yang sama.
+Test yang menjalankan cleanup/deleteMany berbahaya terhadap production.
+Setelah itu user membuat database test terpisah di Supabase.
+.env local sekarang harus mengarah ke database test.
+CI juga harus memakai secrets test.
+```
+
+CI secrets:
+
+```env
+CI_DATABASE_URL="postgresql://..."
+CI_DIRECT_URL="postgresql://..."
+CI_JWT_SECRET="minimum_32_characters_secret"
+```
+
+CI safety environment:
+
+```env
+SAKUIN_DATABASE_TARGET="test"
+SAKUIN_PRODUCTION_DATABASE_PROJECT_REF="bwzxtjgrerjimcuyslci"
+```
+
+Workflow CI memiliki step:
+
+```txt
+Verify CI database safety
+```
+
+Aturan keras:
+
+```txt
+Jangan menjalankan automated test ke production database.
+Jangan mengubah database safety guard tanpa alasan kuat.
+Jangan menghapus SAKUIN_DATABASE_TARGET.
+Jangan menghapus SAKUIN_PRODUCTION_DATABASE_PROJECT_REF.
+Jangan memakai DATABASE_URL production untuk local test.
+```
+
+---
+
+## 17. Security Status
 
 Security baseline yang sudah diterapkan:
 
@@ -716,6 +1014,8 @@ Security baseline yang sudah diterapkan:
 [✓] Data isolation tests
 [✓] Auth/token edge case tests
 [✓] Rate limit/API abuse tests
+[✓] AI guardrail baseline
+[✓] AI data aggregation user-only
 ```
 
 Security backlog:
@@ -739,7 +1039,7 @@ Security backlog:
 
 ---
 
-## 12. Audit Trail
+## 18. Audit Trail
 
 Backend memiliki database-backed audit trail menggunakan Prisma model `AuditLog`.
 
@@ -767,6 +1067,18 @@ auth.auth_failed
 rate_limit.hit
 ```
 
+Candidate AI audit events untuk masa depan:
+
+```txt
+ai.chat_requested
+ai.chat_completed
+ai.chat_failed
+ai.out_of_scope_blocked
+ai.transaction_draft_generated
+ai.provider_used
+ai.provider_fallback
+```
+
 Audit persistence bersifat fail-open:
 
 ```txt
@@ -787,40 +1099,51 @@ Google credential
 Google access token
 Google refresh token
 SMTP_PASS
+GEMINI_API_KEY
 transaction amount
 transaction note
 goal name
-goal amount
+goal targetAmount
+goal currentAmount
 category name
+category icon value
+category color value
 export content
+AI prompt penuh
+AI response penuh
 ```
 
 ---
 
-## 13. Environment Variables
+## 19. Environment Variables
 
-### Backend Local
-
-File:
-
-```txt
-apps/api/.env
-```
-
-Contoh:
+### Backend Required
 
 ```env
-NODE_ENV="development"
-PORT=5000
+NODE_ENV="production"
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+JWT_SECRET="minimum_32_characters_secret"
+FRONTEND_URL="https://sakuin-web.vercel.app"
+```
 
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
-DIRECT_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+### Google Login
 
-JWT_SECRET="replace_with_minimum_32_characters_secret"
-FRONTEND_URL="http://localhost:3000"
+Backend:
 
+```env
 GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
 
+Frontend:
+
+```env
+VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
+
+### Gmail SMTP / Nodemailer
+
+```env
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="465"
 SMTP_SECURE="true"
@@ -829,180 +1152,46 @@ SMTP_PASS="gmail_app_password_16_karakter_tanpa_spasi"
 EMAIL_FROM="Sakuin <email_pengirim@gmail.com>"
 ```
 
-### Frontend Local
-
-File:
+Catatan:
 
 ```txt
-apps/web/.env
+SMTP_PASS menggunakan Gmail App Password, bukan password login Gmail biasa.
+App Password tidak boleh disimpan di repository.
+EMAIL_FROM sebaiknya memakai alamat yang sama dengan SMTP_USER.
+Email reset password dapat masuk ke Spam/Promotions.
+Frontend sudah memberi instruksi kepada user untuk mengecek folder email.
 ```
 
-Contoh:
+### AI / Gemini
 
 ```env
-VITE_API_BASE_URL="http://127.0.0.1:5000"
-VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
 ```
 
-### Production Backend
-
-Vercel project:
+Aturan:
 
 ```txt
-sakuin-api
+GEMINI_API_KEY hanya boleh ada di backend.
+Jangan membuat VITE_GEMINI_API_KEY.
+Frontend tidak boleh memanggil Gemini langsung.
+Transaction draft tidak memakai Gemini.
 ```
 
-Required env:
-
-```env
-NODE_ENV="production"
-DATABASE_URL="<Supabase PostgreSQL URL>"
-DIRECT_URL="<Supabase Direct URL>"
-JWT_SECRET="<production secret minimum 32 characters>"
-FRONTEND_URL="https://sakuin-web.vercel.app"
-GOOGLE_CLIENT_ID="<Google OAuth Client ID>"
-
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="465"
-SMTP_SECURE="true"
-SMTP_USER="<Gmail sender>"
-SMTP_PASS="<Gmail App Password without spaces>"
-EMAIL_FROM="Sakuin <Gmail sender>"
-```
-
-### Production Frontend
-
-Vercel project:
-
-```txt
-sakuin-web
-```
-
-Required env:
+### Frontend Required
 
 ```env
 VITE_API_BASE_URL="https://sakuin-api.vercel.app"
-VITE_GOOGLE_CLIENT_ID="<Google OAuth Client ID>"
-```
-
-Important notes:
-
-```txt
-Jangan commit file .env.
-Jangan menyimpan secret asli di repository.
-Jangan kirim secret ke chat.
-VITE_* akan terekspos ke frontend build.
-Jangan memakai prefix VITE_ untuk backend secret.
-Setelah mengubah environment variable di Vercel, lakukan redeploy.
-RESEND_API_KEY tidak lagi dipakai untuk runtime reset password dan sebaiknya dihapus saat cleanup.
+VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
 
 ---
 
-## 14. Local Development Setup
+## 20. Validation Commands
 
-Dari root project:
-
-```bash
-cd sakuin
-pnpm install
-```
-
-Generate Prisma Client:
-
-```bash
-pnpm --filter @sakuin/api db:generate
-```
-
-Jalankan migration:
-
-```bash
-pnpm --filter @sakuin/api db:migrate
-```
-
-Seed database:
-
-```bash
-pnpm --filter @sakuin/api db:seed
-```
-
-Jalankan backend:
-
-```bash
-pnpm --filter @sakuin/api dev
-```
-
-Backend local:
-
-```txt
-http://127.0.0.1:5000
-```
-
-Jalankan frontend:
-
-```bash
-pnpm --filter @sakuin/web dev
-```
-
-Frontend local:
-
-```txt
-http://127.0.0.1:3000
-```
-
----
-
-## 15. Important Scripts
-
-### Root Scripts
-
-```bash
-pnpm build
-pnpm typecheck
-pnpm test
-pnpm dev:api
-pnpm dev:web
-```
-
-### Frontend Scripts
-
-```bash
-pnpm --filter @sakuin/web dev
-pnpm --filter @sakuin/web typecheck
-pnpm --filter @sakuin/web test
-pnpm --filter @sakuin/web test:watch
-pnpm --filter @sakuin/web build
-pnpm --filter @sakuin/web preview
-```
-
-### Backend Scripts
-
-```bash
-pnpm --filter @sakuin/api dev
-pnpm --filter @sakuin/api typecheck
-pnpm --filter @sakuin/api test
-pnpm --filter @sakuin/api test:watch
-pnpm --filter @sakuin/api build
-pnpm --filter @sakuin/api start
-```
-
-### Prisma Scripts
-
-```bash
-pnpm --filter @sakuin/api db:generate
-pnpm --filter @sakuin/api db:migrate
-pnpm --filter @sakuin/api db:seed
-pnpm --filter @sakuin/api db:studio
-pnpm --filter @sakuin/api db:reset
-```
-
----
-
-## 16. Validation Commands
-
-Sebelum commit atau push, jalankan validasi sesuai area perubahan.
-
-Jika frontend disentuh:
+Frontend:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -1010,7 +1199,7 @@ pnpm --filter @sakuin/web test
 pnpm --filter @sakuin/web build
 ```
 
-Jika backend disentuh:
+Backend:
 
 ```bash
 pnpm --filter @sakuin/api typecheck
@@ -1018,17 +1207,16 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
-Jika Prisma schema berubah:
+Backend AI specific:
 
 ```bash
-pnpm --filter @sakuin/api db:migrate -- --name nama_migration
-pnpm --filter @sakuin/api db:generate
-pnpm --filter @sakuin/api typecheck
-pnpm --filter @sakuin/api test
-pnpm --filter @sakuin/api build
+pnpm --filter @sakuin/api test -- tests/ai-intent.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-chat-service.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-financial-scenario.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-transaction-draft.test.ts
 ```
 
-Jika hanya dokumentasi Markdown berubah:
+Documentation-only minimal validation:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -1047,225 +1235,209 @@ pnpm --filter @sakuin/api test
 pnpm --filter @sakuin/api build
 ```
 
-Target:
+Git:
 
-```txt
-Frontend typecheck : passed
-Frontend test      : passed
-Frontend build     : passed
-Backend typecheck  : passed
-Backend test       : passed
-Backend build      : passed
+```bash
+git status
+git diff --stat
+git diff
+git diff --cached --stat
+git add <file>
+git commit -m "<message>"
+git push
 ```
 
 ---
 
-## 17. Current Test Status
+## 21. Manual Regression Checklist
 
-Frontend automated tests terakhir yang pernah dikonfirmasi:
-
-```txt
-Test Files : 3 passed
-Tests      : 11 passed
-```
-
-Backend automated tests terakhir setelah auth/reset-password work pernah mencapai:
+### Auth
 
 ```txt
-Test Files : 19 passed
-Tests      : 124 passed
-Build      : passed
-```
-
-Catatan:
-
-```txt
-Gunakan output test lokal/CI terbaru sebagai sumber kebenaran.
-Jika jumlah test berbeda dari dokumentasi lama, jangan anggap error selama semua test passed.
-```
-
----
-
-## 18. GitHub Actions CI
-
-CI berjalan melalui GitHub Actions.
-
-Validasi CI mencakup:
-
-```txt
-[✓] pnpm install dengan frozen lockfile
-[✓] Prisma client/schema sync
-[✓] Frontend tests
-[✓] Frontend typecheck
-[✓] Frontend build
-[✓] Backend typecheck
-[✓] Backend tests
-[✓] Backend build
-```
-
-Jika CI gagal pada tahap install:
-
-```txt
-Kemungkinan package.json dan pnpm-lock.yaml tidak sinkron.
-Jalankan pnpm install, commit pnpm-lock.yaml, lalu push ulang.
-```
-
-Jika CI gagal karena environment/database:
-
-```txt
-Cek repository secrets GitHub Actions.
-Pastikan DATABASE_URL, DIRECT_URL, JWT_SECRET, dan environment terkait tersedia.
-```
-
----
-
-## 19. Deployment Notes
-
-Frontend dan backend dideploy ke Vercel.
-
-```txt
-Frontend platform : Vercel
-Backend platform  : Vercel
-Database platform : Supabase PostgreSQL
-Backend runtime   : Hono app as Vercel serverless function
-```
-
-Catatan penting deployment:
-
-```txt
-Backend memakai Hono app sebagai serverless function.
-app.ts harus default export untuk Vercel serverless.
-Backend CORS harus mengizinkan frontend production.
-Frontend VITE_API_BASE_URL harus mengarah ke backend production.
-Environment variable Vercel hanya berlaku setelah redeploy.
-Jangan memakai preview URL yang terkena Vercel Authentication sebagai production API URL.
-```
-
-Checklist setelah deploy:
-
-```txt
-[ ] GitHub Actions CI passed
-[ ] Vercel frontend deployment passed
-[ ] Vercel backend deployment passed
-[ ] Production /health normal
-[ ] Production /api/health normal
+[ ] Register email/password normal
 [ ] Login email/password normal
 [ ] Login Google normal
-[ ] Forgot/reset password normal jika area auth berubah
+[ ] Register Google normal
+[ ] Forgot password normal
+[ ] Reset password normal
+[ ] Reset password email terkirim
+[ ] Logout normal
 ```
 
----
-
-## 20. Development Workflow Preference
-
-Workflow yang disukai user:
+### Core App
 
 ```txt
-1. Pahami konteks terlebih dahulu.
-2. Jika butuh file, minta file spesifik.
-3. Jangan langsung memberi code tanpa konteks.
-4. Berikan full code replacement jika file besar/rawan error.
-5. Untuk file/folder baru, user lebih suka command terminal untuk membuat struktur.
-6. Untuk code existing, jangan otomatis inject script besar ke file.
-7. Berikan instruksi validasi.
-8. Setelah validasi, lakukan manual test.
-9. Setelah aman, commit/push.
-10. Cek CI/deploy.
+[ ] Dashboard normal
+[ ] Transactions list normal
+[ ] Add transaction normal
+[ ] Edit transaction normal
+[ ] Delete transaction normal
+[ ] Categories normal
+[ ] Goals normal
+[ ] Profile normal
+[ ] Export JSON normal
+[ ] Export CSV normal
+[ ] Export XLSX normal
 ```
 
-Preferensi code:
+### AI Assistant
 
 ```txt
-Reusable.
-Clean code.
-Mudah didebug.
-Mudah dimaintenance.
-Mudah dikembangkan.
-Minim komentar tidak perlu.
-Tidak memakai komentar path seperti // apps/api/tests/example.test.ts di atas file.
+[ ] /asisten terbuka normal
+[ ] Floating AI button muncul di authenticated pages
+[ ] Prompt financial summary dijawab
+[ ] Prompt spending analysis dijawab
+[ ] Prompt goal/scenario dijawab
+[ ] Out-of-scope ditolak
+[ ] Single transaction draft muncul
+[ ] Multi transaction draft muncul
+[ ] Simpan Draft bekerja
+[ ] Batalkan Draft bekerja
+[ ] Simpan Semua Draft bekerja
+[ ] Draft saved/cancelled state bertahan setelah refresh
+[ ] Clear chat history menghapus chat dan draft state
+[ ] Tidak ada auto-scroll saat save/cancel/save all
+[ ] Transactions page menampilkan transaksi yang disimpan dari AI draft
 ```
 
----
-
-## 21. Non-Negotiable Security Rules
-
-Aturan yang tidak boleh dilanggar:
+Test prompt AI transaction draft:
 
 ```txt
-Jangan log password.
-Jangan log JWT token.
-Jangan log Authorization header.
-Jangan log raw request body.
-Jangan log email mentah jika tidak benar-benar perlu.
-Jangan log reset password token.
-Jangan log Google credential.
-Jangan log SMTP_PASS.
-Jangan menyimpan OAuth access/refresh token tanpa encryption design.
-Jangan membaca Gmail hanya karena user login dengan Google.
-Jangan cache API private user di service worker.
-Jangan membuat transaksi otomatis final tanpa review user.
-Jangan memakai userId dari frontend untuk ownership.
-Jangan menghapus data isolation tests.
-Jangan menghapus rate limit tanpa pengganti.
-Jangan klaim aplikasi 100% aman.
+catat makan ayam geprek 15000
+dikasih kakak 100000
+bensin 30000 kemarin
+catat makan 12000 minum 4000 cimol 4000 cireng 5000
+```
+
+Test out-of-scope:
+
+```txt
+siapa istri Naruto?
+buatkan cerpen
+buatkan kode React
+jelaskan sejarah Majapahit
+```
+
+Test scenario:
+
+```txt
+gaji saya 8 juta ingin beli motor 30 juta, realistis nggak?
+kalau 8 bulan gimana?
+kalau tenor 12 sampai 32 bulan gimana?
 ```
 
 ---
 
 ## 22. Known Limitations
 
-Limitasi saat ini:
+Keterbatasan project saat ini:
 
 ```txt
-JWT masih disimpan di localStorage.
-Rate limit masih in-memory.
-Gmail SMTP bisa masuk Spam/Promotions.
-Belum ada email verification untuk register email/password.
-Belum ada password change page untuk user yang sedang login.
-Belum ada refresh token/session rotation.
-Belum ada httpOnly cookie strategy.
-Belum ada distributed rate limiting.
-Belum ada official transactional email domain dengan SPF/DKIM/DMARC.
-Belum ada admin/audit log viewer.
-Belum ada privacy policy untuk integrasi sensitif.
-```
-
----
-
-## 23. Recommended Next Phases
-
-Setelah dokumentasi auth/reset password selesai dan commit aman, rekomendasi fase berikutnya:
-
-### Option A — Cleanup Unused Resend Config
-
-Tujuan:
-
-```txt
-[ ] Hapus RESEND_API_KEY dari env schema jika benar-benar tidak dipakai
-[ ] Hapus RESEND_API_KEY dari Vercel backend
-[ ] Pastikan docs tidak menyarankan Resend sebagai runtime aktif
-[ ] Validasi backend
+[ ] Auth token masih di localStorage
+[ ] Belum ada httpOnly secure cookie auth
+[ ] Belum ada refresh token strategy
+[ ] Belum ada email verification untuk akun email/password
+[ ] Belum ada password change flow untuk user login
+[ ] Rate limit masih baseline/in-memory
+[ ] Audit log viewer belum tersedia
+[ ] Budgeting per category belum tersedia
+[ ] Financial health score belum tersedia
+[ ] AI insight 3-6 bulan belum tersedia sebagai fitur penuh
+[ ] Edit draft langsung dari chat AI belum tersedia
+[ ] Ubah kategori draft langsung dari chat AI belum tersedia
+[ ] Persistent server-side chat history belum tersedia
+[ ] AI memory lintas device belum tersedia
+[ ] Gmail/e-wallet transaction detection belum tersedia
+[ ] Privacy policy untuk integrasi sensitif belum dibuat
 ```
 
 Catatan:
 
 ```txt
-Lakukan hati-hati. Jika env.ts masih menerima RESEND_API_KEY optional, itu tidak berbahaya, tetapi lebih bersih jika dihapus setelah Gmail SMTP stabil.
+Beberapa keterbatasan disengaja agar project tetap aman, terkontrol, dan mudah divalidasi.
+Jangan mengimplementasikan fitur sensitif tanpa desain security/privacy yang matang.
 ```
 
-### Option B — Session/Auth Hardening Design
+---
+
+## 23. Priority Backlog
+
+### Option A — Documentation Finalization
 
 Tujuan:
 
 ```txt
-[ ] Evaluasi migrasi localStorage token ke httpOnly secure cookie
-[ ] Desain CSRF strategy
-[ ] Desain logout/session invalidation
-[ ] Desain refresh token/session expiry
-[ ] Jangan langsung implementasi tanpa design doc
+[✓] docs/AI.md update
+[✓] docs/API.md update
+[~] docs/HANDOFF.md update
+[ ] docs/SECURITY.md update jika diperlukan
+[ ] README.md update jika diperlukan
 ```
 
-### Option C — Budgeting per Category
+Rekomendasi:
+
+```txt
+Selesaikan docs/SECURITY.md setelah HANDOFF.md agar AI privacy/security policy sinkron.
+```
+
+---
+
+### Option B — Security Cleanup
+
+Tujuan:
+
+```txt
+[ ] Cleanup unused Resend env/config reference jika masih ada
+[ ] Pastikan runtime reset password hanya memakai Gmail SMTP/Nodemailer
+[ ] Pastikan tidak ada secret lama yang tidak terpakai di Vercel
+```
+
+Catatan:
+
+```txt
+Jika env.ts masih menerima RESEND_API_KEY optional, itu tidak berbahaya, tetapi lebih bersih jika dihapus setelah Gmail SMTP stabil.
+```
+
+---
+
+### Option C — Phase 26E.1 Financial Health Snapshot
+
+Tujuan:
+
+```txt
+[ ] Membuat ringkasan kesehatan finansial sederhana
+[ ] Menghitung rasio pengeluaran terhadap pemasukan
+[ ] Membaca safe balance awareness
+[ ] Memberi status aman/waspada/berisiko
+[ ] Menjawab dengan format ringkas dan practical
+```
+
+Contoh output:
+
+```txt
+Status: Waspada ringan.
+Pengeluaran bulan ini sudah 72% dari pemasukan.
+Kategori terbesar adalah Makanan.
+Saran: batasi pengeluaran harian sekitar Rp60.000 sampai akhir bulan.
+```
+
+---
+
+### Option D — Phase 26E.2 Spending Pattern Insight
+
+Tujuan:
+
+```txt
+[ ] Analisis kategori boros
+[ ] Tren pengeluaran 3-6 bulan
+[ ] Deteksi kenaikan tidak biasa
+[ ] Rekomendasi batas mingguan
+[ ] Tetap financial-only dan tidak overwhelming
+```
+
+---
+
+### Option E — Budgeting per Category
 
 Tujuan produk:
 
@@ -1275,30 +1447,18 @@ Tujuan produk:
 [ ] Membuat Sakuin lebih bernilai dari sekadar pencatat transaksi
 ```
 
-### Option D — Financial Insight MVP
-
-Tujuan produk:
+Catatan:
 
 ```txt
-[ ] Insight sederhana berbasis transaksi existing
-[ ] Contoh: kategori pengeluaran terbesar, kenaikan pengeluaran bulanan, safe balance warning
-[ ] Tidak memakai AI dulu jika belum perlu
-[ ] Fokus pada insight deterministik dan mudah dijelaskan
-```
-
-Rekomendasi terdekat:
-
-```txt
-1. Selesaikan commit dokumentasi.
-2. Cleanup unused Resend secret/config.
-3. Lanjut ke Product Value Phase: Budgeting per Category atau Financial Insight MVP.
+Budgeting per Category bisa menjadi fitur produk besar setelah AI transaction draft stabil.
+Fitur ini bisa digabung dengan Asisten Sakuin agar AI bisa membaca budget usage.
 ```
 
 ---
 
 ## 24. Suggested Final Checklist for Current Documentation Phase
 
-Setelah README.md, docs/API.md, docs/SECURITY.md, dan docs/HANDOFF.md diganti:
+Setelah docs/AI.md, docs/API.md, docs/HANDOFF.md, dan docs/SECURITY.md diganti:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
@@ -1309,8 +1469,16 @@ git status
 Jika aman:
 
 ```bash
-git add README.md docs/API.md docs/SECURITY.md docs/HANDOFF.md
-git commit -m "Update documentation for auth and password reset"
+git add docs/AI.md docs/API.md docs/HANDOFF.md docs/SECURITY.md
+git commit -m "Update documentation for AI assistant features"
+git push
+```
+
+Jika README.md juga diubah:
+
+```bash
+git add README.md docs/AI.md docs/API.md docs/HANDOFF.md docs/SECURITY.md
+git commit -m "Update documentation for AI assistant features"
 git push
 ```
 
@@ -1328,18 +1496,25 @@ Setelah push:
 
 ## 25. Summary for Next Developer/Agent
 
-Sakuin adalah web app pengelola keuangan pribadi production-ready tahap awal. Fitur utama sudah berjalan: auth, Google Login, reset password, dashboard, transaksi, kategori, goals, export, PWA, Quick Transaction, security hardening, safe logging, dan database-backed audit trail.
+Sakuin adalah web app pengelola keuangan pribadi production-ready tahap awal. Fitur utama sudah berjalan: auth, Google Login, reset password, dashboard, transaksi, kategori, goals, export, PWA, Quick Transaction, security hardening, safe logging, database-backed audit trail, dan Asisten Sakuin.
 
 Kondisi terbaru paling penting:
 
 ```txt
 [✓] Google Login sudah aktif dan berhasil di production.
 [✓] Reset password sudah aktif dan berhasil end-to-end.
-[✓] Resend tidak dipakai lagi untuk runtime reset password.
 [✓] Email reset password memakai Gmail SMTP/Nodemailer.
-[✓] Email dapat masuk Spam/Promotions, sehingga UI memberi instruksi cek semua folder email.
 [✓] CI dan deploy terakhir dikonfirmasi hijau.
-[✓] Dokumentasi sedang/sudah disinkronkan untuk auth/reset password.
+[✓] Asisten Sakuin tersedia di /asisten.
+[✓] Gemini provider hanya dipanggil dari backend.
+[✓] Out-of-scope tidak boleh memanggil Gemini.
+[✓] Transaction draft memakai rule-based parser, bukan Gemini.
+[✓] Transaction draft tidak auto-save.
+[✓] Backend mendukung transactionDraft dan transactionDrafts.
+[✓] Frontend mendukung single dan multi transaction draft.
+[✓] Frontend mendukung Simpan Semua Draft.
+[✓] Frontend tidak auto-scroll saat save/cancel/save all.
+[✓] Dokumentasi AI/API sedang disinkronkan untuk fitur terbaru.
 ```
 
 Jangan lanjut fitur sensitif seperti Gmail/e-wallet/mobile banking detection tanpa desain security, privacy, consent, token handling, audit event, dan draft-first review flow.
@@ -1347,7 +1522,25 @@ Jangan lanjut fitur sensitif seperti Gmail/e-wallet/mobile banking detection tan
 Prioritas setelah dokumentasi:
 
 ```txt
-[1] Commit documentation sync.
-[2] Cleanup unused Resend config/secret.
-[3] Pilih fase produk berikutnya: Budgeting per Category atau Financial Insight MVP.
+[1] Selesaikan docs/SECURITY.md jika perlu.
+[2] Commit documentation sync.
+[3] Cleanup unused Resend config/secret jika masih ada.
+[4] Pilih fase produk berikutnya:
+    - Phase 26E.1 Financial Health Snapshot
+    - Spending Pattern Insight
+    - Budgeting per Category
+```
+
+Aturan utama untuk agent berikutnya:
+
+```txt
+Jangan menyentuh database/migration tanpa alasan kuat.
+Jangan menjalankan test ke production database.
+Jangan expose secret.
+Jangan memanggil AI provider dari frontend.
+Jangan memakai Gemini untuk transaction draft.
+Jangan auto-save transaksi dari AI.
+Jangan membuat fitur sensitif tanpa security design.
+Selalu validasi lokal sebelum commit.
+Selalu cek CI dan deployment setelah push.
 ```

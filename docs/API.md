@@ -26,6 +26,7 @@ Password Hash : bcryptjs
 Google Login  : Google ID Token Verification
 Email Sender  : Gmail SMTP / Nodemailer
 Export        : JSON, CSV, XLSX
+AI Provider   : Gemini API via backend only
 Test          : Vitest
 ```
 
@@ -48,6 +49,9 @@ Security baseline backend:
 [✓] Safe security event logging
 [✓] Database-backed AuditLog
 [✓] Production error masking
+[✓] AI financial-only guardrail
+[✓] AI transaction draft no auto-save
+[✓] AI transaction draft rule-based tanpa Gemini
 ```
 
 ---
@@ -64,22 +68,6 @@ http://127.0.0.1:5000
 
 ```txt
 https://sakuin-api.vercel.app
-```
-
----
-
-## Health Check
-
-```txt
-GET /health
-GET /api/health
-```
-
-Production health check:
-
-```txt
-GET https://sakuin-api.vercel.app/health
-GET https://sakuin-api.vercel.app/api/health
 ```
 
 ---
@@ -236,6 +224,8 @@ PUT    /api/goals/:id
 DELETE /api/goals/:id
 
 GET    /api/export/transactions
+
+POST   /api/ai/chat
 ```
 
 ---
@@ -258,7 +248,7 @@ Tidak perlu token.
   "message": "Server sehat",
   "data": {
     "status": "ok",
-    "timestamp": "2026-05-19T00:00:00.000Z"
+    "timestamp": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -281,7 +271,7 @@ Tidak perlu token.
   "message": "API sehat",
   "data": {
     "status": "ok",
-    "timestamp": "2026-05-19T00:00:00.000Z"
+    "timestamp": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -492,18 +482,18 @@ Tidak perlu token.
 }
 ```
 
-### Catatan Environment
+### Environment
 
-Backend membutuhkan:
+Backend:
 
-```txt
-GOOGLE_CLIENT_ID
+```env
+GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
 
-Frontend membutuhkan:
+Frontend:
 
-```txt
-VITE_GOOGLE_CLIENT_ID
+```env
+VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
 
 ---
@@ -552,7 +542,7 @@ Response selalu generic untuk mencegah user enumeration.
 
 ### Catatan Email Delivery
 
-Karena email reset password saat ini dikirim melalui Gmail SMTP, email dapat masuk ke:
+Email reset password dapat masuk ke:
 
 ```txt
 Inbox
@@ -563,29 +553,7 @@ Updates
 All Mail
 ```
 
-Frontend menampilkan instruksi agar user mengecek semua folder email tersebut.
-
-### Safe Diagnostic Logs
-
-Backend dapat mencatat log aman seperti:
-
-```txt
-password_reset_requested
-password_reset_user_not_found
-password_reset_email_attempted
-password_reset_email_sent
-password_reset_email_failed
-```
-
-Log tidak boleh memuat:
-
-```txt
-email mentah
-password
-reset token
-SMTP_PASS
-isi email
-```
+Frontend menampilkan instruksi agar user mengecek folder tersebut.
 
 ---
 
@@ -738,8 +706,8 @@ Authorization: Bearer <token>
     "name": "Rizal",
     "email": "rizal@example.com",
     "safeBalanceLimit": "500000.00",
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -783,8 +751,8 @@ Minimal satu field wajib dikirim.
     "name": "Rizal Updated",
     "email": "rizal@example.com",
     "safeBalanceLimit": "500000.00",
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -797,6 +765,7 @@ name maksimal 100 karakter
 safeBalanceLimit wajib berupa angka valid jika dikirim
 safeBalanceLimit tidak boleh negatif
 safeBalanceLimit maksimal 2 angka desimal
+safeBalanceLimit maksimal 1.000.000.000.000
 ```
 
 ### Audit Event
@@ -862,8 +831,8 @@ GET /api/categories?type=EXPENSE
       "icon": "utensils",
       "color": "#ef4444",
       "isDefault": true,
-      "createdAt": "2026-05-19T00:00:00.000Z",
-      "updatedAt": "2026-05-19T00:00:00.000Z"
+      "createdAt": "2026-05-21T00:00:00.000Z",
+      "updatedAt": "2026-05-21T00:00:00.000Z"
     }
   ]
 }
@@ -913,8 +882,8 @@ color optional, maksimal 30 karakter
     "icon": "coffee",
     "color": "#92400e",
     "isDefault": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -967,8 +936,8 @@ Minimal satu field wajib dikirim.
     "icon": "coffee",
     "color": "#78350f",
     "isDefault": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1008,8 +977,8 @@ id wajib diisi
     "icon": "coffee",
     "color": "#78350f",
     "isDefault": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1075,7 +1044,7 @@ GET /api/transactions?startDate=2026-05-01&endDate=2026-05-31
         "type": "EXPENSE",
         "amount": "15000.00",
         "note": "makan siang",
-        "date": "2026-05-19T00:00:00.000Z",
+        "date": "2026-05-21T00:00:00.000Z",
         "category": {
           "id": "category-id",
           "name": "Makan",
@@ -1084,8 +1053,8 @@ GET /api/transactions?startDate=2026-05-01&endDate=2026-05-31
           "color": "#ef4444",
           "isDefault": true
         },
-        "createdAt": "2026-05-19T00:00:00.000Z",
-        "updatedAt": "2026-05-19T00:00:00.000Z"
+        "createdAt": "2026-05-21T00:00:00.000Z",
+        "updatedAt": "2026-05-21T00:00:00.000Z"
       }
     ],
     "pagination": {
@@ -1115,7 +1084,7 @@ Wajib token.
   "type": "EXPENSE",
   "amount": "15000",
   "categoryId": "category-id",
-  "date": "2026-05-19",
+  "date": "2026-05-21",
   "note": "makan siang"
 }
 ```
@@ -1141,7 +1110,7 @@ Tidak boleh 0
     "type": "EXPENSE",
     "amount": "15000.00",
     "note": "makan siang",
-    "date": "2026-05-19T00:00:00.000Z",
+    "date": "2026-05-21T00:00:00.000Z",
     "category": {
       "id": "category-id",
       "name": "Makan",
@@ -1150,8 +1119,8 @@ Tidak boleh 0
       "color": "#ef4444",
       "isDefault": true
     },
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1189,7 +1158,7 @@ id wajib diisi
     "type": "EXPENSE",
     "amount": "15000.00",
     "note": "makan siang",
-    "date": "2026-05-19T00:00:00.000Z",
+    "date": "2026-05-21T00:00:00.000Z",
     "category": {
       "id": "category-id",
       "name": "Makan",
@@ -1198,9 +1167,19 @@ id wajib diisi
       "color": "#ef4444",
       "isDefault": true
     },
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
+}
+```
+
+### Error
+
+```json
+{
+  "success": false,
+  "message": "Transaksi tidak ditemukan",
+  "errors": null
 }
 ```
 
@@ -1208,11 +1187,17 @@ id wajib diisi
 
 ## PUT `/api/transactions/:id`
 
-Update transaksi.
+Update transaksi milik user login.
 
 ### Auth
 
 Wajib token.
+
+### Params
+
+```txt
+id wajib diisi
+```
 
 ### Body
 
@@ -1221,9 +1206,9 @@ Minimal satu field wajib dikirim.
 ```json
 {
   "type": "EXPENSE",
-  "amount": "18000",
+  "amount": "20000",
   "categoryId": "category-id",
-  "date": "2026-05-19",
+  "date": "2026-05-21",
   "note": "makan malam"
 }
 ```
@@ -1237,9 +1222,9 @@ Minimal satu field wajib dikirim.
   "data": {
     "id": "transaction-id",
     "type": "EXPENSE",
-    "amount": "18000.00",
+    "amount": "20000.00",
     "note": "makan malam",
-    "date": "2026-05-19T00:00:00.000Z",
+    "date": "2026-05-21T00:00:00.000Z",
     "category": {
       "id": "category-id",
       "name": "Makan",
@@ -1248,8 +1233,8 @@ Minimal satu field wajib dikirim.
       "color": "#ef4444",
       "isDefault": true
     },
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1264,11 +1249,17 @@ transaction.updated
 
 ## DELETE `/api/transactions/:id`
 
-Hapus transaksi.
+Hapus transaksi milik user login.
 
 ### Auth
 
 Wajib token.
+
+### Params
+
+```txt
+id wajib diisi
+```
 
 ### Response
 
@@ -1277,21 +1268,7 @@ Wajib token.
   "success": true,
   "message": "Transaksi berhasil dihapus",
   "data": {
-    "id": "transaction-id",
-    "type": "EXPENSE",
-    "amount": "18000.00",
-    "note": "makan malam",
-    "date": "2026-05-19T00:00:00.000Z",
-    "category": {
-      "id": "category-id",
-      "name": "Makan",
-      "type": "EXPENSE",
-      "icon": "utensils",
-      "color": "#ef4444",
-      "isDefault": true
-    },
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "id": "transaction-id"
   }
 }
 ```
@@ -1314,6 +1291,19 @@ Mengambil ringkasan keuangan user login.
 
 Wajib token.
 
+### Query Params
+
+```txt
+month optional, format YYYY-MM
+```
+
+### Contoh Request
+
+```txt
+GET /api/summary
+GET /api/summary?month=2026-05
+```
+
 ### Response
 
 ```json
@@ -1325,18 +1315,51 @@ Wajib token.
     "totalExpense": "1500000.00",
     "balance": "3500000.00",
     "safeBalanceLimit": "500000.00",
-    "recentTransactions": [],
-    "monthlyTrend": [],
-    "categoryBreakdown": []
+    "transactionCount": 24,
+    "recentTransactions": [
+      {
+        "id": "transaction-id",
+        "type": "EXPENSE",
+        "amount": "15000.00",
+        "note": "makan siang",
+        "date": "2026-05-21T00:00:00.000Z",
+        "category": {
+          "id": "category-id",
+          "name": "Makan",
+          "type": "EXPENSE",
+          "icon": "utensils",
+          "color": "#ef4444",
+          "isDefault": true
+        }
+      }
+    ],
+    "categoryBreakdown": [
+      {
+        "categoryId": "category-id",
+        "categoryName": "Makan",
+        "type": "EXPENSE",
+        "amount": "300000.00",
+        "percentage": 20
+      }
+    ],
+    "monthlyTrend": [
+      {
+        "month": "2026-05",
+        "income": "5000000.00",
+        "expense": "1500000.00"
+      }
+    ]
   }
 }
 ```
 
-### Catatan
+### Data Isolation
 
 ```txt
-Summary hanya menghitung transaksi milik user login.
+Summary hanya menghitung data milik user login.
 Summary tidak boleh menghitung transaksi user lain.
+Category breakdown tidak boleh memuat custom category user lain.
+Recent transactions tidak boleh memuat transaksi user lain.
 ```
 
 ---
@@ -1345,7 +1368,7 @@ Summary tidak boleh menghitung transaksi user lain.
 
 ## GET `/api/goals`
 
-Mengambil daftar goal user login.
+Mengambil daftar goals user login.
 
 ### Auth
 
@@ -1362,14 +1385,11 @@ Wajib token.
       "id": "goal-id",
       "name": "Dana Darurat",
       "targetAmount": "5000000.00",
-      "currentAmount": "1000000.00",
-      "progressPercentage": 20,
-      "remainingAmount": "4000000.00",
-      "isCompleted": false,
+      "currentAmount": "2000000.00",
       "deadline": "2026-12-31T00:00:00.000Z",
-      "isOverdue": false,
-      "createdAt": "2026-05-19T00:00:00.000Z",
-      "updatedAt": "2026-05-19T00:00:00.000Z"
+      "isPriority": true,
+      "createdAt": "2026-05-21T00:00:00.000Z",
+      "updatedAt": "2026-05-21T00:00:00.000Z"
     }
   ]
 }
@@ -1401,10 +1421,10 @@ Wajib token.
 ```txt
 name wajib diisi
 name maksimal 100 karakter
-targetAmount harus lebih dari 0
+targetAmount wajib lebih dari 0
+currentAmount optional, default 0
 currentAmount tidak boleh negatif
-currentAmount tidak boleh lebih besar dari targetAmount
-deadline optional
+deadline optional, format tanggal valid
 ```
 
 ### Response
@@ -1418,13 +1438,10 @@ deadline optional
     "name": "Dana Darurat",
     "targetAmount": "5000000.00",
     "currentAmount": "1000000.00",
-    "progressPercentage": 20,
-    "remainingAmount": "4000000.00",
-    "isCompleted": false,
     "deadline": "2026-12-31T00:00:00.000Z",
-    "isOverdue": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "isPriority": false,
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1445,6 +1462,12 @@ Mengambil detail goal.
 
 Wajib token.
 
+### Params
+
+```txt
+id wajib diisi
+```
+
 ### Response
 
 ```json
@@ -1456,13 +1479,10 @@ Wajib token.
     "name": "Dana Darurat",
     "targetAmount": "5000000.00",
     "currentAmount": "1000000.00",
-    "progressPercentage": 20,
-    "remainingAmount": "4000000.00",
-    "isCompleted": false,
     "deadline": "2026-12-31T00:00:00.000Z",
-    "isOverdue": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "isPriority": false,
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1471,7 +1491,7 @@ Wajib token.
 
 ## PUT `/api/goals/:id`
 
-Update goal.
+Update goal milik user login.
 
 ### Auth
 
@@ -1485,8 +1505,9 @@ Minimal satu field wajib dikirim.
 {
   "name": "Dana Darurat Updated",
   "targetAmount": "7000000",
-  "currentAmount": "1500000",
-  "deadline": "2026-12-31"
+  "currentAmount": "2500000",
+  "deadline": "2026-12-31",
+  "isPriority": true
 }
 ```
 
@@ -1500,14 +1521,11 @@ Minimal satu field wajib dikirim.
     "id": "goal-id",
     "name": "Dana Darurat Updated",
     "targetAmount": "7000000.00",
-    "currentAmount": "1500000.00",
-    "progressPercentage": 21.43,
-    "remainingAmount": "5500000.00",
-    "isCompleted": false,
+    "currentAmount": "2500000.00",
     "deadline": "2026-12-31T00:00:00.000Z",
-    "isOverdue": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "isPriority": true,
+    "createdAt": "2026-05-21T00:00:00.000Z",
+    "updatedAt": "2026-05-21T00:00:00.000Z"
   }
 }
 ```
@@ -1522,11 +1540,17 @@ goal.updated
 
 ## DELETE `/api/goals/:id`
 
-Hapus goal.
+Hapus goal milik user login.
 
 ### Auth
 
 Wajib token.
+
+### Params
+
+```txt
+id wajib diisi
+```
 
 ### Response
 
@@ -1535,17 +1559,7 @@ Wajib token.
   "success": true,
   "message": "Goal berhasil dihapus",
   "data": {
-    "id": "goal-id",
-    "name": "Dana Darurat Updated",
-    "targetAmount": "7000000.00",
-    "currentAmount": "1500000.00",
-    "progressPercentage": 21.43,
-    "remainingAmount": "5500000.00",
-    "isCompleted": false,
-    "deadline": "2026-12-31T00:00:00.000Z",
-    "isOverdue": false,
-    "createdAt": "2026-05-19T00:00:00.000Z",
-    "updatedAt": "2026-05-19T00:00:00.000Z"
+    "id": "goal-id"
   }
 }
 ```
@@ -1576,55 +1590,58 @@ type       optional, INCOME | EXPENSE
 categoryId optional
 startDate  optional
 endDate    optional
+filename   optional
 ```
 
 ### Contoh Request
 
 ```txt
 GET /api/export/transactions?format=json
-GET /api/export/transactions?format=csv
-GET /api/export/transactions?format=xlsx
-GET /api/export/transactions?format=xlsx&type=EXPENSE
-GET /api/export/transactions?format=csv&startDate=2026-05-01&endDate=2026-05-31
+GET /api/export/transactions?format=csv&type=EXPENSE
+GET /api/export/transactions?format=xlsx&startDate=2026-05-01&endDate=2026-05-31
 ```
 
-### JSON Response
+### Response JSON
 
 ```json
 {
   "success": true,
-  "message": "Export transaksi berhasil dibuat",
-  "data": {
-    "generatedAt": "2026-05-19T00:00:00.000Z",
-    "filters": {
-      "type": null,
-      "categoryId": null,
-      "startDate": null,
-      "endDate": null
-    },
-    "summary": {
-      "totalIncome": "5000000.00",
-      "totalExpense": "1500000.00",
-      "balance": "3500000.00",
-      "transactionCount": 10
-    },
-    "transactions": []
-  }
+  "message": "Export transaksi berhasil",
+  "data": [
+    {
+      "id": "transaction-id",
+      "type": "EXPENSE",
+      "amount": "15000.00",
+      "note": "makan siang",
+      "date": "2026-05-21T00:00:00.000Z",
+      "category": {
+        "id": "category-id",
+        "name": "Makan",
+        "type": "EXPENSE",
+        "icon": "utensils",
+        "color": "#ef4444",
+        "isDefault": true
+      }
+    }
+  ]
 }
 ```
 
-### CSV Response
+### Response CSV/XLSX
 
 ```txt
-Content-Type: text/csv; charset=utf-8
-Content-Disposition: attachment; filename="sakuin-transactions-YYYY-MM-DD_HH-MM-SS.csv"
+Response berupa downloadable file.
+Frontend memakai auth download flow standar.
 ```
 
-### XLSX Response
+### Data Isolation
 
 ```txt
-Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-Content-Disposition: attachment; filename="sakuin-transactions-YYYY-MM-DD_HH-MM-SS.xlsx"
+Export hanya memuat transaksi milik user login.
+Export tidak boleh menerima userId dari frontend.
+Export filter categoryId milik user lain tidak boleh membocorkan data.
+Export content tidak boleh dicatat di log.
+Export content tidak boleh masuk audit metadata.
 ```
 
 ### Audit Event
@@ -1633,94 +1650,574 @@ Content-Disposition: attachment; filename="sakuin-transactions-YYYY-MM-DD_HH-MM-
 export.transactions_generated
 ```
 
-### Data Isolation
+Audit metadata hanya menyimpan informasi aman seperti:
 
 ```txt
-Export hanya boleh memuat transaksi milik user login.
-Export tidak boleh memuat transaksi user lain.
-Export dengan categoryId milik user lain tidak boleh membocorkan data.
+format
+typeFilter
+hasCategoryFilter
+hasDateRange
 ```
 
 ---
 
-# 9. Common Types
+# 9. AI API
 
-## TransactionType
+## POST `/api/ai/chat`
 
-```txt
-INCOME
-EXPENSE
-```
+Endpoint chat utama untuk **Asisten Sakuin**.
 
-## ExportFormat
+Endpoint ini digunakan frontend `/asisten` untuk:
 
 ```txt
-json
-csv
-xlsx
+[✓] menjawab ringkasan keuangan user
+[✓] menganalisis pengeluaran
+[✓] menganalisis pemasukan
+[✓] membandingkan periode
+[✓] memberi saran hemat ringan
+[✓] menganalisis goals
+[✓] menganalisis skenario finansial sederhana
+[✓] membuat draft transaksi dari chat natural
+[✓] membuat banyak draft transaksi dari satu prompt
+[✓] menolak pertanyaan di luar finansial Sakuin
 ```
 
-## Transaction Sort
+### Auth
+
+Wajib token.
+
+### Headers
 
 ```txt
-date_desc
-date_asc
-created_desc
-created_asc
+Authorization: Bearer <token>
+Content-Type: application/json
 ```
 
-## Date Format
+### Body
 
-Untuk field tanggal, gunakan ISO string:
+```json
+{
+  "message": "pengeluaran saya bulan ini gimana?",
+  "history": [
+    {
+      "role": "user",
+      "content": "goal saya gimana?"
+    },
+    {
+      "role": "assistant",
+      "content": "Goal kamu masih berjalan..."
+    }
+  ]
+}
+```
+
+### Body Fields
 
 ```txt
-2026-05-19T00:00:00.000Z
+message wajib diisi
+message maksimal sesuai validasi backend
+history optional
+history hanya berisi role user atau assistant
+history dipakai untuk follow-up context
 ```
 
-Untuk query filter tanggal, format `YYYY-MM-DD` juga dapat digunakan:
+### Supported Intents
 
 ```txt
-2026-05-19
+FINANCIAL_SUMMARY
+SPENDING_ANALYSIS
+INCOME_ANALYSIS
+PERIOD_COMPARISON
+SAVING_ADVICE
+GOAL_ANALYSIS
+TRANSACTION_DRAFT
+OUT_OF_SCOPE
 ```
-
-## Decimal Money Format
-
-Nominal uang umumnya dikirim sebagai string decimal:
-
-```txt
-"250000.00"
-"1000000.00"
-```
-
-Frontend boleh menampilkan nominal dengan format Rupiah.
 
 ---
 
-# 10. Security and Logging Rules
+## General AI Response
 
-Backend tidak boleh mencatat data sensitif berikut:
+### Response
 
-```txt
-password
-JWT token
-Authorization header
-cookie
-raw request body
-email mentah
-reset password token
-Google credential
-Google access token
-Google refresh token
-transaction amount dalam audit metadata
-transaction note dalam audit metadata
-goal amount dalam audit metadata
-goal name dalam audit metadata
-category name dalam audit metadata
-export content
-SMTP_PASS
+```json
+{
+  "success": true,
+  "message": "AI chat berhasil",
+  "data": {
+    "reply": "Pengeluaranmu bulan ini Rp500.000 dari 24 transaksi.",
+    "intent": "SPENDING_ANALYSIS",
+    "cards": [
+      {
+        "label": "Total Pengeluaran",
+        "value": "Rp500.000"
+      },
+      {
+        "label": "Kategori Terbesar",
+        "value": "Makanan"
+      }
+    ],
+    "suggestions": [
+      "Bandingkan bulan lalu",
+      "Lihat kategori terbesar",
+      "Buat saran hemat"
+    ]
+  }
+}
 ```
 
-Safe logs yang boleh dicatat:
+### Data Policy
+
+```txt
+Backend tidak boleh mengirim semua transaksi mentah ke AI provider.
+Backend hanya boleh mengirim financial context teragregasi dan aman.
+Backend tidak boleh mengirim email, token, password, Authorization header, raw request body, requestId, credential Google, SMTP secret, atau data user lain.
+```
+
+---
+
+## Out-of-Scope Response
+
+Jika user bertanya di luar topik keuangan Sakuin:
+
+```txt
+buatkan cerpen
+siapa istri Naruto?
+buatkan kode React
+jelaskan sejarah Majapahit
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "AI chat berhasil",
+  "data": {
+    "reply": "Maaf, Asisten Sakuin hanya bisa membantu pertanyaan seputar keuangan pribadi di Sakuin, seperti transaksi, pemasukan, pengeluaran, goals, budget, dan ringkasan keuangan.",
+    "intent": "OUT_OF_SCOPE",
+    "cards": [],
+    "suggestions": [
+      "Pengeluaran bulan ini gimana?",
+      "Saya boros di mana?",
+      "Target tabungan saya realistis?"
+    ]
+  }
+}
+```
+
+### Behavior
+
+```txt
+Out-of-scope tidak boleh memanggil Gemini.
+Out-of-scope harus diproses murah dan aman.
+```
+
+---
+
+## Financial Scenario Response
+
+Contoh request:
+
+```json
+{
+  "message": "gaji saya 8 juta ingin beli motor 30 juta, realistis nggak?"
+}
+```
+
+### Expected Behavior
+
+```txt
+[✓] Asisten memberi verdict.
+[✓] Asisten menghitung kebutuhan per bulan jika ada tenor/deadline.
+[✓] Asisten membandingkan dengan pemasukan jika user memberi pemasukan.
+[✓] Asisten memberi risiko utama.
+[✓] Asisten menjelaskan jika bunga/biaya tambahan belum dihitung.
+[✓] Asisten tidak memberi keputusan finansial profesional.
+```
+
+### Response Example
+
+```json
+{
+  "success": true,
+  "message": "AI chat berhasil",
+  "data": {
+    "reply": "Cukup realistis jika targetnya dibuat bertahap, tetapi tetap perlu dijaga. Jika harga motor Rp30.000.000 dan pemasukan Rp8.000.000 per bulan, kamu perlu menentukan tenor atau target bulan agar bisa dihitung lebih presisi. Catatan: simulasi ini belum memasukkan bunga, biaya admin, asuransi, atau biaya tambahan lain.",
+    "intent": "GOAL_ANALYSIS",
+    "cards": [
+      {
+        "label": "Pemasukan",
+        "value": "Rp8.000.000"
+      },
+      {
+        "label": "Target",
+        "value": "Rp30.000.000"
+      }
+    ],
+    "suggestions": [
+      "Kalau 8 bulan gimana?",
+      "Kalau 12 bulan gimana?",
+      "Cek goal saya"
+    ]
+  }
+}
+```
+
+---
+
+## Single Transaction Draft Response
+
+Contoh request:
+
+```json
+{
+  "message": "catat makan ayam geprek 15000"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "AI chat berhasil",
+  "data": {
+    "reply": "Saya membuat 1 draft transaksi. Silakan review dulu sebelum disimpan.",
+    "intent": "TRANSACTION_DRAFT",
+    "cards": [
+      {
+        "label": "Jumlah draft",
+        "value": "1"
+      },
+      {
+        "label": "Siap disimpan",
+        "value": "1"
+      }
+    ],
+    "suggestions": [
+      "Catat transaksi lain",
+      "Lihat pengeluaran bulan ini"
+    ],
+    "transactionDraft": {
+      "type": "EXPENSE",
+      "amount": "15000",
+      "categoryId": "category-id",
+      "categoryName": "Makanan",
+      "note": "ayam geprek",
+      "date": "2026-05-21",
+      "confidence": "high",
+      "missingFields": [],
+      "warnings": []
+    },
+    "transactionDrafts": [
+      {
+        "type": "EXPENSE",
+        "amount": "15000",
+        "categoryId": "category-id",
+        "categoryName": "Makanan",
+        "note": "ayam geprek",
+        "date": "2026-05-21",
+        "confidence": "high",
+        "missingFields": [],
+        "warnings": []
+      }
+    ]
+  }
+}
+```
+
+### Behavior
+
+```txt
+transactionDraft tetap tersedia sebagai draft pertama untuk backward compatibility.
+transactionDrafts tetap dikirim sebagai array agar frontend bisa memakai struktur yang sama untuk single dan multi draft.
+AI tidak menyimpan transaksi secara otomatis.
+User harus klik Simpan Draft di frontend.
+```
+
+---
+
+## Multi Transaction Draft Response
+
+Contoh request:
+
+```json
+{
+  "message": "catat makan 12000 minum 4000 cimol 4000 cireng 5000"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "AI chat berhasil",
+  "data": {
+    "reply": "Saya menemukan 4 draft transaksi. Silakan review dulu sebelum disimpan.",
+    "intent": "TRANSACTION_DRAFT",
+    "cards": [
+      {
+        "label": "Jumlah draft",
+        "value": "4"
+      },
+      {
+        "label": "Siap disimpan",
+        "value": "4"
+      },
+      {
+        "label": "Total nominal",
+        "value": "Rp25.000"
+      }
+    ],
+    "suggestions": [
+      "Catat transaksi lain",
+      "Lihat pengeluaran bulan ini"
+    ],
+    "transactionDraft": {
+      "type": "EXPENSE",
+      "amount": "12000",
+      "categoryId": "category-id",
+      "categoryName": "Makanan",
+      "note": "makan",
+      "date": "2026-05-21",
+      "confidence": "high",
+      "missingFields": [],
+      "warnings": []
+    },
+    "transactionDrafts": [
+      {
+        "type": "EXPENSE",
+        "amount": "12000",
+        "categoryId": "category-id",
+        "categoryName": "Makanan",
+        "note": "makan",
+        "date": "2026-05-21",
+        "confidence": "high",
+        "missingFields": [],
+        "warnings": []
+      },
+      {
+        "type": "EXPENSE",
+        "amount": "4000",
+        "categoryId": "category-id",
+        "categoryName": "Minuman",
+        "note": "minum",
+        "date": "2026-05-21",
+        "confidence": "high",
+        "missingFields": [],
+        "warnings": []
+      },
+      {
+        "type": "EXPENSE",
+        "amount": "4000",
+        "categoryId": "category-id",
+        "categoryName": "Makanan",
+        "note": "cimol",
+        "date": "2026-05-21",
+        "confidence": "high",
+        "missingFields": [],
+        "warnings": []
+      },
+      {
+        "type": "EXPENSE",
+        "amount": "5000",
+        "categoryId": "category-id",
+        "categoryName": "Makanan",
+        "note": "cireng",
+        "date": "2026-05-21",
+        "confidence": "high",
+        "missingFields": [],
+        "warnings": []
+      }
+    ]
+  }
+}
+```
+
+### Behavior
+
+```txt
+Backend membuat banyak draft dari satu prompt jika pola nominal berulang terdeteksi.
+Backend tetap mengisi transactionDraft sebagai draft pertama.
+Backend mengisi transactionDrafts sebagai array semua draft.
+Backend tidak auto-save.
+Backend tidak memanggil Gemini untuk transaction draft.
+Frontend menyediakan Simpan Draft, Batalkan Draft, dan Simpan Semua Draft.
+```
+
+---
+
+## Transaction Draft Object
+
+```ts
+type AiTransactionDraft = {
+  type: "INCOME" | "EXPENSE";
+  amount: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  note: string | null;
+  date: string;
+  confidence: "low" | "medium" | "high";
+  missingFields: string[];
+  warnings: string[];
+};
+```
+
+### Field Notes
+
+```txt
+type          tipe transaksi
+amount        nominal dalam string numerik
+categoryId    id kategori jika berhasil dideteksi
+categoryName  nama kategori untuk UI
+note          catatan transaksi yang aman ditampilkan ke user
+date          format YYYY-MM-DD
+confidence    tingkat keyakinan parser
+missingFields field yang belum lengkap
+warnings      peringatan untuk user
+```
+
+---
+
+## AI Chat Response Type
+
+```ts
+type AiChatResponse = {
+  reply: string;
+  intent:
+    | "FINANCIAL_SUMMARY"
+    | "SPENDING_ANALYSIS"
+    | "INCOME_ANALYSIS"
+    | "PERIOD_COMPARISON"
+    | "SAVING_ADVICE"
+    | "GOAL_ANALYSIS"
+    | "TRANSACTION_DRAFT"
+    | "OUT_OF_SCOPE";
+  cards: {
+    label: string;
+    value: string;
+  }[];
+  suggestions: string[];
+  transactionDraft?: AiTransactionDraft;
+  transactionDrafts?: AiTransactionDraft[];
+};
+```
+
+---
+
+## AI Frontend UX Contract
+
+Frontend `/asisten` harus mengikuti aturan:
+
+```txt
+[✓] Render reply sebagai assistant bubble.
+[✓] Render cards jika tersedia.
+[✓] Render suggestions jika tersedia.
+[✓] Filter suggestion action palsu seperti "Simpan semua".
+[✓] Render transactionDraft untuk backward compatibility.
+[✓] Render transactionDrafts jika tersedia.
+[✓] Gunakan transactionDrafts sebagai sumber utama multi draft.
+[✓] Simpan Draft memakai POST /api/transactions.
+[✓] Simpan Semua Draft menyimpan beberapa draft secara parallel melalui POST /api/transactions.
+[✓] Batalkan Draft hanya mengubah state lokal.
+[✓] Draft yang dibatalkan tidak bisa disimpan.
+[✓] Draft yang sudah disimpan tidak bisa disimpan ulang.
+[✓] No auto-scroll saat save/cancel/save all.
+[✓] Typewriter effect tidak boleh memaksa scroll user.
+```
+
+Frontend menyimpan state lokal:
+
+```txt
+sakuin_ai_chat_history_v1:<userId>
+sakuin_ai_saved_draft_ids_v1:<userId>
+sakuin_ai_cancelled_draft_ids_v1:<userId>
+```
+
+State saved/cancelled per draft memakai key:
+
+```txt
+${message.id}:${draftIndex}
+```
+
+---
+
+## AI Security Notes
+
+```txt
+Frontend tidak boleh memanggil Gemini.
+Frontend tidak boleh menerima GEMINI_API_KEY.
+Out-of-scope tidak boleh memanggil Gemini.
+Transaction draft tidak boleh memanggil Gemini.
+Transaction draft harus rule-based.
+AI tidak boleh auto-save transaksi.
+AI tidak boleh mengarang data transaksi, goals, saldo, atau kategori.
+AI tidak boleh mencampur data user lain.
+AI financial context harus user-only dan teragregasi.
+```
+
+---
+
+# 10. Rate Limiting
+
+Backend memiliki baseline rate limiting.
+
+Rate limit yang tersedia:
+
+```txt
+Login rate limit
+Register rate limit
+General API rate limit
+AI endpoint rate limit
+```
+
+Header rate limit:
+
+```txt
+RateLimit-Limit
+RateLimit-Remaining
+RateLimit-Reset
+Retry-After saat 429
+```
+
+Tujuan:
+
+```txt
+Mengurangi brute force login.
+Mengurangi spam register.
+Mengurangi request abuse umum.
+Mengontrol biaya AI provider.
+Mengurangi risiko Gemini quota habis.
+```
+
+Batasan saat ini:
+
+```txt
+Rate limit menggunakan in-memory store.
+Cukup untuk baseline/MVP dan low traffic.
+Tidak ideal untuk serverless/multi-instance production karena state bisa berbeda antar instance.
+```
+
+Backlog:
+
+```txt
+[ ] Redis-based rate limit
+[ ] Upstash Redis rate limit
+[ ] Vercel KV rate limit
+[ ] Centralized store agar konsisten lintas instance
+```
+
+---
+
+# 11. Logging and Audit
+
+Backend memiliki safe request logging, safe security event logging, dan database-backed audit trail.
+
+## Safe Request Log
+
+Boleh log:
 
 ```txt
 requestId
@@ -1729,17 +2226,68 @@ path
 status
 durationMs
 timestamp
-event type
-safe reason
-identifier hash
-userId
+```
+
+Tidak boleh log:
+
+```txt
+Authorization header
+JWT token
+password
+raw request body
+cookie
+email mentah
+transaction amount
+transaction note
+goal name
+goal amount
+category name
+export content
+Google credential
+SMTP_PASS
+reset token
+GEMINI_API_KEY
+AI prompt penuh jika sensitif
+AI response penuh jika sensitif
 ```
 
 ---
 
-# 11. Audit Trail
+## Security Events
 
-Backend memiliki database-backed audit trail menggunakan Prisma model `AuditLog`.
+Security-related safe events:
+
+```txt
+auth.login_failed
+auth.auth_failed
+rate_limit.hit
+```
+
+Password reset diagnostic logs yang aman:
+
+```txt
+password_reset_requested
+password_reset_user_not_found
+password_reset_email_attempted
+password_reset_email_sent
+password_reset_email_failed
+```
+
+AI candidate events:
+
+```txt
+ai.chat_requested
+ai.chat_completed
+ai.chat_failed
+ai.out_of_scope_blocked
+ai.transaction_draft_generated
+ai.provider_used
+ai.provider_fallback
+```
+
+---
+
+## Business Audit Events
 
 Audit trail berjalan internal dan belum memiliki endpoint publik.
 
@@ -1759,19 +2307,38 @@ category.updated
 category.deleted
 ```
 
-Security-related safe events:
-
-```txt
-auth.login_failed
-auth.auth_failed
-rate_limit.hit
-```
-
 Audit persistence bersifat fail-open:
 
 ```txt
 Jika penyimpanan audit log gagal, request utama user tetap tidak langsung gagal.
 Failure hanya dicatat sebagai safe error log tanpa metadata sensitif.
+```
+
+Audit metadata tidak boleh memuat:
+
+```txt
+password
+JWT token
+Authorization header
+raw request body
+email mentah
+reset password token
+Google credential
+Google access token
+Google refresh token
+SMTP_PASS
+GEMINI_API_KEY
+transaction amount
+transaction note
+goal name
+goal targetAmount
+goal currentAmount
+category name
+category icon value
+category color value
+export content
+AI prompt penuh
+AI response penuh
 ```
 
 ---
@@ -1788,17 +2355,23 @@ JWT_SECRET="minimum_32_characters_secret"
 FRONTEND_URL="https://sakuin-web.vercel.app"
 ```
 
+---
+
 ## Google Login
+
+Backend:
 
 ```env
 GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
 
-Frontend juga membutuhkan:
+Frontend:
 
 ```env
 VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 ```
+
+---
 
 ## Gmail SMTP / Nodemailer
 
@@ -1820,11 +2393,62 @@ EMAIL_FROM sebaiknya memakai alamat yang sama dengan SMTP_USER.
 Email reset password dapat masuk ke Spam/Promotions, sehingga frontend memberi instruksi kepada user untuk mengecek folder tersebut.
 ```
 
+---
+
+## AI / Gemini
+
+```env
+GEMINI_API_KEY="..."
+GEMINI_MODEL_DEFAULT="..."
+GEMINI_MODEL_COMPLEX="..."
+GEMINI_MODEL_FALLBACK="..."
+```
+
+Aturan:
+
+```txt
+GEMINI_API_KEY hanya boleh ada di backend.
+Jangan membuat VITE_GEMINI_API_KEY.
+Frontend tidak boleh memanggil Gemini langsung.
+Transaction draft tidak memakai Gemini.
+```
+
+---
+
 ## Frontend Required
 
 ```env
 VITE_API_BASE_URL="https://sakuin-api.vercel.app"
 VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
+```
+
+---
+
+## CI Database Safety
+
+CI harus memakai database test, bukan production database.
+
+Secrets CI:
+
+```env
+CI_DATABASE_URL="postgresql://..."
+CI_DIRECT_URL="postgresql://..."
+CI_JWT_SECRET="minimum_32_characters_secret"
+```
+
+Environment safety:
+
+```env
+SAKUIN_DATABASE_TARGET="test"
+SAKUIN_PRODUCTION_DATABASE_PROJECT_REF="bwzxtjgrerjimcuyslci"
+```
+
+Aturan:
+
+```txt
+Jangan menjalankan automated test ke production database.
+Jangan mengubah database safety guard tanpa alasan kuat.
+Jangan commit .env atau secret.
 ```
 
 ---
@@ -1844,6 +2468,13 @@ Project Vercel:
 ```txt
 Frontend : sakuin-web
 Backend  : sakuin-api
+```
+
+Health check production:
+
+```txt
+GET https://sakuin-api.vercel.app/health
+GET https://sakuin-api.vercel.app/api/health
 ```
 
 ---
@@ -1866,12 +2497,34 @@ pnpm --filter @sakuin/web test
 pnpm --filter @sakuin/web build
 ```
 
+Jika AI backend berubah:
+
+```bash
+pnpm --filter @sakuin/api test -- tests/ai-intent.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-chat-service.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-financial-scenario.test.ts
+pnpm --filter @sakuin/api test -- tests/ai-transaction-draft.test.ts
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api build
+```
+
 Jika hanya dokumentasi berubah:
 
 ```bash
 pnpm --filter @sakuin/web typecheck
 pnpm --filter @sakuin/api typecheck
 git status
+```
+
+Jika ingin regression penuh:
+
+```bash
+pnpm --filter @sakuin/web typecheck
+pnpm --filter @sakuin/web test
+pnpm --filter @sakuin/web build
+pnpm --filter @sakuin/api typecheck
+pnpm --filter @sakuin/api test
+pnpm --filter @sakuin/api build
 ```
 
 ---
@@ -1887,29 +2540,59 @@ Aturan endpoint baru:
 [ ] Wajib menjaga response format standar.
 [ ] Wajib menghindari log data sensitif.
 [ ] Wajib menambahkan test untuk data isolation.
-[ ] Wajib mempertimbangkan audit event untuk mutation penting.
-[ ] Wajib update docs/API.md setelah endpoint ditambahkan.
+[ ] Wajib mempertimbangkan audit event jika endpoint melakukan mutasi penting.
+[ ] Wajib mempertimbangkan rate limit jika endpoint rawan abuse.
 ```
 
-Fitur sensitif yang belum boleh dibuat sembarangan:
+Aturan AI endpoint baru:
 
 ```txt
-[ ] Gmail transaction detection
-[ ] E-wallet transaction detection
-[ ] Mobile banking transaction detection
-[ ] Financial assistant/advisor berbasis data pribadi
+[ ] Jangan expose provider API key ke frontend.
+[ ] Jangan kirim semua transaksi mentah ke AI provider.
+[ ] Jangan simpan prompt penuh jika berisi data sensitif.
+[ ] Jangan membuat AI auto-save transaksi.
+[ ] Jangan memakai Gemini untuk transaction draft jika rule-based sudah cukup.
+[ ] Jangan menjawab out-of-scope dengan provider call.
+[ ] Jangan mengarang data user.
+[ ] Jangan mencampur data antar user.
 ```
 
-Fitur tersebut harus memiliki desain khusus untuk:
+Aturan export/import endpoint:
 
 ```txt
-consent
-privacy
-token storage
-token revocation
-data retention
-audit trail
-draft-first review
-user approval
-security testing
+[ ] Export wajib protected.
+[ ] Export wajib user-only.
+[ ] Export content tidak boleh masuk log/audit metadata.
+[ ] Import file harus punya size limit dan validasi format.
+[ ] Import tidak boleh langsung membuat data final tanpa preview/review jika hasil parsing tidak pasti.
+```
+
+---
+
+# 16. Current API Status Summary
+
+```txt
+[✓] Health API berjalan
+[✓] Register/login email password berjalan
+[✓] Google Login berjalan
+[✓] Forgot/reset password berjalan
+[✓] Gmail SMTP/Nodemailer berjalan
+[✓] Profile API berjalan
+[✓] Category API berjalan
+[✓] Transaction API berjalan
+[✓] Summary API berjalan
+[✓] Goals API berjalan
+[✓] Export API berjalan
+[✓] AI chat API berjalan
+[✓] AI financial-only guardrail berjalan
+[✓] AI financial context berjalan
+[✓] AI provider router berjalan
+[✓] AI financial scenario analyzer berjalan
+[✓] AI transaction draft single berjalan
+[✓] AI transaction draft multi berjalan
+[✓] transactionDraft backward compatibility berjalan
+[✓] transactionDrafts array berjalan
+[✓] Transaction draft tetap no auto-save
+[✓] Transaction draft tetap rule-based tanpa Gemini
+[✓] CI dan deployment terakhir hijau
 ```
