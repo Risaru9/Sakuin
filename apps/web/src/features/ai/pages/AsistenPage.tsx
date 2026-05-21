@@ -1,8 +1,15 @@
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  Ban,
   Bot,
   CheckCircle2,
   Loader2,
@@ -30,6 +37,7 @@ import type {
 
 const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
 const SAVED_DRAFT_STORAGE_PREFIX = "sakuin_ai_saved_draft_ids_v1";
+const CANCELLED_DRAFT_STORAGE_PREFIX = "sakuin_ai_cancelled_draft_ids_v1";
 
 const SUGGESTED_PROMPTS = [
   "Catat makan ayam geprek 15000",
@@ -61,6 +69,14 @@ function getSavedDraftStorageKey(userId: string | undefined) {
   }
 
   return `${SAVED_DRAFT_STORAGE_PREFIX}:${userId}`;
+}
+
+function getCancelledDraftStorageKey(userId: string | undefined) {
+  if (!userId) {
+    return null;
+  }
+
+  return `${CANCELLED_DRAFT_STORAGE_PREFIX}:${userId}`;
 }
 
 function createWelcomeMessage(): AiChatMessage {
@@ -248,6 +264,59 @@ function buildRecentHistory(messages: AiChatMessage[]): AiChatHistoryMessage[] {
     }));
 }
 
+function isCancelDraftRequest(message: string) {
+  const normalizedMessage = message.trim().toLowerCase();
+
+  if (!normalizedMessage || normalizedMessage.length > 80) {
+    return false;
+  }
+
+  const exactCancelMessages = new Set([
+    "batal",
+    "batalkan",
+    "cancel",
+    "batalin",
+    "hapus draft",
+    "batalkan draft",
+    "cancel draft",
+    "tolong batalkan",
+    "tolong batalin",
+    "tidak jadi",
+    "ga jadi",
+    "gak jadi",
+    "nggak jadi"
+  ]);
+
+  if (exactCancelMessages.has(normalizedMessage)) {
+    return true;
+  }
+
+  return /\b(batal|batalkan|batalin|cancel|hapus draft|tidak jadi|ga jadi|gak jadi|nggak jadi)\b/.test(
+    normalizedMessage
+  );
+}
+
+function findLatestActiveDraftMessage(
+  messages: AiChatMessage[],
+  savedDraftMessageIds: Set<string>,
+  cancelledDraftMessageIds: Set<string>
+) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+
+    if (
+      message.role === "assistant" &&
+      message.transactionDraft &&
+      !savedDraftMessageIds.has(message.id) &&
+      !cancelledDraftMessageIds.has(message.id)
+    ) {
+      return message;
+    }
+  }
+
+  return null;
+}
+
 function IntentBadge({ intent }: { intent?: string }) {
   if (!intent) {
     return null;
@@ -264,14 +333,20 @@ function TransactionDraftPanel({
   draft,
   isSaving,
   isSaved,
-  onSave
+  isCancelled,
+  onSave,
+  onCancel
 }: {
   draft: AiTransactionDraft;
   isSaving: boolean;
   isSaved: boolean;
+  isCancelled: boolean;
   onSave: () => void;
+  onCancel: () => void;
 }) {
   const isReadyToSave = isTransactionDraftReadyToSave(draft);
+  const canSave = isReadyToSave && !isSaving && !isSaved && !isCancelled;
+  const canCancel = !isSaving && !isSaved && !isCancelled;
 
   return (
     <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 shadow-sm">
@@ -290,16 +365,20 @@ function TransactionDraftPanel({
             "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
             isSaved
               ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-              : isReadyToSave
-                ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-                : "bg-amber-50 text-amber-700 ring-amber-100"
+              : isCancelled
+                ? "bg-slate-100 text-slate-600 ring-slate-200"
+                : isReadyToSave
+                  ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                  : "bg-amber-50 text-amber-700 ring-amber-100"
           ].join(" ")}
         >
           {isSaved
             ? "Sudah disimpan"
-            : isReadyToSave
-              ? "Siap direview"
-              : "Perlu dilengkapi"}
+            : isCancelled
+              ? "Dibatalkan"
+              : isReadyToSave
+                ? "Siap direview"
+                : "Perlu dilengkapi"}
         </span>
       </div>
 
@@ -367,17 +446,19 @@ function TransactionDraftPanel({
         ) : null}
       </div>
 
-      <div className="border-t border-violet-100/80 px-3 py-3">
+      <div className="grid gap-2 border-t border-violet-100/80 px-3 py-3 sm:grid-cols-2">
         <button
           className={[
             "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black shadow-sm transition sm:text-sm",
             isSaved
               ? "cursor-default bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
-              : isReadyToSave
-                ? "bg-slate-950 text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-                : "cursor-not-allowed bg-slate-100 text-slate-400"
+              : isCancelled
+                ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                : isReadyToSave
+                  ? "bg-slate-950 text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                  : "cursor-not-allowed bg-slate-100 text-slate-400"
           ].join(" ")}
-          disabled={!isReadyToSave || isSaving || isSaved}
+          disabled={!canSave}
           onClick={onSave}
           type="button"
         >
@@ -391,6 +472,11 @@ function TransactionDraftPanel({
               <CheckCircle2 className="h-4 w-4" />
               Sudah disimpan
             </>
+          ) : isCancelled ? (
+            <>
+              <Ban className="h-4 w-4" />
+              Dibatalkan
+            </>
           ) : (
             <>
               <Save className="h-4 w-4" />
@@ -399,9 +485,30 @@ function TransactionDraftPanel({
           )}
         </button>
 
-        {!isReadyToSave ? (
-          <p className="mt-2 text-center text-[11px] font-bold leading-5 text-slate-500">
+        <button
+          className={[
+            "inline-flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black shadow-sm transition sm:text-sm",
+            canCancel
+              ? "border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+              : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+          ].join(" ")}
+          disabled={!canCancel}
+          onClick={onCancel}
+          type="button"
+        >
+          <Ban className="h-4 w-4" />
+          Batalkan Draft
+        </button>
+
+        {!isReadyToSave && !isCancelled ? (
+          <p className="sm:col-span-2 text-center text-[11px] font-bold leading-5 text-slate-500">
             Draft belum lengkap, jadi belum bisa disimpan.
+          </p>
+        ) : null}
+
+        {isCancelled ? (
+          <p className="sm:col-span-2 text-center text-[11px] font-bold leading-5 text-slate-500">
+            Draft ini sudah dibatalkan dan tidak akan disimpan.
           </p>
         ) : null}
       </div>
@@ -427,16 +534,20 @@ function ChatBubble({
   message,
   onSuggestionClick,
   onSaveDraft,
+  onCancelDraft,
   disabled,
   savingDraftMessageId,
-  savedDraftMessageIds
+  savedDraftMessageIds,
+  cancelledDraftMessageIds
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
   onSaveDraft: (message: AiChatMessage) => void;
+  onCancelDraft: (message: AiChatMessage) => void;
   disabled: boolean;
   savingDraftMessageId: string | null;
   savedDraftMessageIds: Set<string>;
+  cancelledDraftMessageIds: Set<string>;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
@@ -485,8 +596,10 @@ function ChatBubble({
           {!isUser && message.transactionDraft ? (
             <TransactionDraftPanel
               draft={message.transactionDraft}
-              isSaving={savingDraftMessageId === message.id}
+              isCancelled={cancelledDraftMessageIds.has(message.id)}
               isSaved={savedDraftMessageIds.has(message.id)}
+              isSaving={savingDraftMessageId === message.id}
+              onCancel={() => onCancelDraft(message)}
               onSave={() => onSaveDraft(message)}
             />
           ) : null}
@@ -604,9 +717,13 @@ export function AsistenPage() {
   const [savedDraftMessageIds, setSavedDraftMessageIds] = useState<Set<string>>(
     () => new Set()
   );
+  const [cancelledDraftMessageIds, setCancelledDraftMessageIds] = useState<
+    Set<string>
+  >(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [savedDraftIdsLoaded, setSavedDraftIdsLoaded] = useState(false);
+  const [cancelledDraftIdsLoaded, setCancelledDraftIdsLoaded] = useState(false);
   const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
     useState(false);
 
@@ -683,6 +800,40 @@ export function AsistenPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    const storageKey = getCancelledDraftStorageKey(user?.id);
+
+    if (!storageKey) {
+      setCancelledDraftMessageIds(new Set());
+      setCancelledDraftIdsLoaded(true);
+      return;
+    }
+
+    try {
+      const storedCancelledDraftIds = localStorage.getItem(storageKey);
+
+      if (!storedCancelledDraftIds) {
+        setCancelledDraftMessageIds(new Set());
+        setCancelledDraftIdsLoaded(true);
+        return;
+      }
+
+      const parsedCancelledDraftIds = JSON.parse(
+        storedCancelledDraftIds
+      ) as unknown;
+
+      if (isValidStringArray(parsedCancelledDraftIds)) {
+        setCancelledDraftMessageIds(new Set(parsedCancelledDraftIds));
+      } else {
+        setCancelledDraftMessageIds(new Set());
+      }
+    } catch {
+      setCancelledDraftMessageIds(new Set());
+    } finally {
+      setCancelledDraftIdsLoaded(true);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     const storageKey = getChatHistoryStorageKey(user?.id);
 
     if (!historyLoaded || !storageKey) {
@@ -717,11 +868,70 @@ export function AsistenPage() {
   }, [savedDraftIdsLoaded, savedDraftMessageIds, user?.id]);
 
   useEffect(() => {
+    const storageKey = getCancelledDraftStorageKey(user?.id);
+
+    if (!cancelledDraftIdsLoaded || !storageKey) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify([...cancelledDraftMessageIds])
+      );
+    } catch {
+      // Local storage can fail in private mode or if quota is full.
+    }
+  }, [cancelledDraftIdsLoaded, cancelledDraftMessageIds, user?.id]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "end"
     });
   }, [messages, isSubmitting, savingDraftMessageId]);
+
+  function cancelDraftMessage(message: AiChatMessage) {
+    if (!message.transactionDraft) {
+      return;
+    }
+
+    if (
+      savedDraftMessageIds.has(message.id) ||
+      cancelledDraftMessageIds.has(message.id)
+    ) {
+      return;
+    }
+
+    setCancelledDraftMessageIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      nextIds.add(message.id);
+      return nextIds;
+    });
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        id: createMessageId(),
+        role: "assistant",
+        content:
+          "Draft transaksi sudah dibatalkan. Transaksi tidak disimpan dan tidak akan masuk ke halaman Transactions.",
+        intent: "TRANSACTION_DRAFT",
+        cards: [
+          {
+            label: "Status",
+            value: "Dibatalkan"
+          }
+        ],
+        suggestions: [
+          "Catat transaksi lain",
+          "Lihat pengeluaran bulan ini",
+          "Saya boros di mana?"
+        ],
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }
 
   async function submitMessage(message: string) {
     const normalizedMessage = message.trim();
@@ -730,14 +940,86 @@ export function AsistenPage() {
       return;
     }
 
-    const history = buildRecentHistory(messages);
-
     const userMessage: AiChatMessage = {
       id: createMessageId(),
       role: "user",
       content: normalizedMessage,
       createdAt: new Date().toISOString()
     };
+
+    if (isCancelDraftRequest(normalizedMessage)) {
+      const activeDraftMessage = findLatestActiveDraftMessage(
+        messages,
+        savedDraftMessageIds,
+        cancelledDraftMessageIds
+      );
+
+      if (!activeDraftMessage) {
+        setMessages((currentMessages) => [
+          ...currentMessages,
+          userMessage,
+          {
+            id: createMessageId(),
+            role: "assistant",
+            content:
+              "Belum ada draft transaksi aktif yang bisa dibatalkan. Kalau ingin mencatat transaksi, tulis seperti: catat makan 15000.",
+            intent: "TRANSACTION_DRAFT",
+            cards: [
+              {
+                label: "Status",
+                value: "Tidak ada draft aktif"
+              }
+            ],
+            suggestions: [
+              "Catat makan ayam geprek 15000",
+              "Pengeluaran bulan ini gimana?",
+              "Saya boros di mana?"
+            ],
+            createdAt: new Date().toISOString()
+          }
+        ]);
+
+        setInput("");
+        setError(null);
+        return;
+      }
+
+      setCancelledDraftMessageIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.add(activeDraftMessage.id);
+        return nextIds;
+      });
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        userMessage,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Baik, draft transaksi terakhir sudah dibatalkan. Transaksi tersebut tidak disimpan.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [
+            {
+              label: "Status",
+              value: "Dibatalkan"
+            }
+          ],
+          suggestions: [
+            "Catat transaksi lain",
+            "Lihat pengeluaran bulan ini",
+            "Saya boros di mana?"
+          ],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+
+      setInput("");
+      setError(null);
+      return;
+    }
+
+    const history = buildRecentHistory(messages);
 
     setMessages((currentMessages) => [...currentMessages, userMessage]);
     setInput("");
@@ -785,6 +1067,29 @@ export function AsistenPage() {
     }
 
     const categoryId = draft.categoryId;
+
+    if (cancelledDraftMessageIds.has(message.id)) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Draft transaksi ini sudah dibatalkan, jadi tidak bisa disimpan. Buat draft baru jika ingin mencatat transaksi.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [
+            {
+              label: "Status",
+              value: "Dibatalkan"
+            }
+          ],
+          suggestions: ["Catat transaksi lain", "Lihat pengeluaran bulan ini"],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+
+      return;
+    }
 
     if (!isTransactionDraftReadyToSave(draft) || !categoryId) {
       setMessages((currentMessages) => [
@@ -902,6 +1207,7 @@ export function AsistenPage() {
   function handleConfirmClearHistory() {
     const chatHistoryStorageKey = getChatHistoryStorageKey(user?.id);
     const savedDraftStorageKey = getSavedDraftStorageKey(user?.id);
+    const cancelledDraftStorageKey = getCancelledDraftStorageKey(user?.id);
 
     if (chatHistoryStorageKey) {
       localStorage.removeItem(chatHistoryStorageKey);
@@ -911,8 +1217,13 @@ export function AsistenPage() {
       localStorage.removeItem(savedDraftStorageKey);
     }
 
+    if (cancelledDraftStorageKey) {
+      localStorage.removeItem(cancelledDraftStorageKey);
+    }
+
     setMessages([createWelcomeMessage()]);
     setSavedDraftMessageIds(new Set());
+    setCancelledDraftMessageIds(new Set());
     setError(null);
     setIsClearHistoryDialogOpen(false);
   }
@@ -966,9 +1277,11 @@ export function AsistenPage() {
           <div className="space-y-4">
             {messages.map((message) => (
               <ChatBubble
+                cancelledDraftMessageIds={cancelledDraftMessageIds}
                 disabled={isSubmitting || savingDraftMessageId !== null}
                 key={message.id}
                 message={message}
+                onCancelDraft={cancelDraftMessage}
                 onSaveDraft={handleSaveDraft}
                 onSuggestionClick={handlePromptClick}
                 savedDraftMessageIds={savedDraftMessageIds}
