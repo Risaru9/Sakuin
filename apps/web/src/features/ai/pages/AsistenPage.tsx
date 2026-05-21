@@ -4,19 +4,22 @@ import {
   AlertTriangle,
   ArrowLeft,
   Bot,
+  CheckCircle2,
   Loader2,
+  Save,
   Send,
   Sparkles,
   Trash2,
   UserRound,
   X
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../../components/layout/AppShell";
 import { ApiClientError } from "../../../lib/api-client";
 import { queryKeys } from "../../../lib/query-keys";
 import { useAuth } from "../../auth/auth-context";
 import { getUserProfile } from "../../profile/profile.service";
+import { createTransaction } from "../../transactions/transaction.service";
 import { sendAiChatMessage } from "../ai.service";
 import type {
   AiChatHistoryMessage,
@@ -26,6 +29,7 @@ import type {
 } from "../ai.types";
 
 const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
+const SAVED_DRAFT_STORAGE_PREFIX = "sakuin_ai_saved_draft_ids_v1";
 
 const SUGGESTED_PROMPTS = [
   "Catat makan ayam geprek 15000",
@@ -49,6 +53,14 @@ function getChatHistoryStorageKey(userId: string | undefined) {
   }
 
   return `${CHAT_HISTORY_STORAGE_PREFIX}:${userId}`;
+}
+
+function getSavedDraftStorageKey(userId: string | undefined) {
+  if (!userId) {
+    return null;
+  }
+
+  return `${SAVED_DRAFT_STORAGE_PREFIX}:${userId}`;
 }
 
 function createWelcomeMessage(): AiChatMessage {
@@ -186,6 +198,20 @@ function formatMissingField(field: string) {
   return field;
 }
 
+function isTransactionDraftReadyToSave(draft: AiTransactionDraft) {
+  const amount = Number(draft.amount);
+
+  return (
+    draft.missingFields.length === 0 &&
+    draft.type &&
+    draft.categoryId &&
+    draft.date &&
+    draft.amount &&
+    !Number.isNaN(amount) &&
+    amount > 0
+  );
+}
+
 function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
   if (!Array.isArray(value)) {
     return false;
@@ -205,6 +231,10 @@ function isValidStoredMessages(value: unknown): value is AiChatMessage[] {
       typeof candidate.createdAt === "string"
     );
   });
+}
+
+function isValidStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function buildRecentHistory(messages: AiChatMessage[]): AiChatHistoryMessage[] {
@@ -231,11 +261,17 @@ function IntentBadge({ intent }: { intent?: string }) {
 }
 
 function TransactionDraftPanel({
-  draft
+  draft,
+  isSaving,
+  isSaved,
+  onSave
 }: {
   draft: AiTransactionDraft;
+  isSaving: boolean;
+  isSaved: boolean;
+  onSave: () => void;
 }) {
-  const isReadyToSave = draft.missingFields.length === 0;
+  const isReadyToSave = isTransactionDraftReadyToSave(draft);
 
   return (
     <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 shadow-sm">
@@ -252,12 +288,18 @@ function TransactionDraftPanel({
         <span
           className={[
             "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
-            isReadyToSave
+            isSaved
               ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-              : "bg-amber-50 text-amber-700 ring-amber-100"
+              : isReadyToSave
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                : "bg-amber-50 text-amber-700 ring-amber-100"
           ].join(" ")}
         >
-          {isReadyToSave ? "Siap direview" : "Perlu dilengkapi"}
+          {isSaved
+            ? "Sudah disimpan"
+            : isReadyToSave
+              ? "Siap direview"
+              : "Perlu dilengkapi"}
         </span>
       </div>
 
@@ -325,6 +367,45 @@ function TransactionDraftPanel({
         ) : null}
       </div>
 
+      <div className="border-t border-violet-100/80 px-3 py-3">
+        <button
+          className={[
+            "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black shadow-sm transition sm:text-sm",
+            isSaved
+              ? "cursor-default bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+              : isReadyToSave
+                ? "bg-slate-950 text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                : "cursor-not-allowed bg-slate-100 text-slate-400"
+          ].join(" ")}
+          disabled={!isReadyToSave || isSaving || isSaved}
+          onClick={onSave}
+          type="button"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Menyimpan...
+            </>
+          ) : isSaved ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              Sudah disimpan
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Simpan Draft
+            </>
+          )}
+        </button>
+
+        {!isReadyToSave ? (
+          <p className="mt-2 text-center text-[11px] font-bold leading-5 text-slate-500">
+            Draft belum lengkap, jadi belum bisa disimpan.
+          </p>
+        ) : null}
+      </div>
+
       {draft.warnings.length > 0 ? (
         <div className="space-y-2 border-t border-violet-100/80 px-3 py-3">
           {draft.warnings.map((warning) => (
@@ -345,11 +426,17 @@ function TransactionDraftPanel({
 function ChatBubble({
   message,
   onSuggestionClick,
-  disabled
+  onSaveDraft,
+  disabled,
+  savingDraftMessageId,
+  savedDraftMessageIds
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
+  onSaveDraft: (message: AiChatMessage) => void;
   disabled: boolean;
+  savingDraftMessageId: string | null;
+  savedDraftMessageIds: Set<string>;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
@@ -396,7 +483,12 @@ function ChatBubble({
           </p>
 
           {!isUser && message.transactionDraft ? (
-            <TransactionDraftPanel draft={message.transactionDraft} />
+            <TransactionDraftPanel
+              draft={message.transactionDraft}
+              isSaving={savingDraftMessageId === message.id}
+              isSaved={savedDraftMessageIds.has(message.id)}
+              onSave={() => onSaveDraft(message)}
+            />
           ) : null}
 
           {!isUser && message.cards && message.cards.length > 0 ? (
@@ -498,6 +590,7 @@ function ClearHistoryDialog({
 
 export function AsistenPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const [input, setInput] = useState("");
@@ -505,8 +598,15 @@ export function AsistenPage() {
     createWelcomeMessage()
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savingDraftMessageId, setSavingDraftMessageId] = useState<string | null>(
+    null
+  );
+  const [savedDraftMessageIds, setSavedDraftMessageIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const [error, setError] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [savedDraftIdsLoaded, setSavedDraftIdsLoaded] = useState(false);
   const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
     useState(false);
 
@@ -551,6 +651,38 @@ export function AsistenPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    const storageKey = getSavedDraftStorageKey(user?.id);
+
+    if (!storageKey) {
+      setSavedDraftMessageIds(new Set());
+      setSavedDraftIdsLoaded(true);
+      return;
+    }
+
+    try {
+      const storedSavedDraftIds = localStorage.getItem(storageKey);
+
+      if (!storedSavedDraftIds) {
+        setSavedDraftMessageIds(new Set());
+        setSavedDraftIdsLoaded(true);
+        return;
+      }
+
+      const parsedSavedDraftIds = JSON.parse(storedSavedDraftIds) as unknown;
+
+      if (isValidStringArray(parsedSavedDraftIds)) {
+        setSavedDraftMessageIds(new Set(parsedSavedDraftIds));
+      } else {
+        setSavedDraftMessageIds(new Set());
+      }
+    } catch {
+      setSavedDraftMessageIds(new Set());
+    } finally {
+      setSavedDraftIdsLoaded(true);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     const storageKey = getChatHistoryStorageKey(user?.id);
 
     if (!historyLoaded || !storageKey) {
@@ -568,16 +700,33 @@ export function AsistenPage() {
   }, [historyLoaded, messages, user?.id]);
 
   useEffect(() => {
+    const storageKey = getSavedDraftStorageKey(user?.id);
+
+    if (!savedDraftIdsLoaded || !storageKey) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify([...savedDraftMessageIds])
+      );
+    } catch {
+      // Local storage can fail in private mode or if quota is full.
+    }
+  }, [savedDraftIdsLoaded, savedDraftMessageIds, user?.id]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "end"
     });
-  }, [messages, isSubmitting]);
+  }, [messages, isSubmitting, savingDraftMessageId]);
 
   async function submitMessage(message: string) {
     const normalizedMessage = message.trim();
 
-    if (!normalizedMessage || isSubmitting) {
+    if (!normalizedMessage || isSubmitting || savingDraftMessageId) {
       return;
     }
 
@@ -628,6 +777,110 @@ export function AsistenPage() {
     }
   }
 
+  async function handleSaveDraft(message: AiChatMessage) {
+    const draft = message.transactionDraft;
+
+    if (!draft) {
+      return;
+    }
+
+    const categoryId = draft.categoryId;
+
+    if (!isTransactionDraftReadyToSave(draft) || !categoryId) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Draft transaksi ini belum lengkap, jadi belum bisa disimpan. Lengkapi dulu nominal, kategori, dan tanggalnya.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [],
+          suggestions: ["Catat transaksi lain", "Lihat pengeluaran bulan ini"],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+
+      return;
+    }
+
+    if (savedDraftMessageIds.has(message.id) || savingDraftMessageId) {
+      return;
+    }
+
+    setSavingDraftMessageId(message.id);
+    setError(null);
+
+    try {
+      await createTransaction({
+        type: draft.type,
+        amount: draft.amount,
+        categoryId,
+        note: draft.note?.trim() || undefined,
+        date: draft.date
+      });
+
+      await queryClient.invalidateQueries();
+
+      setSavedDraftMessageIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.add(message.id);
+        return nextIds;
+      });
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Transaksi dari draft sudah berhasil disimpan. Data dashboard dan transaksi akan ikut diperbarui.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [
+            {
+              label: "Status",
+              value: "Tersimpan"
+            },
+            {
+              label: "Nominal",
+              value: formatDraftAmount(draft.amount)
+            },
+            {
+              label: "Kategori",
+              value: draft.categoryName ?? "-"
+            }
+          ],
+          suggestions: [
+            "Catat transaksi lain",
+            "Lihat pengeluaran bulan ini",
+            "Saya boros di mana?"
+          ],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    } catch (caughtError) {
+      const messageText = getErrorMessage(caughtError);
+
+      setError(messageText);
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            "Draft transaksi belum berhasil disimpan. Cek lagi data draft atau coba ulangi beberapa saat lagi.",
+          intent: "TRANSACTION_DRAFT",
+          cards: [],
+          suggestions: ["Coba catat ulang", "Lihat pengeluaran bulan ini"],
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    } finally {
+      setSavingDraftMessageId(null);
+    }
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submitMessage(input);
@@ -647,13 +900,19 @@ export function AsistenPage() {
   }
 
   function handleConfirmClearHistory() {
-    const storageKey = getChatHistoryStorageKey(user?.id);
+    const chatHistoryStorageKey = getChatHistoryStorageKey(user?.id);
+    const savedDraftStorageKey = getSavedDraftStorageKey(user?.id);
 
-    if (storageKey) {
-      localStorage.removeItem(storageKey);
+    if (chatHistoryStorageKey) {
+      localStorage.removeItem(chatHistoryStorageKey);
+    }
+
+    if (savedDraftStorageKey) {
+      localStorage.removeItem(savedDraftStorageKey);
     }
 
     setMessages([createWelcomeMessage()]);
+    setSavedDraftMessageIds(new Set());
     setError(null);
     setIsClearHistoryDialogOpen(false);
   }
@@ -707,10 +966,13 @@ export function AsistenPage() {
           <div className="space-y-4">
             {messages.map((message) => (
               <ChatBubble
-                disabled={isSubmitting}
+                disabled={isSubmitting || savingDraftMessageId !== null}
                 key={message.id}
                 message={message}
+                onSaveDraft={handleSaveDraft}
                 onSuggestionClick={handlePromptClick}
+                savedDraftMessageIds={savedDraftMessageIds}
+                savingDraftMessageId={savingDraftMessageId}
               />
             ))}
 
@@ -747,7 +1009,7 @@ export function AsistenPage() {
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
                 className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
-                disabled={isSubmitting}
+                disabled={isSubmitting || savingDraftMessageId !== null}
                 key={prompt}
                 onClick={() => handlePromptClick(prompt)}
                 type="button"
@@ -761,7 +1023,7 @@ export function AsistenPage() {
             <div className="min-w-0 flex-1">
               <textarea
                 className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-                disabled={isSubmitting}
+                disabled={isSubmitting || savingDraftMessageId !== null}
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
@@ -776,7 +1038,11 @@ export function AsistenPage() {
 
             <button
               className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmitting || input.trim().length === 0}
+              disabled={
+                isSubmitting ||
+                savingDraftMessageId !== null ||
+                input.trim().length === 0
+              }
               type="submit"
             >
               {isSubmitting ? (
