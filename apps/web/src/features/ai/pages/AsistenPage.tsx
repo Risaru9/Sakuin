@@ -122,6 +122,7 @@ function createAssistantMessage(response: AiChatResponse): AiChatMessage {
     cards: response.cards,
     suggestions: response.suggestions,
     transactionDraft: response.transactionDraft,
+    transactionDrafts: response.transactionDrafts,
     createdAt: new Date().toISOString()
   };
 }
@@ -217,14 +218,43 @@ function formatMissingField(field: string) {
 function isTransactionDraftReadyToSave(draft: AiTransactionDraft) {
   const amount = Number(draft.amount);
 
-  return (
+  return Boolean(
     draft.missingFields.length === 0 &&
-    draft.type &&
-    draft.categoryId &&
-    draft.date &&
-    draft.amount &&
-    !Number.isNaN(amount) &&
-    amount > 0
+      draft.type &&
+      draft.categoryId &&
+      draft.date &&
+      draft.amount &&
+      !Number.isNaN(amount) &&
+      amount > 0
+  );
+}
+
+function getMessageTransactionDrafts(message: AiChatMessage) {
+  if (message.transactionDrafts && message.transactionDrafts.length > 0) {
+    return message.transactionDrafts;
+  }
+
+  if (message.transactionDraft) {
+    return [message.transactionDraft];
+  }
+
+  return [];
+}
+
+function createDraftKey(messageId: string, draftIndex: number) {
+  return `${messageId}:${draftIndex}`;
+}
+
+function hasStoredDraftState(
+  storedDraftIds: Set<string>,
+  messageId: string,
+  draftIndex: number
+) {
+  const draftKey = createDraftKey(messageId, draftIndex);
+
+  return (
+    storedDraftIds.has(draftKey) ||
+    (draftIndex === 0 && storedDraftIds.has(messageId))
   );
 }
 
@@ -296,7 +326,7 @@ function isCancelDraftRequest(message: string) {
   );
 }
 
-function findLatestActiveDraftMessage(
+function findLatestActiveDraftGroup(
   messages: AiChatMessage[],
   savedDraftMessageIds: Set<string>,
   cancelledDraftMessageIds: Set<string>
@@ -304,13 +334,37 @@ function findLatestActiveDraftMessage(
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
 
-    if (
-      message.role === "assistant" &&
-      message.transactionDraft &&
-      !savedDraftMessageIds.has(message.id) &&
-      !cancelledDraftMessageIds.has(message.id)
-    ) {
-      return message;
+    if (message.role !== "assistant") {
+      continue;
+    }
+
+    const drafts = getMessageTransactionDrafts(message);
+
+    if (drafts.length === 0) {
+      continue;
+    }
+
+    const activeDraftKeys = drafts
+      .map((_, draftIndex) => ({
+        draftKey: createDraftKey(message.id, draftIndex),
+        draftIndex
+      }))
+      .filter(
+        ({ draftIndex }) =>
+          !hasStoredDraftState(savedDraftMessageIds, message.id, draftIndex) &&
+          !hasStoredDraftState(
+            cancelledDraftMessageIds,
+            message.id,
+            draftIndex
+          )
+      )
+      .map(({ draftKey }) => draftKey);
+
+    if (activeDraftKeys.length > 0) {
+      return {
+        message,
+        draftKeys: activeDraftKeys
+      };
     }
   }
 
@@ -331,6 +385,7 @@ function IntentBadge({ intent }: { intent?: string }) {
 
 function TransactionDraftPanel({
   draft,
+  title = "Draft transaksi",
   isSaving,
   isSaved,
   isCancelled,
@@ -338,6 +393,7 @@ function TransactionDraftPanel({
   onCancel
 }: {
   draft: AiTransactionDraft;
+  title?: string;
   isSaving: boolean;
   isSaved: boolean;
   isCancelled: boolean;
@@ -353,7 +409,7 @@ function TransactionDraftPanel({
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-violet-100/80 px-3 py-3">
         <div>
           <p className="text-[11px] font-black uppercase tracking-wide text-violet-700">
-            Draft transaksi
+            {title}
           </p>
           <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
             Belum disimpan otomatis. Review dulu sebelum masuk ke transaksi.
@@ -501,13 +557,13 @@ function TransactionDraftPanel({
         </button>
 
         {!isReadyToSave && !isCancelled ? (
-          <p className="sm:col-span-2 text-center text-[11px] font-bold leading-5 text-slate-500">
+          <p className="text-center text-[11px] font-bold leading-5 text-slate-500 sm:col-span-2">
             Draft belum lengkap, jadi belum bisa disimpan.
           </p>
         ) : null}
 
         {isCancelled ? (
-          <p className="sm:col-span-2 text-center text-[11px] font-bold leading-5 text-slate-500">
+          <p className="text-center text-[11px] font-bold leading-5 text-slate-500 sm:col-span-2">
             Draft ini sudah dibatalkan dan tidak akan disimpan.
           </p>
         ) : null}
@@ -515,10 +571,10 @@ function TransactionDraftPanel({
 
       {draft.warnings.length > 0 ? (
         <div className="space-y-2 border-t border-violet-100/80 px-3 py-3">
-          {draft.warnings.map((warning) => (
+          {draft.warnings.map((warning, index) => (
             <div
               className="flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-800"
-              key={warning}
+              key={`${warning}-${index}`}
             >
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{warning}</span>
@@ -542,8 +598,18 @@ function ChatBubble({
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
-  onSaveDraft: (message: AiChatMessage) => void;
-  onCancelDraft: (message: AiChatMessage) => void;
+  onSaveDraft: (
+    message: AiChatMessage,
+    draft: AiTransactionDraft,
+    draftKey: string,
+    draftIndex: number
+  ) => void | Promise<void>;
+  onCancelDraft: (
+    message: AiChatMessage,
+    draft: AiTransactionDraft,
+    draftKey: string,
+    draftIndex: number
+  ) => void;
   disabled: boolean;
   savingDraftMessageId: string | null;
   savedDraftMessageIds: Set<string>;
@@ -552,6 +618,7 @@ function ChatBubble({
   const isUser = message.role === "user";
   const visibleSuggestions =
     message.suggestions?.slice(0, MAX_VISIBLE_MESSAGE_SUGGESTIONS) ?? [];
+  const transactionDrafts = getMessageTransactionDrafts(message);
 
   return (
     <div className={isUser ? "flex justify-end" : "flex justify-start"}>
@@ -593,15 +660,43 @@ function ChatBubble({
             {message.content}
           </p>
 
-          {!isUser && message.transactionDraft ? (
-            <TransactionDraftPanel
-              draft={message.transactionDraft}
-              isCancelled={cancelledDraftMessageIds.has(message.id)}
-              isSaved={savedDraftMessageIds.has(message.id)}
-              isSaving={savingDraftMessageId === message.id}
-              onCancel={() => onCancelDraft(message)}
-              onSave={() => onSaveDraft(message)}
-            />
+          {!isUser && transactionDrafts.length > 0 ? (
+            <div className="mt-3 space-y-3">
+              {transactionDrafts.map((draft, draftIndex) => {
+                const draftKey = createDraftKey(message.id, draftIndex);
+                const isSaved = hasStoredDraftState(
+                  savedDraftMessageIds,
+                  message.id,
+                  draftIndex
+                );
+                const isCancelled = hasStoredDraftState(
+                  cancelledDraftMessageIds,
+                  message.id,
+                  draftIndex
+                );
+
+                return (
+                  <TransactionDraftPanel
+                    draft={draft}
+                    isCancelled={isCancelled}
+                    isSaved={isSaved}
+                    isSaving={savingDraftMessageId === draftKey}
+                    key={draftKey}
+                    onCancel={() =>
+                      onCancelDraft(message, draft, draftKey, draftIndex)
+                    }
+                    onSave={() =>
+                      onSaveDraft(message, draft, draftKey, draftIndex)
+                    }
+                    title={
+                      transactionDrafts.length > 1
+                        ? `Draft transaksi ${draftIndex + 1}`
+                        : "Draft transaksi"
+                    }
+                  />
+                );
+              })}
+            </div>
           ) : null}
 
           {!isUser && message.cards && message.cards.length > 0 ? (
@@ -891,21 +986,22 @@ export function AsistenPage() {
     });
   }, [messages, isSubmitting, savingDraftMessageId]);
 
-  function cancelDraftMessage(message: AiChatMessage) {
-    if (!message.transactionDraft) {
-      return;
-    }
-
+  function cancelDraftMessage(
+    message: AiChatMessage,
+    draft: AiTransactionDraft,
+    draftKey: string,
+    draftIndex: number
+  ) {
     if (
-      savedDraftMessageIds.has(message.id) ||
-      cancelledDraftMessageIds.has(message.id)
+      hasStoredDraftState(savedDraftMessageIds, message.id, draftIndex) ||
+      hasStoredDraftState(cancelledDraftMessageIds, message.id, draftIndex)
     ) {
       return;
     }
 
     setCancelledDraftMessageIds((currentIds) => {
       const nextIds = new Set(currentIds);
-      nextIds.add(message.id);
+      nextIds.add(draftKey);
       return nextIds;
     });
 
@@ -921,6 +1017,14 @@ export function AsistenPage() {
           {
             label: "Status",
             value: "Dibatalkan"
+          },
+          {
+            label: "Nominal",
+            value: formatDraftAmount(draft.amount)
+          },
+          {
+            label: "Kategori",
+            value: draft.categoryName ?? "-"
           }
         ],
         suggestions: [
@@ -948,13 +1052,13 @@ export function AsistenPage() {
     };
 
     if (isCancelDraftRequest(normalizedMessage)) {
-      const activeDraftMessage = findLatestActiveDraftMessage(
+      const activeDraftGroup = findLatestActiveDraftGroup(
         messages,
         savedDraftMessageIds,
         cancelledDraftMessageIds
       );
 
-      if (!activeDraftMessage) {
+      if (!activeDraftGroup) {
         setMessages((currentMessages) => [
           ...currentMessages,
           userMessage,
@@ -986,7 +1090,11 @@ export function AsistenPage() {
 
       setCancelledDraftMessageIds((currentIds) => {
         const nextIds = new Set(currentIds);
-        nextIds.add(activeDraftMessage.id);
+
+        activeDraftGroup.draftKeys.forEach((draftKey) => {
+          nextIds.add(draftKey);
+        });
+
         return nextIds;
       });
 
@@ -997,12 +1105,18 @@ export function AsistenPage() {
           id: createMessageId(),
           role: "assistant",
           content:
-            "Baik, draft transaksi terakhir sudah dibatalkan. Transaksi tersebut tidak disimpan.",
+            activeDraftGroup.draftKeys.length > 1
+              ? `${activeDraftGroup.draftKeys.length} draft transaksi terakhir sudah dibatalkan. Transaksi tersebut tidak disimpan.`
+              : "Baik, draft transaksi terakhir sudah dibatalkan. Transaksi tersebut tidak disimpan.",
           intent: "TRANSACTION_DRAFT",
           cards: [
             {
               label: "Status",
               value: "Dibatalkan"
+            },
+            {
+              label: "Jumlah draft",
+              value: String(activeDraftGroup.draftKeys.length)
             }
           ],
           suggestions: [
@@ -1037,9 +1151,9 @@ export function AsistenPage() {
         createAssistantMessage(response)
       ]);
     } catch (caughtError) {
-      const message = getErrorMessage(caughtError);
+      const messageText = getErrorMessage(caughtError);
 
-      setError(message);
+      setError(messageText);
 
       setMessages((currentMessages) => [
         ...currentMessages,
@@ -1059,16 +1173,15 @@ export function AsistenPage() {
     }
   }
 
-  async function handleSaveDraft(message: AiChatMessage) {
-    const draft = message.transactionDraft;
-
-    if (!draft) {
-      return;
-    }
-
+  async function handleSaveDraft(
+    message: AiChatMessage,
+    draft: AiTransactionDraft,
+    draftKey: string,
+    draftIndex: number
+  ) {
     const categoryId = draft.categoryId;
 
-    if (cancelledDraftMessageIds.has(message.id)) {
+    if (hasStoredDraftState(cancelledDraftMessageIds, message.id, draftIndex)) {
       setMessages((currentMessages) => [
         ...currentMessages,
         {
@@ -1109,11 +1222,14 @@ export function AsistenPage() {
       return;
     }
 
-    if (savedDraftMessageIds.has(message.id) || savingDraftMessageId) {
+    if (
+      hasStoredDraftState(savedDraftMessageIds, message.id, draftIndex) ||
+      savingDraftMessageId
+    ) {
       return;
     }
 
-    setSavingDraftMessageId(message.id);
+    setSavingDraftMessageId(draftKey);
     setError(null);
 
     try {
@@ -1129,7 +1245,7 @@ export function AsistenPage() {
 
       setSavedDraftMessageIds((currentIds) => {
         const nextIds = new Set(currentIds);
-        nextIds.add(message.id);
+        nextIds.add(draftKey);
         return nextIds;
       });
 
