@@ -22,10 +22,44 @@ jobs:
       JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
       FRONTEND_URL: http://localhost:3000
       VITE_API_BASE_URL: http://127.0.0.1:5000
+      SAKUIN_DATABASE_TARGET: test
+      SAKUIN_PRODUCTION_DATABASE_PROJECT_REF: bwzxtjgrerjimcuyslci
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify CI database safety
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "CI_DATABASE_URL is missing. Configure it in GitHub Actions secrets."
+            exit 1
+          fi
+
+          if [ -z "${DIRECT_URL:-}" ]; then
+            echo "CI_DIRECT_URL is missing. Configure it in GitHub Actions secrets."
+            exit 1
+          fi
+
+          if [ "${SAKUIN_DATABASE_TARGET:-}" != "test" ]; then
+            echo "SAKUIN_DATABASE_TARGET must be test in CI."
+            exit 1
+          fi
+
+          if [[ "${DATABASE_URL}" == *"${SAKUIN_PRODUCTION_DATABASE_PROJECT_REF}"* ]]; then
+            echo "DATABASE_URL points to the production database. CI must use the test database."
+            exit 1
+          fi
+
+          if [[ "${DIRECT_URL}" == *"${SAKUIN_PRODUCTION_DATABASE_PROJECT_REF}"* ]]; then
+            echo "DIRECT_URL points to the production database. CI must use the test database."
+            exit 1
+          fi
+
+          echo "CI database safety check passed."
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
