@@ -181,16 +181,11 @@ export function ProfilePage() {
       });
     },
     onSuccess: (updatedProfile) => {
-      queryClient.setQueryData<UserProfile>(
-        queryKeys.profile,
-        updatedProfile
-      );
+      queryClient.setQueryData<UserProfile>(queryKeys.profile, updatedProfile);
 
       setForm({
         name: updatedProfile.name,
-        safeBalanceLimit: toFormSafeBalanceLimit(
-          updatedProfile.safeBalanceLimit
-        )
+        safeBalanceLimit: toFormSafeBalanceLimit(updatedProfile.safeBalanceLimit)
       });
 
       updateAuthUser({
@@ -259,7 +254,8 @@ export function ProfilePage() {
     }
 
     if (normalizedSafeLimit === "") {
-      const message = "Safe balance limit wajib diisi. Gunakan 0 jika tidak ingin memakai batas aman.";
+      const message =
+        "Safe balance limit wajib diisi. Gunakan 0 jika tidak ingin memakai batas aman.";
 
       setError(message);
 
@@ -331,211 +327,231 @@ export function ProfilePage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-black text-indigo-700">Sakuin Profile</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
-            Pengaturan Akun
-          </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            Kelola nama akun dan batas saldo aman untuk dashboard.
-          </p>
-        </div>
-
-        <Button
-          className="rounded-2xl"
-          disabled={profileQuery.isFetching}
-          onClick={refreshProfile}
-          type="button"
-          variant="secondary"
-        >
-          {profileQuery.isFetching ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCcw className="h-4 w-4" />
-          )}
-          Refresh
-        </Button>
-      </div>
-
-      {queryError || error ? (
-        <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-black">Terjadi kesalahan</p>
-              <p className="mt-1 text-sm font-medium text-rose-700">
-                {queryError ?? error}
-              </p>
-
-              {queryError ? (
-                <button
-                  className="mt-2 text-sm font-black underline"
-                  onClick={refreshProfile}
-                  type="button"
-                >
-                  Coba lagi
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-950/5 sm:rounded-[2rem] sm:p-7">
-          <div className="mb-6 flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] bg-indigo-100 text-indigo-700">
-              <UserCircle className="h-7 w-7" />
-            </div>
-
+      <div className="mx-auto w-full max-w-7xl space-y-5 pb-6">
+        <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white via-indigo-50/70 to-violet-50 p-4 shadow-xl shadow-slate-950/5 sm:rounded-[2rem] sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-black text-indigo-700">Profile</p>
-
-                {isBackgroundFetching ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Sync
-                  </span>
-                ) : null}
-              </div>
-
-              <h2 className="mt-1 truncate text-2xl font-black tracking-tight text-slate-950">
-                {displayedName}
-              </h2>
-              <p className="mt-1 truncate text-sm font-medium text-slate-500">
-                {displayedEmail}
-              </p>
-            </div>
-          </div>
-
-          {isLoadingProfile ? (
-            <div className="flex min-h-52 items-center justify-center rounded-2xl bg-slate-50">
-              <div className="flex items-center gap-3 text-slate-500">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <p className="text-sm font-bold">Mengambil profile...</p>
-              </div>
-            </div>
-          ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <Input
-                label="Nama"
-                name="name"
-                type="text"
-                placeholder="Masukkan nama"
-                value={form.name}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    name: event.target.value
-                  }))
-                }
-              />
-
-              <Input
-                label="Safe balance limit"
-                name="safeBalanceLimit"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="Contoh: 500000"
-                value={form.safeBalanceLimit}
-                onKeyDown={preventInvalidSafeBalanceKey}
-                onChange={(event) =>
-                  handleSafeBalanceChange(event.target.value)
-                }
-              />
-
-              <p className="-mt-2 text-xs font-medium text-slate-500">
-                Hanya angka. Minimal Rp 0 dan maksimal{" "}
-                {MAX_SAFE_BALANCE_LIMIT_LABEL}.
+              <p className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">
+                Sakuin Profile
               </p>
 
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold text-slate-500">
-                  Fungsi safe balance limit
-                </p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Jika saldo kamu berada di bawah batas ini, dashboard akan
-                  menampilkan status <strong>Waspada</strong>. Jika saldo berada
-                  di atas batas ini, dashboard akan menampilkan status{" "}
-                  <strong>Aman</strong>.
-                </p>
-              </div>
+              <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                Pengaturan Akun
+              </h1>
 
-              <div className="grid gap-3 pt-2 sm:grid-cols-2">
-                <Button
-                  className="rounded-2xl bg-slate-950 text-white hover:bg-black"
-                  disabled={isSubmitting}
-                  isLoading={isSubmitting}
-                  type="submit"
-                >
-                  <Save className="h-4 w-4" />
-                  Simpan Profile
-                </Button>
-
-                <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
-                  to="/dashboard"
-                >
-                  Kembali ke Dashboard
-                </Link>
-              </div>
-            </form>
-          )}
-        </div>
-
-        <aside className="space-y-5">
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem]">
-            <p className="text-sm font-black text-slate-950">Ringkasan</p>
-
-            <div className="mt-4 grid gap-3">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold text-slate-500">Email akun</p>
-                <p className="mt-1 truncate text-sm font-black text-slate-950">
-                  {displayedEmail}
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-indigo-50 p-4">
-                <p className="text-xs font-bold text-indigo-700">
-                  Safe balance limit
-                </p>
-                <p className="mt-1 text-lg font-black text-indigo-700">
-                  {formatRupiah(displayedSafeLimit)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-emerald-50 p-4">
-                <p className="text-xs font-bold text-emerald-700">
-                  Status akun
-                </p>
-                <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-emerald-700">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Aktif
-                </p>
-              </div>
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
+                Kelola nama akun dan batas saldo aman untuk membantu dashboard
+                membaca kondisi keuanganmu.
+              </p>
             </div>
-          </div>
-
-          <div className="rounded-[1.75rem] border border-rose-200 bg-white p-5 shadow-sm sm:rounded-[2rem]">
-            <p className="text-sm font-black text-slate-950">Keluar Akun</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Logout akan menghapus sesi login dari browser ini. Data kamu tetap
-              tersimpan di backend.
-            </p>
 
             <Button
-              className="mt-4 w-full rounded-2xl bg-rose-600 text-white hover:bg-rose-700"
-              onClick={handleLogout}
-              variant="danger"
+              className="w-full rounded-2xl bg-white text-slate-950 shadow-sm hover:bg-slate-50 sm:w-auto"
+              disabled={profileQuery.isFetching}
+              onClick={refreshProfile}
+              type="button"
+              variant="secondary"
             >
-              <LogOut className="h-4 w-4" />
-              Logout
+              {profileQuery.isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4" />
+              )}
+              Refresh
             </Button>
           </div>
-        </aside>
+        </section>
+
+        {queryError || error ? (
+          <div className="rounded-[1.25rem] border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm sm:rounded-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-black">Terjadi kesalahan</p>
+                <p className="mt-1 break-words text-sm font-medium leading-6 text-rose-700">
+                  {queryError ?? error}
+                </p>
+
+                {queryError ? (
+                  <button
+                    className="mt-2 text-sm font-black underline"
+                    onClick={refreshProfile}
+                    type="button"
+                  >
+                    Coba lagi
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <section className="min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:rounded-[2rem]">
+            <div className="border-b border-slate-100 p-4 sm:p-6">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-indigo-100 text-indigo-700 sm:h-14 sm:w-14 sm:rounded-[1.25rem]">
+                  <UserCircle className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-black text-indigo-700">
+                      Profile
+                    </p>
+
+                    {isBackgroundFetching ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Sync
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+                    {displayedName}
+                  </h2>
+
+                  <p className="mt-1 truncate text-sm font-medium text-slate-500">
+                    {displayedEmail}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              {isLoadingProfile ? (
+                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-slate-50">
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <p className="text-sm font-bold">Mengambil profile...</p>
+                  </div>
+                </div>
+              ) : (
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <Input
+                    label="Nama"
+                    name="name"
+                    type="text"
+                    placeholder="Masukkan nama"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        name: event.target.value
+                      }))
+                    }
+                  />
+
+                  <div className="space-y-2">
+                    <Input
+                      label="Safe balance limit"
+                      name="safeBalanceLimit"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Contoh: 500000"
+                      value={form.safeBalanceLimit}
+                      onKeyDown={preventInvalidSafeBalanceKey}
+                      onChange={(event) =>
+                        handleSafeBalanceChange(event.target.value)
+                      }
+                    />
+
+                    <p className="text-xs font-semibold leading-5 text-slate-500">
+                      Hanya angka. Minimal Rp 0 dan maksimal{" "}
+                      {MAX_SAFE_BALANCE_LIMIT_LABEL}.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                      Fungsi safe balance limit
+                    </p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                      Jika saldo berada di bawah batas ini, dashboard akan
+                      menampilkan status <strong>Waspada</strong>. Jika saldo
+                      berada di atas batas ini, dashboard akan menampilkan status{" "}
+                      <strong>Aman</strong>.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                    <Button
+                      className="min-h-12 rounded-2xl bg-slate-950 text-white hover:bg-black"
+                      disabled={isSubmitting}
+                      isLoading={isSubmitting}
+                      type="submit"
+                    >
+                      <Save className="h-4 w-4" />
+                      Simpan Profile
+                    </Button>
+
+                    <Link
+                      className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
+                      to="/dashboard"
+                    >
+                      Kembali ke Dashboard
+                    </Link>
+                  </div>
+                </form>
+              )}
+            </div>
+          </section>
+
+          <aside className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-1">
+            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+              <p className="text-sm font-black text-slate-950">Ringkasan</p>
+
+              <div className="mt-4 grid gap-3">
+                <div className="min-w-0 rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-bold text-slate-500">
+                    Email akun
+                  </p>
+                  <p className="mt-1 truncate text-sm font-black text-slate-950">
+                    {displayedEmail}
+                  </p>
+                </div>
+
+                <div className="min-w-0 rounded-2xl bg-indigo-50 p-4">
+                  <p className="text-xs font-bold text-indigo-700">
+                    Safe balance limit
+                  </p>
+                  <p className="mt-1 break-words text-xl font-black text-indigo-700">
+                    {formatRupiah(displayedSafeLimit)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-emerald-50 p-4">
+                  <p className="text-xs font-bold text-emerald-700">
+                    Status akun
+                  </p>
+                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-emerald-700">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Aktif
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[1.75rem] border border-rose-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+              <p className="text-sm font-black text-slate-950">Keluar Akun</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                Logout hanya menghapus sesi login dari browser ini. Data akun
+                tetap tersimpan di backend.
+              </p>
+
+              <Button
+                className="mt-4 min-h-12 w-full rounded-2xl bg-rose-600 text-white hover:bg-rose-700"
+                onClick={handleLogout}
+                variant="danger"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </section>
+          </aside>
+        </div>
       </div>
     </AppShell>
   );
