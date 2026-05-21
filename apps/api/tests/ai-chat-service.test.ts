@@ -481,4 +481,124 @@ describe("AI chat service contract", () => {
     expect(serializedResponse).not.toContain("Catatan pengeluaran sensitif");
     expect(serializedResponse).not.toContain("Catatan bulan lalu");
   });
+    it("mengembalikan financial health snapshot pada financial summary", async () => {
+    const user = await createTestUser("financial-health-summary");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "4000000",
+          note: "Gaji sensitif tidak boleh bocor",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "2800000",
+          note: "Pengeluaran sensitif tidak boleh bocor",
+          date: getCurrentMonthDate(8)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kondisi keuangan saya bulan ini gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Status kesehatan keuanganmu");
+    expect(response.cards.some((card) => card.label === "Status Finansial")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Rasio Pengeluaran")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Batas Aman")).toBe(true);
+    expect(serializedResponse).not.toContain("Gaji sensitif tidak boleh bocor");
+    expect(serializedResponse).not.toContain(
+      "Pengeluaran sensitif tidak boleh bocor"
+    );
+  });
+
+  it("menandai financial health berisiko saat pengeluaran melebihi pemasukan", async () => {
+    const user = await createTestUser("financial-health-risk");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const expenseCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "Income note sensitif",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: expenseCategory.id,
+          type: "EXPENSE",
+          amount: "1500000",
+          note: "Expense note sensitif",
+          date: getCurrentMonthDate(9)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kondisi keuangan saya bulan ini gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Berisiko");
+    expect(
+      response.cards.some(
+        (card) => card.label === "Status Finansial" && card.value === "Berisiko"
+      )
+    ).toBe(true);
+    expect(serializedResponse).not.toContain("Income note sensitif");
+    expect(serializedResponse).not.toContain("Expense note sensitif");
+  });
 });
