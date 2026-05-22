@@ -1,4 +1,10 @@
-import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -733,7 +739,8 @@ function ChatBubble({
   savingDraftIds,
   savedDraftMessageIds,
   cancelledDraftMessageIds,
-  shouldAnimateContent
+  shouldAnimateContent,
+  messageRef
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
@@ -755,6 +762,7 @@ function ChatBubble({
   savedDraftMessageIds: Set<string>;
   cancelledDraftMessageIds: Set<string>;
   shouldAnimateContent: boolean;
+  messageRef?: (element: HTMLDivElement | null) => void;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
@@ -776,8 +784,11 @@ function ChatBubble({
     savableDraftEntries.map((entry) => entry.draft)
   );
 
-  return (
-    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
+    return (
+      <div
+        className={isUser ? "flex justify-end" : "flex justify-start"}
+        ref={messageRef}
+      >
       <div
         className={
           isUser
@@ -1002,6 +1013,7 @@ function ClearHistoryDialog({
 export function AsistenPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const userMessageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AiChatMessage[]>([
@@ -1036,6 +1048,28 @@ export function AsistenPage() {
       .reverse()
       .find((message) => message.role === "assistant" && message.id !== "welcome-message")
       ?.id ?? null;
+
+  function setUserMessageRef(messageId: string) {
+    return (element: HTMLDivElement | null) => {
+      if (element) {
+        userMessageRefs.current.set(messageId, element);
+        return;
+      }
+
+      userMessageRefs.current.delete(messageId);
+    };
+  }
+
+  function scrollToUserMessage(messageId: string) {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        userMessageRefs.current.get(messageId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+    });
+  }
 
   useEffect(() => {
     const storageKey = getChatHistoryStorageKey(user?.id);
@@ -1337,6 +1371,7 @@ export function AsistenPage() {
     const history = buildRecentHistory(messages);
 
     setMessages((currentMessages) => [...currentMessages, userMessage]);
+    scrollToUserMessage(userMessage.id);
     setInput("");
     setError(null);
     setIsSubmitting(true);
@@ -1756,6 +1791,9 @@ export function AsistenPage() {
                 disabled={isSubmitting}
                 key={message.id}
                 message={message}
+                messageRef={
+                message.role === "user" ? setUserMessageRef(message.id) : undefined
+                }
                 onCancelDraft={cancelDraftMessage}
                 onSaveAllDrafts={handleSaveAllDrafts}
                 onSaveDraft={handleSaveDraft}

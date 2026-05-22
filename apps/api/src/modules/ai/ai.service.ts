@@ -74,6 +74,23 @@ const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
   "laptop"
 ];
 
+const CONTINUATION_FOLLOW_UP_KEYWORDS = [
+  "lanjut",
+  "lanjutannya",
+  "lanjutkan",
+  "terus",
+  "teruskan",
+  "sambung",
+  "sambungkan",
+  "detailnya",
+  "jelaskan lagi",
+  "penjelasan lanjut",
+  "apa lanjutannya",
+  "bagian lanjutannya",
+  "next",
+  "continue"
+];
+
 type AiChatServiceOptions = {
   provider?: AiTextProvider;
 };
@@ -154,6 +171,47 @@ function looksLikeContextualFinancialFollowUp(message: string) {
   );
 }
 
+function looksLikeContinuationFollowUp(message: string) {
+  const normalizedMessage = message.toLowerCase().trim();
+
+  if (!normalizedMessage || normalizedMessage.length > 120) {
+    return false;
+  }
+
+  return CONTINUATION_FOLLOW_UP_KEYWORDS.some((keyword) =>
+    normalizedMessage.includes(keyword)
+  );
+}
+
+function inferRecentFinancialIntentFromHistory(
+  history: AiChatHistoryMessage[] = []
+): AiIntent | null {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const historyMessage = history[index];
+
+    if (historyMessage.role !== "user") {
+      continue;
+    }
+
+    const content = historyMessage.content.trim();
+
+    if (!content) {
+      continue;
+    }
+
+    const classification = classifyAiIntent(content);
+
+    if (
+      classification.intent !== "OUT_OF_SCOPE" &&
+      classification.intent !== "TRANSACTION_DRAFT"
+    ) {
+      return classification.intent;
+    }
+  }
+
+  return null;
+}
+
 function classifyAiChatMessage(
   message: string,
   history: AiChatHistoryMessage[] = []
@@ -164,8 +222,25 @@ function classifyAiChatMessage(
     return directClassification;
   }
 
-  if (!looksLikeContextualFinancialFollowUp(message) || history.length === 0) {
+  if (history.length === 0) {
     return directClassification;
+  }
+
+  const isContextualFollowUp = looksLikeContextualFinancialFollowUp(message);
+  const isContinuationFollowUp = looksLikeContinuationFollowUp(message);
+
+  if (!isContextualFollowUp && !isContinuationFollowUp) {
+    return directClassification;
+  }
+
+  const recentFinancialIntent = inferRecentFinancialIntentFromHistory(history);
+
+  if (isContinuationFollowUp && recentFinancialIntent) {
+    return {
+      intent: recentFinancialIntent,
+      confidence: "medium" as const,
+      reason: "contextual_continuation_follow_up"
+    };
   }
 
   const recentContext = buildConversationHistoryText(history);
@@ -174,14 +249,22 @@ function classifyAiChatMessage(
     `${recentContext}\nFOLLOW UP USER MESSAGE:\n${message}`
   );
 
-  if (contextualClassification.intent === "OUT_OF_SCOPE") {
-    return directClassification;
+  if (contextualClassification.intent !== "OUT_OF_SCOPE") {
+    return {
+      ...contextualClassification,
+      reason: `contextual_${contextualClassification.reason}`
+    };
   }
 
-  return {
-    ...contextualClassification,
-    reason: `contextual_${contextualClassification.reason}`
-  };
+  if (recentFinancialIntent) {
+    return {
+      intent: recentFinancialIntent,
+      confidence: "medium" as const,
+      reason: "contextual_recent_financial_intent"
+    };
+  }
+
+  return directClassification;
 }
 
 function toNumber(value: string | number | null | undefined) {
@@ -263,7 +346,9 @@ function buildFinancialHealthSnapshot(
   const availableUntilSafeLimit = Math.max(0, netCashflow - safeBalanceLimit);
   const suggestedDailyLimit =
     availableUntilSafeLimit > 0
-      ? Math.floor(availableUntilSafeLimit / getRemainingDaysInCurrentPeriod(context))
+      ? Math.floor(
+          availableUntilSafeLimit / getRemainingDaysInCurrentPeriod(context)
+        )
       : null;
 
   const riskSignals: string[] = [];
@@ -1044,8 +1129,9 @@ function buildFinancialSystemInstruction() {
     "Kamu adalah Asisten Sakuin, financial helper untuk aplikasi pencatatan keuangan pribadi Sakuin.",
     "Jawab hanya topik keuangan pribadi di Sakuin: transaksi, pemasukan, pengeluaran, goals, budget, safe balance, cashflow, kesehatan finansial, dan saran hemat ringan.",
     "Jawab pertanyaan user secara langsung. Jangan mengalihkan jawaban ke topik lain.",
-    "Gunakan recent conversation context untuk memahami follow-up user seperti 'kalau 8 bulan gimana', 'kalau targetnya naik', atau 'kalau begitu apa saranmu'.",
+    "Gunakan recent conversation context untuk memahami follow-up user seperti 'kalau 8 bulan gimana', 'kalau targetnya naik', 'lanjutannya apa', 'lanjutkan', atau 'terus apa'.",
     "Jika follow-up user merujuk pada konteks sebelumnya, pakai konteks sebelumnya selama masih relevan dengan keuangan pribadi.",
+    "Jika user meminta lanjutan seperti 'lanjutannya apa' atau 'lanjutkan', lanjutkan pembahasan finansial dari konteks terakhir tanpa menganggapnya out-of-scope.",
     "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
     "Jika FINANCIAL HEALTH SNAPSHOT tersedia, gunakan itu untuk menjawab apakah kondisi user aman, waspada, atau berisiko.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
@@ -1069,6 +1155,7 @@ function buildFinancialSystemInstruction() {
     "Jika data belum cukup, katakan data belum cukup dan sebutkan data apa yang perlu ditambahkan.",
     "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, ringkas, dan praktis.",
     "Format jawaban maksimal 4 paragraf pendek.",
+    "Pastikan jawaban selesai dengan utuh dan tidak menggantung di tengah kalimat.",
     "Untuk pertanyaan analisis kompleks, boleh memakai bullet pendek maksimal 4 poin.",
     "Jangan gunakan format markdown seperti **bold**, heading markdown, atau tabel markdown. Gunakan teks biasa yang rapi.",
     "Jangan membuat tabel markdown."
@@ -1114,6 +1201,7 @@ function buildFinancialPrompt(input: {
     "- Jangan membahas hal yang tidak ditanya kecuali benar-benar relevan.",
     "- Jika user bertanya aman/tidak, sehat/tidak, atau boros/tidak, mulai jawaban dengan status financial health.",
     "- Jika user bertanya realistis/tidak, mulai jawaban dengan verdict.",
+    "- Jika user meminta lanjutan, lanjutkan penjelasan finansial terakhir dari conversation context.",
     "- Jika user bertanya target tabungan, hitung kebutuhan tabungan per bulan bila data tersedia.",
     "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
     "- Angka penting harus konsisten dengan context, financial health snapshot, financial scenario analysis, atau angka yang user berikan.",
@@ -1134,7 +1222,7 @@ function normalizeAiReply(text: string) {
   return text
     .trim()
     .replace(/\n{3,}/g, "\n\n")
-    .slice(0, 1400);
+    .slice(0, 2400);
 }
 
 async function enhanceFinancialResponseWithAi(input: {

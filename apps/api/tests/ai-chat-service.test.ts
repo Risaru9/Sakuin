@@ -93,6 +93,80 @@ afterEach(async () => {
 });
 
 describe("AI chat service contract", () => {
+
+    it("memahami permintaan lanjutan dari konteks finansial sebelumnya", async () => {
+    const user = await createTestUser("financial-continuation-follow-up");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "4000000",
+          note: "Gaji sensitif tidak boleh bocor",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "2800000",
+          note: "Makan sensitif tidak boleh bocor",
+          date: getCurrentMonthDate(8)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Lanjutannya, kondisi ini masih perlu dijaga karena pengeluaran sudah cukup besar dibanding pemasukan. Fokus pertama adalah menahan kategori pengeluaran terbesar dan menjaga sisa cashflow tetap di atas batas aman.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "lanjutannya apa?",
+        history: [
+          {
+            role: "user",
+            content: "kondisi keuangan saya bulan ini gimana?"
+          },
+          {
+            role: "assistant",
+            content:
+              "Status kesehatan keuanganmu bulan ini waspada ringan. Pengeluaranmu cukup besar dibanding pemasukan."
+          }
+        ]
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Lanjutannya");
+    expect(generateText).toHaveBeenCalledTimes(1);
+    expect(serializedResponse).not.toContain("Gaji sensitif tidak boleh bocor");
+    expect(serializedResponse).not.toContain("Makan sensitif tidak boleh bocor");
+  });
+  
   it("memahami follow-up finansial dari chat history", async () => {
     const user = await createTestUser("context-follow-up");
 
