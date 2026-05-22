@@ -6,11 +6,20 @@ type MoneyExpression = {
   index: number;
 };
 
+export type FinancialScenarioRiskLevel =
+  | "Rendah"
+  | "Sedang"
+  | "Tinggi"
+  | "Sangat tinggi"
+  | "Belum bisa dinilai";
+
 export type FinancialScenarioOption = {
   months: number;
   monthlyRequired: number;
   incomeRatioPercent: number | null;
   verdict: string;
+  riskLevel: FinancialScenarioRiskLevel;
+  advice: string;
 };
 
 export type FinancialScenarioAnalysis = {
@@ -21,6 +30,8 @@ export type FinancialScenarioAnalysis = {
   durationsMonths: number[];
   options: FinancialScenarioOption[];
   verdictSummary: string;
+  overallRiskLevel: FinancialScenarioRiskLevel;
+  recommendedAction: string;
   missingFields: string[];
   riskNotes: string[];
 };
@@ -296,6 +307,26 @@ function detectItemName(text: string) {
   return matchedItem;
 }
 
+function getRiskLevelByRatio(ratio: number | null): FinancialScenarioRiskLevel {
+  if (ratio === null) {
+    return "Belum bisa dinilai";
+  }
+
+  if (ratio <= 10) {
+    return "Rendah";
+  }
+
+  if (ratio <= 20) {
+    return "Sedang";
+  }
+
+  if (ratio <= 30) {
+    return "Tinggi";
+  }
+
+  return "Sangat tinggi";
+}
+
 function getVerdictByRatio(ratio: number | null) {
   if (ratio === null) {
     return "Butuh data tambahan";
@@ -320,6 +351,30 @@ function getVerdictByRatio(ratio: number | null) {
   return "Tidak disarankan";
 }
 
+function buildOptionAdvice(input: {
+  monthlyRequired: number;
+  incomeRatioPercent: number | null;
+  riskLevel: FinancialScenarioRiskLevel;
+}) {
+  if (input.incomeRatioPercent === null) {
+    return "Butuh data pendapatan bulanan agar risiko alokasi bisa dinilai.";
+  }
+
+  if (input.riskLevel === "Rendah") {
+    return "Opsi ini relatif ringan terhadap pendapatan, tetapi tetap perlu menjaga dana aman dan pengeluaran rutin.";
+  }
+
+  if (input.riskLevel === "Sedang") {
+    return "Opsi ini masih cukup masuk akal jika pengeluaran rutin terkendali dan tidak mengganggu kebutuhan wajib.";
+  }
+
+  if (input.riskLevel === "Tinggi") {
+    return "Opsi ini cukup berat, jadi sebaiknya hanya dipilih jika cashflow stabil dan ada dana aman yang cukup.";
+  }
+
+  return "Opsi ini sangat membebani pendapatan bulanan, jadi lebih aman memperpanjang tenor, menurunkan target, atau menunda pembelian.";
+}
+
 function buildScenarioOptions(input: {
   monthlyIncome: number | null;
   targetAmount: number | null;
@@ -339,11 +394,19 @@ function buildScenarioOptions(input: {
         ? Number(((monthlyRequired / input.monthlyIncome) * 100).toFixed(1))
         : null;
 
+    const riskLevel = getRiskLevelByRatio(incomeRatioPercent);
+
     return {
       months,
       monthlyRequired,
       incomeRatioPercent,
-      verdict: getVerdictByRatio(incomeRatioPercent)
+      verdict: getVerdictByRatio(incomeRatioPercent),
+      riskLevel,
+      advice: buildOptionAdvice({
+        monthlyRequired,
+        incomeRatioPercent,
+        riskLevel
+      })
     };
   });
 }
@@ -390,6 +453,67 @@ function buildMissingFields(input: {
   return missingFields;
 }
 
+function compareRiskLevels(
+  firstRisk: FinancialScenarioRiskLevel,
+  secondRisk: FinancialScenarioRiskLevel
+) {
+  const order: Record<FinancialScenarioRiskLevel, number> = {
+    "Belum bisa dinilai": 0,
+    Rendah: 1,
+    Sedang: 2,
+    Tinggi: 3,
+    "Sangat tinggi": 4
+  };
+
+  return order[firstRisk] - order[secondRisk];
+}
+
+function buildOverallRiskLevel(input: {
+  options: FinancialScenarioOption[];
+  missingFields: string[];
+}) {
+  if (input.missingFields.length > 0 || input.options.length === 0) {
+    return "Belum bisa dinilai";
+  }
+
+  return [...input.options]
+    .map((option) => option.riskLevel)
+    .sort((firstRisk, secondRisk) => compareRiskLevels(secondRisk, firstRisk))[0];
+}
+
+function buildRecommendedAction(input: {
+  options: FinancialScenarioOption[];
+  missingFields: string[];
+}) {
+  if (input.missingFields.length > 0 || input.options.length === 0) {
+    return `Lengkapi dulu data ${input.missingFields.join(
+      ", "
+    )} agar skenario bisa dihitung lebih akurat.`;
+  }
+
+  const safestOption = [...input.options].sort(
+    (a, b) => a.monthlyRequired - b.monthlyRequired
+  )[0];
+
+  const riskiestOption = [...input.options].sort(
+    (a, b) => b.monthlyRequired - a.monthlyRequired
+  )[0];
+
+  if (safestOption.riskLevel === "Rendah") {
+    return `Opsi ${safestOption.months} bulan terlihat paling aman karena kebutuhan bulanannya paling ringan. Tetap pastikan dana aman dan kebutuhan wajib tidak terganggu.`;
+  }
+
+  if (safestOption.riskLevel === "Sedang") {
+    return `Opsi ${safestOption.months} bulan paling masuk akal dibanding opsi lain, tetapi tetap perlu disiplin menjaga pengeluaran rutin.`;
+  }
+
+  if (safestOption.riskLevel === "Tinggi") {
+    return `Bahkan opsi ${safestOption.months} bulan masih cukup berat. Pertimbangkan memperpanjang target waktu, menurunkan target nominal, atau menambah tabungan awal.`;
+  }
+
+  return `Skenario ini berisiko tinggi, terutama pada opsi ${riskiestOption.months} bulan. Lebih aman menunda pembelian atau memperbesar jarak waktu target.`;
+}
+
 function buildRiskNotes(input: {
   options: FinancialScenarioOption[];
   missingFields: string[];
@@ -397,9 +521,7 @@ function buildRiskNotes(input: {
   const notes: string[] = [];
 
   if (input.missingFields.length > 0) {
-    notes.push(
-      `Data belum lengkap: ${input.missingFields.join(", ")}.`
-    );
+    notes.push(`Data belum lengkap: ${input.missingFields.join(", ")}.`);
   }
 
   const hasHighRiskOption = input.options.some(
@@ -410,6 +532,19 @@ function buildRiskNotes(input: {
   if (hasHighRiskOption) {
     notes.push(
       "Ada opsi yang memakan lebih dari 30% pendapatan bulanan, sehingga risiko cashflow meningkat."
+    );
+  }
+
+  const hasMediumRiskOption = input.options.some(
+    (option) =>
+      option.incomeRatioPercent !== null &&
+      option.incomeRatioPercent > 20 &&
+      option.incomeRatioPercent <= 30
+  );
+
+  if (hasMediumRiskOption) {
+    notes.push(
+      "Ada opsi yang masih mungkin dilakukan, tetapi cukup berat jika pengeluaran rutin belum terkendali."
     );
   }
 
@@ -476,6 +611,9 @@ export function analyzeFinancialScenario(
       durationsMonths: [],
       options: [],
       verdictSummary: "Tidak ada skenario finansial terstruktur terdeteksi.",
+      overallRiskLevel: "Belum bisa dinilai",
+      recommendedAction:
+        "Tidak ada skenario finansial terstruktur yang perlu dianalisis.",
       missingFields: [],
       riskNotes: []
     };
@@ -501,6 +639,14 @@ export function analyzeFinancialScenario(
     durationsMonths,
     options,
     verdictSummary: buildVerdictSummary(options),
+    overallRiskLevel: buildOverallRiskLevel({
+      options,
+      missingFields
+    }),
+    recommendedAction: buildRecommendedAction({
+      options,
+      missingFields
+    }),
     missingFields,
     riskNotes: buildRiskNotes({
       options,
@@ -526,6 +672,8 @@ export function buildFinancialScenarioPromptContext(
         : "Tidak disebutkan"
     }`,
     `Verdict deterministik: ${scenario.verdictSummary}`,
+    `Risk level keseluruhan: ${scenario.overallRiskLevel}`,
+    `Rekomendasi aksi deterministik: ${scenario.recommendedAction}`,
     "Opsi perhitungan:",
     scenario.options.length > 0
       ? scenario.options
@@ -537,11 +685,15 @@ export function buildFinancialScenarioPromptContext(
 
             return `- ${option.months} bulan: perlu ${formatRupiah(
               option.monthlyRequired
-            )}/bulan, ${ratioText}, verdict: ${option.verdict}`;
+            )}/bulan, ${ratioText}, verdict ${option.verdict}, risk level ${
+              option.riskLevel
+            }, saran: ${option.advice}`;
           })
           .join("\n")
-      : "- Belum bisa dihitung karena data kurang.",
+      : "- Belum ada opsi karena data belum lengkap.",
     "Catatan risiko:",
-    scenario.riskNotes.map((note) => `- ${note}`).join("\n")
+    scenario.riskNotes.length > 0
+      ? scenario.riskNotes.map((note) => `- ${note}`).join("\n")
+      : "- Tidak ada catatan risiko tambahan."
   ].join("\n");
 }
