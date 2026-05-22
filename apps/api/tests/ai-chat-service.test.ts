@@ -497,6 +497,152 @@ describe("AI chat service contract", () => {
   expect(afterCount).toBe(0);
 });
 
+  it("mengembalikan mixed transactionDrafts dari chat service tanpa auto-save", async () => {
+    const user = await createTestUser("mixed-draft-service");
+
+    const giftCategory = await createCategory({
+      userId: user.id,
+      name: "Hadiah",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    const beforeCount = await prisma.transaction.count({
+      where: {
+        userId: user.id
+      }
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "dikasih ibu 100 ribu terus makan 15000"
+    });
+
+    const afterCount = await prisma.transaction.count({
+      where: {
+        userId: user.id
+      }
+    });
+
+    const drafts = response.transactionDrafts ?? [];
+
+    expect(response.intent).toBe("TRANSACTION_DRAFT");
+    expect(response.reply).toContain("2 draft transaksi");
+    expect(response.transactionDraft).toBeTruthy();
+    expect(response.transactionDraft).toEqual(drafts[0]);
+    expect(drafts).toHaveLength(2);
+
+    expect(drafts[0].type).toBe("INCOME");
+    expect(drafts[0].amount).toBe("100000");
+    expect(drafts[0].categoryId).toBe(giftCategory.id);
+    expect(drafts[0].categoryName).toBe("Hadiah");
+    expect(drafts[0].note).toContain("ibu");
+
+    expect(drafts[1].type).toBe("EXPENSE");
+    expect(drafts[1].amount).toBe("15000");
+    expect(drafts[1].categoryId).toBe(foodCategory.id);
+    expect(drafts[1].categoryName).toBe("Makanan");
+    expect(drafts[1].note).toContain("makan");
+
+    expect(
+      response.cards.some(
+        (card) => card.label === "Jumlah Draft" && card.value === "2"
+      )
+    ).toBe(true);
+    expect(
+      response.cards.some(
+        (card) => card.label === "Siap Disimpan" && card.value === "2/2"
+      )
+    ).toBe(true);
+    expect(
+      response.cards.some(
+        (card) => card.label === "Total Nominal" && card.value.includes("115.000")
+      )
+    ).toBe(true);
+    expect(
+      response.cards.some(
+        (card) => card.label === "Status" && card.value === "Siap direview"
+      )
+    ).toBe(true);
+
+    expect(beforeCount).toBe(0);
+    expect(afterCount).toBe(0);
+  });
+
+  it("mengembalikan mixed refund dan parkir sebagai transactionDrafts service", async () => {
+    const user = await createTestUser("mixed-refund-parking-service");
+
+    const refundCategory = await createCategory({
+      userId: user.id,
+      name: "Refund",
+      type: "INCOME"
+    });
+
+    const transportCategory = await createCategory({
+      userId: user.id,
+      name: "Transportasi",
+      type: "EXPENSE"
+    });
+
+    const beforeCount = await prisma.transaction.count({
+      where: {
+        userId: user.id
+      }
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "refund shopee 75000 sama bayar parkir 2000"
+    });
+
+    const afterCount = await prisma.transaction.count({
+      where: {
+        userId: user.id
+      }
+    });
+
+    const drafts = response.transactionDrafts ?? [];
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("TRANSACTION_DRAFT");
+    expect(drafts).toHaveLength(2);
+    expect(response.transactionDraft).toEqual(drafts[0]);
+
+    expect(drafts[0].type).toBe("INCOME");
+    expect(drafts[0].amount).toBe("75000");
+    expect(drafts[0].categoryId).toBe(refundCategory.id);
+    expect(drafts[0].categoryName).toBe("Refund");
+    expect(drafts[0].note).toContain("refund");
+    expect(drafts[0].note).toContain("shopee");
+
+    expect(drafts[1].type).toBe("EXPENSE");
+    expect(drafts[1].amount).toBe("2000");
+    expect(drafts[1].categoryId).toBe(transportCategory.id);
+    expect(drafts[1].categoryName).toBe("Transportasi");
+    expect(drafts[1].note).toContain("parkir");
+
+    expect(response.cards.some((card) => card.label === "Jumlah Draft")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Siap Disimpan")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Total Nominal")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Status")).toBe(true);
+
+    expect(serializedResponse).not.toContain(user.id);
+    expect(serializedResponse).not.toContain(user.email);
+    expect(beforeCount).toBe(0);
+    expect(afterCount).toBe(0);
+  });
+
   it("tidak membocorkan userId pada response financial summary", async () => {
     const user = await createTestUser("safe-summary");
 

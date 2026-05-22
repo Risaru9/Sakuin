@@ -3,6 +3,7 @@ import type { AiIntentClassification } from "./ai.types.js";
 const TRANSACTION_DRAFT_KEYWORDS = [
   "catat",
   "catetin",
+  "catatkan",
   "input",
   "masukkan",
   "tambah transaksi",
@@ -13,11 +14,87 @@ const TRANSACTION_DRAFT_KEYWORDS = [
   "habis beli",
   "barusan beli",
   "baru beli",
+  "beli",
+  "membeli",
+  "bayar",
+  "membayar",
+  "jajan",
+  "makan",
+  "minum",
+  "kopi",
+  "bensin",
+  "bbm",
+  "parkir",
+  "token listrik",
+  "listrik",
+  "pulsa",
+  "paket data",
+  "kos",
+  "kost",
   "dikasih",
   "di kasih",
+  "diberi",
+  "di beri",
   "dapat uang",
   "dapet uang",
-  "terima uang"
+  "dapat transfer",
+  "dapet transfer",
+  "terima uang",
+  "menerima uang",
+  "terima transfer",
+  "menerima transfer",
+  "transfer dari",
+  "uang dari",
+  "kiriman dari",
+  "dikirim",
+  "ditransfer",
+  "di transfer",
+  "refund",
+  "cashback",
+  "reimburse",
+  "reimbursement",
+  "pengembalian dana",
+  "gaji",
+  "bonus",
+  "thr",
+  "honor",
+  "honorarium",
+  "fee freelance",
+  "freelance"
+];
+
+const TRANSACTION_DRAFT_BLOCKING_CONTEXT_KEYWORDS = [
+  "realistis",
+  "tidak realistis",
+  "masuk akal",
+  "worth it",
+  "layak",
+  "low risk",
+  "risiko",
+  "risk",
+  "aman nggak",
+  "aman gak",
+  "apakah aman",
+  "apakah mungkin",
+  "mungkin",
+  "saran anda",
+  "apa saran",
+  "pendapat anda",
+  "menurut anda",
+  "ingin membeli",
+  "ingin beli",
+  "rencana beli",
+  "rencana membeli",
+  "target beli",
+  "target membeli",
+  "tenor",
+  "deadline",
+  "jangka waktu",
+  "dalam 6 bulan",
+  "dalam 8 bulan",
+  "dalam 12 bulan",
+  "dalam 24 bulan",
+  "dalam 32 bulan"
 ];
 
 const SPENDING_ANALYSIS_KEYWORDS = [
@@ -183,7 +260,7 @@ const PURCHASE_PLANNING_CONTEXT_KEYWORDS = [
 ];
 
 function normalizeMessage(message: string) {
-  return message.trim().toLowerCase();
+  return message.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function includesAnyKeyword(message: string, keywords: string[]) {
@@ -208,6 +285,10 @@ function createClassification(
   };
 }
 
+function hasTransactionDraftBlockingContext(message: string) {
+  return includesAnyKeyword(message, TRANSACTION_DRAFT_BLOCKING_CONTEXT_KEYWORDS);
+}
+
 function isTransactionDraftMessage(message: string) {
   const hasTransactionDraftKeyword = includesAnyKeyword(
     message,
@@ -218,7 +299,15 @@ function isTransactionDraftMessage(message: string) {
     return false;
   }
 
-  return containsMoneyLikeValue(message) || message.includes("transaksi");
+  if (!containsMoneyLikeValue(message) && !message.includes("transaksi")) {
+    return false;
+  }
+
+  if (hasTransactionDraftBlockingContext(message)) {
+    return false;
+  }
+
+  return true;
 }
 
 function isPurchasePlanningMessage(message: string) {
