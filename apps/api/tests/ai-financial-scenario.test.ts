@@ -21,18 +21,29 @@ describe("AI financial scenario analyzer", () => {
         months: 12,
         monthlyRequired: 2_500_000,
         incomeRatioPercent: 31.3,
-        verdict: "Berisiko tinggi"
+        verdict: "Berisiko tinggi",
+        riskLevel: "Sangat tinggi",
+        advice:
+          "Opsi ini sangat membebani pendapatan bulanan, jadi lebih aman memperpanjang tenor, menurunkan target, atau menunda pembelian."
       },
       {
         months: 32,
         monthlyRequired: 937_500,
         incomeRatioPercent: 11.7,
-        verdict: "Cukup realistis"
+        verdict: "Cukup realistis",
+        riskLevel: "Sedang",
+        advice:
+          "Opsi ini masih cukup masuk akal jika pengeluaran rutin terkendali dan tidak mengganggu kebutuhan wajib."
       }
     ]);
 
     expect(scenario.verdictSummary).toContain("12 bulan: Berisiko tinggi");
     expect(scenario.verdictSummary).toContain("32 bulan: Cukup realistis");
+    expect(scenario.overallRiskLevel).toBe("Sangat tinggi");
+    expect(scenario.recommendedAction).toContain("32 bulan");
+    expect(scenario.riskNotes).toContain(
+      "Ada opsi yang memakan lebih dari 30% pendapatan bulanan, sehingga risiko cashflow meningkat."
+    );
   });
 
   it("memakai history untuk memahami follow-up skenario pembelian", () => {
@@ -60,8 +71,13 @@ describe("AI financial scenario analyzer", () => {
       months: 12,
       monthlyRequired: 833_334,
       incomeRatioPercent: 13.9,
-      verdict: "Cukup realistis"
+      verdict: "Cukup realistis",
+      riskLevel: "Sedang",
+      advice:
+        "Opsi ini masih cukup masuk akal jika pengeluaran rutin terkendali dan tidak mengganggu kebutuhan wajib."
     });
+    expect(scenario.overallRiskLevel).toBe("Sedang");
+    expect(scenario.recommendedAction).toContain("12 bulan");
   });
 
   it("menandai data kurang jika tenor belum disebutkan", () => {
@@ -74,6 +90,49 @@ describe("AI financial scenario analyzer", () => {
     expect(scenario.targetAmount).toBe(30_000_000);
     expect(scenario.missingFields).toContain("deadline/tenor");
     expect(scenario.options).toEqual([]);
+    expect(scenario.overallRiskLevel).toBe("Belum bisa dinilai");
+    expect(scenario.recommendedAction).toContain("deadline/tenor");
+  });
+
+  it("memberi risk level rendah untuk target ringan terhadap pemasukan", () => {
+    const scenario = analyzeFinancialScenario(
+      "Gaji saya 10 juta ingin membeli laptop 6 juta dalam 12 bulan"
+    );
+
+    expect(scenario.detected).toBe(true);
+    expect(scenario.monthlyIncome).toBe(10_000_000);
+    expect(scenario.targetAmount).toBe(6_000_000);
+    expect(scenario.options[0]).toEqual({
+      months: 12,
+      monthlyRequired: 500_000,
+      incomeRatioPercent: 5,
+      verdict: "Relatif aman",
+      riskLevel: "Rendah",
+      advice:
+        "Opsi ini relatif ringan terhadap pendapatan, tetapi tetap perlu menjaga dana aman dan pengeluaran rutin."
+    });
+    expect(scenario.overallRiskLevel).toBe("Rendah");
+    expect(scenario.recommendedAction).toContain("paling aman");
+    expect(scenario.recommendedAction).toContain("kebutuhan bulanannya paling ringan");
+  });
+
+  it("memberi risk level sangat tinggi untuk target yang terlalu membebani pemasukan", () => {
+    const scenario = analyzeFinancialScenario(
+      "Gaji saya 5 juta ingin membeli motor 30 juta dalam 8 bulan"
+    );
+
+    expect(scenario.detected).toBe(true);
+    expect(scenario.options[0]).toEqual({
+      months: 8,
+      monthlyRequired: 3_750_000,
+      incomeRatioPercent: 75,
+      verdict: "Tidak disarankan",
+      riskLevel: "Sangat tinggi",
+      advice:
+        "Opsi ini sangat membebani pendapatan bulanan, jadi lebih aman memperpanjang tenor, menurunkan target, atau menunda pembelian."
+    });
+    expect(scenario.overallRiskLevel).toBe("Sangat tinggi");
+    expect(scenario.recommendedAction).toContain("berisiko tinggi");
   });
 
   it("membuat prompt context tanpa data sensitif mentah", () => {
@@ -87,5 +146,8 @@ describe("AI financial scenario analyzer", () => {
     expect(promptContext).toContain("Target nominal/harga");
     expect(promptContext).toContain("24 bulan");
     expect(promptContext).toContain("verdict");
+    expect(promptContext).toContain("Risk level keseluruhan");
+    expect(promptContext).toContain("Rekomendasi aksi deterministik");
+    expect(promptContext).toContain("Catatan risiko");
   });
 });
