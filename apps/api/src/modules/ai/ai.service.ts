@@ -114,6 +114,27 @@ type FinancialHealthSnapshot = {
   riskSignals: string[];
 };
 
+type SpendingPatternStatus =
+  | "Terkendali"
+  | "Perlu dikontrol"
+  | "Meningkat tajam"
+  | "Belum cukup data";
+
+type SpendingPatternInsight = {
+  status: SpendingPatternStatus;
+  topCategoryName: string | null;
+  topCategoryAmount: number;
+  topCategoryTransactionCount: number;
+  topCategoryExpenseShare: number;
+  topCategoryIncomeShare: number;
+  topCategoryPreviousAmount: number;
+  topCategoryChangePercent: number | null;
+  expenseChangePercent: number | null;
+  mainDriver: string;
+  advice: string;
+  riskSignals: string[];
+};
+
 function logAiProviderEvent(
   event: "ai.provider_used" | "ai.provider_fallback",
   metadata: Record<string, unknown>
@@ -305,8 +326,28 @@ function formatRatio(value: number | null) {
   return `${value}%`;
 }
 
+function formatChangePercent(value: number | null) {
+  if (value === null) {
+    return "Baru / belum ada pembanding";
+  }
+
+  return formatPercent(value);
+}
+
 function roundOneDecimal(value: number) {
   return Number(value.toFixed(1));
+}
+
+function calculateNumericChangePercent(currentValue: number, previousValue: number) {
+  if (previousValue === 0) {
+    if (currentValue === 0) {
+      return 0;
+    }
+
+    return null;
+  }
+
+  return roundOneDecimal(((currentValue - previousValue) / previousValue) * 100);
 }
 
 function getTopExpenseCategory(context: AiFinancialContext) {
@@ -330,6 +371,17 @@ function getRemainingDaysInCurrentPeriod(context: AiFinancialContext) {
   );
 
   return Math.max(1, remainingDays);
+}
+
+function findPreviousCategoryAmount(
+  context: AiFinancialContext,
+  categoryName: string
+) {
+  const previousCategory = context.previousMonth.topExpenseCategories.find(
+    (category) => category.name.toLowerCase() === categoryName.toLowerCase()
+  );
+
+  return previousCategory ? toNumber(previousCategory.amount) : 0;
 }
 
 function buildFinancialHealthSnapshot(
@@ -500,6 +552,140 @@ function buildFinancialHealthSnapshot(
   };
 }
 
+function buildSpendingPatternInsight(
+  context: AiFinancialContext
+): SpendingPatternInsight {
+  const totalExpense = toNumber(context.currentMonth.totalExpense);
+  const totalIncome = toNumber(context.currentMonth.totalIncome);
+  const topCategory = getTopExpenseCategory(context);
+
+  if (totalExpense <= 0 || !topCategory) {
+    return {
+      status: "Belum cukup data",
+      topCategoryName: null,
+      topCategoryAmount: 0,
+      topCategoryTransactionCount: 0,
+      topCategoryExpenseShare: 0,
+      topCategoryIncomeShare: 0,
+      topCategoryPreviousAmount: 0,
+      topCategoryChangePercent: null,
+      expenseChangePercent: context.monthComparison.expenseChangePercent,
+      mainDriver:
+        "Belum ada data pengeluaran yang cukup untuk membaca pola boros bulan ini.",
+      advice:
+        "Catat beberapa transaksi pengeluaran terlebih dahulu agar pola pengeluaran bisa dianalisis.",
+      riskSignals: []
+    };
+  }
+
+  const topCategoryAmount = toNumber(topCategory.amount);
+  const topCategoryPreviousAmount = findPreviousCategoryAmount(
+    context,
+    topCategory.name
+  );
+  const topCategoryChangePercent = calculateNumericChangePercent(
+    topCategoryAmount,
+    topCategoryPreviousAmount
+  );
+  const expenseChangePercent = context.monthComparison.expenseChangePercent;
+  const riskSignals: string[] = [];
+
+  if (topCategory.percentageOfExpense >= 40) {
+    riskSignals.push(
+      "Satu kategori mengambil porsi besar dari total pengeluaran bulan ini."
+    );
+  }
+
+  if (topCategory.percentageOfIncome >= 30) {
+    riskSignals.push(
+      "Kategori terbesar sudah memakai porsi besar dari pemasukan bulan ini."
+    );
+  }
+
+  if (expenseChangePercent !== null && expenseChangePercent >= 25) {
+    riskSignals.push("Total pengeluaran naik cukup besar dibanding bulan lalu.");
+  }
+
+  if (
+    topCategoryChangePercent === null &&
+    topCategoryAmount > 0 &&
+    topCategoryPreviousAmount === 0
+  ) {
+    riskSignals.push(
+      "Kategori terbesar belum terlihat pada pembanding bulan lalu."
+    );
+  }
+
+  if (topCategoryChangePercent !== null && topCategoryChangePercent >= 25) {
+    riskSignals.push("Kategori terbesar naik cukup besar dibanding bulan lalu.");
+  }
+
+  if (topCategory.transactionCount >= 8) {
+    riskSignals.push(
+      "Kategori terbesar muncul cukup sering, jadi kemungkinan dipengaruhi transaksi kecil yang berulang."
+    );
+  }
+
+  if (
+    (expenseChangePercent !== null && expenseChangePercent >= 40) ||
+    (topCategoryChangePercent !== null && topCategoryChangePercent >= 50)
+  ) {
+    return {
+      status: "Meningkat tajam",
+      topCategoryName: topCategory.name,
+      topCategoryAmount,
+      topCategoryTransactionCount: topCategory.transactionCount,
+      topCategoryExpenseShare: topCategory.percentageOfExpense,
+      topCategoryIncomeShare: totalIncome > 0 ? topCategory.percentageOfIncome : 0,
+      topCategoryPreviousAmount,
+      topCategoryChangePercent,
+      expenseChangePercent,
+      mainDriver: `Pengeluaran bulan ini terlihat meningkat, dengan kategori ${topCategory.name} sebagai kontributor utama.`,
+      advice:
+        "Fokus turunkan kategori terbesar terlebih dahulu karena dampaknya paling terasa terhadap total pengeluaran.",
+      riskSignals
+    };
+  }
+
+  if (
+    topCategory.percentageOfExpense >= 40 ||
+    topCategory.percentageOfIncome >= 30 ||
+    topCategory.transactionCount >= 8
+  ) {
+    return {
+      status: "Perlu dikontrol",
+      topCategoryName: topCategory.name,
+      topCategoryAmount,
+      topCategoryTransactionCount: topCategory.transactionCount,
+      topCategoryExpenseShare: topCategory.percentageOfExpense,
+      topCategoryIncomeShare: totalIncome > 0 ? topCategory.percentageOfIncome : 0,
+      topCategoryPreviousAmount,
+      topCategoryChangePercent,
+      expenseChangePercent,
+      mainDriver: `Kategori ${topCategory.name} adalah prioritas kontrol karena porsinya paling besar bulan ini.`,
+      advice:
+        "Pasang batas mingguan untuk kategori ini dan pantau transaksi kecil yang sering berulang.",
+      riskSignals
+    };
+  }
+
+  return {
+    status: "Terkendali",
+    topCategoryName: topCategory.name,
+    topCategoryAmount,
+    topCategoryTransactionCount: topCategory.transactionCount,
+    topCategoryExpenseShare: topCategory.percentageOfExpense,
+    topCategoryIncomeShare: totalIncome > 0 ? topCategory.percentageOfIncome : 0,
+    topCategoryPreviousAmount,
+    topCategoryChangePercent,
+    expenseChangePercent,
+    mainDriver: `Kategori terbesar bulan ini adalah ${topCategory.name}, tetapi porsinya belum terlihat terlalu dominan.`,
+    advice:
+      "Tetap pantau kategori terbesar agar tidak naik perlahan, terutama jika transaksi kecil mulai sering muncul.",
+    riskSignals
+  };
+}
+
 function buildFinancialHealthCards(
   snapshot: FinancialHealthSnapshot
 ): AiChatCard[] {
@@ -535,6 +721,54 @@ function buildFinancialHealthCards(
   return cards;
 }
 
+function buildSpendingPatternCards(
+  insight: SpendingPatternInsight
+): AiChatCard[] {
+  const cards: AiChatCard[] = [
+    {
+      label: "Pola Pengeluaran",
+      value: insight.status
+    },
+    {
+      label: "Prioritas Kontrol",
+      value: insight.topCategoryName ?? "Belum ada"
+    },
+    {
+      label: "Porsi Expense",
+      value:
+        insight.topCategoryName === null
+          ? "Belum cukup data"
+          : `${insight.topCategoryExpenseShare}%`
+    }
+  ];
+
+  if (insight.topCategoryName) {
+    cards.push({
+      label: "Nominal Prioritas",
+      value: formatRupiah(insight.topCategoryAmount)
+    });
+
+    cards.push({
+      label: "Frekuensi",
+      value: `${insight.topCategoryTransactionCount} transaksi`
+    });
+
+    cards.push({
+      label: "Tren Kategori",
+      value: formatChangePercent(insight.topCategoryChangePercent)
+    });
+  }
+
+  if (insight.expenseChangePercent !== null) {
+    cards.push({
+      label: "Tren Total Expense",
+      value: formatChangePercent(insight.expenseChangePercent)
+    });
+  }
+
+  return cards;
+}
+
 function buildFinancialHealthPromptContext(snapshot: FinancialHealthSnapshot) {
   return [
     `Status kesehatan finansial: ${snapshot.status}`,
@@ -556,6 +790,33 @@ function buildFinancialHealthPromptContext(snapshot: FinancialHealthSnapshot) {
     `Sinyal risiko: ${
       snapshot.riskSignals.length > 0
         ? snapshot.riskSignals.join("; ")
+        : "Tidak ada sinyal risiko besar"
+    }`
+  ].join("\n");
+}
+
+function buildSpendingPatternPromptContext(insight: SpendingPatternInsight) {
+  return [
+    `Status pola pengeluaran: ${insight.status}`,
+    `Kategori prioritas kontrol: ${insight.topCategoryName ?? "Belum ada"}`,
+    `Nominal kategori prioritas: ${formatRupiah(insight.topCategoryAmount)}`,
+    `Frekuensi kategori prioritas: ${insight.topCategoryTransactionCount} transaksi`,
+    `Porsi kategori terhadap total pengeluaran: ${insight.topCategoryExpenseShare}%`,
+    `Porsi kategori terhadap pemasukan: ${insight.topCategoryIncomeShare}%`,
+    `Nominal kategori yang sama bulan lalu: ${formatRupiah(
+      insight.topCategoryPreviousAmount
+    )}`,
+    `Perubahan kategori prioritas dari bulan lalu: ${formatChangePercent(
+      insight.topCategoryChangePercent
+    )}`,
+    `Perubahan total pengeluaran dari bulan lalu: ${formatChangePercent(
+      insight.expenseChangePercent
+    )}`,
+    `Penyebab utama: ${insight.mainDriver}`,
+    `Saran utama: ${insight.advice}`,
+    `Sinyal risiko: ${
+      insight.riskSignals.length > 0
+        ? insight.riskSignals.join("; ")
         : "Tidak ada sinyal risiko besar"
     }`
   ].join("\n");
@@ -820,12 +1081,13 @@ function buildSpendingAnalysisResponse(
 ): AiChatResponse {
   const topCategory = getTopExpenseCategory(context);
   const healthSnapshot = buildFinancialHealthSnapshot(context);
+  const spendingInsight = buildSpendingPatternInsight(context);
 
-  if (toNumber(context.currentMonth.totalExpense) <= 0) {
+  if (toNumber(context.currentMonth.totalExpense) <= 0 || !topCategory) {
     return {
       intent: "SPENDING_ANALYSIS",
       reply:
-        "Belum ada data pengeluaran bulan ini. Setelah kamu mencatat beberapa pengeluaran, saya bisa bantu melihat kategori terbesar dan pola borosnya.",
+        "Belum ada data pengeluaran bulan ini. Setelah kamu mencatat beberapa pengeluaran, saya bisa bantu melihat kategori terbesar, pola boros, dan prioritas pengeluaran yang perlu dikontrol.",
       cards: buildCards([
         {
           label: "Total Pengeluaran",
@@ -835,10 +1097,7 @@ function buildSpendingAnalysisResponse(
           label: "Status Finansial",
           value: healthSnapshot.status
         },
-        {
-          label: "Kategori Terbesar",
-          value: "Belum ada"
-        },
+        ...buildSpendingPatternCards(spendingInsight),
         {
           label: "Jumlah Transaksi",
           value: String(context.currentMonth.transactionCount)
@@ -848,42 +1107,55 @@ function buildSpendingAnalysisResponse(
     };
   }
 
-  const categorySentence = topCategory
-    ? `Kategori terbesar adalah ${topCategory.name} sebesar ${formatRupiah(
-        topCategory.amount
-      )}, sekitar ${topCategory.percentageOfExpense}% dari total pengeluaran.`
-    : "Belum ada kategori pengeluaran yang bisa dianalisis.";
+  const categoryTrendText =
+    spendingInsight.topCategoryChangePercent === null
+      ? "Kategori ini belum punya pembanding kuat dari bulan lalu."
+      : `Dibanding bulan lalu, kategori ini berubah ${formatChangePercent(
+          spendingInsight.topCategoryChangePercent
+        )}.`;
+
+  const expenseTrendText =
+    context.monthComparison.expenseChangePercent === null
+      ? "Total pengeluaran belum punya pembanding kuat dari bulan lalu."
+      : `Total pengeluaran berubah ${formatChangePercent(
+          context.monthComparison.expenseChangePercent
+        )} dibanding bulan lalu.`;
 
   return {
     intent: "SPENDING_ANALYSIS",
     reply: `Pengeluaranmu bulan ini ${formatRupiah(
       context.currentMonth.totalExpense
-    )} dari ${
-      context.currentMonth.transactionCount
-    } transaksi. ${categorySentence} Status finansial bulan ini: ${
-      healthSnapshot.status
-    }. ${healthSnapshot.advice}`,
+    )}. Prioritas pengeluaran yang perlu kamu pantau adalah ${
+      topCategory.name
+    }. Total kategori ini ${formatRupiah(topCategory.amount)}, sekitar ${
+      topCategory.percentageOfExpense
+    }% dari seluruh pengeluaran bulan ini dan muncul dalam ${
+      topCategory.transactionCount
+    } transaksi. ${expenseTrendText} ${categoryTrendText} Pola pengeluaran saat ini: ${
+      spendingInsight.status
+    }. ${spendingInsight.advice}`,
     cards: buildCards([
       {
         label: "Total Pengeluaran",
         value: formatRupiah(context.currentMonth.totalExpense)
       },
       {
-        label: "Rasio Pengeluaran",
-        value: formatRatio(healthSnapshot.expenseToIncomeRatio)
-      },
-      {
         label: "Status Finansial",
         value: healthSnapshot.status
       },
       {
+        label: "Rasio Pengeluaran",
+        value: formatRatio(healthSnapshot.expenseToIncomeRatio)
+      },
+      {
         label: "Kategori Terbesar",
-        value: topCategory ? topCategory.name : "Belum ada"
+        value: topCategory.name
       },
       {
         label: "Nominal Kategori",
-        value: topCategory ? formatRupiah(topCategory.amount) : formatRupiah(0)
-      }
+        value: formatRupiah(topCategory.amount)
+      },
+      ...buildSpendingPatternCards(spendingInsight)
     ]),
     suggestions: [
       "Kasih saran hemat",
@@ -945,6 +1217,7 @@ function buildPeriodComparisonResponse(
   context: AiFinancialContext
 ): AiChatResponse {
   const healthSnapshot = buildFinancialHealthSnapshot(context);
+  const spendingInsight = buildSpendingPatternInsight(context);
 
   return {
     intent: "PERIOD_COMPARISON",
@@ -952,7 +1225,9 @@ function buildPeriodComparisonResponse(
       context.monthComparison.expenseChangePercent
     )}, sedangkan pemasukanmu berubah ${formatPercent(
       context.monthComparison.incomeChangePercent
-    )}. Status finansial bulan ini: ${healthSnapshot.status}.`,
+    )}. Status finansial bulan ini: ${healthSnapshot.status}. Pola pengeluaran bulan ini: ${
+      spendingInsight.status
+    }. ${spendingInsight.mainDriver}`,
     cards: buildCards([
       {
         label: "Expense Bulan Ini",
@@ -973,7 +1248,8 @@ function buildPeriodComparisonResponse(
       {
         label: "Status Finansial",
         value: healthSnapshot.status
-      }
+      },
+      ...buildSpendingPatternCards(spendingInsight)
     ]),
     suggestions: [
       "Saya boros di mana?",
@@ -987,6 +1263,7 @@ function buildPeriodComparisonResponse(
 function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse {
   const topCategory = getTopExpenseCategory(context);
   const healthSnapshot = buildFinancialHealthSnapshot(context);
+  const spendingInsight = buildSpendingPatternInsight(context);
 
   if (!topCategory) {
     return {
@@ -1002,10 +1279,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
           label: "Total Pengeluaran",
           value: formatRupiah(context.currentMonth.totalExpense)
         },
-        {
-          label: "Kategori Prioritas",
-          value: "Belum ada"
-        }
+        ...buildSpendingPatternCards(spendingInsight)
       ]),
       suggestions: DEFAULT_SUGGESTIONS
     };
@@ -1016,6 +1290,11 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
       ? `Kategori ${topCategory.name} cukup besar dibanding pemasukanmu bulan ini. Coba turunkan secara bertahap, misalnya mulai dari 10% lebih rendah minggu depan.`
       : `Kategori ${topCategory.name} adalah pengeluaran terbesar bulan ini. Coba pasang batas mingguan agar pengeluaran tetap lebih mudah dikontrol.`;
 
+  const repeatedTransactionAdvice =
+    topCategory.transactionCount >= 8
+      ? ` Karena kategori ini muncul ${topCategory.transactionCount} kali, kemungkinan ada transaksi kecil berulang yang perlu dibatasi.`
+      : "";
+
   const dailyLimitAdvice = healthSnapshot.suggestedDailyLimit
     ? ` Untuk menjaga kondisi tetap aman, batas pengeluaran harian yang cukup konservatif sekitar ${formatRupiah(
         healthSnapshot.suggestedDailyLimit
@@ -1024,7 +1303,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
 
   return {
     intent: "SAVING_ADVICE",
-    reply: `${advice} Fokus dulu pada satu kategori terbesar agar perubahan terasa lebih mudah dilakukan.${dailyLimitAdvice}`,
+    reply: `${advice}${repeatedTransactionAdvice} Fokus dulu pada satu kategori terbesar agar perubahan terasa lebih mudah dilakukan.${dailyLimitAdvice}`,
     cards: buildCards([
       {
         label: "Status Finansial",
@@ -1047,7 +1326,8 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
         value: healthSnapshot.suggestedDailyLimit
           ? formatRupiah(healthSnapshot.suggestedDailyLimit)
           : "Belum bisa dihitung"
-      }
+      },
+      ...buildSpendingPatternCards(spendingInsight)
     ]),
     suggestions: [
       "Bandingkan pengeluaran bulan ini dengan bulan lalu",
@@ -1127,13 +1407,14 @@ function buildFinancialResponse(
 function buildFinancialSystemInstruction() {
   return [
     "Kamu adalah Asisten Sakuin, financial helper untuk aplikasi pencatatan keuangan pribadi Sakuin.",
-    "Jawab hanya topik keuangan pribadi di Sakuin: transaksi, pemasukan, pengeluaran, goals, budget, safe balance, cashflow, kesehatan finansial, dan saran hemat ringan.",
+    "Jawab hanya topik keuangan pribadi di Sakuin: transaksi, pemasukan, pengeluaran, goals, budget, safe balance, cashflow, kesehatan finansial, pola pengeluaran, dan saran hemat ringan.",
     "Jawab pertanyaan user secara langsung. Jangan mengalihkan jawaban ke topik lain.",
     "Gunakan recent conversation context untuk memahami follow-up user seperti 'kalau 8 bulan gimana', 'kalau targetnya naik', 'lanjutannya apa', 'lanjutkan', atau 'terus apa'.",
     "Jika follow-up user merujuk pada konteks sebelumnya, pakai konteks sebelumnya selama masih relevan dengan keuangan pribadi.",
     "Jika user meminta lanjutan seperti 'lanjutannya apa' atau 'lanjutkan', lanjutkan pembahasan finansial dari konteks terakhir tanpa menganggapnya out-of-scope.",
     "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
     "Jika FINANCIAL HEALTH SNAPSHOT tersedia, gunakan itu untuk menjawab apakah kondisi user aman, waspada, atau berisiko.",
+    "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
     "Jika user memberi angka skenario seperti gaji, target harga, tenor, atau deadline, angka user mengalahkan data historis Sakuin untuk analisis skenario tersebut.",
     "Jangan menyimpulkan realistis hanya dari cashflow historis Sakuin. Untuk skenario pembelian/kredit, selalu cek rasio kebutuhan bulanan terhadap pendapatan skenario.",
@@ -1143,7 +1424,10 @@ function buildFinancialSystemInstruction() {
     "Jangan mengarang nominal, kategori, transaksi, tanggal, pemasukan, pengeluaran, atau goals yang tidak ada di context atau tidak disebut user.",
     "Boleh melakukan perhitungan sederhana dari angka yang ada di context atau angka yang user berikan.",
     "Jika user bertanya apakah target/goal/kondisi finansial realistis atau aman, wajib beri verdict eksplisit.",
+    "Jika user bertanya boros di mana, jawab kategori prioritas kontrol terlebih dahulu.",
+    "Jika user bertanya pengeluaran naik karena apa, jelaskan kategori terbesar, porsinya, frekuensinya, dan tren dibanding bulan lalu jika tersedia.",
     "Untuk analisis kesehatan finansial, gunakan struktur: status, alasan singkat, angka utama, saran aksi.",
+    "Untuk analisis pola pengeluaran, gunakan struktur: kategori prioritas, nominal/porsi, tren/frekuensi, saran aksi.",
     "Untuk analisis target/goal, gunakan struktur: verdict, hitungan singkat, risiko utama, saran aksi.",
     "Jika user memberi gaji, target nominal, dan jangka waktu, hitung kebutuhan menabung per bulan.",
     "Jika user tidak memberi target nominal atau deadline, jangan mengarang. Minta data yang kurang secara singkat.",
@@ -1171,6 +1455,7 @@ function buildFinancialPrompt(input: {
   scenario?: FinancialScenarioAnalysis;
 }) {
   const healthSnapshot = buildFinancialHealthSnapshot(input.context);
+  const spendingInsight = buildSpendingPatternInsight(input.context);
 
   return [
     "RECENT CONVERSATION CONTEXT:",
@@ -1184,6 +1469,9 @@ function buildFinancialPrompt(input: {
     "",
     "FINANCIAL HEALTH SNAPSHOT:",
     buildFinancialHealthPromptContext(healthSnapshot),
+    "",
+    "SPENDING PATTERN INSIGHT:",
+    buildSpendingPatternPromptContext(spendingInsight),
     "",
     "FINANCIAL SCENARIO ANALYSIS:",
     input.scenario
@@ -1199,19 +1487,22 @@ function buildFinancialPrompt(input: {
     "ANSWER QUALITY RULES:",
     "- Jawab pertanyaan user secara langsung dan on-point.",
     "- Jangan membahas hal yang tidak ditanya kecuali benar-benar relevan.",
-    "- Jika user bertanya aman/tidak, sehat/tidak, atau boros/tidak, mulai jawaban dengan status financial health.",
+    "- Jika user bertanya aman/tidak, sehat/tidak, atau boros/tidak, mulai jawaban dengan status financial health atau spending pattern.",
+    "- Jika user bertanya 'boros di mana', sebutkan kategori prioritas kontrol terlebih dahulu.",
+    "- Jika user bertanya pengeluaran naik karena apa, gunakan spending pattern insight sebagai sumber utama.",
     "- Jika user bertanya realistis/tidak, mulai jawaban dengan verdict.",
     "- Jika user meminta lanjutan, lanjutkan penjelasan finansial terakhir dari conversation context.",
     "- Jika user bertanya target tabungan, hitung kebutuhan tabungan per bulan bila data tersedia.",
     "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
-    "- Angka penting harus konsisten dengan context, financial health snapshot, financial scenario analysis, atau angka yang user berikan.",
+    "- Angka penting harus konsisten dengan context, financial health snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
+    "- Jika spending pattern insight tersedia, jangan melawan kategori prioritas, nominal, porsi, tren, dan saran deterministik dari backend.",
     "- Cards di frontend sudah menampilkan angka utama, jadi reply fokus pada interpretasi dan saran.",
     "",
     "TASK:",
-    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, financial scenario analysis, dan deterministic backend summary.",
-    "Gunakan angka yang sama seperti context/backend summary/health snapshot/scenario analysis atau angka yang disebut user.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, spending pattern insight, financial scenario analysis, dan deterministic backend summary.",
+    "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",
     "Berikan insight dan saran yang langsung bisa dilakukan user."
