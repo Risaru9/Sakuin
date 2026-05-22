@@ -691,16 +691,48 @@ const MULTI_DRAFT_INCOME_KEYWORDS = [
   "di beri",
   "dapat uang",
   "dapet uang",
+  "dapat transfer",
+  "dapet transfer",
   "terima uang",
   "menerima uang",
+  "terima transfer",
+  "menerima transfer",
+  "transfer dari",
+  "uang dari",
+  "kiriman dari",
+  "dikirim",
+  "ditransfer",
+  "di transfer",
   "gaji",
+  "salary",
+  "upah",
   "bonus",
+  "thr",
   "honor",
+  "honorarium",
   "fee",
+  "freelance",
+  "komisi",
+  "insentif",
   "pemasukan",
   "uang masuk",
   "income",
-  "masuk"
+  "refund",
+  "cashback",
+  "reimburse",
+  "reimbursement",
+  "pengembalian dana",
+  "hasil jual"
+];
+
+const MULTI_DRAFT_CONNECTORS = [
+  ",",
+  ";",
+  " dan ",
+  " sama ",
+  " lalu ",
+  " terus ",
+  " kemudian "
 ];
 
 const MULTI_DRAFT_EXPENSE_HINTS = [
@@ -735,6 +767,26 @@ function normalizeMultiDraftText(value: string) {
 
 function hasAnyMultiDraftKeyword(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
+}
+
+function hasMultiDraftConnector(message: string) {
+  const normalizedMessage = ` ${normalizeMultiDraftText(message)} `;
+
+  return MULTI_DRAFT_CONNECTORS.some((connector) =>
+    normalizedMessage.includes(connector)
+  );
+}
+
+function getGlobalDatePhrase(message: string) {
+  const normalizedMessage = normalizeMultiDraftText(message);
+
+  return DATE_KEYWORDS.find((keyword) => normalizedMessage.includes(keyword)) ?? null;
+}
+
+function segmentHasDatePhrase(segment: string) {
+  const normalizedSegment = normalizeMultiDraftText(segment);
+
+  return DATE_KEYWORDS.some((keyword) => normalizedSegment.includes(keyword));
 }
 
 function parseMultiDraftMoneyValue(rawNumber: string, unit: string | undefined) {
@@ -823,15 +875,29 @@ function shouldBuildMultiTransactionDrafts(
   }
 
   const normalizedMessage = normalizeMultiDraftText(message);
-
-  if (hasAnyMultiDraftKeyword(normalizedMessage, MULTI_DRAFT_INCOME_KEYWORDS)) {
-    return false;
-  }
-
-  return hasAnyMultiDraftKeyword(
+  const hasConnector = hasMultiDraftConnector(normalizedMessage);
+  const hasIncomeSignal = hasAnyMultiDraftKeyword(
+    normalizedMessage,
+    MULTI_DRAFT_INCOME_KEYWORDS
+  );
+  const hasExpenseSignal = hasAnyMultiDraftKeyword(
     normalizedMessage,
     MULTI_DRAFT_EXPENSE_HINTS
   );
+
+  if (hasIncomeSignal && hasExpenseSignal) {
+    return true;
+  }
+
+  if (hasExpenseSignal && (hasConnector || matches.length >= 3)) {
+    return true;
+  }
+
+  if (hasIncomeSignal && hasConnector) {
+    return true;
+  }
+
+  return false;
 }
 
 function cleanMultiDraftSegment(segment: string) {
@@ -844,13 +910,24 @@ function buildMultiDraftSegments(
   message: string,
   matches: MultiDraftMoneyMatch[]
 ) {
+  const globalDatePhrase = getGlobalDatePhrase(message);
+
   return matches
     .map((match, index) => {
       const previousMatch = index > 0 ? matches[index - 1] : null;
       const startIndex = previousMatch ? previousMatch.endIndex : 0;
       const endIndex = match.endIndex;
+      const segment = cleanMultiDraftSegment(message.slice(startIndex, endIndex));
 
-      return cleanMultiDraftSegment(message.slice(startIndex, endIndex));
+      if (
+        globalDatePhrase &&
+        segment.length > 0 &&
+        !segmentHasDatePhrase(segment)
+      ) {
+        return `${globalDatePhrase} ${segment}`;
+      }
+
+      return segment;
     })
     .filter((segment) => segment.length > 0);
 }
