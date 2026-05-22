@@ -135,6 +135,23 @@ type SpendingPatternInsight = {
   riskSignals: string[];
 };
 
+type ConsultantActionPriority =
+  | "Aman"
+  | "Pantau"
+  | "Kurangi"
+  | "Tahan"
+  | "Belum bisa dinilai";
+
+type ConsultantActionPlan = {
+  priority: ConsultantActionPriority;
+  mainAction: string;
+  reason: string;
+  nextStep: string;
+  focusCategoryName: string | null;
+  guardrail: string;
+  riskSignals: string[];
+};
+
 function logAiProviderEvent(
   event: "ai.provider_used" | "ai.provider_fallback",
   metadata: Record<string, unknown>
@@ -822,6 +839,170 @@ function buildSpendingPatternPromptContext(insight: SpendingPatternInsight) {
   ].join("\n");
 }
 
+function buildConsultantActionPlan(input: {
+  healthSnapshot: FinancialHealthSnapshot;
+  spendingInsight: SpendingPatternInsight;
+}): ConsultantActionPlan {
+  const { healthSnapshot, spendingInsight } = input;
+  const focusCategoryName = spendingInsight.topCategoryName;
+
+  if (
+    healthSnapshot.status === "Belum bisa dinilai" &&
+    spendingInsight.status === "Belum cukup data"
+  ) {
+    return {
+      priority: "Belum bisa dinilai",
+      mainAction: "Catat pemasukan dan pengeluaran beberapa hari dulu",
+      reason:
+        "Data transaksi belum cukup untuk menentukan tindakan finansial yang benar-benar relevan.",
+      nextStep:
+        "Mulai dari mencatat transaksi harian utama agar pola pemasukan dan pengeluaran bisa terbaca.",
+      focusCategoryName: null,
+      guardrail:
+        "Jangan ambil keputusan besar dari data yang belum lengkap. Kumpulkan data dulu agar analisis lebih akurat.",
+      riskSignals: []
+    };
+  }
+
+  if (healthSnapshot.status === "Berisiko") {
+    return {
+      priority: "Tahan",
+      mainAction: "Tahan pengeluaran non-prioritas terlebih dahulu",
+      reason:
+        "Kondisi finansial sedang berisiko, sehingga tindakan paling aman adalah menjaga cashflow sebelum menambah pengeluaran baru.",
+      nextStep: focusCategoryName
+        ? `Fokus tahan atau kurangi kategori ${focusCategoryName} terlebih dahulu karena kategori itu paling terlihat memengaruhi pengeluaran.`
+        : "Prioritaskan kebutuhan wajib dan hentikan dulu pengeluaran yang bisa ditunda.",
+      focusCategoryName,
+      guardrail:
+        "Jangan menambah cicilan, pembelian besar, atau komitmen finansial baru sampai cashflow kembali stabil.",
+      riskSignals: [
+        ...healthSnapshot.riskSignals,
+        ...spendingInsight.riskSignals
+      ].slice(0, 4)
+    };
+  }
+
+  if (spendingInsight.status === "Meningkat tajam") {
+    return {
+      priority: "Kurangi",
+      mainAction: focusCategoryName
+        ? `Kurangi kategori ${focusCategoryName} terlebih dahulu`
+        : "Kurangi kategori pengeluaran yang naik paling besar",
+      reason:
+        "Ada sinyal kenaikan pengeluaran yang cukup tajam, sehingga prioritasnya adalah menekan sumber kenaikan terbesar.",
+      nextStep: focusCategoryName
+        ? `Tetapkan batas mingguan untuk ${focusCategoryName} dan cek transaksi kecil yang berulang.`
+        : "Tetapkan batas mingguan untuk kategori pengeluaran terbesar.",
+      focusCategoryName,
+      guardrail:
+        "Jangan memangkas semua kategori sekaligus. Fokus ke satu kategori terbesar agar tindakan lebih realistis.",
+      riskSignals: [
+        ...healthSnapshot.riskSignals,
+        ...spendingInsight.riskSignals
+      ].slice(0, 4)
+    };
+  }
+
+  if (
+    healthSnapshot.status === "Waspada ringan" ||
+    spendingInsight.status === "Perlu dikontrol"
+  ) {
+    return {
+      priority: "Kurangi",
+      mainAction: focusCategoryName
+        ? `Kurangi dan pantau kategori ${focusCategoryName}`
+        : "Kurangi pengeluaran non-prioritas",
+      reason:
+        "Kondisi masih bisa dikendalikan, tetapi ada sinyal pengeluaran yang perlu dikontrol sebelum menjadi risiko lebih besar.",
+      nextStep: focusCategoryName
+        ? `Buat batas sederhana untuk ${focusCategoryName}, lalu evaluasi lagi setelah beberapa transaksi berikutnya.`
+        : "Tahan pengeluaran non-prioritas dan pantau cashflow sampai akhir periode.",
+      focusCategoryName,
+      guardrail:
+        "Tetap sisakan ruang untuk kebutuhan wajib dan saldo aman sebelum menambah goal baru.",
+      riskSignals: [
+        ...healthSnapshot.riskSignals,
+        ...spendingInsight.riskSignals
+      ].slice(0, 4)
+    };
+  }
+
+  if (healthSnapshot.status === "Cukup aman") {
+    return {
+      priority: "Pantau",
+      mainAction: "Pantau pengeluaran terbesar sampai akhir bulan",
+      reason:
+        "Cashflow masih cukup aman, tetapi pengeluaran terbesar tetap perlu dipantau agar tidak naik perlahan.",
+      nextStep: focusCategoryName
+        ? `Pantau kategori ${focusCategoryName} dan pertahankan batas pengeluaran yang realistis.`
+        : "Pantau transaksi rutin dan pertahankan cashflow positif.",
+      focusCategoryName,
+      guardrail:
+        "Boleh lanjut dengan rencana keuangan ringan, tetapi hindari keputusan besar tanpa menghitung dampaknya ke cashflow.",
+      riskSignals: [
+        ...healthSnapshot.riskSignals,
+        ...spendingInsight.riskSignals
+      ].slice(0, 4)
+    };
+  }
+
+  return {
+    priority: "Aman",
+    mainAction: "Pertahankan pola pengeluaran saat ini",
+    reason:
+      "Pengeluaran masih relatif terkendali dan belum ada sinyal risiko besar dari data bulan ini.",
+    nextStep: focusCategoryName
+      ? `Tetap pantau kategori ${focusCategoryName}, lalu arahkan surplus ke goal atau saldo aman.`
+      : "Pertahankan pencatatan rutin dan arahkan surplus ke goal atau saldo aman.",
+    focusCategoryName,
+    guardrail:
+      "Tetap hindari pembelian impulsif dan pastikan saldo aman tidak terganggu.",
+    riskSignals: [
+      ...healthSnapshot.riskSignals,
+      ...spendingInsight.riskSignals
+    ].slice(0, 4)
+  };
+}
+
+function buildConsultantActionCards(plan: ConsultantActionPlan): AiChatCard[] {
+  const cards: AiChatCard[] = [
+    {
+      label: "Prioritas Aksi",
+      value: plan.priority
+    },
+    {
+      label: "Langkah Utama",
+      value: plan.mainAction
+    }
+  ];
+
+  if (plan.focusCategoryName) {
+    cards.push({
+      label: "Fokus Kategori",
+      value: plan.focusCategoryName
+    });
+  }
+
+  return cards;
+}
+
+function buildConsultantActionPromptContext(plan: ConsultantActionPlan) {
+  return [
+    `Prioritas aksi: ${plan.priority}`,
+    `Langkah utama: ${plan.mainAction}`,
+    `Alasan: ${plan.reason}`,
+    `Langkah berikutnya: ${plan.nextStep}`,
+    `Fokus kategori: ${plan.focusCategoryName ?? "Tidak ada kategori spesifik"}`,
+    `Guardrail: ${plan.guardrail}`,
+    `Sinyal risiko pendukung: ${
+      plan.riskSignals.length > 0
+        ? plan.riskSignals.join("; ")
+        : "Tidak ada sinyal risiko besar"
+    }`
+  ].join("\n");
+}
+
 function buildScenarioCards(
   scenario: FinancialScenarioAnalysis
 ): AiChatCard[] {
@@ -1013,17 +1194,22 @@ function buildFinancialSummaryResponse(
   context: AiFinancialContext
 ): AiChatResponse {
   const healthSnapshot = buildFinancialHealthSnapshot(context);
+  const spendingInsight = buildSpendingPatternInsight(context);
+  const actionPlan = buildConsultantActionPlan({
+    healthSnapshot,
+    spendingInsight
+  });
 
   if (!hasCurrentMonthTransactions(context)) {
     return {
       intent: "FINANCIAL_SUMMARY",
-      reply:
-        "Belum ada data transaksi bulan ini. Kalau kamu mulai mencatat pemasukan dan pengeluaran, saya bisa bantu merangkum kondisi keuanganmu dengan lebih jelas.",
+      reply: `Belum ada data transaksi bulan ini. Kalau kamu mulai mencatat pemasukan dan pengeluaran, saya bisa bantu merangkum kondisi keuanganmu dengan lebih jelas. Langkah paling aman sekarang: ${actionPlan.mainAction}. ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Status Finansial",
           value: healthSnapshot.status
         },
+        ...buildConsultantActionCards(actionPlan),
         {
           label: "Pemasukan",
           value: formatRupiah(context.currentMonth.totalIncome)
@@ -1056,9 +1242,12 @@ function buildFinancialSummaryResponse(
       context.currentMonth.totalExpense
     )}. Arus kas bersih periode ini ${formatRupiah(
       context.currentMonth.netCashflow
-    )}. ${topCategoryText} ${healthSnapshot.advice}`,
+    )}. ${topCategoryText} Langkah paling aman sekarang: ${
+      actionPlan.mainAction
+    }. ${actionPlan.nextStep}`,
     cards: buildCards([
       ...buildFinancialHealthCards(healthSnapshot),
+      ...buildConsultantActionCards(actionPlan),
       {
         label: "Pemasukan",
         value: formatRupiah(context.currentMonth.totalIncome)
@@ -1264,17 +1453,21 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
   const topCategory = getTopExpenseCategory(context);
   const healthSnapshot = buildFinancialHealthSnapshot(context);
   const spendingInsight = buildSpendingPatternInsight(context);
+  const actionPlan = buildConsultantActionPlan({
+    healthSnapshot,
+    spendingInsight
+  });
 
   if (!topCategory) {
     return {
       intent: "SAVING_ADVICE",
-      reply:
-        "Saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran. Mulai catat transaksi beberapa hari dulu agar saran hematnya lebih relevan.",
+      reply: `Saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran. Langkah paling aman sekarang: ${actionPlan.mainAction}. ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Status Finansial",
           value: healthSnapshot.status
         },
+        ...buildConsultantActionCards(actionPlan),
         {
           label: "Total Pengeluaran",
           value: formatRupiah(context.currentMonth.totalExpense)
@@ -1303,12 +1496,13 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
 
   return {
     intent: "SAVING_ADVICE",
-    reply: `${advice}${repeatedTransactionAdvice} Fokus dulu pada satu kategori terbesar agar perubahan terasa lebih mudah dilakukan.${dailyLimitAdvice}`,
+    reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. ${advice}${repeatedTransactionAdvice} Aksi praktis: ${actionPlan.nextStep}${dailyLimitAdvice}`,
     cards: buildCards([
       {
         label: "Status Finansial",
         value: healthSnapshot.status
       },
+      ...buildConsultantActionCards(actionPlan),
       {
         label: "Kategori Prioritas",
         value: topCategory.name
@@ -1416,6 +1610,7 @@ function buildFinancialSystemInstruction() {
     "Jika FINANCIAL HEALTH SNAPSHOT tersedia, gunakan itu untuk menjawab apakah kondisi user aman, waspada, atau berisiko.",
     "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
+    "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
     "Jika user memberi angka skenario seperti gaji, target harga, tenor, atau deadline, angka user mengalahkan data historis Sakuin untuk analisis skenario tersebut.",
     "Jangan menyimpulkan realistis hanya dari cashflow historis Sakuin. Untuk skenario pembelian/kredit, selalu cek rasio kebutuhan bulanan terhadap pendapatan skenario.",
     "Untuk tenor atau deadline range, bandingkan opsi yang paling berat dan paling ringan.",
@@ -1456,6 +1651,10 @@ function buildFinancialPrompt(input: {
 }) {
   const healthSnapshot = buildFinancialHealthSnapshot(input.context);
   const spendingInsight = buildSpendingPatternInsight(input.context);
+  const actionPlan = buildConsultantActionPlan({
+    healthSnapshot,
+    spendingInsight
+  });
 
   return [
     "RECENT CONVERSATION CONTEXT:",
@@ -1472,6 +1671,9 @@ function buildFinancialPrompt(input: {
     "",
     "SPENDING PATTERN INSIGHT:",
     buildSpendingPatternPromptContext(spendingInsight),
+    "",
+    "CONSULTANT ACTION PLAN:",
+    buildConsultantActionPromptContext(actionPlan),
     "",
     "FINANCIAL SCENARIO ANALYSIS:",
     input.scenario
@@ -1498,10 +1700,12 @@ function buildFinancialPrompt(input: {
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
     "- Jika spending pattern insight tersedia, jangan melawan kategori prioritas, nominal, porsi, tren, dan saran deterministik dari backend.",
+    "- Jika consultant action plan tersedia, jangan melawan prioritas aksi, langkah utama, alasan, dan guardrail deterministik dari backend.",
+    "- Jika user bertanya apa yang harus dilakukan sekarang, mulai dari langkah utama consultant action plan.",
     "- Cards di frontend sudah menampilkan angka utama, jadi reply fokus pada interpretasi dan saran.",
     "",
     "TASK:",
-    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, spending pattern insight, financial scenario analysis, dan deterministic backend summary.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, spending pattern insight, consultant action plan, financial scenario analysis, dan deterministic backend summary.",
     "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",

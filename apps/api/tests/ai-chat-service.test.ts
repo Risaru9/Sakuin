@@ -821,4 +821,145 @@ describe("AI chat service contract", () => {
     expect(serializedResponse).not.toContain("Income note sensitif");
     expect(serializedResponse).not.toContain("Expense note sensitif");
   });
+
+    it("menambahkan consultant action plan pada financial summary berisiko", async () => {
+    const user = await createTestUser("consultant-action-risk");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const expenseCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "Income consultant note sensitif",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: expenseCategory.id,
+          type: "EXPENSE",
+          amount: "1500000",
+          note: "Expense consultant note sensitif",
+          date: getCurrentMonthDate(9)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kondisi keuangan saya bulan ini gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Langkah paling aman sekarang");
+    expect(
+      response.cards.some(
+        (card) => card.label === "Prioritas Aksi" && card.value === "Tahan"
+      )
+    ).toBe(true);
+    expect(
+      response.cards.some(
+        (card) =>
+          card.label === "Langkah Utama" &&
+          card.value.includes("Tahan pengeluaran non-prioritas")
+      )
+    ).toBe(true);
+    expect(serializedResponse).not.toContain("Income consultant note sensitif");
+    expect(serializedResponse).not.toContain("Expense consultant note sensitif");
+  });
+
+  it("mengirim consultant action plan aman ke AI provider untuk saran hemat", async () => {
+    const user = await createTestUser("consultant-action-provider");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Provider consultant income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Provider consultant food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Langkah paling aman sekarang adalah mengurangi kategori Makanan terlebih dahulu dan memasang batas mingguan yang realistis.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "apa yang harus saya lakukan sekarang agar lebih hemat?"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(response.intent).toBe("SAVING_ADVICE");
+    expect(response.reply).toContain("Langkah paling aman");
+    expect(
+      response.cards.some((card) => card.label === "Prioritas Aksi")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Langkah Utama")
+    ).toBe(true);
+    expect(generateText).toHaveBeenCalledTimes(1);
+
+    const providerInput = generateText.mock.calls[0]?.[0];
+    const serializedProviderInput = JSON.stringify(providerInput);
+
+    expect(serializedProviderInput).toContain("CONSULTANT ACTION PLAN");
+    expect(serializedProviderInput).toContain("Prioritas aksi");
+    expect(serializedProviderInput).toContain("Langkah utama");
+    expect(serializedProviderInput).toContain("Makanan");
+    expect(serializedProviderInput).not.toContain(user.id);
+    expect(serializedProviderInput).not.toContain(user.email);
+    expect(serializedProviderInput).not.toContain(
+      "Provider consultant income note sensitif"
+    );
+    expect(serializedProviderInput).not.toContain(
+      "Provider consultant food note sensitif"
+    );
+  });
 });
