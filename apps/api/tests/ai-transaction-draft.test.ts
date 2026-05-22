@@ -217,6 +217,213 @@ describe("AI rule-based transaction draft", () => {
     expect(draft.date.endsWith("-10")).toBe(true);
   });
 
+    it("menurunkan confidence dan memberi warning untuk input tipe ambigu", async () => {
+    const user = await createTestUser("ambiguous-type");
+
+    await createCategory({
+      userId: user.id,
+      name: "Lainnya",
+      type: "EXPENSE"
+    });
+
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "transfer 100 ribu"
+    });
+
+    expect(draft.type).toBe("EXPENSE");
+    expect(draft.amount).toBe("100000");
+    expect(draft.categoryName).toBe("Lainnya");
+    expect(draft.confidence).toBe("low");
+    expect(draft.warnings.join(" ")).toContain("ambigu");
+  });
+
+    it("tidak asal memilih kategori spesifik jika tidak cocok dengan yakin", async () => {
+    const user = await createTestUser("no-random-category");
+
+    await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "bayar sesuatu 100000"
+    });
+
+    expect(draft.type).toBe("EXPENSE");
+    expect(draft.amount).toBe("100000");
+    expect(draft.categoryId).toBeNull();
+    expect(draft.categoryName).toBeNull();
+    expect(draft.missingFields).toContain("categoryId");
+    expect(draft.confidence).toBe("low");
+  });
+
+    it("membuat multi draft natural untuk jajan dan minuman", async () => {
+    const user = await createTestUser("multi-natural-food-drink");
+
+    await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await createCategory({
+      userId: user.id,
+      name: "Minuman",
+      type: "EXPENSE"
+    });
+
+    const drafts = await buildRuleBasedTransactionDrafts({
+      userId: user.id,
+      message: "jajan cilok 5rb, es teh 4rb, gorengan 6rb"
+    });
+
+    expect(drafts).toHaveLength(3);
+
+    expect(drafts[0].type).toBe("EXPENSE");
+    expect(drafts[0].amount).toBe("5000");
+    expect(drafts[0].categoryName).toBe("Makanan");
+    expect(drafts[0].note).toContain("cilok");
+
+    expect(drafts[1].type).toBe("EXPENSE");
+    expect(drafts[1].amount).toBe("4000");
+    expect(drafts[1].categoryName).toBe("Minuman");
+    expect(drafts[1].note).toContain("es teh");
+
+    expect(drafts[2].type).toBe("EXPENSE");
+    expect(drafts[2].amount).toBe("6000");
+    expect(drafts[2].categoryName).toBe("Makanan");
+    expect(drafts[2].note).toContain("gorengan");
+  });
+
+  it("membuat multi draft natural untuk kopi dan parkir", async () => {
+    const user = await createTestUser("multi-natural-coffee-parking");
+
+    await createCategory({
+      userId: user.id,
+      name: "Kopi",
+      type: "EXPENSE"
+    });
+
+    await createCategory({
+      userId: user.id,
+      name: "Transportasi",
+      type: "EXPENSE"
+    });
+
+    const drafts = await buildRuleBasedTransactionDrafts({
+      userId: user.id,
+      message: "habis beli kopi 18 ribu sama parkir 2 ribu"
+    });
+
+    expect(drafts).toHaveLength(2);
+
+    expect(drafts[0].type).toBe("EXPENSE");
+    expect(drafts[0].amount).toBe("18000");
+    expect(drafts[0].categoryName).toBe("Kopi");
+    expect(drafts[0].note).toContain("kopi");
+
+    expect(drafts[1].type).toBe("EXPENSE");
+    expect(drafts[1].amount).toBe("2000");
+    expect(drafts[1].categoryName).toBe("Transportasi");
+    expect(drafts[1].note).toContain("parkir");
+  });
+
+    it("memakai kategori custom kos untuk bayar kos", async () => {
+    const user = await createTestUser("custom-kos");
+
+    const kosCategory = await createCategory({
+      userId: user.id,
+      name: "Kos",
+      type: "EXPENSE"
+    });
+
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "bayar kos 750 ribu tanggal 1"
+    });
+
+    expect(draft.type).toBe("EXPENSE");
+    expect(draft.amount).toBe("750000");
+    expect(draft.categoryId).toBe(kosCategory.id);
+    expect(draft.categoryName).toBe("Kos");
+    expect(draft.missingFields).toEqual([]);
+  });
+
+  it("mendeteksi transport dan tagihan dengan kategori yang tepat", async () => {
+    const user = await createTestUser("expense-category-precision");
+
+    await createCategory({
+      userId: user.id,
+      name: "Transportasi",
+      type: "EXPENSE"
+    });
+
+    await createCategory({
+      userId: user.id,
+      name: "Tagihan",
+      type: "EXPENSE"
+    });
+
+    const parkingDraft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "parkir 2000"
+    });
+
+    const electricityDraft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "token listrik 100 ribu"
+    });
+
+    expect(parkingDraft.type).toBe("EXPENSE");
+    expect(parkingDraft.amount).toBe("2000");
+    expect(parkingDraft.categoryName).toBe("Transportasi");
+
+    expect(electricityDraft.type).toBe("EXPENSE");
+    expect(electricityDraft.amount).toBe("100000");
+    expect(electricityDraft.categoryName).toBe("Tagihan");
+  });
+
+  it("membuat multi draft natural untuk makan dan bensin kemarin", async () => {
+    const user = await createTestUser("multi-natural-yesterday");
+
+    await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await createCategory({
+      userId: user.id,
+      name: "Transportasi",
+      type: "EXPENSE"
+    });
+
+    const drafts = await buildRuleBasedTransactionDrafts({
+      userId: user.id,
+      message: "kemarin makan 20k terus bensin 30k"
+    });
+
+    expect(drafts).toHaveLength(2);
+
+    expect(drafts[0].type).toBe("EXPENSE");
+    expect(drafts[0].amount).toBe("20000");
+    expect(drafts[0].categoryName).toBe("Makanan");
+    expect(drafts[0].note).toContain("makan");
+
+    expect(drafts[1].type).toBe("EXPENSE");
+    expect(drafts[1].amount).toBe("30000");
+    expect(["Transportasi", "Bensin"]).toContain(drafts[1].categoryName);
+    expect(drafts[1].note).toContain("bensin");
+
+    for (const draft of drafts) {
+      expect(draft.date).not.toBe("");
+      expect(draft.missingFields).toEqual([]);
+    }
+  });
+
   it("menghasilkan missingFields jika nominal tidak jelas", async () => {
     const user = await createTestUser("missing-amount");
 
@@ -237,5 +444,33 @@ describe("AI rule-based transaction draft", () => {
     expect(draft.confidence).toBe("low");
     expect(draft.missingFields).toContain("amount");
     expect(draft.warnings.length).toBeGreaterThan(0);
+  });
+
+    it("memprioritaskan custom category user dibanding kategori umum jika cocok jelas", async () => {
+    const user = await createTestUser("custom-category-priority");
+
+    const customCoffeeCategory = await createCategory({
+      userId: user.id,
+      name: "Kopi",
+      type: "EXPENSE"
+    });
+
+    await createCategory({
+      userId: user.id,
+      name: "Minuman",
+      type: "EXPENSE"
+    });
+
+    const draft = await buildRuleBasedTransactionDraft({
+      userId: user.id,
+      message: "beli kopi kenangan 18000"
+    });
+
+    expect(draft.type).toBe("EXPENSE");
+    expect(draft.amount).toBe("18000");
+    expect(draft.categoryId).toBe(customCoffeeCategory.id);
+    expect(draft.categoryName).toBe("Kopi");
+    expect(draft.note).toContain("kenangan");
+    expect(draft.missingFields).toEqual([]);
   });
 });

@@ -29,16 +29,38 @@ const INCOME_KEYWORDS = [
   "di beri",
   "dapat uang",
   "dapet uang",
+  "dapat transfer",
+  "dapet transfer",
   "terima uang",
   "menerima uang",
+  "terima transfer",
+  "menerima transfer",
+  "transfer dari",
+  "uang dari",
+  "kiriman dari",
+  "dikirim",
+  "ditransfer",
+  "di transfer",
   "gaji",
+  "salary",
+  "upah",
   "bonus",
+  "thr",
   "honor",
+  "honorarium",
   "fee",
+  "freelance",
+  "komisi",
+  "insentif",
   "pemasukan",
   "uang masuk",
   "income",
-  "masuk"
+  "refund",
+  "cashback",
+  "reimburse",
+  "reimbursement",
+  "pengembalian dana",
+  "hasil jual"
 ];
 
 const EXPENSE_KEYWORDS = [
@@ -70,6 +92,16 @@ const EXPENSE_KEYWORDS = [
   "keluar"
 ];
 
+const AMBIGUOUS_TRANSACTION_KEYWORDS = [
+  "transfer",
+  "tf",
+  "uang",
+  "saldo",
+  "top up",
+  "topup",
+  "isi saldo"
+];
+
 const CATEGORY_ALIASES: Record<string, string[]> = {
   makanan: [
     "makan",
@@ -82,6 +114,11 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
     "seblak",
     "cimol",
     "cireng",
+    "cilok",
+    "gorengan",
+    "batagor",
+    "siomay",
+    "roti",
     "jajan",
     "snack",
     "cemilan"
@@ -97,41 +134,107 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
     "jus",
     "boba"
   ],
+  kopi: [
+    "kopi",
+    "coffee",
+    "latte",
+    "americano",
+    "cappuccino",
+    "kopi kenangan",
+    "janji jiwa"
+  ],
   transportasi: [
     "transport",
     "transportasi",
     "bensin",
     "bbm",
+    "pertalite",
+    "pertamax",
+    "solar",
     "ojek",
     "gojek",
     "grab",
     "parkir",
-    "tol"
+    "tol",
+    "bus",
+    "kereta",
+    "angkot",
+    "travel"
   ],
   bensin: ["bensin", "bbm", "pertalite", "pertamax", "solar"],
   belanja: ["belanja", "shopping", "alfamart", "indomaret", "market"],
   tagihan: [
     "tagihan",
     "listrik",
+    "token listrik",
+    "pln",
     "air",
+    "pdam",
     "internet",
     "wifi",
+    "indihome",
+    "biznet",
     "pulsa",
-    "paket data"
+    "paket data",
+    "kuota",
+    "bpjs"
   ],
-  kos: ["kos", "kost", "kontrakan", "sewa"],
+  listrik: ["listrik", "token listrik", "pln"],
+  internet: ["internet", "wifi", "indihome", "biznet"],
+  pulsa: ["pulsa", "paket data", "kuota", "data internet"],
+  kos: ["kos", "kost", "kontrakan", "sewa", "sewa kos", "bayar kos"],
   gaji: ["gaji", "salary", "upah"],
   bonus: ["bonus", "thr", "insentif"],
-  hadiah: ["dikasih", "di kasih", "hadiah", "gift", "diberi", "di beri"],
+  hadiah: [
+    "dikasih",
+    "di kasih",
+    "hadiah",
+    "gift",
+    "diberi",
+    "di beri",
+    "dapat uang",
+    "dapet uang",
+    "transfer dari",
+    "uang dari",
+    "kiriman dari",
+    "dikirim",
+    "ditransfer",
+    "di transfer",
+    "ayah",
+    "bapak",
+    "ibu",
+    "mama",
+    "papa",
+    "kakak",
+    "adik",
+    "ortu",
+    "orang tua"
+  ],
   pemasukan: [
     "pemasukan",
     "income",
     "uang masuk",
     "terima uang",
+    "menerima uang",
     "dapat uang",
-    "dapet uang"
-  ]
+    "dapet uang",
+    "transfer dari",
+    "uang dari",
+    "kiriman dari"
+  ],
+  freelance: ["freelance", "fee", "project", "proyek", "honor", "honorarium"],
+  refund: ["refund", "cashback", "reimburse", "reimbursement", "pengembalian dana"]
 };
+
+const SAFE_GENERIC_CATEGORY_NAMES = [
+  "lainnya",
+  "lain-lain",
+  "lain lain",
+  "umum",
+  "other",
+  "others",
+  "misc"
+];
 
 const DATE_KEYWORDS = [
   "hari ini",
@@ -150,6 +253,17 @@ function normalizeText(value: string) {
 
 function includesAnyKeyword(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
+}
+
+function isAmbiguousTransactionType(message: string) {
+  const hasIncomeSignal = includesAnyKeyword(message, INCOME_KEYWORDS);
+  const hasExpenseSignal = includesAnyKeyword(message, EXPENSE_KEYWORDS);
+  const hasAmbiguousSignal = includesAnyKeyword(
+    message,
+    AMBIGUOUS_TRANSACTION_KEYWORDS
+  );
+
+  return hasAmbiguousSignal && !hasIncomeSignal && !hasExpenseSignal;
 }
 
 function toDateOnly(date: Date) {
@@ -293,6 +407,27 @@ function getCategoryAliasScore(message: string, category: DraftCategory) {
   return score;
 }
 
+function findSafeGenericCategory(input: {
+  type: TransactionType;
+  categories: DraftCategory[];
+}) {
+  return (
+    input.categories.find(
+      (category) =>
+        category.type === input.type &&
+        category.userId !== null &&
+        SAFE_GENERIC_CATEGORY_NAMES.includes(normalizeText(category.name))
+    ) ??
+    input.categories.find(
+      (category) =>
+        category.type === input.type &&
+        category.isDefault &&
+        SAFE_GENERIC_CATEGORY_NAMES.includes(normalizeText(category.name))
+    ) ??
+    null
+  );
+}
+
 function findBestCategory(input: {
   message: string;
   type: TransactionType;
@@ -324,20 +459,14 @@ function findBestCategory(input: {
       return a.category.name.localeCompare(b.category.name, "id");
     });
 
-  if (candidates[0]) {
+    if (candidates[0]) {
     return candidates[0].category;
   }
 
-  return (
-    input.categories.find(
-      (category) => category.type === input.type && category.userId !== null
-    ) ??
-    input.categories.find(
-      (category) => category.type === input.type && category.isDefault
-    ) ??
-    input.categories.find((category) => category.type === input.type) ??
-    null
-  );
+  return findSafeGenericCategory({
+    type: input.type,
+    categories: input.categories
+  });
 }
 
 function removeNoiseFromNote(input: {
@@ -370,12 +499,6 @@ function removeNoiseFromNote(input: {
   }
 
   note = note.replace(/\btanggal\s+\d{1,2}\b/gi, " ");
-
-  if (input.category) {
-    const categoryName = normalizeText(input.category.name);
-
-    note = note.replaceAll(categoryName, " ");
-  }
 
   note = note
     .replace(/\brp\b/gi, " ")
@@ -445,6 +568,7 @@ function buildWarnings(input: {
   amount: number | null;
   category: DraftCategory | null;
   note: string | null;
+  typeAmbiguous: boolean;
 }) {
   const warnings: string[] = [];
 
@@ -454,6 +578,12 @@ function buildWarnings(input: {
 
   if (!input.category) {
     warnings.push("Kategori belum cocok, perlu dipilih manual.");
+  }
+
+  if (input.typeAmbiguous) {
+    warnings.push(
+      "Tipe transaksi masih ambigu. Pastikan ini benar-benar pengeluaran atau pemasukan sebelum disimpan."
+    );
   }
 
   if (!input.note) {
@@ -467,7 +597,12 @@ function getConfidence(input: {
   amount: number | null;
   category: DraftCategory | null;
   note: string | null;
+  typeAmbiguous: boolean;
 }) {
+  if (input.typeAmbiguous) {
+    return "low";
+  }
+
   if (input.amount && input.category && input.note) {
     return "high";
   }
@@ -505,23 +640,25 @@ export async function buildRuleBasedTransactionDraft(
         });
 
   const note = removeNoiseFromNote({
-    message: normalizedMessage,
-    amountRaw: selectedMoney?.raw,
-    category: finalCategory
-  });
+  message: normalizedMessage,
+  amountRaw: selectedMoney?.raw,
+  category: finalCategory
+});
 
-  const amount = selectedMoney?.value ?? null;
+const amount = selectedMoney?.value ?? null;
+const typeAmbiguous = isAmbiguousTransactionType(normalizedMessage);
 
-  const missingFields = buildMissingFields({
-    amount,
-    category: finalCategory
-  });
+const missingFields = buildMissingFields({
+  amount,
+  category: finalCategory
+});
 
-  const warnings = buildWarnings({
-    amount,
-    category: finalCategory,
-    note
-  });
+const warnings = buildWarnings({
+  amount,
+  category: finalCategory,
+  note,
+  typeAmbiguous
+});
 
   return {
     type: finalType,
@@ -533,7 +670,8 @@ export async function buildRuleBasedTransactionDraft(
     confidence: getConfidence({
       amount,
       category: finalCategory,
-      note
+      note,
+      typeAmbiguous
     }),
     missingFields,
     warnings
@@ -573,14 +711,21 @@ const MULTI_DRAFT_EXPENSE_HINTS = [
   "tambah",
   "transaksi",
   "pengeluaran",
+  "habis",
   "beli",
+  "membeli",
   "bayar",
   "makan",
   "minum",
   "jajan",
+  "kopi",
+  "es teh",
+  "cilok",
   "cimol",
   "cireng",
+  "gorengan",
   "bensin",
+  "parkir",
   "belanja"
 ];
 
@@ -691,7 +836,7 @@ function shouldBuildMultiTransactionDrafts(
 
 function cleanMultiDraftSegment(segment: string) {
   return normalizeMultiDraftText(segment)
-    .replace(/^(dan|lalu|terus|sama|,|;)+\s+/i, "")
+    .replace(/^(dan|lalu|terus|sama|kemudian|,|;)+\s+/i, "")
     .trim();
 }
 
