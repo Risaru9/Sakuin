@@ -1,5 +1,6 @@
 import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
+import { getAiFinancialContext } from "../ai/ai-financial-context.js";
 import type {
   CategorySummaryItem,
   MonthlyTrendItem,
@@ -320,22 +321,25 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     };
   });
 
+  const aiFinancialContext = await getAiFinancialContext(userId, now);
+
   return {
-    totalIncome: decimalToString(totalIncome),
-    totalExpense: decimalToString(totalExpense),
-    balance: decimalToString(balance),
-    safeBalanceLimit: decimalToString(safeBalanceLimit),
-    isBelowSafeLimit,
+  totalIncome: decimalToString(totalIncome),
+  totalExpense: decimalToString(totalExpense),
+  balance: decimalToString(balance),
+  safeBalanceLimit: decimalToString(safeBalanceLimit),
+  isBelowSafeLimit,
+  safeToSpend: aiFinancialContext.safeToSpend,
 
-    incomeThisMonth: decimalToString(incomeThisMonth),
-    expenseThisMonth: decimalToString(expenseThisMonth),
-    balanceThisMonth: decimalToString(balanceThisMonth),
+  incomeThisMonth: decimalToString(incomeThisMonth),
+  expenseThisMonth: decimalToString(expenseThisMonth),
+  balanceThisMonth: decimalToString(balanceThisMonth),
 
-    transactionCount,
-    recentTransactions: recentTransactions.map(mapRecentTransaction),
+  transactionCount,
+  recentTransactions: recentTransactions.map(mapRecentTransaction),
 
-    expenseByCategory,
-    incomeByCategory,
-    monthlyTrend
+  expenseByCategory,
+  incomeByCategory,
+  monthlyTrend
   };
 }

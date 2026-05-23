@@ -1,4 +1,5 @@
 export type SummaryAmount = string;
+import type { SafeToSpendResult } from "../finance/safe-to-spend.js";
 
 export type RecentTransaction = {
   id: string;
@@ -38,6 +39,7 @@ export type SummaryResponse = {
   balance: SummaryAmount;
   safeBalanceLimit: SummaryAmount;
   isBelowSafeLimit: boolean;
+  safeToSpend: SafeToSpendResult;
 
   incomeThisMonth: SummaryAmount;
   expenseThisMonth: SummaryAmount;

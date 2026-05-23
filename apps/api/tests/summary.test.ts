@@ -20,12 +20,33 @@ type AuthData = {
   };
 };
 
+type SafeToSpendData = {
+  status: "SAFE" | "WATCH" | "HOLD" | "UNKNOWN";
+  spendingPaceStatus: "ON_TRACK" | "WATCH" | "FAST" | "UNKNOWN";
+  netCashflow: number;
+  safeBalanceLimit: number;
+  availableToSpend: number;
+  remainingDays: number;
+  suggestedDailyLimit: number | null;
+  expenseToIncomeRatio: number | null;
+  monthProgressPercent: number;
+  expensePacePercent: number | null;
+  projectedMonthEndExpense: number;
+  projectedNetCashflow: number;
+  topRiskCategoryName: string | null;
+  topRiskCategoryAmount: number;
+  reason: string;
+  action: string;
+  warnings: string[];
+};
+
 type SummaryData = {
   totalIncome: string;
   totalExpense: string;
   balance: string;
   safeBalanceLimit: string;
   isBelowSafeLimit: boolean;
+  safeToSpend: SafeToSpendData;
 
   incomeThisMonth: string;
   expenseThisMonth: string;
@@ -269,6 +290,20 @@ describe("Summary API", () => {
     expect(body.data.safeBalanceLimit).toBe("0.00");
     expect(body.data.isBelowSafeLimit).toBe(false);
 
+    expect(body.data.safeToSpend.status).toBe("WATCH");
+    expect(body.data.safeToSpend.netCashflow).toBe(750000);
+    expect(body.data.safeToSpend.safeBalanceLimit).toBe(0);
+    expect(body.data.safeToSpend.availableToSpend).toBe(750000);
+    expect(body.data.safeToSpend.suggestedDailyLimit).not.toBeNull();
+    expect(body.data.safeToSpend.expenseToIncomeRatio).toBe(25);
+    expect(body.data.safeToSpend.topRiskCategoryName).toBe("Makanan");
+    expect(body.data.safeToSpend.topRiskCategoryAmount).toBe(250000);
+    expect(body.data.safeToSpend.reason).toBeTruthy();
+    expect(body.data.safeToSpend.action).toBeTruthy();
+    expect(body.data.safeToSpend.warnings).toContain(
+      "Kategori Makanan mengambil porsi besar dari total pengeluaran."
+    );
+
     expect(body.data.transactionCount).toBe(2);
     expect(body.data.recentTransactions).toHaveLength(2);
   }, 20000);
@@ -292,6 +327,12 @@ describe("Summary API", () => {
 
     expect(body.data.totalIncome).not.toBe("10000000.00");
     expect(body.data.totalExpense).not.toBe("8250000.00");
+    expect(body.data.safeToSpend.netCashflow).toBe(750000);
+    expect(body.data.safeToSpend.topRiskCategoryName).toBe("Makanan");
+    expect(body.data.safeToSpend.topRiskCategoryAmount).toBe(250000);
+    expect(JSON.stringify(body.data.safeToSpend)).not.toContain(userBId);
+    expect(JSON.stringify(body.data.safeToSpend)).not.toContain(userB.email);
+    expect(JSON.stringify(body.data.safeToSpend)).not.toContain("8000000");
   }, 20000);
 
   it("GET /api/summary menghasilkan incomeByCategory dan expenseByCategory", async () => {
