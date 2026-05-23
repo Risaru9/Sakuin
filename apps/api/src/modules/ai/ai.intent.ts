@@ -166,6 +166,28 @@ const SAVING_ADVICE_KEYWORDS = [
   "aman"
 ];
 
+const SAFE_TO_SPEND_KEYWORDS = [
+  "masih aman belanja",
+  "aman belanja",
+  "masih aman jajan",
+  "aman jajan",
+  "boleh belanja",
+  "boleh jajan",
+  "boleh beli",
+  "sisa aman",
+  "sisa uang aman",
+  "sisa aman bulan ini",
+  "batas harian aman",
+  "limit harian aman",
+  "safe to spend",
+  "aman dipakai",
+  "aman untuk dipakai",
+  "tahan pengeluaran",
+  "harus tahan pengeluaran",
+  "sisa bulan ini harus hemat",
+  "hari ini masih aman"
+];
+
 const GOAL_ANALYSIS_KEYWORDS = [
   "goal",
   "goals",
@@ -351,6 +373,10 @@ function isSavingAdviceMessage(message: string) {
   );
 }
 
+function isSafeToSpendMessage(message: string) {
+  return includesAnyKeyword(message, SAFE_TO_SPEND_KEYWORDS);
+}
+
 export function classifyAiIntent(message: string): AiIntentClassification {
   const normalizedMessage = normalizeMessage(message);
 
@@ -362,6 +388,14 @@ export function classifyAiIntent(message: string): AiIntentClassification {
     return createClassification(
       "TRANSACTION_DRAFT",
       "transaction_draft_detected",
+      "high"
+    );
+  }
+
+    if (isSafeToSpendMessage(normalizedMessage)) {
+    return createClassification(
+      "SAVING_ADVICE",
+      "safe_to_spend_detected",
       "high"
     );
   }

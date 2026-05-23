@@ -788,6 +788,146 @@ function buildSpendingPatternCards(
   return cards;
 }
 
+function formatSafeToSpendStatus(
+  status: AiFinancialContext["safeToSpend"]["status"]
+) {
+  if (status === "SAFE") {
+    return "Aman";
+  }
+
+  if (status === "WATCH") {
+    return "Waspada";
+  }
+
+  if (status === "HOLD") {
+    return "Tahan";
+  }
+
+  return "Belum bisa dinilai";
+}
+
+function formatSpendingPaceStatus(
+  status: AiFinancialContext["safeToSpend"]["spendingPaceStatus"]
+) {
+  if (status === "ON_TRACK") {
+    return "Sesuai ritme";
+  }
+
+  if (status === "WATCH") {
+    return "Perlu dipantau";
+  }
+
+  if (status === "FAST") {
+    return "Terlalu cepat";
+  }
+
+  return "Belum bisa dinilai";
+}
+
+function buildSafeToSpendCards(context: AiFinancialContext): AiChatCard[] {
+  const safeToSpend = context.safeToSpend;
+
+  const cards: AiChatCard[] = [
+    {
+      label: "Status Aman Pakai",
+      value: formatSafeToSpendStatus(safeToSpend.status)
+    },
+    {
+      label: "Sisa Aman Pakai",
+      value: formatRupiah(safeToSpend.availableToSpend)
+    },
+    {
+      label: "Ritme Pengeluaran",
+      value: formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)
+    }
+  ];
+
+  if (safeToSpend.suggestedDailyLimit !== null) {
+    cards.push({
+      label: "Limit Harian Aman",
+      value: formatRupiah(safeToSpend.suggestedDailyLimit)
+    });
+  }
+
+  if (safeToSpend.topRiskCategoryName) {
+    cards.push({
+      label: "Kategori Risiko",
+      value: safeToSpend.topRiskCategoryName
+    });
+  }
+
+  return cards;
+}
+
+function buildSafeToSpendPromptContext(context: AiFinancialContext) {
+  const safeToSpend = context.safeToSpend;
+
+  return [
+    `Status safe-to-spend: ${formatSafeToSpendStatus(safeToSpend.status)}`,
+    `Status ritme pengeluaran: ${formatSpendingPaceStatus(
+      safeToSpend.spendingPaceStatus
+    )}`,
+    `Sisa aman untuk dipakai bulan ini: ${formatRupiah(
+      safeToSpend.availableToSpend
+    )}`,
+    `Batas harian aman: ${
+      safeToSpend.suggestedDailyLimit === null
+        ? "Belum bisa dihitung"
+        : formatRupiah(safeToSpend.suggestedDailyLimit)
+    }`,
+    `Sisa hari periode berjalan: ${safeToSpend.remainingDays}`,
+    `Rasio pengeluaran terhadap pemasukan: ${formatRatio(
+      safeToSpend.expenseToIncomeRatio
+    )}`,
+    `Progress bulan berjalan: ${safeToSpend.monthProgressPercent}%`,
+    `Pace pengeluaran terhadap pemasukan: ${
+      safeToSpend.expensePacePercent === null
+        ? "Belum bisa dinilai"
+        : `${safeToSpend.expensePacePercent}%`
+    }`,
+    `Proyeksi pengeluaran akhir bulan: ${formatRupiah(
+      safeToSpend.projectedMonthEndExpense
+    )}`,
+    `Proyeksi cashflow akhir bulan: ${formatRupiah(
+      safeToSpend.projectedNetCashflow
+    )}`,
+    `Kategori risiko utama: ${
+      safeToSpend.topRiskCategoryName ?? "Belum ada"
+    }`,
+    `Nominal kategori risiko utama: ${formatRupiah(
+      safeToSpend.topRiskCategoryAmount
+    )}`,
+    `Alasan safe-to-spend: ${safeToSpend.reason}`,
+    `Aksi safe-to-spend: ${safeToSpend.action}`,
+    `Warning safe-to-spend: ${
+      safeToSpend.warnings.length > 0
+        ? safeToSpend.warnings.join("; ")
+        : "Tidak ada warning besar"
+    }`
+  ].join("\n");
+}
+
+function buildSafeToSpendReplySegment(context: AiFinancialContext) {
+  const safeToSpend = context.safeToSpend;
+
+  if (safeToSpend.status === "UNKNOWN") {
+    return "Safe-to-spend belum bisa dihitung akurat karena data transaksi bulan ini belum cukup.";
+  }
+
+  const dailyLimitText =
+    safeToSpend.suggestedDailyLimit === null
+      ? "Batas harian aman belum bisa dihitung."
+      : `Batas harian aman sekitar ${formatRupiah(
+          safeToSpend.suggestedDailyLimit
+        )}.`;
+
+  return `Status aman pakai: ${formatSafeToSpendStatus(
+    safeToSpend.status
+  )}. Sisa aman bulan ini ${formatRupiah(
+    safeToSpend.availableToSpend
+  )}. ${dailyLimitText}`;
+}
+
 function buildFinancialHealthPromptContext(snapshot: FinancialHealthSnapshot) {
   return [
     `Status kesehatan finansial: ${snapshot.status}`,
@@ -1378,6 +1518,7 @@ function buildFinancialSummaryResponse(
           value: healthSnapshot.status
         },
         ...buildConsultantActionCards(actionPlan),
+        ...buildSafeToSpendCards(context),
         {
           label: "Pemasukan",
           value: formatRupiah(context.currentMonth.totalIncome)
@@ -1413,6 +1554,7 @@ function buildFinancialSummaryResponse(
     )}. ${topCategoryText} Aksi: ${actionPlan.nextStep}`,
     cards: buildCards([
       ...buildFinancialHealthCards(healthSnapshot),
+      ...buildSafeToSpendCards(context),
       ...buildConsultantActionCards(actionPlan),
       {
         label: "Pemasukan",
@@ -1648,6 +1790,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
     healthSnapshot,
     spendingInsight
   });
+  const safeToSpendText = buildSafeToSpendReplySegment(context);
   const suggestions = buildDynamicFinancialSuggestions({
   intent: "SAVING_ADVICE",
   healthSnapshot,
@@ -1658,13 +1801,14 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
   if (!topCategory) {
     return {
       intent: "SAVING_ADVICE",
-      reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: kumpulkan data transaksi dulu. Alasan: saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran hemat yang akurat. Aksi: ${actionPlan.nextStep}`,
+      reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: kumpulkan data transaksi dulu. Alasan: saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran hemat yang akurat. ${safeToSpendText} Aksi: ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Status Finansial",
           value: healthSnapshot.status
         },
         ...buildConsultantActionCards(actionPlan),
+        ...buildSafeToSpendCards(context),
         {
           label: "Total Pengeluaran",
           value: formatRupiah(context.currentMonth.totalExpense)
@@ -1694,8 +1838,8 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
   return {
     intent: "SAVING_ADVICE",
     reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: fokus ke ${
-      topCategory.name
-    } dulu. Alasan: ${categoryAdvice}${repeatedTransactionAdvice} Aksi: ${
+    topCategory.name
+    } dulu. Alasan: ${categoryAdvice}${repeatedTransactionAdvice} ${safeToSpendText} Aksi: ${
       actionPlan.nextStep
     }${dailyLimitAdvice}`,
     cards: buildCards([
@@ -1704,6 +1848,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
         value: healthSnapshot.status
       },
       ...buildConsultantActionCards(actionPlan),
+      ...buildSafeToSpendCards(context),
       {
         label: "Kategori Prioritas",
         value: topCategory.name
@@ -1811,6 +1956,7 @@ function buildFinancialSystemInstruction() {
     "Jika user meminta lanjutan seperti 'lanjutannya apa' atau 'lanjutkan', lanjutkan pembahasan finansial dari konteks terakhir tanpa menganggapnya out-of-scope.",
     "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
     "Jika FINANCIAL HEALTH SNAPSHOT tersedia, gunakan itu untuk menjawab apakah kondisi user aman, waspada, atau berisiko.",
+    "Jika SAFE-TO-SPEND SNAPSHOT tersedia, gunakan itu untuk menjawab apakah user masih aman belanja, sisa aman bulan ini, batas harian aman, apakah harus tahan pengeluaran, dan ritme pengeluaran.",
     "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
@@ -1823,6 +1969,7 @@ function buildFinancialSystemInstruction() {
     "Boleh melakukan perhitungan sederhana dari angka yang ada di context atau angka yang user berikan.",
     "Jika user bertanya apakah target/goal/kondisi finansial realistis atau aman, wajib beri verdict eksplisit.",
     "Jika user bertanya boros di mana, jawab kategori prioritas kontrol terlebih dahulu.",
+    "Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, jawab dari SAFE-TO-SPEND SNAPSHOT terlebih dahulu.",
     "Jika user bertanya pengeluaran naik karena apa, jelaskan kategori terbesar, porsinya, frekuensinya, dan tren dibanding bulan lalu jika tersedia.",
     "Untuk analisis kesehatan finansial, gunakan struktur: status, alasan singkat, angka utama, saran aksi.",
     "Untuk analisis pola pengeluaran, gunakan struktur: kategori prioritas, nominal/porsi, tren/frekuensi, saran aksi.",
@@ -1878,6 +2025,9 @@ function buildFinancialPrompt(input: {
     "FINANCIAL HEALTH SNAPSHOT:",
     buildFinancialHealthPromptContext(healthSnapshot),
     "",
+    "SAFE-TO-SPEND SNAPSHOT:",
+    buildSafeToSpendPromptContext(input.context),
+    "",
     "SPENDING PATTERN INSIGHT:",
     buildSpendingPatternPromptContext(spendingInsight),
     "",
@@ -1912,6 +2062,8 @@ function buildFinancialPrompt(input: {
     "- Angka penting harus konsisten dengan context, financial health snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
+    "- Jika safe-to-spend snapshot tersedia, jangan melawan status, sisa aman, batas harian aman, pace, alasan, dan aksi deterministik dari backend.",
+    "- Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, mulai dari status safe-to-spend, sisa aman, dan batas harian aman.",
     "- Jika spending pattern insight tersedia, jangan melawan kategori prioritas, nominal, porsi, tren, dan saran deterministik dari backend.",
     "- Jika consultant action plan tersedia, jangan melawan prioritas aksi, langkah utama, alasan, dan guardrail deterministik dari backend.",
     "- Jika user bertanya apa yang harus dilakukan sekarang, mulai dari langkah utama consultant action plan.",
@@ -1921,7 +2073,7 @@ function buildFinancialPrompt(input: {
     "- Hindari saran generik. Saran harus spesifik terhadap kategori, kondisi cashflow, pola pengeluaran, atau goal user.",
     "",
     "TASK:",
-    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, spending pattern insight, consultant action plan, financial scenario analysis, dan deterministic backend summary.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, dan deterministic backend summary.",
     "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",

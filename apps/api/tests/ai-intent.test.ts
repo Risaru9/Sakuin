@@ -95,6 +95,20 @@ describe("AI intent classifier", () => {
     expect(result.intent).toBe("TRANSACTION_DRAFT");
     expect(result.reason).toBe("transaction_draft_detected");
   });
+  
+    it("mengklasifikasikan pertanyaan safe-to-spend sebagai saving advice", () => {
+    const result = classifyAiIntent("hari ini saya masih aman belanja berapa?");
+
+    expect(result.intent).toBe("SAVING_ADVICE");
+    expect(result.reason).toBe("safe_to_spend_detected");
+  });
+
+  it("mengklasifikasikan pertanyaan batas harian aman sebagai saving advice", () => {
+    const result = classifyAiIntent("batas harian aman saya berapa?");
+
+    expect(result.intent).toBe("SAVING_ADVICE");
+    expect(result.reason).toBe("safe_to_spend_detected");
+  });
 
   it("menolak pertanyaan di luar finansial", () => {
     const result = classifyAiIntent("buatkan cerpen tentang kerajaan");

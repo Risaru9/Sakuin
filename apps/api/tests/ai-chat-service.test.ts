@@ -1273,4 +1273,164 @@ describe("AI chat service contract", () => {
     expect(serializedResponse).not.toContain("Dynamic spending income note sensitif");
     expect(serializedResponse).not.toContain("Dynamic spending food note sensitif");
   });
+
+    it("menjawab pertanyaan safe-to-spend dengan sisa aman dan batas harian", async () => {
+    const user = await createTestUser("safe-to-spend-response");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Safe spend income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Safe spend food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "hari ini saya masih aman belanja berapa?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("SAVING_ADVICE");
+    expect(response.reply).toContain("Status aman pakai");
+    expect(response.reply).toContain("Sisa aman bulan ini");
+    expect(response.reply).toContain("Batas harian aman");
+    expect(response.cards.some((card) => card.label === "Status Aman Pakai")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Sisa Aman Pakai")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Limit Harian Aman")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Ritme Pengeluaran")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Kategori Risiko")).toBe(
+      true
+    );
+    expect(serializedResponse).not.toContain("Safe spend income note sensitif");
+    expect(serializedResponse).not.toContain("Safe spend food note sensitif");
+  });
+
+  it("mengirim safe-to-spend snapshot aman ke AI provider", async () => {
+    const user = await createTestUser("safe-to-spend-provider");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Safe provider income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Safe provider food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Prioritas: belanja masih perlu dibatasi. Alasan: safe-to-spend menunjukkan masih ada sisa aman, tetapi kategori Makanan menjadi risiko utama. Aksi: ikuti batas harian aman dan hindari transaksi jajan berulang.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "batas harian aman saya berapa?"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(response.intent).toBe("SAVING_ADVICE");
+    expect(generateText).toHaveBeenCalledTimes(1);
+    expect(response.cards.some((card) => card.label === "Status Aman Pakai")).toBe(
+      true
+    );
+    expect(response.cards.some((card) => card.label === "Sisa Aman Pakai")).toBe(
+      true
+    );
+
+    const providerInput = generateText.mock.calls[0]?.[0];
+    const serializedProviderInput = JSON.stringify(providerInput);
+
+    expect(serializedProviderInput).toContain("SAFE-TO-SPEND SNAPSHOT");
+    expect(serializedProviderInput).toContain("Status safe-to-spend");
+    expect(serializedProviderInput).toContain("Sisa aman untuk dipakai bulan ini");
+    expect(serializedProviderInput).toContain("Batas harian aman");
+    expect(serializedProviderInput).toContain("Aksi safe-to-spend");
+    expect(serializedProviderInput).not.toContain(user.id);
+    expect(serializedProviderInput).not.toContain(user.email);
+    expect(serializedProviderInput).not.toContain("Safe provider income note sensitif");
+    expect(serializedProviderInput).not.toContain("Safe provider food note sensitif");
+  });
 });
