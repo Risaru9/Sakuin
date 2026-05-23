@@ -534,6 +534,16 @@ function SafeToSpendCard({
 
   const style = getSafeToSpendStatusStyle(safeToSpend.status);
   const hasDailyLimit = safeToSpend.suggestedDailyLimit !== null;
+  const primaryWarning = safeToSpend.warnings[0] ?? null;
+
+  const headline =
+    safeToSpend.status === "SAFE"
+      ? "Kamu masih punya ruang aman untuk pengeluaran bulan ini."
+      : safeToSpend.status === "WATCH"
+        ? "Masih bisa dipakai, tapi pengeluaran perlu dipantau."
+        : safeToSpend.status === "HOLD"
+          ? "Sebaiknya tahan pengeluaran non-prioritas dulu."
+          : "Catat transaksi dulu agar batas aman bisa dihitung.";
 
   return (
     <div
@@ -542,13 +552,25 @@ function SafeToSpendCard({
         style.card
       ].join(" ")}
     >
-      <div className="mb-5 flex items-start justify-between gap-3">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={["text-base font-black", style.text].join(" ")}>
-            Aman Dipakai
-          </p>
-          <p className={["mt-1 text-xs font-semibold leading-5", style.muted].join(" ")}>
-            Estimasi ruang aman untuk pengeluaran bulan ini.
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={["text-base font-black", style.text].join(" ")}>
+              Aman Dipakai
+            </p>
+
+            <span
+              className={[
+                "inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1",
+                style.badge
+              ].join(" ")}
+            >
+              {formatSafeToSpendStatus(safeToSpend.status)}
+            </span>
+          </div>
+
+          <p className={["mt-2 text-xs font-semibold leading-5", style.muted].join(" ")}>
+            {headline}
           </p>
         </div>
 
@@ -568,74 +590,74 @@ function SafeToSpendCard({
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span
-          className={[
-            "inline-flex rounded-full px-3 py-1 text-xs font-black ring-1",
-            style.badge
-          ].join(" ")}
-        >
-          {formatSafeToSpendStatus(safeToSpend.status)}
-        </span>
+      <div className="rounded-[1.25rem] bg-white/80 p-4 ring-1 ring-white/80">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+          Sisa aman bulan ini
+        </p>
+        <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+          {formatRupiah(safeToSpend.availableToSpend)}
+        </p>
 
-        <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-xs font-black text-slate-700 ring-1 ring-white/80">
-          {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
-        </span>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-slate-50 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+              Limit harian
+            </p>
+            <p className="mt-1 text-sm font-black text-slate-950">
+              {hasDailyLimit
+                ? `${formatCompactRupiah(safeToSpend.suggestedDailyLimit)} / hari`
+                : "-"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+              Sisa hari
+            </p>
+            <p className="mt-1 text-sm font-black text-slate-950">
+              {safeToSpend.remainingDays} hari
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
-          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-            Sisa Aman
-          </p>
-          <p className="mt-1 text-lg font-black text-slate-950">
-            {formatCompactRupiah(safeToSpend.availableToSpend)}
+      <div className="mt-3 grid gap-2">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 px-3 py-2.5 ring-1 ring-white/80">
+          <p className="text-xs font-bold text-slate-500">Ritme pengeluaran</p>
+          <p className="shrink-0 text-right text-xs font-black text-slate-950">
+            {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
-          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-            Limit Harian
-          </p>
-          <p className="mt-1 text-lg font-black text-slate-950">
-            {hasDailyLimit
-              ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
-              : "-"}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
-          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-            Sisa Hari
-          </p>
-          <p className="mt-1 text-lg font-black text-slate-950">
-            {safeToSpend.remainingDays} hari
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
-          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-            Risiko
-          </p>
-          <p className="mt-1 truncate text-lg font-black text-slate-950">
-            {safeToSpend.topRiskCategoryName ?? "-"}
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 px-3 py-2.5 ring-1 ring-white/80">
+          <p className="text-xs font-bold text-slate-500">Fokus kontrol</p>
+          <p className="min-w-0 truncate text-right text-xs font-black text-slate-950">
+            {safeToSpend.topRiskCategoryName ?? "Belum ada"}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl bg-white/70 p-4 ring-1 ring-white/80">
+      <div className="mt-3 rounded-2xl bg-white/70 p-4 ring-1 ring-white/80">
         <p className="text-xs font-black text-slate-950">Aksi utama</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
           {safeToSpend.action}
         </p>
       </div>
 
-      {safeToSpend.warnings.length > 0 ? (
+      {primaryWarning ? (
         <div className="mt-3 flex items-start gap-2 rounded-2xl bg-white/70 p-3 text-xs font-semibold leading-5 text-slate-600 ring-1 ring-white/80">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{safeToSpend.warnings[0]}</p>
+          <p>{primaryWarning}</p>
         </div>
       ) : null}
+
+      <Link
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-xs font-black text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-slate-950/20"
+        to="/asisten"
+      >
+        <MessageSquare className="h-4 w-4" />
+        Tanya Asisten
+      </Link>
     </div>
   );
 }
@@ -969,13 +991,6 @@ export function DashboardPage() {
             <SafeToSpendCard
               safeToSpend={summary?.safeToSpend}
               isLoading={isLoadingSummary}
-            />
-
-            <DashboardGoalsCard
-              goals={goals}
-              isLoading={isLoadingGoals}
-              error={goalsError}
-              priorityGoalId={dashboardPriorityGoalId}
             />
 
             <DashboardGoalsCard
