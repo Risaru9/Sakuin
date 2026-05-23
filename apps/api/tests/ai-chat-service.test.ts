@@ -866,7 +866,10 @@ describe("AI chat service contract", () => {
     const serializedResponse = JSON.stringify(response);
 
     expect(response.intent).toBe("FINANCIAL_SUMMARY");
-    expect(response.reply).toContain("Langkah paling aman sekarang");
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+    expect(response.reply).toContain("Tahan pengeluaran non-prioritas");
     expect(
       response.cards.some(
         (card) => card.label === "Prioritas Aksi" && card.value === "Tahan"
@@ -1047,5 +1050,122 @@ describe("AI chat service contract", () => {
     expect(serializedProviderInput).not.toContain(
       "Style guideline food note sensitif"
     );
+  });
+
+    it("menghasilkan deterministic financial summary dengan pola prioritas alasan aksi", async () => {
+    const user = await createTestUser("deterministic-summary-copy");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const expenseCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "Summary copy income note sensitif",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: expenseCategory.id,
+          type: "EXPENSE",
+          amount: "1500000",
+          note: "Summary copy expense note sensitif",
+          date: getCurrentMonthDate(9)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kondisi keuangan saya bulan ini gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Status kesehatan keuanganmu");
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+    expect(
+      response.cards.some((card) => card.label === "Prioritas Aksi")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Langkah Utama")
+    ).toBe(true);
+    expect(serializedResponse).not.toContain("Summary copy income note sensitif");
+    expect(serializedResponse).not.toContain("Summary copy expense note sensitif");
+  });
+
+  it("menghasilkan deterministic spending analysis dengan prioritas kategori dan aksi", async () => {
+    const user = await createTestUser("deterministic-spending-copy");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Spending copy income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Spending copy food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "saya boros di mana bulan ini?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("SPENDING_ANALYSIS");
+    expect(response.reply).toContain("Pengeluaranmu bulan ini");
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+    expect(response.reply).toContain("Makanan");
+    expect(
+      response.cards.some((card) => card.label === "Prioritas Aksi")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Langkah Utama")
+    ).toBe(true);
+    expect(serializedResponse).not.toContain("Spending copy income note sensitif");
+    expect(serializedResponse).not.toContain("Spending copy food note sensitif");
   });
 });

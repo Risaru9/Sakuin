@@ -1203,7 +1203,7 @@ function buildFinancialSummaryResponse(
   if (!hasCurrentMonthTransactions(context)) {
     return {
       intent: "FINANCIAL_SUMMARY",
-      reply: `Belum ada data transaksi bulan ini. Kalau kamu mulai mencatat pemasukan dan pengeluaran, saya bisa bantu merangkum kondisi keuanganmu dengan lebih jelas. Langkah paling aman sekarang: ${actionPlan.mainAction}. ${actionPlan.nextStep}`,
+      reply: `Belum ada data transaksi bulan ini. Prioritas: ${actionPlan.mainAction}. Alasan: data transaksi belum cukup untuk menilai kesehatan finansial secara akurat. Aksi: ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Status Finansial",
@@ -1236,15 +1236,13 @@ function buildFinancialSummaryResponse(
 
   return {
     intent: "FINANCIAL_SUMMARY",
-    reply: `Status kesehatan keuanganmu bulan ini: ${healthSnapshot.status}. ${healthSnapshot.reason} Bulan ini pemasukanmu ${formatRupiah(
+    reply: `Status kesehatan keuanganmu bulan ini: ${healthSnapshot.status}. Prioritas: ${actionPlan.mainAction}. Alasan: ${healthSnapshot.reason} Bulan ini pemasukanmu ${formatRupiah(
       context.currentMonth.totalIncome
-    )} dan pengeluaranmu ${formatRupiah(
+    )}, pengeluaranmu ${formatRupiah(
       context.currentMonth.totalExpense
-    )}. Arus kas bersih periode ini ${formatRupiah(
+    )}, dan arus kas bersihmu ${formatRupiah(
       context.currentMonth.netCashflow
-    )}. ${topCategoryText} Langkah paling aman sekarang: ${
-      actionPlan.mainAction
-    }. ${actionPlan.nextStep}`,
+    )}. ${topCategoryText} Aksi: ${actionPlan.nextStep}`,
     cards: buildCards([
       ...buildFinancialHealthCards(healthSnapshot),
       ...buildConsultantActionCards(actionPlan),
@@ -1271,12 +1269,15 @@ function buildSpendingAnalysisResponse(
   const topCategory = getTopExpenseCategory(context);
   const healthSnapshot = buildFinancialHealthSnapshot(context);
   const spendingInsight = buildSpendingPatternInsight(context);
+  const actionPlan = buildConsultantActionPlan({
+    healthSnapshot,
+    spendingInsight
+  });
 
   if (toNumber(context.currentMonth.totalExpense) <= 0 || !topCategory) {
     return {
       intent: "SPENDING_ANALYSIS",
-      reply:
-        "Belum ada data pengeluaran bulan ini. Setelah kamu mencatat beberapa pengeluaran, saya bisa bantu melihat kategori terbesar, pola boros, dan prioritas pengeluaran yang perlu dikontrol.",
+      reply: `Belum ada data pengeluaran bulan ini. Prioritas: ${actionPlan.mainAction}. Alasan: pola boros belum bisa dibaca tanpa transaksi pengeluaran yang cukup. Aksi: ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Total Pengeluaran",
@@ -1286,6 +1287,7 @@ function buildSpendingAnalysisResponse(
           label: "Status Finansial",
           value: healthSnapshot.status
         },
+        ...buildConsultantActionCards(actionPlan),
         ...buildSpendingPatternCards(spendingInsight),
         {
           label: "Jumlah Transaksi",
@@ -1314,15 +1316,15 @@ function buildSpendingAnalysisResponse(
     intent: "SPENDING_ANALYSIS",
     reply: `Pengeluaranmu bulan ini ${formatRupiah(
       context.currentMonth.totalExpense
-    )}. Prioritas pengeluaran yang perlu kamu pantau adalah ${
+    )}. Prioritas: pantau ${
       topCategory.name
-    }. Total kategori ini ${formatRupiah(topCategory.amount)}, sekitar ${
-      topCategory.percentageOfExpense
-    }% dari seluruh pengeluaran bulan ini dan muncul dalam ${
+    } terlebih dahulu. Alasan: kategori ini menjadi pengeluaran terbesar, totalnya ${formatRupiah(
+      topCategory.amount
+    )}, sekitar ${topCategory.percentageOfExpense}% dari seluruh pengeluaran, dan muncul dalam ${
       topCategory.transactionCount
-    } transaksi. ${expenseTrendText} ${categoryTrendText} Pola pengeluaran saat ini: ${
-      spendingInsight.status
-    }. ${spendingInsight.advice}`,
+    } transaksi. ${expenseTrendText} ${categoryTrendText} Aksi: ${
+      actionPlan.nextStep
+    }`,
     cards: buildCards([
       {
         label: "Total Pengeluaran",
@@ -1332,6 +1334,7 @@ function buildSpendingAnalysisResponse(
         label: "Status Finansial",
         value: healthSnapshot.status
       },
+      ...buildConsultantActionCards(actionPlan),
       {
         label: "Rasio Pengeluaran",
         value: formatRatio(healthSnapshot.expenseToIncomeRatio)
@@ -1461,7 +1464,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
   if (!topCategory) {
     return {
       intent: "SAVING_ADVICE",
-      reply: `Saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran. Langkah paling aman sekarang: ${actionPlan.mainAction}. ${actionPlan.nextStep}`,
+      reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: kumpulkan data transaksi dulu. Alasan: saya belum menemukan kategori pengeluaran yang cukup untuk diberi saran hemat yang akurat. Aksi: ${actionPlan.nextStep}`,
       cards: buildCards([
         {
           label: "Status Finansial",
@@ -1478,25 +1481,29 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
     };
   }
 
-  const advice =
+  const categoryAdvice =
     topCategory.percentageOfIncome >= 30
-      ? `Kategori ${topCategory.name} cukup besar dibanding pemasukanmu bulan ini. Coba turunkan secara bertahap, misalnya mulai dari 10% lebih rendah minggu depan.`
-      : `Kategori ${topCategory.name} adalah pengeluaran terbesar bulan ini. Coba pasang batas mingguan agar pengeluaran tetap lebih mudah dikontrol.`;
+      ? `Kategori ${topCategory.name} cukup besar dibanding pemasukanmu bulan ini.`
+      : `Kategori ${topCategory.name} adalah pengeluaran terbesar bulan ini.`;
 
   const repeatedTransactionAdvice =
     topCategory.transactionCount >= 8
-      ? ` Karena kategori ini muncul ${topCategory.transactionCount} kali, kemungkinan ada transaksi kecil berulang yang perlu dibatasi.`
+      ? ` Kategori ini muncul ${topCategory.transactionCount} kali, jadi kemungkinan ada transaksi kecil berulang yang perlu dibatasi.`
       : "";
 
   const dailyLimitAdvice = healthSnapshot.suggestedDailyLimit
-    ? ` Untuk menjaga kondisi tetap aman, batas pengeluaran harian yang cukup konservatif sekitar ${formatRupiah(
+    ? ` Batas harian yang cukup konservatif sekitar ${formatRupiah(
         healthSnapshot.suggestedDailyLimit
       )}.`
     : "";
 
   return {
     intent: "SAVING_ADVICE",
-    reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. ${advice}${repeatedTransactionAdvice} Aksi praktis: ${actionPlan.nextStep}${dailyLimitAdvice}`,
+    reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: fokus ke ${
+      topCategory.name
+    } dulu. Alasan: ${categoryAdvice}${repeatedTransactionAdvice} Aksi: ${
+      actionPlan.nextStep
+    }${dailyLimitAdvice}`,
     cards: buildCards([
       {
         label: "Status Finansial",

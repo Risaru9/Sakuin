@@ -1205,7 +1205,10 @@ describe("AI chat service contract", () => {
     const serializedResponse = JSON.stringify(response);
 
     expect(response.intent).toBe("FINANCIAL_SUMMARY");
-    expect(response.reply).toContain("Langkah paling aman sekarang");
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+    expect(response.reply).toContain("Tahan pengeluaran non-prioritas");
 
     expect(
       response.cards.some(
