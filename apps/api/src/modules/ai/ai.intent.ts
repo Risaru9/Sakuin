@@ -94,7 +94,17 @@ const TRANSACTION_DRAFT_BLOCKING_CONTEXT_KEYWORDS = [
   "dalam 8 bulan",
   "dalam 12 bulan",
   "dalam 24 bulan",
-  "dalam 32 bulan"
+  "dalam 32 bulan",
+  "boleh",
+  "boleh beli",
+  "boleh belanja",
+  "boleh jajan",
+  "kalau saya",
+  "kalau aku",
+  "kalau beli",
+  "kalau belanja",
+  "kalau jajan",
+  "masih aman",
 ];
 
 const SPENDING_ANALYSIS_KEYWORDS = [
@@ -278,7 +288,18 @@ const PURCHASE_PLANNING_CONTEXT_KEYWORDS = [
   "budget",
   "anggaran",
   "tabungan",
-  "menabung"
+  "menabung",
+  "boleh",
+  "sebaiknya",
+  "sekarang",
+  "hari ini",
+  "bulan ini",
+  "gimana",
+  "bagaimana",
+  "aman nggak",
+  "aman gak",
+  "masih aman",
+  "sisa aman",
 ];
 
 function normalizeMessage(message: string) {

@@ -12,6 +12,11 @@ import {
   type FinancialScenarioAnalysis
 } from "./ai-financial-scenario.js";
 import {
+  analyzePurchaseDecision,
+  buildPurchaseDecisionPromptContext,
+  type PurchaseDecisionAnalysis
+} from "./ai-purchase-decision.js";
+import {
   getAiFinancialContext,
   type AiFinancialContext
 } from "./ai-financial-context.js";
@@ -1390,6 +1395,100 @@ function enrichResponseWithScenario(
   };
 }
 
+function buildPurchaseDecisionCards(
+  decision: PurchaseDecisionAnalysis
+): AiChatCard[] {
+  if (!decision.detected) {
+    return [];
+  }
+
+  const cards: AiChatCard[] = [
+    {
+      label: "Keputusan Pembelian",
+      value:
+        decision.status === "SAFE_TO_BUY"
+          ? "Relatif aman"
+          : decision.status === "LIMITED"
+            ? "Boleh terbatas"
+            : decision.status === "HOLD"
+              ? "Tahan dulu"
+              : "Belum bisa dinilai"
+    },
+    {
+      label: "Nominal Pembelian",
+      value:
+        decision.purchaseAmount === null
+          ? "Tidak terdeteksi"
+          : formatRupiah(decision.purchaseAmount)
+    },
+    {
+      label: "Risk Level",
+      value: decision.riskLevel
+    },
+    {
+      label: "Sisa Setelah Beli",
+      value:
+        decision.availableToSpendAfterPurchase === null
+          ? "Belum bisa dihitung"
+          : formatRupiah(decision.availableToSpendAfterPurchase)
+    },
+    {
+      label: "Status Aman Pakai",
+      value: formatSafeToSpendStatus(decision.safeToSpendStatus)
+    }
+  ];
+
+  if (decision.suggestedDailyLimit !== null) {
+    cards.push({
+      label: "Limit Harian Aman",
+      value: formatRupiah(decision.suggestedDailyLimit)
+    });
+  }
+
+  if (decision.topRiskCategoryName) {
+    cards.push({
+      label: "Fokus Risiko",
+      value: decision.topRiskCategoryName
+    });
+  }
+
+  return cards;
+}
+
+function buildPurchaseDecisionReply(decision: PurchaseDecisionAnalysis) {
+  const priority =
+    decision.status === "SAFE_TO_BUY"
+      ? "pembelian ini relatif aman"
+      : decision.status === "LIMITED"
+        ? "pembelian ini boleh dipertimbangkan secara terbatas"
+        : decision.status === "HOLD"
+          ? "tahan pembelian ini dulu"
+          : "data pembelian belum cukup untuk dinilai";
+
+  return `Prioritas: ${priority}. Alasan: ${decision.reason} Aksi: ${decision.action}`;
+}
+
+function enrichResponseWithPurchaseDecision(
+  response: AiChatResponse,
+  decision: PurchaseDecisionAnalysis
+): AiChatResponse {
+  if (!decision.detected) {
+    return response;
+  }
+
+  return {
+    ...response,
+    reply: buildPurchaseDecisionReply(decision),
+    cards: mergeUniqueCards(response.cards, buildPurchaseDecisionCards(decision)),
+    suggestions: buildUniqueSuggestions([
+      "Berapa batas harian yang aman?",
+      "Kalau saya tunda gimana?",
+      "Saya harus kurangi apa dulu?",
+      "Lihat ringkasan keuangan"
+    ])
+  };
+}
+
 function buildOutOfScopeResponse(): AiChatResponse {
   return {
     intent: "OUT_OF_SCOPE",
@@ -1959,7 +2058,8 @@ function buildFinancialSystemInstruction() {
     "Jika SAFE-TO-SPEND SNAPSHOT tersedia, gunakan itu untuk menjawab apakah user masih aman belanja, sisa aman bulan ini, batas harian aman, apakah harus tahan pengeluaran, dan ritme pengeluaran.",
     "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
-    "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
+    "Jika PURCHASE DECISION IMPACT tersedia, gunakan itu untuk menjawab apakah pembelian langsung seperti beli barang, jajan, atau belanja hari ini aman dilakukan.",
+    "Untuk purchase decision, mulai dari keputusan deterministik: relatif aman, boleh terbatas, tahan dulu, atau belum bisa dinilai.",
     "Jika user memberi angka skenario seperti gaji, target harga, tenor, atau deadline, angka user mengalahkan data historis Sakuin untuk analisis skenario tersebut.",
     "Jangan menyimpulkan realistis hanya dari cashflow historis Sakuin. Untuk skenario pembelian/kredit, selalu cek rasio kebutuhan bulanan terhadap pendapatan skenario.",
     "Untuk tenor atau deadline range, bandingkan opsi yang paling berat dan paling ringan.",
@@ -2004,6 +2104,7 @@ function buildFinancialPrompt(input: {
   baseResponse: AiChatResponse;
   history?: AiChatHistoryMessage[];
   scenario?: FinancialScenarioAnalysis;
+  purchaseDecision?: PurchaseDecisionAnalysis;
 }) {
   const healthSnapshot = buildFinancialHealthSnapshot(input.context);
   const spendingInsight = buildSpendingPatternInsight(input.context);
@@ -2034,10 +2135,15 @@ function buildFinancialPrompt(input: {
     "CONSULTANT ACTION PLAN:",
     buildConsultantActionPromptContext(actionPlan),
     "",
-    "FINANCIAL SCENARIO ANALYSIS:",
+        "FINANCIAL SCENARIO ANALYSIS:",
     input.scenario
       ? buildFinancialScenarioPromptContext(input.scenario)
       : "Tidak ada skenario finansial terstruktur terdeteksi.",
+    "",
+    "PURCHASE DECISION IMPACT:",
+    input.purchaseDecision
+      ? buildPurchaseDecisionPromptContext(input.purchaseDecision)
+      : "Tidak ada keputusan pembelian langsung yang perlu dianalisis.",
     "",
     "SAFE FINANCIAL CONTEXT:",
     JSON.stringify(input.context, null, 2),
@@ -2061,6 +2167,8 @@ function buildFinancialPrompt(input: {
     "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
     "- Angka penting harus konsisten dengan context, financial health snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
+    "- Jika purchase decision impact tersedia, jangan melawan keputusan pembelian, risk level, sisa aman setelah pembelian, alasan, dan aksi deterministik dari backend.",
+    "- Jika user bertanya apakah boleh membeli/jajan/belanja sekarang, mulai dari purchase decision impact.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
     "- Jika safe-to-spend snapshot tersedia, jangan melawan status, sisa aman, batas harian aman, pace, alasan, dan aksi deterministik dari backend.",
     "- Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, mulai dari status safe-to-spend, sisa aman, dan batas harian aman.",
@@ -2097,6 +2205,7 @@ async function enhanceFinancialResponseWithAi(input: {
   baseResponse: AiChatResponse;
   history?: AiChatHistoryMessage[];
   scenario?: FinancialScenarioAnalysis;
+  purchaseDecision?: PurchaseDecisionAnalysis;
 }) {
   if (env.NODE_ENV === "test" && !input.provider) {
     return input.baseResponse;
@@ -2119,7 +2228,8 @@ async function enhanceFinancialResponseWithAi(input: {
         context: input.context,
         baseResponse: input.baseResponse,
         history: input.history,
-        scenario: input.scenario
+        scenario: input.scenario,
+        purchaseDecision: input.purchaseDecision
       }),
       model,
       maxOutputTokens: modelPlan.maxOutputTokens,
@@ -2234,10 +2344,18 @@ export async function getAiChatResponse(
     normalizedMessage,
     input.history ?? []
   );
+  const purchaseDecision = analyzePurchaseDecision(
+    normalizedMessage,
+    financialContext,
+    input.history ?? []
+  );
 
-  const baseResponse = enrichResponseWithScenario(
-    buildFinancialResponse(classification.intent, financialContext),
-    scenario
+  const baseResponse = enrichResponseWithPurchaseDecision(
+    enrichResponseWithScenario(
+      buildFinancialResponse(classification.intent, financialContext),
+      scenario
+    ),
+    purchaseDecision
   );
 
   return enhanceFinancialResponseWithAi({
@@ -2247,6 +2365,7 @@ export async function getAiChatResponse(
     context: financialContext,
     baseResponse,
     history: input.history,
-    scenario
+    scenario,
+    purchaseDecision
   });
 }

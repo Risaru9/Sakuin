@@ -137,4 +137,19 @@ describe("AI intent classifier", () => {
     expect(result.intent).toBe("OUT_OF_SCOPE");
     expect(result.reason).toBe("empty_message");
   });
+
+    it("mengklasifikasikan keputusan pembelian langsung sebagai goal analysis", () => {
+    const result = classifyAiIntent(
+      "kalau saya beli sepatu 500 ribu sekarang aman nggak?"
+    );
+
+    expect(result.intent).toBe("GOAL_ANALYSIS");
+    expect(result.reason).toBe("goal_or_purchase_feasibility_detected");
+  });
+
+  it("tidak menganggap pertanyaan boleh jajan sebagai transaction draft", () => {
+    const result = classifyAiIntent("boleh jajan 100 ribu hari ini?");
+
+    expect(result.intent).not.toBe("TRANSACTION_DRAFT");
+  });
 });
