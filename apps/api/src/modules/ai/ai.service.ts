@@ -41,6 +41,8 @@ const TRANSACTION_DRAFT_SUGGESTIONS = [
   "Lihat pengeluaran bulan ini"
 ];
 
+const MAX_RESPONSE_SUGGESTIONS = 4;
+
 const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
   "kalau",
   "kalo",
@@ -1003,6 +1005,165 @@ function buildConsultantActionPromptContext(plan: ConsultantActionPlan) {
   ].join("\n");
 }
 
+function buildUniqueSuggestions(suggestions: string[]) {
+  const seenSuggestions = new Set<string>();
+  const uniqueSuggestions: string[] = [];
+
+  for (const suggestion of suggestions) {
+    const normalizedSuggestion = suggestion.trim();
+
+    if (!normalizedSuggestion) {
+      continue;
+    }
+
+    const suggestionKey = normalizedSuggestion.toLowerCase();
+
+    if (seenSuggestions.has(suggestionKey)) {
+      continue;
+    }
+
+    seenSuggestions.add(suggestionKey);
+    uniqueSuggestions.push(normalizedSuggestion);
+
+    if (uniqueSuggestions.length >= MAX_RESPONSE_SUGGESTIONS) {
+      break;
+    }
+  }
+
+  return uniqueSuggestions;
+}
+
+function buildActionPlanSuggestions(input: {
+  actionPlan: ConsultantActionPlan;
+  spendingInsight: SpendingPatternInsight;
+}) {
+  const focusCategoryName = input.spendingInsight.topCategoryName;
+
+  if (input.actionPlan.priority === "Tahan") {
+    return [
+      "Saya harus kurangi apa dulu?",
+      "Berapa batas harian yang aman?",
+      "Bandingkan dengan bulan lalu",
+      "Lihat pengeluaran bulan ini"
+    ];
+  }
+
+  if (input.actionPlan.priority === "Kurangi") {
+    return [
+      focusCategoryName
+        ? `Buat batas ${focusCategoryName}`
+        : "Buat batas pengeluaran",
+      "Berapa batas harian yang aman?",
+      "Bandingkan dengan bulan lalu",
+      "Lihat ringkasan keuangan"
+    ];
+  }
+
+  if (input.actionPlan.priority === "Pantau") {
+    return [
+      "Apa yang harus saya pantau?",
+      "Bandingkan dengan bulan lalu",
+      "Target tabungan saya realistis?",
+      "Lihat ringkasan keuangan"
+    ];
+  }
+
+  if (input.actionPlan.priority === "Aman") {
+    return [
+      "Apakah target tabungan saya aman?",
+      "Boleh tambah goal baru?",
+      "Bandingkan dengan bulan lalu",
+      "Lihat ringkasan keuangan"
+    ];
+  }
+
+  return [
+    "Pengeluaran saya bulan ini gimana?",
+    "Catat makan ayam geprek 15000",
+    "Target tabungan saya realistis?",
+    "Lihat ringkasan keuangan"
+  ];
+}
+
+function buildDynamicFinancialSuggestions(input: {
+  intent: Exclude<AiIntent, "OUT_OF_SCOPE" | "TRANSACTION_DRAFT">;
+  healthSnapshot: FinancialHealthSnapshot;
+  spendingInsight: SpendingPatternInsight;
+  actionPlan: ConsultantActionPlan;
+}) {
+  const focusCategoryName = input.spendingInsight.topCategoryName;
+  const actionSuggestions = buildActionPlanSuggestions({
+    actionPlan: input.actionPlan,
+    spendingInsight: input.spendingInsight
+  });
+
+  if (input.intent === "FINANCIAL_SUMMARY") {
+    return buildUniqueSuggestions([
+      ...actionSuggestions,
+      "Saya boros di mana?",
+      "Kasih saran hemat",
+      "Target tabungan saya realistis?"
+    ]);
+  }
+
+  if (input.intent === "SPENDING_ANALYSIS") {
+    return buildUniqueSuggestions([
+      "Kasih saran hemat",
+      focusCategoryName
+        ? `Kenapa ${focusCategoryName} besar?`
+        : "Kenapa pengeluaran saya besar?",
+      "Bandingkan bulan ini dan bulan lalu",
+      "Berapa batas harian yang aman?",
+      ...actionSuggestions
+    ]);
+  }
+
+  if (input.intent === "SAVING_ADVICE") {
+    return buildUniqueSuggestions([
+      focusCategoryName
+        ? `Buat batas ${focusCategoryName}`
+        : "Buat batas pengeluaran",
+      "Berapa batas harian yang aman?",
+      "Bandingkan dengan bulan lalu",
+      "Lihat pengeluaran bulan ini",
+      ...actionSuggestions
+    ]);
+  }
+
+  if (input.intent === "INCOME_ANALYSIS") {
+    return buildUniqueSuggestions([
+      "Bandingkan pemasukan bulan ini",
+      "Lihat ringkasan keuangan",
+      "Saya boros di mana?",
+      "Catat dikasih kakak 100000"
+    ]);
+  }
+
+  if (input.intent === "PERIOD_COMPARISON") {
+    return buildUniqueSuggestions([
+      "Kenapa pengeluaran berubah?",
+      "Kategori mana yang naik?",
+      "Kasih saran hemat",
+      "Lihat ringkasan keuangan",
+      ...actionSuggestions
+    ]);
+  }
+
+  if (input.intent === "GOAL_ANALYSIS") {
+    return buildUniqueSuggestions([
+      "Target ini realistis?",
+      "Berapa harus nabung per bulan?",
+      "Apa risikonya?",
+      "Kasih skenario lebih aman"
+    ]);
+  }
+
+  return buildUniqueSuggestions([
+    ...actionSuggestions,
+    ...DEFAULT_SUGGESTIONS
+  ]);
+}
+
 function buildScenarioCards(
   scenario: FinancialScenarioAnalysis
 ): AiChatCard[] {
@@ -1200,6 +1361,13 @@ function buildFinancialSummaryResponse(
     spendingInsight
   });
 
+  const suggestions = buildDynamicFinancialSuggestions({
+  intent: "FINANCIAL_SUMMARY",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
+
   if (!hasCurrentMonthTransactions(context)) {
     return {
       intent: "FINANCIAL_SUMMARY",
@@ -1223,7 +1391,7 @@ function buildFinancialSummaryResponse(
           value: String(context.currentMonth.transactionCount)
         }
       ]),
-      suggestions: DEFAULT_SUGGESTIONS
+      suggestions
     };
   }
 
@@ -1259,7 +1427,7 @@ function buildFinancialSummaryResponse(
         value: String(context.currentMonth.transactionCount)
       }
     ]),
-    suggestions: DEFAULT_SUGGESTIONS
+    suggestions
   };
 }
 
@@ -1273,6 +1441,13 @@ function buildSpendingAnalysisResponse(
     healthSnapshot,
     spendingInsight
   });
+
+  const suggestions = buildDynamicFinancialSuggestions({
+  intent: "SPENDING_ANALYSIS",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
 
   if (toNumber(context.currentMonth.totalExpense) <= 0 || !topCategory) {
     return {
@@ -1294,7 +1469,7 @@ function buildSpendingAnalysisResponse(
           value: String(context.currentMonth.transactionCount)
         }
       ]),
-      suggestions: DEFAULT_SUGGESTIONS
+      suggestions
     };
   }
 
@@ -1349,18 +1524,26 @@ function buildSpendingAnalysisResponse(
       },
       ...buildSpendingPatternCards(spendingInsight)
     ]),
-    suggestions: [
-      "Kasih saran hemat",
-      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
-      "Lihat ringkasan keuangan",
-      "Target tabungan saya realistis?"
-    ]
+      suggestions
   };
 }
 
 function buildIncomeAnalysisResponse(
   context: AiFinancialContext
 ): AiChatResponse {
+const healthSnapshot = buildFinancialHealthSnapshot(context);
+const spendingInsight = buildSpendingPatternInsight(context);
+const actionPlan = buildConsultantActionPlan({
+  healthSnapshot,
+  spendingInsight
+});
+const suggestions = buildDynamicFinancialSuggestions({
+  intent: "INCOME_ANALYSIS",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
+
   if (toNumber(context.currentMonth.totalIncome) <= 0) {
     return {
       intent: "INCOME_ANALYSIS",
@@ -1376,7 +1559,7 @@ function buildIncomeAnalysisResponse(
           value: formatPercent(context.monthComparison.incomeChangePercent)
         }
       ]),
-      suggestions: DEFAULT_SUGGESTIONS
+      suggestions
     };
   }
 
@@ -1401,7 +1584,7 @@ function buildIncomeAnalysisResponse(
         value: formatPercent(context.monthComparison.incomeChangePercent)
       }
     ]),
-    suggestions: DEFAULT_SUGGESTIONS
+    suggestions
   };
 }
 
@@ -1410,6 +1593,16 @@ function buildPeriodComparisonResponse(
 ): AiChatResponse {
   const healthSnapshot = buildFinancialHealthSnapshot(context);
   const spendingInsight = buildSpendingPatternInsight(context);
+  const actionPlan = buildConsultantActionPlan({
+  healthSnapshot,
+  spendingInsight
+});
+const suggestions = buildDynamicFinancialSuggestions({
+  intent: "PERIOD_COMPARISON",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
 
   return {
     intent: "PERIOD_COMPARISON",
@@ -1443,12 +1636,7 @@ function buildPeriodComparisonResponse(
       },
       ...buildSpendingPatternCards(spendingInsight)
     ]),
-    suggestions: [
-      "Saya boros di mana?",
-      "Kasih saran hemat",
-      "Lihat ringkasan keuangan",
-      "Analisis pemasukan saya"
-    ]
+    suggestions
   };
 }
 
@@ -1460,6 +1648,12 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
     healthSnapshot,
     spendingInsight
   });
+  const suggestions = buildDynamicFinancialSuggestions({
+  intent: "SAVING_ADVICE",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
 
   if (!topCategory) {
     return {
@@ -1477,7 +1671,7 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
         },
         ...buildSpendingPatternCards(spendingInsight)
       ]),
-      suggestions: DEFAULT_SUGGESTIONS
+      suggestions
     };
   }
 
@@ -1530,16 +1724,23 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
       },
       ...buildSpendingPatternCards(spendingInsight)
     ]),
-    suggestions: [
-      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
-      "Lihat pengeluaran bulan ini",
-      "Analisis goals saya",
-      "Lihat ringkasan keuangan"
-    ]
+    suggestions
   };
 }
 
 function buildGoalAnalysisResponse(context: AiFinancialContext): AiChatResponse {
+const healthSnapshot = buildFinancialHealthSnapshot(context);
+const spendingInsight = buildSpendingPatternInsight(context);
+const actionPlan = buildConsultantActionPlan({
+  healthSnapshot,
+  spendingInsight
+});
+const suggestions = buildDynamicFinancialSuggestions({
+  intent: "GOAL_ANALYSIS",
+  healthSnapshot,
+  spendingInsight,
+  actionPlan
+});
   if (context.goals.totalGoals === 0) {
     return {
       intent: "GOAL_ANALYSIS",
@@ -1551,7 +1752,7 @@ function buildGoalAnalysisResponse(context: AiFinancialContext): AiChatResponse 
           value: "0"
         }
       ]),
-      suggestions: DEFAULT_SUGGESTIONS
+      suggestions
     };
   }
 
@@ -1576,12 +1777,7 @@ function buildGoalAnalysisResponse(context: AiFinancialContext): AiChatResponse 
         value: String(context.goals.overdueGoals)
       }
     ]),
-    suggestions: [
-      "Kasih saran hemat",
-      "Lihat ringkasan keuangan",
-      "Bandingkan pengeluaran bulan ini dengan bulan lalu",
-      "Saya boros di mana?"
-    ]
+    suggestions
   };
 }
 

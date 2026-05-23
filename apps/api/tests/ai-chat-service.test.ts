@@ -1168,4 +1168,109 @@ describe("AI chat service contract", () => {
     expect(serializedResponse).not.toContain("Spending copy income note sensitif");
     expect(serializedResponse).not.toContain("Spending copy food note sensitif");
   });
+
+    it("menghasilkan dynamic suggestions saat financial summary berisiko", async () => {
+    const user = await createTestUser("dynamic-suggestions-risk");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const expenseCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "Dynamic suggestion income note sensitif",
+          date: getCurrentMonthDate(2)
+        },
+        {
+          userId: user.id,
+          categoryId: expenseCategory.id,
+          type: "EXPENSE",
+          amount: "1500000",
+          note: "Dynamic suggestion expense note sensitif",
+          date: getCurrentMonthDate(9)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kondisi keuangan saya bulan ini gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.suggestions).toHaveLength(4);
+    expect(response.suggestions).toContain("Saya harus kurangi apa dulu?");
+    expect(response.suggestions).toContain("Berapa batas harian yang aman?");
+    expect(response.suggestions).toContain("Bandingkan dengan bulan lalu");
+    expect(serializedResponse).not.toContain("Dynamic suggestion income note sensitif");
+    expect(serializedResponse).not.toContain("Dynamic suggestion expense note sensitif");
+  });
+
+  it("menghasilkan dynamic suggestions sesuai kategori spending analysis", async () => {
+    const user = await createTestUser("dynamic-suggestions-spending");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Dynamic spending income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Dynamic spending food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "saya boros di mana bulan ini?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("SPENDING_ANALYSIS");
+    expect(response.suggestions).toHaveLength(4);
+    expect(response.suggestions).toContain("Kasih saran hemat");
+    expect(response.suggestions).toContain("Kenapa Makanan besar?");
+    expect(response.suggestions).toContain("Bandingkan bulan ini dan bulan lalu");
+    expect(response.suggestions).toContain("Berapa batas harian yang aman?");
+    expect(serializedResponse).not.toContain("Dynamic spending income note sensitif");
+    expect(serializedResponse).not.toContain("Dynamic spending food note sensitif");
+  });
 });
