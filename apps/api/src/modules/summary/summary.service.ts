@@ -1,6 +1,7 @@
 import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { getAiFinancialContext } from "../ai/ai-financial-context.js";
+import { buildFinancialCheckup } from "../finance/financial-checkup.js";
 import type {
   CategorySummaryItem,
   MonthlyTrendItem,
@@ -322,6 +323,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   });
 
   const aiFinancialContext = await getAiFinancialContext(userId, now);
+  const financialCheckup = buildFinancialCheckup(aiFinancialContext);
 
   return {
   totalIncome: decimalToString(totalIncome),
@@ -330,6 +332,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   safeBalanceLimit: decimalToString(safeBalanceLimit),
   isBelowSafeLimit,
   safeToSpend: aiFinancialContext.safeToSpend,
+  financialCheckup,
 
   incomeThisMonth: decimalToString(incomeThisMonth),
   expenseThisMonth: decimalToString(expenseThisMonth),

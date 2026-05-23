@@ -40,6 +40,30 @@ type SafeToSpendData = {
   warnings: string[];
 };
 
+type FinancialCheckupData = {
+  status: "GOOD" | "WATCH" | "RISK" | "UNKNOWN";
+  priority: "MAINTAIN" | "MONITOR" | "REDUCE" | "HOLD" | "COLLECT_DATA";
+  title: string;
+  headline: string;
+  focusCategoryName: string | null;
+  focusCategoryAmount: number;
+  reason: string;
+  action: string;
+  warnings: string[];
+  metrics: {
+    totalIncome: number;
+    totalExpense: number;
+    netCashflow: number;
+    expenseToIncomeRatio: number | null;
+    expenseChangePercent: number | null;
+    safeToSpendStatus: "SAFE" | "WATCH" | "HOLD" | "UNKNOWN";
+    spendingPaceStatus: "ON_TRACK" | "WATCH" | "FAST" | "UNKNOWN";
+    availableToSpend: number;
+    suggestedDailyLimit: number | null;
+    projectedNetCashflow: number;
+  };
+};
+
 type SummaryData = {
   totalIncome: string;
   totalExpense: string;
@@ -47,6 +71,7 @@ type SummaryData = {
   safeBalanceLimit: string;
   isBelowSafeLimit: boolean;
   safeToSpend: SafeToSpendData;
+  financialCheckup: FinancialCheckupData;
 
   incomeThisMonth: string;
   expenseThisMonth: string;
@@ -304,6 +329,23 @@ describe("Summary API", () => {
       "Kategori Makanan mengambil porsi besar dari total pengeluaran."
     );
 
+    expect(body.data.financialCheckup.status).toBe("WATCH");
+    expect(body.data.financialCheckup.priority).toBe("REDUCE");
+    expect(body.data.financialCheckup.title).toBe("Checkup Keuangan Waspada");
+    expect(body.data.financialCheckup.focusCategoryName).toBe("Makanan");
+    expect(body.data.financialCheckup.focusCategoryAmount).toBe(250000);
+    expect(body.data.financialCheckup.headline).toContain("Makanan");
+    expect(body.data.financialCheckup.reason).toContain("Kategori Makanan");
+    expect(body.data.financialCheckup.action).toContain("Makanan");
+    expect(body.data.financialCheckup.metrics.totalIncome).toBe(1000000);
+    expect(body.data.financialCheckup.metrics.totalExpense).toBe(250000);
+    expect(body.data.financialCheckup.metrics.netCashflow).toBe(750000);
+    expect(body.data.financialCheckup.metrics.expenseToIncomeRatio).toBe(25);
+    expect(body.data.financialCheckup.metrics.safeToSpendStatus).toBe("WATCH");
+    expect(body.data.financialCheckup.warnings).toContain(
+      "Kategori Makanan mengambil porsi besar dari total pengeluaran."
+    );
+
     expect(body.data.transactionCount).toBe(2);
     expect(body.data.recentTransactions).toHaveLength(2);
   }, 20000);
@@ -333,6 +375,13 @@ describe("Summary API", () => {
     expect(JSON.stringify(body.data.safeToSpend)).not.toContain(userBId);
     expect(JSON.stringify(body.data.safeToSpend)).not.toContain(userB.email);
     expect(JSON.stringify(body.data.safeToSpend)).not.toContain("8000000");
+
+    expect(body.data.financialCheckup.metrics.netCashflow).toBe(750000);
+    expect(body.data.financialCheckup.focusCategoryName).toBe("Makanan");
+    expect(body.data.financialCheckup.focusCategoryAmount).toBe(250000);
+    expect(JSON.stringify(body.data.financialCheckup)).not.toContain(userBId);
+    expect(JSON.stringify(body.data.financialCheckup)).not.toContain(userB.email);
+    expect(JSON.stringify(body.data.financialCheckup)).not.toContain("8000000");
   }, 20000);
 
   it("GET /api/summary menghasilkan incomeByCategory dan expenseByCategory", async () => {
