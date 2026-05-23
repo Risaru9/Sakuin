@@ -1507,4 +1507,196 @@ describe("AI chat service contract", () => {
       "API safe provider food note sensitif"
     );
   });
+
+    it("mengembalikan purchase decision cards dari AI chat API contract", async () => {
+    const user = await createTestUser("api-purchase-decision-impact");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const shoppingCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "API purchase income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: shoppingCategory.id,
+          type: "EXPENSE",
+          amount: "700000",
+          note: "API purchase expense note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kalau saya beli sepatu 500 ribu sekarang aman nggak?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("GOAL_ANALYSIS");
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+
+    expect(
+      response.cards.some(
+        (card) => card.label === "Keputusan Pembelian"
+      )
+    ).toBe(true);
+
+    expect(
+      response.cards.some(
+        (card) =>
+          card.label === "Nominal Pembelian" && card.value.includes("500.000")
+      )
+    ).toBe(true);
+
+    expect(
+      response.cards.some((card) => card.label === "Risk Level")
+    ).toBe(true);
+
+    expect(
+      response.cards.some((card) => card.label === "Sisa Setelah Beli")
+    ).toBe(true);
+
+    expect(
+      response.cards.some((card) => card.label === "Status Aman Pakai")
+    ).toBe(true);
+
+    expect(response.intent).not.toBe("TRANSACTION_DRAFT");
+    expect(response.suggestions.length).toBeLessThanOrEqual(4);
+
+    expect(serializedResponse).not.toContain(user.id);
+    expect(serializedResponse).not.toContain(user.email);
+    expect(serializedResponse).not.toContain("API purchase income note sensitif");
+    expect(serializedResponse).not.toContain("API purchase expense note sensitif");
+  });
+
+  it("mengirim purchase decision impact aman ke AI provider dari API contract", async () => {
+    const user = await createTestUser("api-purchase-decision-provider");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "API purchase provider income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1000000",
+          note: "API purchase provider food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Prioritas: pembelian jaket ini boleh dipertimbangkan secara terbatas. Alasan: nominalnya masih berada dalam sisa aman, tetapi lebih besar dari limit harian aman. Aksi: tunda sebagian pengeluaran lain atau turunkan nominal pembelian.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "boleh beli jaket 300 ribu hari ini?"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(["GOAL_ANALYSIS", "SAVING_ADVICE"]).toContain(response.intent);
+    expect(response.intent).not.toBe("TRANSACTION_DRAFT");
+    expect(generateText).toHaveBeenCalledTimes(1);
+
+    expect(
+      response.cards.some((card) => card.label === "Keputusan Pembelian")
+    ).toBe(true);
+
+    expect(
+      response.cards.some((card) => card.label === "Nominal Pembelian")
+    ).toBe(true);
+
+    expect(
+      response.cards.some((card) => card.label === "Sisa Setelah Beli")
+    ).toBe(true);
+
+    const providerInput = generateText.mock.calls[0]?.[0];
+    const serializedProviderInput = JSON.stringify(providerInput);
+
+    expect(serializedProviderInput).toContain("PURCHASE DECISION IMPACT");
+    expect(serializedProviderInput).toContain("Item pembelian");
+    expect(serializedProviderInput).toContain("Nominal pembelian");
+    expect(serializedProviderInput).toContain("Keputusan deterministik");
+    expect(serializedProviderInput).toContain("Risk level pembelian");
+    expect(serializedProviderInput).toContain("Sisa aman sebelum pembelian");
+    expect(serializedProviderInput).toContain("Sisa aman setelah pembelian");
+    expect(serializedProviderInput).toContain("Limit harian aman");
+    expect(serializedProviderInput).toContain("Aksi pembelian");
+
+    expect(serializedProviderInput).not.toContain(user.id);
+    expect(serializedProviderInput).not.toContain(user.email);
+    expect(serializedProviderInput).not.toContain(
+      "API purchase provider income note sensitif"
+    );
+    expect(serializedProviderInput).not.toContain(
+      "API purchase provider food note sensitif"
+    );
+  });
 });
