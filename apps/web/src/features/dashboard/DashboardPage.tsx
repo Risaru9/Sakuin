@@ -306,53 +306,79 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
       Math.abs(toNumber(item.expense))
     ]);
 
-    return Math.max(1, ...values);
+    // Menambahkan ekstra ruang 15% di atas agar batang tertinggi tidak menyentuh atap
+    return Math.max(1, ...values) * 1.15;
   }, [items]);
 
   if (items.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-2xl bg-slate-50 px-4 text-center text-sm font-medium text-slate-500">
+      <div className="flex h-32 items-center justify-center rounded-[1.5rem] bg-slate-50 px-4 text-center text-sm font-medium text-slate-500">
         Belum ada data trend bulanan.
       </div>
     );
   }
 
   return (
-    <div className="rounded-[1.5rem] bg-slate-50 p-4 sm:p-5">
-      <div className="flex h-36 items-end justify-between gap-2 sm:h-44 sm:gap-4">
+    <div className="relative rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+      
+      {/* Garis Bantu (Grid) Latar Belakang */}
+      <div className="absolute left-4 right-4 top-10 bottom-20 z-0 flex flex-col justify-between px-2 sm:left-6 sm:right-6">
+        <div className="h-px w-full border-t border-dashed border-slate-200"></div>
+        <div className="h-px w-full border-t border-dashed border-slate-200"></div>
+        <div className="h-px w-full border-t border-dashed border-slate-200"></div>
+      </div>
+
+      <div className="relative z-10 mt-2 flex h-48 items-end justify-between gap-2 sm:h-56 sm:gap-4">
         {items.map((item) => {
-          const incomeHeight = Math.max(
-            6,
-            (toNumber(item.income) / maxValue) * 100
-          );
-          const expenseHeight = Math.max(
-            6,
-            (toNumber(item.expense) / maxValue) * 100
-          );
+          // Minimal height 4% agar data yang sangat kecil tetap terlihat
+          const incomeHeight = Math.max(4, (toNumber(item.income) / maxValue) * 100);
+          const expenseHeight = Math.max(4, (toNumber(item.expense) / maxValue) * 100);
 
           return (
             <div
-              className="group flex flex-1 flex-col items-center justify-end"
+              className="group relative flex h-full flex-1 flex-col items-center justify-end rounded-xl transition-colors hover:bg-slate-50/80"
               key={item.month}
             >
-              <div className="flex h-28 w-full max-w-[26px] items-end justify-center gap-1 sm:h-36 sm:max-w-[34px]">
-                <div
-                  className="w-full rounded-t-lg bg-emerald-500 transition group-hover:bg-emerald-600"
-                  style={{
-                    height: `${incomeHeight}%`
-                  }}
-                  title={`Income ${formatRupiah(item.income)}`}
-                />
-                <div
-                  className="w-full rounded-t-lg bg-rose-500 transition group-hover:bg-rose-600"
-                  style={{
-                    height: `${expenseHeight}%`
-                  }}
-                  title={`Expense ${formatRupiah(item.expense)}`}
-                />
+              {/* Tooltip Melayang Bergaya Glassmorphism */}
+              <div className="pointer-events-none absolute -top-16 left-1/2 z-50 mb-2 w-max -translate-x-1/2 scale-95 opacity-0 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-100 group-hover:opacity-100">
+                <div className="rounded-xl border border-white/60 bg-white/80 px-3 py-2 text-xs shadow-xl backdrop-blur-md ring-1 ring-slate-900/5">
+                  <p className="mb-1 border-b border-slate-100 pb-1 font-bold text-slate-700">
+                    {getMonthLabel(item.month)}
+                  </p>
+                  <div className="flex flex-col gap-0.5 font-semibold">
+                    <span className="text-emerald-600">
+                      In: {formatCompactRupiah(item.income)}
+                    </span>
+                    <span className="text-rose-600">
+                      Out: {formatCompactRupiah(item.expense)}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <p className="mt-3 text-xs font-bold text-slate-500">
+              {/* Area Bar (Batang) */}
+              <div className="flex h-[85%] w-full max-w-[28px] items-end justify-center gap-1 sm:max-w-[36px] sm:gap-1.5">
+                
+                {/* Batang Pemasukan */}
+                <div className="relative flex h-full w-full items-end justify-center">
+                  <div
+                    className="w-full rounded-t-md bg-gradient-to-t from-emerald-400 to-emerald-500 opacity-80 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100 group-hover:shadow-[0_4px_12px_rgba(16,185,129,0.4)]"
+                    style={{ height: `${incomeHeight}%` }}
+                  />
+                </div>
+
+                {/* Batang Pengeluaran */}
+                <div className="relative flex h-full w-full items-end justify-center">
+                  <div
+                    className="w-full rounded-t-md bg-gradient-to-t from-rose-400 to-rose-500 opacity-80 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100 group-hover:shadow-[0_4px_12px_rgba(244,63,94,0.4)]"
+                    style={{ height: `${expenseHeight}%` }}
+                  />
+                </div>
+
+              </div>
+
+              {/* Label Bulan */}
+              <p className="mt-3 text-[11px] font-bold text-slate-400 transition-colors duration-300 group-hover:text-slate-800 sm:text-xs">
                 {getMonthLabel(item.month)}
               </p>
             </div>
@@ -360,13 +386,14 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
         })}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-4 border-t border-slate-200 pt-4 text-xs font-bold text-slate-600">
+      {/* Legend */}
+      <div className="relative z-10 mt-6 flex flex-wrap items-center justify-center gap-5 border-t border-slate-100 pt-5 text-xs font-bold text-slate-500">
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-t from-emerald-400 to-emerald-500 shadow-sm" />
           Pemasukan
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-t from-rose-400 to-rose-500 shadow-sm" />
           Pengeluaran
         </span>
       </div>
