@@ -57,6 +57,39 @@ export type SafeToSpendData = {
   warnings: string[];
 };
 
+export type FinancialCheckupStatus = "GOOD" | "WATCH" | "RISK" | "UNKNOWN";
+
+export type FinancialCheckupPriority =
+  | "MAINTAIN"
+  | "MONITOR"
+  | "REDUCE"
+  | "HOLD"
+  | "COLLECT_DATA";
+
+export type FinancialCheckupData = {
+  status: FinancialCheckupStatus;
+  priority: FinancialCheckupPriority;
+  title: string;
+  headline: string;
+  focusCategoryName: string | null;
+  focusCategoryAmount: number;
+  reason: string;
+  action: string;
+  warnings: string[];
+  metrics: {
+    totalIncome: number;
+    totalExpense: number;
+    netCashflow: number;
+    expenseToIncomeRatio: number | null;
+    expenseChangePercent: number | null;
+    safeToSpendStatus: SafeToSpendStatus;
+    spendingPaceStatus: SpendingPaceStatus;
+    availableToSpend: number;
+    suggestedDailyLimit: number | null;
+    projectedNetCashflow: number;
+  };
+};
+
 export type SummaryData = {
   totalIncome: string;
   totalExpense: string;
@@ -64,6 +97,7 @@ export type SummaryData = {
   safeBalanceLimit: string;
   isBelowSafeLimit: boolean;
   safeToSpend: SafeToSpendData;
+  financialCheckup: FinancialCheckupData;
 
   incomeThisMonth: string;
   expenseThisMonth: string;

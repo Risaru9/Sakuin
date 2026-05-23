@@ -27,6 +27,7 @@ import {
 } from "../goals/dashboard-goal-priority";
 import { getSummary } from "../summary/summary.service";
 import type {
+  FinancialCheckupData,
   MonthlyTrendItem,
   SafeToSpendData,
   SummaryTransaction
@@ -148,6 +149,62 @@ function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
 
   return {
     card: "border-slate-200 bg-slate-50",
+    badge: "bg-slate-100 text-slate-700 ring-slate-200",
+    icon: "bg-slate-700 text-white",
+    text: "text-slate-950",
+    muted: "text-slate-600"
+  };
+}
+
+function formatFinancialCheckupStatus(status: FinancialCheckupData["status"]) {
+  if (status === "GOOD") {
+    return "Baik";
+  }
+
+  if (status === "WATCH") {
+    return "Waspada";
+  }
+
+  if (status === "RISK") {
+    return "Berisiko";
+  }
+
+  return "Belum lengkap";
+}
+
+function getFinancialCheckupStatusStyle(status: FinancialCheckupData["status"]) {
+  if (status === "GOOD") {
+    return {
+      card: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+      icon: "bg-emerald-600 text-white",
+      text: "text-emerald-950",
+      muted: "text-emerald-700"
+    };
+  }
+
+  if (status === "WATCH") {
+    return {
+      card: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      badge: "bg-amber-100 text-amber-800 ring-amber-200",
+      icon: "bg-amber-500 text-white",
+      text: "text-amber-950",
+      muted: "text-amber-800"
+    };
+  }
+
+  if (status === "RISK") {
+    return {
+      card: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      badge: "bg-rose-100 text-rose-700 ring-rose-200",
+      icon: "bg-rose-600 text-white",
+      text: "text-rose-950",
+      muted: "text-rose-800"
+    };
+  }
+
+  return {
+    card: "border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white",
     badge: "bg-slate-100 text-slate-700 ring-slate-200",
     icon: "bg-slate-700 text-white",
     text: "text-slate-950",
@@ -692,6 +749,161 @@ function SafeToSpendCard({
   );
 }
 
+function FinancialCheckupCard({
+  financialCheckup,
+  isLoading
+}: {
+  financialCheckup: FinancialCheckupData | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="flex min-h-40 items-center justify-center rounded-2xl bg-slate-50">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <p className="text-xs font-bold">Mengecek kondisi keuangan...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!financialCheckup) {
+    return (
+      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <p className="text-sm font-black text-slate-950">
+            Checkup Keuangan belum tersedia
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Data checkup belum bisa dimuat. Coba refresh dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const style = getFinancialCheckupStatusStyle(financialCheckup.status);
+  const primaryWarning = financialCheckup.warnings[0] ?? null;
+
+  return (
+    <div
+      className={[
+        "overflow-hidden rounded-[1.75rem] border p-5 shadow-sm sm:rounded-[2rem] sm:p-6",
+        style.card
+      ].join(" ")}
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={["text-base font-black", style.text].join(" ")}>
+              Checkup Keuangan
+            </p>
+
+            <span
+              className={[
+                "inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1",
+                style.badge
+              ].join(" ")}
+            >
+              {formatFinancialCheckupStatus(financialCheckup.status)}
+            </span>
+          </div>
+
+          <p className={["mt-2 text-xs font-semibold leading-5", style.muted].join(" ")}>
+            {financialCheckup.headline}
+          </p>
+        </div>
+
+        <div
+          className={[
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+            style.icon
+          ].join(" ")}
+        >
+          {financialCheckup.status === "GOOD" ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : financialCheckup.status === "RISK" ? (
+            <AlertTriangle className="h-5 w-5" />
+          ) : (
+            <Activity className="h-5 w-5" />
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Fokus
+          </p>
+          <p className="mt-1 truncate text-sm font-black text-slate-950">
+            {financialCheckup.focusCategoryName ?? "Belum ada"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Rasio Expense
+          </p>
+          <p className="mt-1 text-sm font-black text-slate-950">
+            {financialCheckup.metrics.expenseToIncomeRatio === null
+              ? "-"
+              : `${financialCheckup.metrics.expenseToIncomeRatio}%`}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Cashflow
+          </p>
+          <p className="mt-1 truncate text-sm font-black text-slate-950">
+            {formatCompactRupiah(financialCheckup.metrics.netCashflow)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Sisa Aman
+          </p>
+          <p className="mt-1 truncate text-sm font-black text-slate-950">
+            {formatCompactRupiah(financialCheckup.metrics.availableToSpend)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100">
+        <p className="text-xs font-black text-slate-950">Alasan</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {financialCheckup.reason}
+        </p>
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100">
+        <p className="text-xs font-black text-slate-950">Aksi utama</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {financialCheckup.action}
+        </p>
+      </div>
+
+      {primaryWarning ? (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-white/75 p-3 text-xs font-semibold leading-5 text-slate-600 ring-1 ring-slate-100">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{primaryWarning}</p>
+        </div>
+      ) : null}
+
+      <Link
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-950/10"
+        to="/asisten"
+      >
+        <MessageSquare className="h-4 w-4" />
+        Bahas dengan Asisten
+      </Link>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -1017,6 +1229,11 @@ export function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            <FinancialCheckupCard
+              financialCheckup={summary?.financialCheckup}
+              isLoading={isLoadingSummary}
+            />
 
             <SafeToSpendCard
               safeToSpend={summary?.safeToSpend}
