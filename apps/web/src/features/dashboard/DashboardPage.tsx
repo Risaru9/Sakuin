@@ -28,6 +28,7 @@ import {
 import { getSummary } from "../summary/summary.service";
 import type {
   MonthlyTrendItem,
+  SafeToSpendData,
   SummaryTransaction
 } from "../summary/summary.types";
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
@@ -80,6 +81,78 @@ function formatCompactRupiah(value: string | number | null | undefined) {
   }
 
   return formatRupiah(numberValue);
+}
+
+function formatSafeToSpendStatus(status: SafeToSpendData["status"]) {
+  if (status === "SAFE") {
+    return "Aman";
+  }
+
+  if (status === "WATCH") {
+    return "Waspada";
+  }
+
+  if (status === "HOLD") {
+    return "Tahan";
+  }
+
+  return "Belum bisa dinilai";
+}
+
+function formatSpendingPaceStatus(status: SafeToSpendData["spendingPaceStatus"]) {
+  if (status === "ON_TRACK") {
+    return "Sesuai ritme";
+  }
+
+  if (status === "WATCH") {
+    return "Perlu dipantau";
+  }
+
+  if (status === "FAST") {
+    return "Terlalu cepat";
+  }
+
+  return "Belum bisa dinilai";
+}
+
+function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
+  if (status === "SAFE") {
+    return {
+      card: "border-emerald-200 bg-emerald-50",
+      badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+      icon: "bg-emerald-600 text-white",
+      text: "text-emerald-900",
+      muted: "text-emerald-700"
+    };
+  }
+
+  if (status === "WATCH") {
+    return {
+      card: "border-amber-200 bg-amber-50",
+      badge: "bg-amber-100 text-amber-800 ring-amber-200",
+      icon: "bg-amber-500 text-white",
+      text: "text-amber-950",
+      muted: "text-amber-800"
+    };
+  }
+
+  if (status === "HOLD") {
+    return {
+      card: "border-rose-200 bg-rose-50",
+      badge: "bg-rose-100 text-rose-700 ring-rose-200",
+      icon: "bg-rose-600 text-white",
+      text: "text-rose-950",
+      muted: "text-rose-800"
+    };
+  }
+
+  return {
+    card: "border-slate-200 bg-slate-50",
+    badge: "bg-slate-100 text-slate-700 ring-slate-200",
+    icon: "bg-slate-700 text-white",
+    text: "text-slate-950",
+    muted: "text-slate-600"
+  };
 }
 
 function formatDate(value: string) {
@@ -424,6 +497,149 @@ function DashboardGoalsCard({
   );
 }
 
+function SafeToSpendCard({
+  safeToSpend,
+  isLoading
+}: {
+  safeToSpend: SafeToSpendData | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="flex min-h-40 items-center justify-center rounded-2xl bg-slate-50">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <p className="text-xs font-bold">Menghitung aman dipakai...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!safeToSpend) {
+    return (
+      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <p className="text-sm font-black text-slate-950">
+            Aman Dipakai belum tersedia
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Data safe-to-spend belum bisa dimuat. Coba refresh dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const style = getSafeToSpendStatusStyle(safeToSpend.status);
+  const hasDailyLimit = safeToSpend.suggestedDailyLimit !== null;
+
+  return (
+    <div
+      className={[
+        "overflow-hidden rounded-[1.75rem] border p-5 shadow-sm sm:rounded-[2rem] sm:p-6",
+        style.card
+      ].join(" ")}
+    >
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={["text-base font-black", style.text].join(" ")}>
+            Aman Dipakai
+          </p>
+          <p className={["mt-1 text-xs font-semibold leading-5", style.muted].join(" ")}>
+            Estimasi ruang aman untuk pengeluaran bulan ini.
+          </p>
+        </div>
+
+        <div
+          className={[
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+            style.icon
+          ].join(" ")}
+        >
+          {safeToSpend.status === "SAFE" ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : safeToSpend.status === "HOLD" ? (
+            <AlertTriangle className="h-5 w-5" />
+          ) : (
+            <Activity className="h-5 w-5" />
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span
+          className={[
+            "inline-flex rounded-full px-3 py-1 text-xs font-black ring-1",
+            style.badge
+          ].join(" ")}
+        >
+          {formatSafeToSpendStatus(safeToSpend.status)}
+        </span>
+
+        <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-xs font-black text-slate-700 ring-1 ring-white/80">
+          {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Sisa Aman
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950">
+            {formatCompactRupiah(safeToSpend.availableToSpend)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Limit Harian
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950">
+            {hasDailyLimit
+              ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
+              : "-"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Sisa Hari
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950">
+            {safeToSpend.remainingDays} hari
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+          <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Risiko
+          </p>
+          <p className="mt-1 truncate text-lg font-black text-slate-950">
+            {safeToSpend.topRiskCategoryName ?? "-"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-white/70 p-4 ring-1 ring-white/80">
+        <p className="text-xs font-black text-slate-950">Aksi utama</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {safeToSpend.action}
+        </p>
+      </div>
+
+      {safeToSpend.warnings.length > 0 ? (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-white/70 p-3 text-xs font-semibold leading-5 text-slate-600 ring-1 ring-white/80">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{safeToSpend.warnings[0]}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -749,6 +965,18 @@ export function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            <SafeToSpendCard
+              safeToSpend={summary?.safeToSpend}
+              isLoading={isLoadingSummary}
+            />
+
+            <DashboardGoalsCard
+              goals={goals}
+              isLoading={isLoadingGoals}
+              error={goalsError}
+              priorityGoalId={dashboardPriorityGoalId}
+            />
 
             <DashboardGoalsCard
               goals={goals}
