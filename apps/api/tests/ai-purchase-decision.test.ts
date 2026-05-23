@@ -93,6 +93,10 @@ describe("AI purchase decision analyzer", () => {
     expect(decision.availableToSpendAfterPurchase).toBe(1_000_000);
     expect(decision.reason).toContain("limit harian aman");
     expect(decision.action).toContain("Boleh dipertimbangkan");
+    expect(decision.reason).toMatch(/Rp\s*500\.000/);
+    expect(decision.reason).toMatch(/Rp\s*100\.000/);
+    expect(decision.action).toContain("limit harian aman");
+    expect(decision.action).toContain("tunda sebagian pengeluaran lain");
     expect(decision.warnings).toContain(
       "Nominal pembelian melebihi limit harian aman."
     );
@@ -118,6 +122,9 @@ describe("AI purchase decision analyzer", () => {
     expect(decision.availableToSpendAfterPurchase).toBe(0);
     expect(decision.reason).toContain("lebih besar dari sisa aman");
     expect(decision.action).toContain("Tunda pembelian");
+    expect(decision.reason).toMatch(/Rp\s*500\.000/);
+    expect(decision.reason).toMatch(/Rp\s*200\.000/);
+    expect(decision.action).toContain("kebutuhan wajib");
   });
 
   it("tidak mendeteksi skenario tenor jangka panjang sebagai purchase decision langsung", () => {

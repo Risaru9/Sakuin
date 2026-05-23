@@ -1599,4 +1599,81 @@ describe("AI chat service contract", () => {
     expect(serializedProviderInput).not.toContain("Purchase provider income note sensitif");
     expect(serializedProviderInput).not.toContain("Purchase provider food note sensitif");
   });
+
+    it("menghasilkan reply purchase decision yang lebih natural dan actionable", async () => {
+    const user = await createTestUser("purchase-decision-reply-polish");
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        safeBalanceLimit: "500000"
+      }
+    });
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const shoppingCategory = await createCategory({
+      userId: user.id,
+      name: "Belanja",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "1000000",
+          note: "Purchase reply income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: shoppingCategory.id,
+          type: "EXPENSE",
+          amount: "700000",
+          note: "Purchase reply expense note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "kalau saya beli sepatu 500 ribu sekarang aman nggak?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(["GOAL_ANALYSIS", "SAVING_ADVICE"]).toContain(response.intent);
+    expect(response.intent).not.toBe("TRANSACTION_DRAFT");
+
+    expect(response.reply).toContain("Prioritas:");
+    expect(response.reply).toContain("Alasan:");
+    expect(response.reply).toContain("Aksi:");
+    expect(response.reply).toContain("tahan pembelian");
+    expect(response.reply).toContain("nominalnya");
+    expect(response.reply).toContain("Sisa aman setelah pembelian");
+    expect(response.reply).toContain("Limit harian aman");
+    expect(response.reply).toContain("Fokus risiko");
+
+    expect(
+      response.cards.some((card) => card.label === "Keputusan Pembelian")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Sisa Setelah Beli")
+    ).toBe(true);
+
+    expect(serializedResponse).not.toContain("Purchase reply income note sensitif");
+    expect(serializedResponse).not.toContain("Purchase reply expense note sensitif");
+    expect(serializedResponse).not.toContain(user.id);
+    expect(serializedResponse).not.toContain(user.email);
+  });
 });

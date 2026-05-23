@@ -135,6 +135,18 @@ function includesAnyKeyword(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
+function formatRupiah(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
 function parseMoneyValue(rawNumber: string, unit: string | undefined) {
   const normalizedNumber = Number(rawNumber.replace(",", "."));
 
@@ -365,9 +377,15 @@ function buildReason(input: {
   itemName: string | null;
 }) {
   const itemText = input.itemName ? ` ${input.itemName}` : "";
+  const purchaseAmountText =
+    input.purchaseAmount === null
+      ? "nominal pembelian belum terdeteksi"
+      : `nominal pembelian${itemText} sebesar ${formatRupiah(
+          input.purchaseAmount
+        )}`;
 
   if (input.status === "UNKNOWN") {
-    return "Data transaksi atau nominal pembelian belum cukup untuk menilai dampaknya secara akurat.";
+    return `Data transaksi atau ${purchaseAmountText} belum cukup untuk menilai dampaknya secara akurat.`;
   }
 
   if (input.status === "HOLD") {
@@ -375,10 +393,12 @@ function buildReason(input: {
       input.purchaseAmount !== null &&
       input.purchaseAmount > input.safeToSpend.availableToSpend
     ) {
-      return `Nominal pembelian${itemText} lebih besar dari sisa aman bulan ini, sehingga pembelian ini berisiko mengganggu cashflow.`;
+      return `${purchaseAmountText} lebih besar dari sisa aman bulan ini ${formatRupiah(
+        input.safeToSpend.availableToSpend
+      )}, sehingga pembelian ini berisiko mengganggu cashflow.`;
     }
 
-    return "Safe-to-spend sedang berada pada status Tahan, sehingga pengeluaran non-prioritas sebaiknya ditunda.";
+    return `Safe-to-spend sedang berada pada status Tahan, sehingga pembelian${itemText} sebaiknya ditunda meskipun nominalnya terlihat masih memungkinkan.`;
   }
 
   if (input.status === "LIMITED") {
@@ -387,13 +407,17 @@ function buildReason(input: {
       input.purchaseAmount !== null &&
       input.purchaseAmount > input.safeToSpend.suggestedDailyLimit
     ) {
-      return `Pembelian${itemText} masih berada dalam sisa aman bulan ini, tetapi nominalnya lebih besar dari limit harian aman.`;
+      return `Pembelian${itemText} sebesar ${formatRupiah(
+        input.purchaseAmount
+      )} masih berada dalam sisa aman bulan ini, tetapi lebih besar dari limit harian aman ${formatRupiah(
+        input.safeToSpend.suggestedDailyLimit
+      )}.`;
     }
 
-    return "Pembelian masih mungkin dilakukan, tetapi kondisi safe-to-spend perlu dipantau agar pengeluaran tidak terlalu cepat.";
+    return `Pembelian${itemText} masih mungkin dilakukan, tetapi kondisi safe-to-spend perlu dipantau agar pengeluaran tidak terlalu cepat.`;
   }
 
-  return "Nominal pembelian masih berada dalam ruang aman dan tidak melebihi limit harian aman yang dihitung sistem.";
+  return `${purchaseAmountText} masih berada dalam ruang aman dan tidak melebihi limit harian aman yang dihitung sistem.`;
 }
 
 function buildAction(input: {
@@ -405,22 +429,24 @@ function buildAction(input: {
   const itemText = input.itemName ? ` ${input.itemName}` : "";
 
   if (input.status === "UNKNOWN") {
-    return "Catat pemasukan dan pengeluaran utama terlebih dahulu, lalu coba nilai pembelian ini lagi.";
+    return "Catat pemasukan dan pengeluaran utama terlebih dahulu, lalu coba nilai pembelian ini lagi setelah data bulan ini lebih lengkap.";
   }
 
   if (input.status === "HOLD") {
-    return `Tunda pembelian${itemText} atau turunkan nominalnya sampai berada di bawah sisa aman bulan ini.`;
+    return `Tunda pembelian${itemText} dulu. Jika tetap ingin membeli, turunkan nominalnya sampai berada di bawah sisa aman bulan ini dan jangan mengorbankan kebutuhan wajib.`;
   }
 
   if (input.status === "LIMITED") {
     if (input.safeToSpend.suggestedDailyLimit !== null) {
-      return `Boleh dipertimbangkan, tetapi idealnya batasi pembelian mendekati limit harian aman atau tunda sebagian pengeluaran lain.`;
+      return `Boleh dipertimbangkan, tetapi idealnya batasi pembelian mendekati limit harian aman ${formatRupiah(
+        input.safeToSpend.suggestedDailyLimit
+      )} atau tunda sebagian pengeluaran lain hari ini.`;
     }
 
     return "Boleh dipertimbangkan, tetapi jangan menambah pengeluaran non-prioritas lain hari ini.";
   }
 
-  return "Pembelian ini relatif aman, tetapi tetap catat transaksinya jika benar-benar dilakukan.";
+  return `Pembelian${itemText} relatif aman, tetapi tetap catat transaksinya jika benar-benar dilakukan dan jangan jadikan ini alasan untuk menambah pengeluaran impulsif lain.`;
 }
 
 function buildWarnings(input: {

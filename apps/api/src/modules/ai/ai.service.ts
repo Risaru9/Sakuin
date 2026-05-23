@@ -1456,16 +1456,53 @@ function buildPurchaseDecisionCards(
 }
 
 function buildPurchaseDecisionReply(decision: PurchaseDecisionAnalysis) {
+  const itemText = decision.itemName ? ` ${decision.itemName}` : "";
+  const amountText =
+    decision.purchaseAmount === null
+      ? "nominal pembelian belum terdeteksi"
+      : `nominalnya ${formatRupiah(decision.purchaseAmount)}`;
+
   const priority =
     decision.status === "SAFE_TO_BUY"
-      ? "pembelian ini relatif aman"
+      ? `pembelian${itemText} relatif aman`
       : decision.status === "LIMITED"
-        ? "pembelian ini boleh dipertimbangkan secara terbatas"
+        ? `pembelian${itemText} boleh dipertimbangkan secara terbatas`
         : decision.status === "HOLD"
-          ? "tahan pembelian ini dulu"
+          ? `tahan pembelian${itemText} dulu`
           : "data pembelian belum cukup untuk dinilai";
 
-  return `Prioritas: ${priority}. Alasan: ${decision.reason} Aksi: ${decision.action}`;
+  const afterPurchaseText =
+    decision.availableToSpendAfterPurchase === null
+      ? null
+      : `Sisa aman setelah pembelian menjadi ${formatRupiah(
+          decision.availableToSpendAfterPurchase
+        )}.`;
+
+  const dailyLimitText =
+    decision.suggestedDailyLimit === null
+      ? null
+      : `Limit harian aman saat ini sekitar ${formatRupiah(
+          decision.suggestedDailyLimit
+        )}.`;
+
+  const focusText = decision.topRiskCategoryName
+    ? `Fokus risiko sekarang ada di kategori ${decision.topRiskCategoryName}.`
+    : null;
+
+  const warningText =
+    decision.warnings.length > 0 ? `Catatan: ${decision.warnings[0]}` : null;
+
+  const supportingDetails = [
+    `${amountText}.`,
+    afterPurchaseText,
+    dailyLimitText,
+    focusText,
+    warningText
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `Prioritas: ${priority}. Alasan: ${decision.reason} ${supportingDetails} Aksi: ${decision.action}`;
 }
 
 function enrichResponseWithPurchaseDecision(
