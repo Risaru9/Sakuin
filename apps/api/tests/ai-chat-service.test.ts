@@ -962,4 +962,90 @@ describe("AI chat service contract", () => {
       "Provider consultant food note sensitif"
     );
   });
+
+    it("mengirim answer style guideline ke AI provider", async () => {
+    const user = await createTestUser("answer-style-guideline");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "Style guideline income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "Style guideline food note sensitif",
+          date: getCurrentMonthDate(6)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Prioritas bulan ini adalah mengurangi kategori Makanan. Alasannya, kategori ini menjadi pengeluaran yang paling perlu dikontrol. Aksi praktisnya, buat batas mingguan dan evaluasi lagi setelah beberapa transaksi berikutnya.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "apa yang harus saya lakukan sekarang agar lebih hemat?"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(response.intent).toBe("SAVING_ADVICE");
+    expect(generateText).toHaveBeenCalledTimes(1);
+
+    const providerInput = generateText.mock.calls[0]?.[0];
+    const serializedProviderInput = JSON.stringify(providerInput);
+
+    expect(serializedProviderInput).toContain(
+      "PRIORITAS - ALASAN - AKSI"
+    );
+    expect(serializedProviderInput).toContain(
+      "Kalimat pertama harus berisi prioritas tindakan"
+    );
+    expect(serializedProviderInput).toContain(
+      "1 sampai 3 aksi konkret"
+    );
+    expect(serializedProviderInput).toContain(
+      "Hindari jawaban terlalu panjang"
+    );
+    expect(serializedProviderInput).toContain(
+      "Hindari saran generik"
+    );
+    expect(serializedProviderInput).toContain("CONSULTANT ACTION PLAN");
+
+    expect(serializedProviderInput).not.toContain(user.id);
+    expect(serializedProviderInput).not.toContain(user.email);
+    expect(serializedProviderInput).not.toContain(
+      "Style guideline income note sensitif"
+    );
+    expect(serializedProviderInput).not.toContain(
+      "Style guideline food note sensitif"
+    );
+  });
 });
