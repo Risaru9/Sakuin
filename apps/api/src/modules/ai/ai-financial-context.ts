@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
+import {
+  calculateSafeToSpend,
+  type SafeToSpendResult
+} from "../finance/safe-to-spend.js";
 
 type TransactionWithCategory = Awaited<
   ReturnType<typeof getTransactionsForPeriod>
@@ -43,7 +47,7 @@ export type AiGoalSummaryContext = {
   overdueGoals: number;
 };
 
-export type AiFinancialContext = {
+export type AiFinancialBaseContext = {
   currency: "IDR";
   generatedAt: string;
   safeBalanceLimit: string;
@@ -51,6 +55,10 @@ export type AiFinancialContext = {
   previousMonth: AiFinancialPeriodContext;
   monthComparison: AiFinancialMonthComparison;
   goals: AiGoalSummaryContext;
+};
+
+export type AiFinancialContext = AiFinancialBaseContext & {
+  safeToSpend: SafeToSpendResult;
 };
 
 function toDecimal(value: Prisma.Decimal.Value) {
@@ -289,7 +297,7 @@ export async function getAiFinancialContext(
     previousMonthRange.endDate
   );
 
-  return {
+  const baseContext: AiFinancialBaseContext = {
     currency: "IDR",
     generatedAt: referenceDate.toISOString(),
     safeBalanceLimit: decimalToString(toDecimal(user.safeBalanceLimit)),
@@ -306,5 +314,12 @@ export async function getAiFinancialContext(
       )
     },
     goals
+  };
+
+  return {
+    ...baseContext,
+    safeToSpend: calculateSafeToSpend(baseContext, {
+      referenceDate
+    })
   };
 }

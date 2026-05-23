@@ -1,4 +1,4 @@
-import type { AiFinancialContext } from "../ai/ai-financial-context.js";
+import type { AiFinancialBaseContext } from "../ai/ai-financial-context.js";
 
 export type SafeToSpendStatus = "SAFE" | "WATCH" | "HOLD" | "UNKNOWN";
 
@@ -45,7 +45,7 @@ function roundOneDecimal(value: number) {
 }
 
 function getClampedReferenceDate(input: {
-  context: AiFinancialContext;
+  context: AiFinancialBaseContext;
   referenceDate?: Date;
 }) {
   const periodStart = new Date(input.context.currentMonth.startDate);
@@ -68,7 +68,7 @@ function getClampedReferenceDate(input: {
 }
 
 function getPeriodStats(input: {
-  context: AiFinancialContext;
+  context: AiFinancialBaseContext;
   referenceDate?: Date;
 }) {
   const periodStart = new Date(input.context.currentMonth.startDate);
@@ -151,7 +151,7 @@ function getSpendingPaceStatus(input: {
   return "ON_TRACK";
 }
 
-function getTopRiskCategory(context: AiFinancialContext) {
+function getTopRiskCategory(context: AiFinancialBaseContext) {
   return context.currentMonth.topExpenseCategories[0] ?? null;
 }
 
@@ -166,7 +166,7 @@ function buildWarnings(input: {
   spendingPaceStatus: SpendingPaceStatus;
   topRiskCategoryName: string | null;
   topRiskCategoryExpenseShare: number;
-  goals: AiFinancialContext["goals"];
+  goals: AiFinancialBaseContext["goals"];
 }) {
   const warnings: string[] = [];
 
@@ -363,7 +363,7 @@ function buildAction(input: {
 }
 
 export function calculateSafeToSpend(
-  context: AiFinancialContext,
+  context: AiFinancialBaseContext,
   options: CalculateSafeToSpendOptions = {}
 ): SafeToSpendResult {
   const income = toNumber(context.currentMonth.totalIncome);

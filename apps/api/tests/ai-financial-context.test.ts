@@ -207,6 +207,16 @@ describe("AI financial context", () => {
       overdueGoals: 1
     });
 
+    expect(context.safeToSpend.status).toBe("WATCH");
+    expect(context.safeToSpend.spendingPaceStatus).toBe("ON_TRACK");
+    expect(context.safeToSpend.availableToSpend).toBe(1050000);
+    expect(context.safeToSpend.suggestedDailyLimit).toBe(87500);
+    expect(context.safeToSpend.expenseToIncomeRatio).toBe(26.7);
+    expect(context.safeToSpend.topRiskCategoryName).toBe("Makanan");
+    expect(context.safeToSpend.topRiskCategoryAmount).toBe(300000);
+    expect(context.safeToSpend.reason).toContain("kategori Makanan");
+    expect(context.safeToSpend.action).toContain("Makanan");  
+
     const serializedContext = JSON.stringify(context);
 
     expect(serializedContext).not.toContain(user.id);
@@ -248,6 +258,14 @@ describe("AI financial context", () => {
       activeGoals: 0,
       overdueGoals: 0
     });
+
+    expect(context.safeToSpend.status).toBe("UNKNOWN");
+    expect(context.safeToSpend.spendingPaceStatus).toBe("UNKNOWN");
+    expect(context.safeToSpend.availableToSpend).toBe(0);
+    expect(context.safeToSpend.suggestedDailyLimit).toBeNull();
+    expect(context.safeToSpend.expenseToIncomeRatio).toBeNull();
+    expect(context.safeToSpend.topRiskCategoryName).toBeNull();
+    expect(context.safeToSpend.warnings).toContain("Belum ada transaksi bulan ini.");
   });
 
   it("gagal jika user tidak ditemukan", async () => {

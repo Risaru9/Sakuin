@@ -1,23 +1,23 @@
 import { describe, expect, it } from "vitest";
-import type { AiFinancialContext } from "../src/modules/ai/ai-financial-context.js";
+import type { AiFinancialBaseContext } from "../src/modules/ai/ai-financial-context.js";
 import { calculateSafeToSpend } from "../src/modules/finance/safe-to-spend.js";
 
 type FinancialContextOverride = Partial<
   Omit<
-    AiFinancialContext,
+    AiFinancialBaseContext,
     "currentMonth" | "previousMonth" | "monthComparison" | "goals"
   >
 > & {
-  currentMonth?: Partial<AiFinancialContext["currentMonth"]>;
-  previousMonth?: Partial<AiFinancialContext["previousMonth"]>;
-  monthComparison?: Partial<AiFinancialContext["monthComparison"]>;
-  goals?: Partial<AiFinancialContext["goals"]>;
+  currentMonth?: Partial<AiFinancialBaseContext["currentMonth"]>;
+  previousMonth?: Partial<AiFinancialBaseContext["previousMonth"]>;
+  monthComparison?: Partial<AiFinancialBaseContext["monthComparison"]>;
+  goals?: Partial<AiFinancialBaseContext["goals"]>;
 };
 
 function createFinancialContext(
   override: FinancialContextOverride = {}
-): AiFinancialContext {
-  const baseContext: AiFinancialContext = {
+): AiFinancialBaseContext {
+  const baseContext: AiFinancialBaseContext = {
     currency: "IDR",
     generatedAt: "2026-05-20T12:00:00.000Z",
     safeBalanceLimit: "50000.00",
