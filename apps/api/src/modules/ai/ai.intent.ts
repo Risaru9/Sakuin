@@ -233,8 +233,28 @@ const FINANCIAL_SUMMARY_KEYWORDS = [
   "keuangan bulan ini"
 ];
 
+const FINANCIAL_CHECKUP_KEYWORDS = [
+  "checkup keuangan",
+  "cek keuangan",
+  "cek kondisi keuangan",
+  "cek kesehatan keuangan",
+  "kesehatan keuangan",
+  "financial checkup",
+  "keuangan saya sehat",
+  "keuangan saya sehat nggak",
+  "keuangan saya sehat gak",
+  "keuangan saya aman atau berisiko",
+  "keuangan saya berisiko",
+  "kondisi bulan ini sehat",
+  "kondisi keuangan sehat",
+  "status keuangan saya",
+  "evaluasi keuangan",
+  "review keuangan"
+];
+
 const FINANCIAL_CONTEXT_KEYWORDS = [
   ...FINANCIAL_SUMMARY_KEYWORDS,
+  ...FINANCIAL_CHECKUP_KEYWORDS,
   ...SPENDING_ANALYSIS_KEYWORDS,
   ...INCOME_ANALYSIS_KEYWORDS,
   ...SAVING_ADVICE_KEYWORDS,
@@ -398,6 +418,10 @@ function isSafeToSpendMessage(message: string) {
   return includesAnyKeyword(message, SAFE_TO_SPEND_KEYWORDS);
 }
 
+function isFinancialCheckupMessage(message: string) {
+  return includesAnyKeyword(message, FINANCIAL_CHECKUP_KEYWORDS);
+}
+
 export function classifyAiIntent(message: string): AiIntentClassification {
   const normalizedMessage = normalizeMessage(message);
 
@@ -417,6 +441,14 @@ export function classifyAiIntent(message: string): AiIntentClassification {
     return createClassification(
       "SAVING_ADVICE",
       "safe_to_spend_detected",
+      "high"
+    );
+  }
+
+    if (isFinancialCheckupMessage(normalizedMessage)) {
+    return createClassification(
+      "FINANCIAL_SUMMARY",
+      "financial_checkup_detected",
       "high"
     );
   }

@@ -1699,4 +1699,159 @@ describe("AI chat service contract", () => {
       "API purchase provider food note sensitif"
     );
   });
+
+    it("mengembalikan financial checkup cards dari AI chat API contract", async () => {
+    const user = await createTestUser("api-financial-checkup-response");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "API checkup income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "API checkup food note sensitif",
+          date: getCurrentMonthDate(7)
+        }
+      ]
+    });
+
+    const response = await getAiChatResponse({
+      userId: user.id,
+      message: "checkup keuangan saya gimana?"
+    });
+
+    const serializedResponse = JSON.stringify(response);
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toContain("Checkup keuangan");
+    expect(response.reply).toContain("Aksi");
+
+    expect(
+      response.cards.some((card) => card.label === "Status Checkup")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Prioritas Checkup")
+    ).toBe(true);
+    expect(
+      response.cards.some(
+        (card) => card.label === "Fokus Checkup" && card.value === "Makanan"
+      )
+    ).toBe(true);
+    expect(response.cards.some((card) => card.label === "Cashflow")).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Rasio Expense")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Sisa Aman")
+    ).toBe(true);
+
+    expect(serializedResponse).not.toContain(user.id);
+    expect(serializedResponse).not.toContain(user.email);
+    expect(serializedResponse).not.toContain("API checkup income note sensitif");
+    expect(serializedResponse).not.toContain("API checkup food note sensitif");
+  });
+
+  it("mengirim financial checkup snapshot aman ke AI provider dari API contract", async () => {
+    const user = await createTestUser("api-financial-checkup-provider");
+
+    const incomeCategory = await createCategory({
+      userId: user.id,
+      name: "Gaji",
+      type: "INCOME"
+    });
+
+    const foodCategory = await createCategory({
+      userId: user.id,
+      name: "Makanan",
+      type: "EXPENSE"
+    });
+
+    await prisma.transaction.createMany({
+      data: [
+        {
+          userId: user.id,
+          categoryId: incomeCategory.id,
+          type: "INCOME",
+          amount: "3000000",
+          note: "API checkup provider income note sensitif",
+          date: getCurrentMonthDate(1)
+        },
+        {
+          userId: user.id,
+          categoryId: foodCategory.id,
+          type: "EXPENSE",
+          amount: "1200000",
+          note: "API checkup provider food note sensitif",
+          date: getCurrentMonthDate(7)
+        }
+      ]
+    });
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: "Prioritas: kurangi kategori Makanan dulu. Alasan: checkup keuangan menunjukkan status waspada dan Makanan menjadi fokus pengeluaran. Aksi: batasi pengeluaran harian dan pantau kategori Makanan sampai akhir bulan.",
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "status keuangan saya sehat nggak?"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(generateText).toHaveBeenCalledTimes(1);
+    expect(
+      response.cards.some((card) => card.label === "Status Checkup")
+    ).toBe(true);
+    expect(
+      response.cards.some((card) => card.label === "Fokus Checkup")
+    ).toBe(true);
+
+    const providerInput = generateText.mock.calls[0]?.[0];
+    const serializedProviderInput = JSON.stringify(providerInput);
+
+    expect(serializedProviderInput).toContain("FINANCIAL CHECKUP SNAPSHOT");
+    expect(serializedProviderInput).toContain("Status checkup");
+    expect(serializedProviderInput).toContain("Prioritas checkup");
+    expect(serializedProviderInput).toContain("Fokus kategori");
+    expect(serializedProviderInput).toContain("Alasan checkup");
+    expect(serializedProviderInput).toContain("Aksi checkup");
+    expect(serializedProviderInput).toContain("Warning checkup");
+
+    expect(serializedProviderInput).not.toContain(user.id);
+    expect(serializedProviderInput).not.toContain(user.email);
+    expect(serializedProviderInput).not.toContain(
+      "API checkup provider income note sensitif"
+    );
+    expect(serializedProviderInput).not.toContain(
+      "API checkup provider food note sensitif"
+    );
+  });
 });

@@ -117,6 +117,20 @@ describe("AI intent classifier", () => {
     expect(result.reason).toBe("no_financial_context_detected");
   });
 
+    it("mengklasifikasikan financial checkup sebagai ringkasan keuangan", () => {
+    const result = classifyAiIntent("checkup keuangan saya gimana?");
+
+    expect(result.intent).toBe("FINANCIAL_SUMMARY");
+    expect(result.reason).toBe("financial_checkup_detected");
+  });
+
+  it("mengklasifikasikan kesehatan keuangan sebagai financial checkup", () => {
+    const result = classifyAiIntent("keuangan saya aman atau berisiko?");
+
+    expect(result.intent).toBe("FINANCIAL_SUMMARY");
+    expect(result.reason).toBe("financial_checkup_detected");
+  });
+
   it("tetap menolak pertanyaan hiburan di luar finansial", () => {
     const result = classifyAiIntent("siapa istri naruto?");
 

@@ -20,6 +20,10 @@ import {
   getAiFinancialContext,
   type AiFinancialContext
 } from "./ai-financial-context.js";
+import {
+  buildFinancialCheckup,
+  type FinancialCheckupResult
+} from "../finance/financial-checkup.js";
 import type {
   AiChatCard,
   AiChatHistoryMessage,
@@ -933,6 +937,136 @@ function buildSafeToSpendReplySegment(context: AiFinancialContext) {
   )}. ${dailyLimitText}`;
 }
 
+function formatFinancialCheckupStatus(status: FinancialCheckupResult["status"]) {
+  if (status === "GOOD") {
+    return "Baik";
+  }
+
+  if (status === "WATCH") {
+    return "Waspada";
+  }
+
+  if (status === "RISK") {
+    return "Berisiko";
+  }
+
+  return "Belum lengkap";
+}
+
+function formatFinancialCheckupPriority(
+  priority: FinancialCheckupResult["priority"]
+) {
+  if (priority === "MAINTAIN") {
+    return "Pertahankan";
+  }
+
+  if (priority === "MONITOR") {
+    return "Pantau";
+  }
+
+  if (priority === "REDUCE") {
+    return "Kurangi";
+  }
+
+  if (priority === "HOLD") {
+    return "Tahan";
+  }
+
+  return "Lengkapi data";
+}
+
+function buildFinancialCheckupCards(
+  checkup: FinancialCheckupResult
+): AiChatCard[] {
+  const cards: AiChatCard[] = [
+    {
+      label: "Status Checkup",
+      value: formatFinancialCheckupStatus(checkup.status)
+    },
+    {
+      label: "Prioritas Checkup",
+      value: formatFinancialCheckupPriority(checkup.priority)
+    },
+    {
+      label: "Fokus Checkup",
+      value: checkup.focusCategoryName ?? "Belum ada"
+    },
+    {
+      label: "Cashflow",
+      value: formatRupiah(checkup.metrics.netCashflow)
+    },
+    {
+      label: "Rasio Expense",
+      value: formatRatio(checkup.metrics.expenseToIncomeRatio)
+    },
+    {
+      label: "Sisa Aman",
+      value: formatRupiah(checkup.metrics.availableToSpend)
+    }
+  ];
+
+  if (checkup.metrics.suggestedDailyLimit !== null) {
+    cards.push({
+      label: "Limit Harian Aman",
+      value: formatRupiah(checkup.metrics.suggestedDailyLimit)
+    });
+  }
+
+  return cards;
+}
+
+function buildFinancialCheckupPromptContext(context: AiFinancialContext) {
+  const checkup = buildFinancialCheckup(context);
+
+  return [
+    `Status checkup: ${formatFinancialCheckupStatus(checkup.status)}`,
+    `Prioritas checkup: ${formatFinancialCheckupPriority(checkup.priority)}`,
+    `Judul checkup: ${checkup.title}`,
+    `Headline checkup: ${checkup.headline}`,
+    `Fokus kategori: ${checkup.focusCategoryName ?? "Belum ada"}`,
+    `Nominal fokus kategori: ${formatRupiah(checkup.focusCategoryAmount)}`,
+    `Alasan checkup: ${checkup.reason}`,
+    `Aksi checkup: ${checkup.action}`,
+    `Total pemasukan bulan ini: ${formatRupiah(checkup.metrics.totalIncome)}`,
+    `Total pengeluaran bulan ini: ${formatRupiah(checkup.metrics.totalExpense)}`,
+    `Cashflow bulan ini: ${formatRupiah(checkup.metrics.netCashflow)}`,
+    `Rasio expense terhadap income: ${formatRatio(
+      checkup.metrics.expenseToIncomeRatio
+    )}`,
+    `Perubahan expense dibanding bulan lalu: ${formatChangePercent(
+      checkup.metrics.expenseChangePercent
+    )}`,
+    `Status safe-to-spend: ${formatSafeToSpendStatus(
+      checkup.metrics.safeToSpendStatus
+    )}`,
+    `Ritme pengeluaran: ${formatSpendingPaceStatus(
+      checkup.metrics.spendingPaceStatus
+    )}`,
+    `Sisa aman bulan ini: ${formatRupiah(checkup.metrics.availableToSpend)}`,
+    `Limit harian aman: ${
+      checkup.metrics.suggestedDailyLimit === null
+        ? "Belum bisa dihitung"
+        : formatRupiah(checkup.metrics.suggestedDailyLimit)
+    }`,
+    `Proyeksi cashflow akhir bulan: ${formatRupiah(
+      checkup.metrics.projectedNetCashflow
+    )}`,
+    `Warning checkup: ${
+      checkup.warnings.length > 0
+        ? checkup.warnings.join("; ")
+        : "Tidak ada warning besar"
+    }`
+  ].join("\n");
+}
+
+function buildFinancialCheckupReplySegment(checkup: FinancialCheckupResult) {
+  return `Checkup keuangan: ${formatFinancialCheckupStatus(
+    checkup.status
+  )}. Fokus: ${
+    checkup.focusCategoryName ?? "belum ada kategori khusus"
+  }. ${checkup.headline} Aksi utama: ${checkup.action}`;
+}
+
 function buildFinancialHealthPromptContext(snapshot: FinancialHealthSnapshot) {
   return [
     `Status kesehatan finansial: ${snapshot.status}`,
@@ -1636,19 +1770,22 @@ function buildFinancialSummaryResponse(
     healthSnapshot,
     spendingInsight
   });
+  const checkup = buildFinancialCheckup(context);
+  const checkupText = buildFinancialCheckupReplySegment(checkup);
 
   const suggestions = buildDynamicFinancialSuggestions({
-  intent: "FINANCIAL_SUMMARY",
-  healthSnapshot,
-  spendingInsight,
-  actionPlan
-});
+    intent: "FINANCIAL_SUMMARY",
+    healthSnapshot,
+    spendingInsight,
+    actionPlan
+  });
 
   if (!hasCurrentMonthTransactions(context)) {
     return {
       intent: "FINANCIAL_SUMMARY",
-      reply: `Belum ada data transaksi bulan ini. Prioritas: ${actionPlan.mainAction}. Alasan: data transaksi belum cukup untuk menilai kesehatan finansial secara akurat. Aksi: ${actionPlan.nextStep}`,
+      reply: `Belum ada data transaksi bulan ini. ${checkupText} Prioritas: ${actionPlan.mainAction}. Alasan: data transaksi belum cukup untuk menilai kesehatan finansial secara akurat. Aksi: ${actionPlan.nextStep}`,
       cards: buildCards([
+        ...buildFinancialCheckupCards(checkup),
         {
           label: "Status Finansial",
           value: healthSnapshot.status
@@ -1681,14 +1818,15 @@ function buildFinancialSummaryResponse(
 
   return {
     intent: "FINANCIAL_SUMMARY",
-    reply: `Status kesehatan keuanganmu bulan ini: ${healthSnapshot.status}. Prioritas: ${actionPlan.mainAction}. Alasan: ${healthSnapshot.reason} Bulan ini pemasukanmu ${formatRupiah(
+    reply: `Status kesehatan keuanganmu bulan ini: ${healthSnapshot.status}. ${checkupText} Prioritas: ${actionPlan.mainAction}. Alasan: ${checkup.reason} Bulan ini pemasukanmu ${formatRupiah(
       context.currentMonth.totalIncome
     )}, pengeluaranmu ${formatRupiah(
       context.currentMonth.totalExpense
     )}, dan arus kas bersihmu ${formatRupiah(
       context.currentMonth.netCashflow
-    )}. ${topCategoryText} Aksi: ${actionPlan.nextStep}`,
+    )}. ${topCategoryText} Aksi: ${checkup.action}`,
     cards: buildCards([
+      ...buildFinancialCheckupCards(checkup),
       ...buildFinancialHealthCards(healthSnapshot),
       ...buildSafeToSpendCards(context),
       ...buildConsultantActionCards(actionPlan),
@@ -2093,6 +2231,7 @@ function buildFinancialSystemInstruction() {
     "Jika konteks sebelumnya tidak cukup untuk menjawab, minta data yang kurang secara singkat.",
     "Jika FINANCIAL HEALTH SNAPSHOT tersedia, gunakan itu untuk menjawab apakah kondisi user aman, waspada, atau berisiko.",
     "Jika SAFE-TO-SPEND SNAPSHOT tersedia, gunakan itu untuk menjawab apakah user masih aman belanja, sisa aman bulan ini, batas harian aman, apakah harus tahan pengeluaran, dan ritme pengeluaran.",
+    "Jika FINANCIAL CHECKUP SNAPSHOT tersedia, gunakan itu untuk menjawab checkup keuangan, kesehatan keuangan, kondisi bulan ini sehat atau berisiko, fokus kategori, alasan, dan aksi utama.",
     "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
     "Jika PURCHASE DECISION IMPACT tersedia, gunakan itu untuk menjawab apakah pembelian langsung seperti beli barang, jajan, atau belanja hari ini aman dilakukan.",
@@ -2107,6 +2246,7 @@ function buildFinancialSystemInstruction() {
     "Jika user bertanya apakah target/goal/kondisi finansial realistis atau aman, wajib beri verdict eksplisit.",
     "Jika user bertanya boros di mana, jawab kategori prioritas kontrol terlebih dahulu.",
     "Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, jawab dari SAFE-TO-SPEND SNAPSHOT terlebih dahulu.",
+    "Jika user bertanya checkup keuangan, kesehatan keuangan, status keuangan, atau aman/berisiko, jawab dari FINANCIAL CHECKUP SNAPSHOT terlebih dahulu.",
     "Jika user bertanya pengeluaran naik karena apa, jelaskan kategori terbesar, porsinya, frekuensinya, dan tren dibanding bulan lalu jika tersedia.",
     "Untuk analisis kesehatan finansial, gunakan struktur: status, alasan singkat, angka utama, saran aksi.",
     "Untuk analisis pola pengeluaran, gunakan struktur: kategori prioritas, nominal/porsi, tren/frekuensi, saran aksi.",
@@ -2163,6 +2303,9 @@ function buildFinancialPrompt(input: {
     "FINANCIAL HEALTH SNAPSHOT:",
     buildFinancialHealthPromptContext(healthSnapshot),
     "",
+    "FINANCIAL CHECKUP SNAPSHOT:",
+    buildFinancialCheckupPromptContext(input.context),
+    "",
     "SAFE-TO-SPEND SNAPSHOT:",
     buildSafeToSpendPromptContext(input.context),
     "",
@@ -2207,6 +2350,8 @@ function buildFinancialPrompt(input: {
     "- Jika purchase decision impact tersedia, jangan melawan keputusan pembelian, risk level, sisa aman setelah pembelian, alasan, dan aksi deterministik dari backend.",
     "- Jika user bertanya apakah boleh membeli/jajan/belanja sekarang, mulai dari purchase decision impact.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
+    "- Jika financial checkup snapshot tersedia, jangan melawan status checkup, prioritas, fokus kategori, alasan, aksi, dan warning deterministik dari backend.",
+    "- Jika user bertanya checkup keuangan, kesehatan keuangan, status keuangan, atau aman/berisiko, mulai dari status checkup lalu jelaskan alasan dan aksi utama.",
     "- Jika safe-to-spend snapshot tersedia, jangan melawan status, sisa aman, batas harian aman, pace, alasan, dan aksi deterministik dari backend.",
     "- Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, mulai dari status safe-to-spend, sisa aman, dan batas harian aman.",
     "- Jika spending pattern insight tersedia, jangan melawan kategori prioritas, nominal, porsi, tren, dan saran deterministik dari backend.",
