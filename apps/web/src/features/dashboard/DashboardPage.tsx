@@ -652,11 +652,14 @@ function SafeToSpendCard({
       ) : null}
 
       <Link
-        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-xs font-black text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-slate-950/20"
+        className="group relative mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20"
         to="/asisten"
       >
-        <MessageSquare className="h-4 w-4" />
-        Tanya Asisten
+        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
+
+        <MessageSquare className="relative z-10 h-4 w-4 transition-transform duration-300 ease-out group-hover:scale-110" />
+
+        <span className="relative z-10">Tanya Asisten</span>
       </Link>
     </div>
   );
