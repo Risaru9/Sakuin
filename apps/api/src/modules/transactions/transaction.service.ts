@@ -3,6 +3,7 @@ import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
 import type {
   CreateTransactionInput,
+  CreateTransactionsBulkInput,
   GetTransactionsQuery,
   TransactionListResponse,
   TransactionResponse,
@@ -80,6 +81,56 @@ async function ensureCategoryCanBeUsed(
   return category;
 }
 
+function getCategoryUsageKey(categoryId: string, type: TransactionType) {
+  return `${categoryId}:${type}`;
+}
+
+async function getUsableCategoriesForBulk(
+  userId: string,
+  inputs: CreateTransactionInput[]
+) {
+  const categoryIds = [...new Set(inputs.map((input) => input.categoryId))];
+
+  const categories = await prisma.category.findMany({
+    where: {
+      id: {
+        in: categoryIds
+      },
+      OR: [
+        {
+          userId: null,
+          isDefault: true
+        },
+        {
+          userId
+        }
+      ]
+    }
+  });
+
+  const categoryMap = new Map(
+    categories.map((category) => [
+      getCategoryUsageKey(category.id, category.type),
+      category
+    ])
+  );
+
+  for (const input of inputs) {
+    const category = categoryMap.get(
+      getCategoryUsageKey(input.categoryId, input.type as TransactionType)
+    );
+
+    if (!category) {
+      throw new HttpError(
+        "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi",
+        400
+      );
+    }
+  }
+
+  return categoryMap;
+}
+
 async function getOwnedTransactionOrThrow(userId: string, transactionId: string) {
   const transaction = await prisma.transaction.findFirst({
     where: {
@@ -123,6 +174,33 @@ export async function createTransaction(
   });
 
   return toTransactionResponse(transaction);
+}
+
+export async function createTransactionsBulk(
+  userId: string,
+  input: CreateTransactionsBulkInput
+): Promise<TransactionResponse[]> {
+  await getUsableCategoriesForBulk(userId, input.transactions);
+
+  const transactions = await prisma.$transaction(
+    input.transactions.map((transactionInput) =>
+      prisma.transaction.create({
+        data: {
+          userId,
+          categoryId: transactionInput.categoryId,
+          type: transactionInput.type as TransactionType,
+          amount: transactionInput.amount,
+          note: transactionInput.note?.trim() || null,
+          date: transactionInput.date
+        },
+        include: {
+          category: true
+        }
+      })
+    )
+  );
+
+  return transactions.map(toTransactionResponse);
 }
 
 export async function getTransactions(

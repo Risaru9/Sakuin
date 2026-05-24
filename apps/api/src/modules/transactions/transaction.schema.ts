@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
 const MAX_TRANSACTION_AMOUNT_LABEL = "1.000.000.000.000";
+const MAX_BULK_TRANSACTIONS = 20;
 
 const transactionTypeSchema = z.enum(["INCOME", "EXPENSE"]);
 
@@ -57,6 +58,13 @@ export const createTransactionSchema = z.object({
     .max(255, "Catatan maksimal 255 karakter")
     .optional()
     .nullable()
+});
+
+export const createTransactionsBulkSchema = z.object({
+  transactions: z
+    .array(createTransactionSchema)
+    .min(1, "Minimal satu transaksi wajib diisi")
+    .max(MAX_BULK_TRANSACTIONS, `Maksimal ${MAX_BULK_TRANSACTIONS} transaksi per request`)
 });
 
 export const updateTransactionSchema = z

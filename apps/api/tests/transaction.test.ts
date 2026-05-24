@@ -279,6 +279,160 @@ describe("Transaction API", () => {
     expect(serializedAuditEvent).not.toContain(tokenA);
   });
 
+    it("Bulk create transactions berhasil dalam satu request", async () => {
+    const capturedAuditEvents: AuditEvent[] = [];
+
+    setAuditEventSink((event) => {
+      capturedAuditEvents.push(event);
+    });
+
+    const response = await app.request("/api/transactions/bulk", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        transactions: [
+          {
+            type: "EXPENSE",
+            amount: "15000",
+            categoryId: "cat_expense_food",
+            date: new Date().toISOString(),
+            note: "Bulk makan sensitif"
+          },
+          {
+            type: "INCOME",
+            amount: "100000",
+            categoryId: "cat_income_salary",
+            date: new Date().toISOString(),
+            note: "Bulk gaji sensitif"
+          }
+        ]
+      })
+    });
+
+    const body = await parseJson<TransactionData[]>(response);
+
+    expect(response.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(body.message).toBe("Daftar transaksi berhasil dibuat");
+    expect(body.data).toHaveLength(2);
+
+    expect(body.data[0].type).toBe("EXPENSE");
+    expect(body.data[0].amount).toBe("15000");
+    expect(body.data[0].category.id).toBe("cat_expense_food");
+
+    expect(body.data[1].type).toBe("INCOME");
+    expect(body.data[1].amount).toBe("100000");
+    expect(body.data[1].category.id).toBe("cat_income_salary");
+
+    expect(capturedAuditEvents).toHaveLength(2);
+
+    for (const auditEvent of capturedAuditEvents) {
+      const serializedAuditEvent = JSON.stringify(auditEvent);
+      const serializedAuditMetadata = JSON.stringify(auditEvent.metadata);
+
+      expect(auditEvent.eventType).toBe("transaction.created");
+      expect(auditEvent.status).toBe("success");
+      expect(auditEvent.actorType).toBe("user");
+      expect(auditEvent.actorUserId).toBe(userAId);
+      expect(auditEvent.targetType).toBe("transaction");
+      expect(auditEvent.targetId).toBeTruthy();
+      expect(auditEvent.requestId).toBeTruthy();
+
+      expect(auditEvent.metadata).toHaveProperty("source", "bulk");
+      expect(auditEvent.metadata).toHaveProperty("hasNote", true);
+      expect(auditEvent.metadata).toHaveProperty("dateProvided", true);
+
+      expect(auditEvent.metadata).not.toHaveProperty("amount");
+      expect(auditEvent.metadata).not.toHaveProperty("note");
+      expect(auditEvent.metadata).not.toHaveProperty("categoryId");
+
+      expect(serializedAuditEvent).not.toContain("Bulk makan sensitif");
+      expect(serializedAuditEvent).not.toContain("Bulk gaji sensitif");
+      expect(serializedAuditMetadata).not.toContain("15000");
+      expect(serializedAuditMetadata).not.toContain("100000");
+      expect(serializedAuditMetadata).not.toContain("cat_expense_food");
+      expect(serializedAuditMetadata).not.toContain("cat_income_salary");
+      expect(serializedAuditEvent).not.toContain(tokenA);
+    }
+  });
+
+    it("Bulk create transactions gagal total jika salah satu kategori invalid", async () => {
+    const beforeCount = await prisma.transaction.count({
+      where: {
+        userId: userAId
+      }
+    });
+
+    const response = await app.request("/api/transactions/bulk", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        transactions: [
+          {
+            type: "EXPENSE",
+            amount: "20000",
+            categoryId: "cat_expense_food",
+            date: new Date().toISOString(),
+            note: "Bulk valid tapi harus rollback"
+          },
+          {
+            type: "EXPENSE",
+            amount: "30000",
+            categoryId: "category_tidak_ada",
+            date: new Date().toISOString(),
+            note: "Bulk invalid"
+          }
+        ]
+      })
+    });
+
+    const body = await parseJson(response);
+
+    const afterCount = await prisma.transaction.count({
+      where: {
+        userId: userAId
+      }
+    });
+
+    expect(response.status).toBe(400);
+    expect(body.success).toBe(false);
+    expect(body.message).toBe(
+      "Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi"
+    );
+    expect(afterCount).toBe(beforeCount);
+  });
+
+    it("Bulk create transactions gagal jika melebihi limit maksimal", async () => {
+    const response = await app.request("/api/transactions/bulk", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        transactions: Array.from({ length: 21 }, (_, index) => ({
+          type: "EXPENSE",
+          amount: String(1000 + index),
+          categoryId: "cat_expense_food",
+          date: new Date().toISOString(),
+          note: `Bulk terlalu banyak ${index}`
+        }))
+      })
+    });
+
+    const body = await parseJson(response);
+
+    expect(response.status).toBe(400);
+    expect(body.success).toBe(false);
+    expect(JSON.stringify(body.errors)).toContain("Maksimal 20 transaksi");
+  });
+
   it("Create transaction gagal tanpa token", async () => {
     const response = await app.request("/api/transactions", {
       method: "POST",

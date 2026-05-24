@@ -1,13 +1,16 @@
 import type { z } from "zod";
 import type {
   createTransactionSchema,
+  createTransactionsBulkSchema,
   getTransactionsQuerySchema,
   transactionIdParamSchema,
   updateTransactionSchema
 } from "./transaction.schema.js";
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
-
+export type CreateTransactionsBulkInput = z.infer<
+  typeof createTransactionsBulkSchema
+>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 
 export type GetTransactionsQuery = z.infer<typeof getTransactionsQuerySchema>;

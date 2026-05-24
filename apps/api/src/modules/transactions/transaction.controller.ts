@@ -5,12 +5,14 @@ import { recordAuditEventFromContext } from "../../utils/audit-event-recorder.js
 import { HttpError } from "../../utils/http-error.js";
 import type {
   CreateTransactionInput,
+  CreateTransactionsBulkInput,
   GetTransactionsQuery,
   TransactionIdParam,
   UpdateTransactionInput
 } from "./transaction.types.js";
 import {
   createTransaction,
+  createTransactionsBulk,
   deleteTransaction,
   getTransactionById,
   getTransactions,
@@ -57,6 +59,32 @@ export async function createTransactionController(c: Context<AppEnv>) {
   });
 
   return successResponse(c, "Transaksi berhasil dibuat", transaction, 201);
+}
+
+export async function createTransactionsBulkController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const input = c.get("validatedJson") as CreateTransactionsBulkInput;
+
+  const transactions = await createTransactionsBulk(userId, input);
+
+  for (const [index, transaction] of transactions.entries()) {
+    const transactionInput = input.transactions[index];
+
+    await recordAuditEventFromContext(c, {
+      eventType: "transaction.created",
+      status: "success",
+      targetType: "transaction",
+      targetId: transaction.id,
+      metadata: {
+        type: transaction.type,
+        hasNote: hasNonEmptyNote(transactionInput?.note),
+        dateProvided: Boolean(transactionInput?.date),
+        source: "bulk"
+      }
+    });
+  }
+
+  return successResponse(c, "Daftar transaksi berhasil dibuat", transactions, 201);
 }
 
 export async function getTransactionsController(c: Context<AppEnv>) {
