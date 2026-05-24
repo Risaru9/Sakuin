@@ -20,7 +20,7 @@ import {
   getCategories
 } from "../categories/category.service";
 import type { Category } from "../categories/category.types";
-import { createTransaction } from "./transaction.service";
+import { createTransactionsBulk } from "./transaction.service";
 import {
   addTransactionsToListCaches,
   getTransactionListCacheSnapshot,
@@ -447,14 +447,14 @@ export function QuickTransactionModal({
           });
         }
 
-        const savedTransactions = await Promise.all(
-          transactionInputs.map((input) => createTransaction(input))
-        );
+      const savedTransactions = await createTransactionsBulk({
+        transactions: transactionInputs
+      });
 
-        return {
-          savedTransactions,
-          createdCategoryCount
-        };
+      return {
+        savedTransactions,
+        createdCategoryCount
+      };
       },
 
             onMutate: async (items) => {

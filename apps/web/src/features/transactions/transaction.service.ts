@@ -1,6 +1,7 @@
 import { apiRequest } from "../../lib/api-client";
 import type {
   CreateTransactionInput,
+  CreateTransactionsBulkInput,
   Transaction,
   TransactionListResponse,
   TransactionSort,
@@ -57,6 +58,13 @@ export function getTransactions(params: GetTransactionsParams = {}) {
 
 export function createTransaction(input: CreateTransactionInput) {
   return apiRequest<Transaction>("/api/transactions", {
+    method: "POST",
+    body: input
+  });
+}
+
+export function createTransactionsBulk(input: CreateTransactionsBulkInput) {
+  return apiRequest<Transaction[]>("/api/transactions/bulk", {
     method: "POST",
     body: input
   });

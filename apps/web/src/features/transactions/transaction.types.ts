@@ -54,4 +54,8 @@ export type CreateTransactionInput = {
   note?: string;
 };
 
+export type CreateTransactionsBulkInput = {
+  transactions: CreateTransactionInput[];
+};
+
 export type UpdateTransactionInput = Partial<CreateTransactionInput>;
