@@ -26,12 +26,16 @@ import type { Category } from "../categories/category.types";
 import { createTransaction } from "./transaction.service";
 import type {
   CreateTransactionInput,
+  Transaction,
   TransactionType
 } from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
 import {
   addTransactionToListCaches,
-  markTransactionDerivedDataStale
+  getTransactionListCacheSnapshot,
+  markTransactionDerivedDataStale,
+  removeTransactionFromListCaches,
+  restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
 
 const MIN_TRANSACTION_AMOUNT = 1;
@@ -74,6 +78,10 @@ function getInitialForm(): TransactionFormState {
     saveAsNewCategory: false,
     customCategoryName: ""
   };
+}
+
+function createOptimisticTransactionId() {
+  return `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function getErrorMessage(error: unknown) {
@@ -173,6 +181,36 @@ function findCategoryByName(
   );
 }
 
+function mapCategoryToTransactionCategory(category: Category) {
+  return {
+    id: category.id,
+    name: category.name,
+    type: category.type,
+    icon: category.icon,
+    color: category.color,
+    isDefault: category.isDefault
+  };
+}
+
+function buildOptimisticTransaction(input: {
+  transactionInput: CreateTransactionInput;
+  category: Category;
+}): Transaction {
+  const now = new Date().toISOString();
+
+  return {
+    id: createOptimisticTransactionId(),
+    type: input.transactionInput.type,
+    amount: input.transactionInput.amount,
+    categoryId: input.category.id,
+    category: mapCategoryToTransactionCategory(input.category),
+    date: input.transactionInput.date,
+    note: input.transactionInput.note ?? null,
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
 export function AddTransactionModal({
   open,
   onClose,
@@ -251,12 +289,57 @@ export function AddTransactionModal({
         createdCategory: existingCategory ? null : category
       };
     },
-    onMutate: () => {
+    onMutate: async ({ transactionInput, customCategoryName }) => {
+      setError(null);
+
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.transactions.all
+      });
+
+      const previousTransactionQueries =
+        getTransactionListCacheSnapshot(queryClient);
+
+      const normalizedCustomCategoryName = customCategoryName
+        ? normalizeCategoryName(customCategoryName)
+        : "";
+
+      const selectedCategory = normalizedCustomCategoryName
+        ? findCategoryByName(
+            categories,
+            transactionInput.type,
+            normalizedCustomCategoryName
+          )
+        : categories.find((category) => category.id === transactionInput.categoryId);
+
+      let optimisticTransaction: Transaction | null = null;
+
+      if (selectedCategory) {
+        optimisticTransaction = buildOptimisticTransaction({
+          transactionInput: {
+            ...transactionInput,
+            categoryId: selectedCategory.id
+          },
+          category: selectedCategory
+        });
+
+        addTransactionToListCaches(queryClient, optimisticTransaction);
+      }
+
       resetForm();
       onClose();
+
+      return {
+        optimisticTransactionId: optimisticTransaction?.id ?? null,
+        previousTransactionQueries
+      };
     },
-        onSuccess: ({ transaction, createdCategory }) => {
+        onSuccess: ({ transaction, createdCategory }, _variables, context) => {
+      if (context?.optimisticTransactionId) {
+        removeTransactionFromListCaches(queryClient, context.optimisticTransactionId);
+      }
+
       addTransactionToListCaches(queryClient, transaction);
+
       markTransactionDerivedDataStale(queryClient, {
         includeCategories: Boolean(createdCategory)
       });
@@ -271,8 +354,13 @@ export function AddTransactionModal({
 
       void onSuccess();
     },
-    
-    onError: (caughtError) => {
+
+    onError: (caughtError, _variables, context) => {
+      restoreTransactionListCacheSnapshot(
+        queryClient,
+        context?.previousTransactionQueries
+      );
+
       addToast({
         variant: "error",
         title: "Gagal menambahkan transaksi",

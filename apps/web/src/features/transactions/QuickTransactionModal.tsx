@@ -23,7 +23,10 @@ import type { Category } from "../categories/category.types";
 import { createTransaction } from "./transaction.service";
 import {
   addTransactionsToListCaches,
-  markTransactionDerivedDataStale
+  getTransactionListCacheSnapshot,
+  markTransactionDerivedDataStale,
+  removeTransactionFromListCaches,
+  restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
 import {
   parseQuickTransactionInput,
@@ -32,6 +35,7 @@ import {
 } from "./quick-transaction-parser";
 import type {
   CreateTransactionInput,
+  Transaction,
   TransactionType
 } from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
@@ -111,6 +115,117 @@ function findCategoryByName(
       category.type === type &&
       category.name.toLowerCase() === normalizedCategoryName
   );
+}
+
+function createOptimisticTransactionId(index: number) {
+  return `optimistic-quick-${Date.now()}-${index}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+}
+
+function createOptimisticCategoryId(index: number) {
+  return `optimistic-category-${Date.now()}-${index}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+}
+
+function mapCategoryToTransactionCategory(category: Category) {
+  return {
+    id: category.id,
+    name: category.name,
+    type: category.type,
+    icon: category.icon,
+    color: category.color,
+    isDefault: category.isDefault
+  };
+}
+
+function resolveOptimisticTransactionCategory(input: {
+  draft: QuickTransactionDraft;
+  categories: Category[];
+  index: number;
+}): Transaction["category"] | null {
+  const directCategory = input.categories.find(
+    (category) =>
+      category.id === input.draft.categoryId &&
+      category.type === input.draft.type
+  );
+
+  if (directCategory) {
+    return mapCategoryToTransactionCategory(directCategory);
+  }
+
+  const customCategoryName = normalizeCategoryName(
+    input.draft.customCategoryName || input.draft.categoryName || ""
+  );
+
+  if (input.draft.saveAsNewCategory && customCategoryName) {
+    return {
+      id: createOptimisticCategoryId(input.index),
+      name: customCategoryName,
+      type: input.draft.type,
+      icon: null,
+      color: null,
+      isDefault: false
+    };
+  }
+
+  const categoryName = normalizeCategoryName(input.draft.categoryName || "");
+
+  if (categoryName) {
+    const categoryByName = findCategoryByName(
+      input.categories,
+      input.draft.type,
+      categoryName
+    );
+
+    if (categoryByName) {
+      return mapCategoryToTransactionCategory(categoryByName);
+    }
+  }
+
+  return null;
+}
+
+function buildOptimisticTransactionFromDraft(input: {
+  draft: QuickTransactionDraft;
+  categories: Category[];
+  index: number;
+}): Transaction | null {
+  const category = resolveOptimisticTransactionCategory(input);
+
+  if (!category) {
+    return null;
+  }
+
+  const now = new Date(Date.now() + input.index).toISOString();
+
+  return {
+    id: createOptimisticTransactionId(input.index),
+    type: input.draft.type,
+    amount: input.draft.amount.trim(),
+    categoryId: category.id,
+    category,
+    date: toIsoDate(input.draft.date),
+    note: input.draft.note.trim() || null,
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function buildOptimisticTransactionsFromDrafts(input: {
+  drafts: QuickTransactionDraft[];
+  categories: Category[];
+}) {
+  return input.drafts
+    .map((draft, index) =>
+      buildOptimisticTransactionFromDraft({
+        draft,
+        categories: input.categories,
+        index
+      })
+    )
+    .filter((transaction): transaction is Transaction => Boolean(transaction));
 }
 
 function formatRupiah(value: string | number) {
@@ -341,8 +456,48 @@ export function QuickTransactionModal({
           createdCategoryCount
         };
       },
-            onSuccess: ({ savedTransactions, createdCategoryCount }) => {
+
+            onMutate: async (items) => {
+        setError(null);
+
+        await queryClient.cancelQueries({
+          queryKey: queryKeys.transactions.all
+        });
+
+        const previousTransactionQueries =
+          getTransactionListCacheSnapshot(queryClient);
+
+        const optimisticTransactions = buildOptimisticTransactionsFromDrafts({
+          drafts: items,
+          categories
+        });
+
+        if (optimisticTransactions.length > 0) {
+          addTransactionsToListCaches(queryClient, optimisticTransactions);
+        }
+
+        onClose();
+
+        return {
+          previousTransactionQueries,
+          optimisticTransactionIds: optimisticTransactions.map(
+            (transaction) => transaction.id
+          )
+        };
+      },
+      
+              onSuccess: (
+        { savedTransactions, createdCategoryCount },
+        _items,
+        context
+      ) => {
+        for (const optimisticTransactionId of context?.optimisticTransactionIds ??
+          []) {
+          removeTransactionFromListCaches(queryClient, optimisticTransactionId);
+        }
+
         addTransactionsToListCaches(queryClient, savedTransactions);
+
         markTransactionDerivedDataStale(queryClient, {
           includeCategories: createdCategoryCount > 0
         });
@@ -359,10 +514,14 @@ export function QuickTransactionModal({
         void onSuccess();
 
         resetModal();
-        onClose();
       },
 
-      onError: (caughtError) => {
+           onError: (caughtError, _items, context) => {
+        restoreTransactionListCacheSnapshot(
+          queryClient,
+          context?.previousTransactionQueries
+        );
+
         const message = getErrorMessage(caughtError);
 
         setError(message);
@@ -371,7 +530,7 @@ export function QuickTransactionModal({
           variant: "error",
           title: "Gagal menyimpan transaksi cepat",
           description:
-            "Draft belum dihapus. Buka Catat Cepat kembali untuk mengecek dan mencoba ulang."
+            "Perubahan sementara dibatalkan. Buka Catat Cepat kembali untuk mengecek dan mencoba ulang."
         });
       }
     });
