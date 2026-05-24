@@ -17,9 +17,14 @@ import {
 } from "../categories/category.service";
 import type { Category } from "../categories/category.types";
 import { updateTransaction } from "./transaction.service";
+import {
+  getTransactionListCacheSnapshot,
+  markTransactionDerivedDataStale,
+  restoreTransactionListCacheSnapshot,
+  updateTransactionInListCaches
+} from "./transaction-cache";
 import type {
   Transaction,
-  TransactionListResponse,
   TransactionType,
   UpdateTransactionInput
 } from "./transaction.types";
@@ -316,40 +321,20 @@ export function EditTransactionModal({
       });
 
       const previousTransactionQueries =
-        queryClient.getQueriesData<TransactionListResponse>({
-          queryKey: queryKeys.transactions.all
-        });
+        getTransactionListCacheSnapshot(queryClient);
 
-      queryClient.setQueriesData<TransactionListResponse>(
-        {
-          queryKey: queryKeys.transactions.all
-        },
-        (currentData) => {
-          if (!currentData) {
-            return currentData;
-          }
-
-          return {
-            ...currentData,
-            items: currentData.items.map((item) =>
-              item.id === optimisticTransaction.id
-                ? optimisticTransaction
-                : item
-            )
-          };
-        }
-      );
+      updateTransactionInListCaches(queryClient, optimisticTransaction);
 
       return {
         previousTransactionQueries
       };
     },
+
     onError: (caughtError, _variables, context) => {
-      if (context?.previousTransactionQueries) {
-        for (const [queryKey, data] of context.previousTransactionQueries) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
+      restoreTransactionListCacheSnapshot(
+        queryClient,
+        context?.previousTransactionQueries
+      );
 
       addToast({
         variant: "error",
@@ -357,24 +342,9 @@ export function EditTransactionModal({
         description: getErrorMessage(caughtError)
       });
     },
-    onSuccess: ({ updatedTransaction, createdCategory }) => {
-      queryClient.setQueriesData<TransactionListResponse>(
-        {
-          queryKey: queryKeys.transactions.all
-        },
-        (currentData) => {
-          if (!currentData) {
-            return currentData;
-          }
 
-          return {
-            ...currentData,
-            items: currentData.items.map((item) =>
-              item.id === updatedTransaction.id ? updatedTransaction : item
-            )
-          };
-        }
-      );
+    onSuccess: ({ updatedTransaction, createdCategory }) => {
+      updateTransactionInListCaches(queryClient, updatedTransaction);
 
       addToast({
         variant: "success",
@@ -386,20 +356,10 @@ export function EditTransactionModal({
 
       void onSuccess();
     },
-    onSettled: (_data, _error, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.all
+        onSettled: (_data, _error, variables) => {
+      markTransactionDerivedDataStale(queryClient, {
+        includeCategories: Boolean(variables?.customCategoryName)
       });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.summary
-      });
-
-      if (variables?.customCategoryName) {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.categories
-        });
-      }
     }
   });
 

@@ -24,8 +24,15 @@ import {
 } from "../categories/category.service";
 import type { Category } from "../categories/category.types";
 import { createTransaction } from "./transaction.service";
-import type { CreateTransactionInput, TransactionType } from "./transaction.types";
+import type {
+  CreateTransactionInput,
+  TransactionType
+} from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
+import {
+  addTransactionToListCaches,
+  markTransactionDerivedDataStale
+} from "./transaction-cache";
 
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
@@ -248,29 +255,23 @@ export function AddTransactionModal({
       resetForm();
       onClose();
     },
-    onSuccess: ({ createdCategory }) => {
+        onSuccess: ({ transaction, createdCategory }) => {
+      addTransactionToListCaches(queryClient, transaction);
+      markTransactionDerivedDataStale(queryClient, {
+        includeCategories: Boolean(createdCategory)
+      });
+
       addToast({
         variant: "success",
         title: "Transaksi berhasil ditambahkan",
         description: createdCategory
           ? `Kategori "${createdCategory.name}" ikut disimpan untuk transaksi berikutnya.`
-          : "Data transaksi dan dashboard sedang diperbarui."
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.all
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.summary
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.categories
+          : "Transaksi langsung ditampilkan. Ringkasan diperbarui di background."
       });
 
       void onSuccess();
     },
+    
     onError: (caughtError) => {
       addToast({
         variant: "error",

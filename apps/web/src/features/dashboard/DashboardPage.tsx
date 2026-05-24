@@ -964,16 +964,10 @@ export function DashboardPage() {
     setDashboardPriorityGoalIdState(storedPriorityGoalId);
   }, [goalsQuery.data]);
 
-  function refreshDashboardData() {
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.summary
-    });
-
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.transactions.all
-    });
+   function refreshDashboardData() {
+    // Mutation handlers already update relevant caches
+    // and refresh summary in the background.
   }
-
   function retrySummaryData() {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.summary

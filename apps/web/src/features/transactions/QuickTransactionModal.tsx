@@ -22,6 +22,10 @@ import {
 import type { Category } from "../categories/category.types";
 import { createTransaction } from "./transaction.service";
 import {
+  addTransactionsToListCaches,
+  markTransactionDerivedDataStale
+} from "./transaction-cache";
+import {
   parseQuickTransactionInput,
   type QuickTransactionDraft,
   type QuickTransactionSkippedItem
@@ -337,26 +341,19 @@ export function QuickTransactionModal({
           createdCategoryCount
         };
       },
-      onSuccess: ({ savedTransactions, createdCategoryCount }) => {
+            onSuccess: ({ savedTransactions, createdCategoryCount }) => {
+        addTransactionsToListCaches(queryClient, savedTransactions);
+        markTransactionDerivedDataStale(queryClient, {
+          includeCategories: createdCategoryCount > 0
+        });
+
         addToast({
           variant: "success",
           title: "Transaksi cepat berhasil disimpan",
           description:
             createdCategoryCount > 0
-              ? `${savedTransactions.length} transaksi dan ${createdCategoryCount} kategori baru berhasil ditambahkan.`
-              : `${savedTransactions.length} transaksi berhasil ditambahkan.`
-        });
-
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.transactions.all
-        });
-
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.summary
-        });
-
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.categories
+              ? `${savedTransactions.length} transaksi dan ${createdCategoryCount} kategori baru berhasil ditambahkan. Ringkasan diperbarui di background.`
+              : `${savedTransactions.length} transaksi berhasil ditambahkan. Ringkasan diperbarui di background.`
         });
 
         void onSuccess();
@@ -364,6 +361,7 @@ export function QuickTransactionModal({
         resetModal();
         onClose();
       },
+
       onError: (caughtError) => {
         const message = getErrorMessage(caughtError);
 

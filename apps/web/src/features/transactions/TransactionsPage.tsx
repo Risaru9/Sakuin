@@ -25,6 +25,10 @@ import { AddTransactionModal } from "./AddTransactionModal";
 import { EditTransactionModal } from "./EditTransactionModal";
 import { QuickTransactionModal } from "./QuickTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
+import {
+  markTransactionDerivedDataStale,
+  removeTransactionFromListCaches
+} from "./transaction-cache";
 import type {
   Transaction,
   TransactionListResponse,
@@ -323,48 +327,14 @@ export function TransactionsPage() {
           queryKey: queryKeys.transactions.all
         });
 
-      queryClient.setQueriesData<TransactionListResponse>(
-        {
-          queryKey: queryKeys.transactions.all
-        },
-        (currentData) => {
-          if (!currentData) {
-            return currentData;
-          }
-
-          const currentPagination =
-            currentData.pagination ?? currentData.meta;
-
-          const nextPagination = currentPagination
-            ? {
-                ...currentPagination,
-                total: Math.max(currentPagination.total - 1, 0),
-                totalPages: Math.max(
-                  Math.ceil(
-                    Math.max(currentPagination.total - 1, 0) /
-                      currentPagination.limit
-                  ),
-                  0
-                )
-              }
-            : undefined;
-
-          return {
-            ...currentData,
-            items: currentData.items.filter(
-              (item) => item.id !== transaction.id
-            ),
-            pagination: currentData.pagination ? nextPagination : undefined,
-            meta: currentData.meta ? nextPagination : undefined
-          };
-        }
-      );
+      removeTransactionFromListCaches(queryClient, transaction.id);
 
       return {
         previousTransactionQueries,
         deletedTransactionName: transaction.note || transaction.category.name
       };
     },
+
     onError: (caughtError, _transaction, context) => {
       if (context?.previousTransactionQueries) {
         for (const [queryKey, data] of context.previousTransactionQueries) {
@@ -390,13 +360,7 @@ export function TransactionsPage() {
       });
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.all
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.summary
-      });
+      markTransactionDerivedDataStale(queryClient);
     }
   });
 
@@ -435,13 +399,8 @@ export function TransactionsPage() {
   }
 
   function refreshTransactionData() {
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.transactions.all
-    });
-
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.summary
-    });
+    // Mutation handlers already update transaction cache instantly
+    // and mark derived data stale in the background.
   }
 
   function retryTransactions() {
