@@ -9,6 +9,34 @@ import type {
   SummaryResponse
 } from "./summary.types.js";
 
+type AmountByTypeRow = {
+  type: TransactionType;
+  _sum?: {
+    amount?: Prisma.Decimal | null;
+  } | null;
+};
+
+type CategoryAggregateRow = {
+  categoryId: string;
+  type: TransactionType;
+  _sum?: {
+    amount?: Prisma.Decimal | null;
+  } | null;
+  _count?:
+    | true
+    | {
+        _all?: number;
+      }
+    | null;
+};
+
+type CategoryMetadata = {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+};
+
 function toDecimal(value: Prisma.Decimal.Value) {
   return new Prisma.Decimal(value);
 }
@@ -79,21 +107,79 @@ function mapRecentTransaction(
   };
 }
 
+function buildAmountByTypeMap(rows: AmountByTypeRow[]) {
+  const amountByType: Record<TransactionType, Prisma.Decimal> = {
+    [TransactionType.INCOME]: toDecimal(0),
+    [TransactionType.EXPENSE]: toDecimal(0)
+  };
+
+  for (const row of rows) {
+    amountByType[row.type] = toDecimal(row._sum?.amount ?? 0);
+  }
+
+  return amountByType;
+}
+
+function getGroupByCount(
+  count:
+    | true
+    | {
+        _all?: number;
+      }
+    | null
+    | undefined
+) {
+  if (!count || count === true) {
+    return 0;
+  }
+
+  return count._all ?? 0;
+}
+
+function buildCategorySummaryItems(input: {
+  categoryAggregates: CategoryAggregateRow[];
+  categoriesById: Map<string, CategoryMetadata>;
+}) {
+  const items: CategorySummaryItem[] = [];
+
+  for (const aggregate of input.categoryAggregates) {
+    const category = input.categoriesById.get(aggregate.categoryId);
+
+    if (!category) {
+      continue;
+    }
+
+    items.push({
+      categoryId: category.id,
+      categoryName: category.name,
+      categoryIcon: category.icon,
+      categoryColor: category.color,
+      type: aggregate.type,
+      totalAmount: decimalToString(toDecimal(aggregate._sum?.amount ?? 0)),
+      transactionCount: getGroupByCount(aggregate._count)
+    });
+  }
+
+  return items.sort((firstItem, secondItem) => {
+    return Number(secondItem.totalAmount) - Number(firstItem.totalAmount);
+  });
+}
+
 export async function getSummary(userId: string): Promise<SummaryResponse> {
   const now = new Date();
   const startOfCurrentMonth = getStartOfMonth(now);
   const endOfCurrentMonth = getEndOfMonth(now);
   const lastSixMonths = getLastSixMonths(now);
 
+  const aiFinancialContextPromise = getAiFinancialContext(userId, now);
+
   const [
     user,
-    totalIncomeAggregate,
-    totalExpenseAggregate,
-    incomeThisMonthAggregate,
-    expenseThisMonthAggregate,
+    totalAmountByTypeRows,
+    currentMonthAmountByTypeRows,
     transactionCount,
     recentTransactions,
-    categoryTransactions,
+    categoryAggregates,
     monthlyTransactions
   ] = await prisma.$transaction([
     prisma.user.findUnique({
@@ -105,48 +191,30 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
       }
     }),
 
-    prisma.transaction.aggregate({
+    prisma.transaction.groupBy({
+      by: ["type"],
       where: {
-        userId,
-        type: TransactionType.INCOME
+        userId
+      },
+      orderBy: {
+        type: "asc"
       },
       _sum: {
         amount: true
       }
     }),
 
-    prisma.transaction.aggregate({
+    prisma.transaction.groupBy({
+      by: ["type"],
       where: {
         userId,
-        type: TransactionType.EXPENSE
-      },
-      _sum: {
-        amount: true
-      }
-    }),
-
-    prisma.transaction.aggregate({
-      where: {
-        userId,
-        type: TransactionType.INCOME,
         date: {
           gte: startOfCurrentMonth,
           lte: endOfCurrentMonth
         }
       },
-      _sum: {
-        amount: true
-      }
-    }),
-
-    prisma.transaction.aggregate({
-      where: {
-        userId,
-        type: TransactionType.EXPENSE,
-        date: {
-          gte: startOfCurrentMonth,
-          lte: endOfCurrentMonth
-        }
+      orderBy: {
+        type: "asc"
       },
       _sum: {
         amount: true
@@ -166,28 +234,35 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
       include: {
         category: true
       },
-      orderBy: {
-        date: "desc"
-      },
+      orderBy: [
+        {
+          date: "desc"
+        },
+        {
+          createdAt: "desc"
+        }
+      ],
       take: 5
     }),
 
-    prisma.transaction.findMany({
+    prisma.transaction.groupBy({
+      by: ["categoryId", "type"],
       where: {
         userId
       },
-      select: {
-        type: true,
-        amount: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            icon: true,
-            color: true
-          }
+      orderBy: [
+        {
+          categoryId: "asc"
+        },
+        {
+          type: "asc"
         }
+      ],
+      _sum: {
+        amount: true
+      },
+      _count: {
+        _all: true
       }
     }),
 
@@ -207,66 +282,51 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     })
   ]);
 
-  const totalIncome = toDecimal(totalIncomeAggregate._sum.amount ?? 0);
-  const totalExpense = toDecimal(totalExpenseAggregate._sum.amount ?? 0);
+  const categoryIds = [
+    ...new Set(categoryAggregates.map((aggregate) => aggregate.categoryId))
+  ];
+
+  const categories =
+    categoryIds.length > 0
+      ? await prisma.category.findMany({
+          where: {
+            id: {
+              in: categoryIds
+            }
+          },
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            color: true
+          }
+        })
+      : [];
+
+  const categoriesById = new Map(
+    categories.map((category) => [category.id, category])
+  );
+
+  const totalAmountByType = buildAmountByTypeMap(totalAmountByTypeRows);
+  const currentMonthAmountByType = buildAmountByTypeMap(
+    currentMonthAmountByTypeRows
+  );
+
+  const totalIncome = totalAmountByType[TransactionType.INCOME];
+  const totalExpense = totalAmountByType[TransactionType.EXPENSE];
   const balance = totalIncome.minus(totalExpense);
 
-  const incomeThisMonth = toDecimal(incomeThisMonthAggregate._sum.amount ?? 0);
-  const expenseThisMonth = toDecimal(expenseThisMonthAggregate._sum.amount ?? 0);
+  const incomeThisMonth = currentMonthAmountByType[TransactionType.INCOME];
+  const expenseThisMonth = currentMonthAmountByType[TransactionType.EXPENSE];
   const balanceThisMonth = incomeThisMonth.minus(expenseThisMonth);
 
   const safeBalanceLimit = toDecimal(user?.safeBalanceLimit ?? 0);
   const isBelowSafeLimit = balance.lessThan(safeBalanceLimit);
 
-  const categorySummaryMap = new Map<
-    string,
-    {
-      categoryId: string;
-      categoryName: string;
-      categoryIcon: string | null;
-      categoryColor: string | null;
-      type: "INCOME" | "EXPENSE";
-      totalAmount: Prisma.Decimal;
-      transactionCount: number;
-    }
-  >();
-
-  for (const transaction of categoryTransactions) {
-    const key = `${transaction.category.id}-${transaction.type}`;
-    const existing = categorySummaryMap.get(key);
-
-    if (existing) {
-      existing.totalAmount = existing.totalAmount.plus(transaction.amount);
-      existing.transactionCount += 1;
-      continue;
-    }
-
-    categorySummaryMap.set(key, {
-      categoryId: transaction.category.id,
-      categoryName: transaction.category.name,
-      categoryIcon: transaction.category.icon,
-      categoryColor: transaction.category.color,
-      type: transaction.type,
-      totalAmount: transaction.amount,
-      transactionCount: 1
-    });
-  }
-
-  const categorySummaryItems: CategorySummaryItem[] = Array.from(
-    categorySummaryMap.values()
-  )
-    .map((item) => {
-      return {
-        categoryId: item.categoryId,
-        categoryName: item.categoryName,
-        categoryIcon: item.categoryIcon,
-        categoryColor: item.categoryColor,
-        type: item.type,
-        totalAmount: decimalToString(item.totalAmount),
-        transactionCount: item.transactionCount
-      };
-    })
-    .sort((a, b) => Number(b.totalAmount) - Number(a.totalAmount));
+  const categorySummaryItems = buildCategorySummaryItems({
+    categoryAggregates,
+    categoriesById
+  });
 
   const incomeByCategory = categorySummaryItems.filter(
     (item) => item.type === TransactionType.INCOME
@@ -322,27 +382,27 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     };
   });
 
-  const aiFinancialContext = await getAiFinancialContext(userId, now);
+  const aiFinancialContext = await aiFinancialContextPromise;
   const financialCheckup = buildFinancialCheckup(aiFinancialContext);
 
   return {
-  totalIncome: decimalToString(totalIncome),
-  totalExpense: decimalToString(totalExpense),
-  balance: decimalToString(balance),
-  safeBalanceLimit: decimalToString(safeBalanceLimit),
-  isBelowSafeLimit,
-  safeToSpend: aiFinancialContext.safeToSpend,
-  financialCheckup,
+    totalIncome: decimalToString(totalIncome),
+    totalExpense: decimalToString(totalExpense),
+    balance: decimalToString(balance),
+    safeBalanceLimit: decimalToString(safeBalanceLimit),
+    isBelowSafeLimit,
+    safeToSpend: aiFinancialContext.safeToSpend,
+    financialCheckup,
 
-  incomeThisMonth: decimalToString(incomeThisMonth),
-  expenseThisMonth: decimalToString(expenseThisMonth),
-  balanceThisMonth: decimalToString(balanceThisMonth),
+    incomeThisMonth: decimalToString(incomeThisMonth),
+    expenseThisMonth: decimalToString(expenseThisMonth),
+    balanceThisMonth: decimalToString(balanceThisMonth),
 
-  transactionCount,
-  recentTransactions: recentTransactions.map(mapRecentTransaction),
+    transactionCount,
+    recentTransactions: recentTransactions.map(mapRecentTransaction),
 
-  expenseByCategory,
-  incomeByCategory,
-  monthlyTrend
+    expenseByCategory,
+    incomeByCategory,
+    monthlyTrend
   };
 }
