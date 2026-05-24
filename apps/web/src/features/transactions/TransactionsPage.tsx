@@ -54,11 +54,11 @@ const sortOptions: Array<{
 }> = [
   {
     value: "date_desc",
-    label: "Tanggal terbaru"
+    label: "Tanggal terbaru, input terbaru"
   },
   {
     value: "date_asc",
-    label: "Tanggal terlama"
+    label: "Tanggal terlama, input terbaru"
   },
   {
     value: "created_desc",

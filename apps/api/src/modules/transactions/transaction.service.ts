@@ -163,22 +163,36 @@ export async function getTransactions(
   }
 
   const orderByMap: Record<
-    GetTransactionsQuery["sort"],
-    Prisma.TransactionOrderByWithRelationInput
-  > = {
-    date_desc: {
+  GetTransactionsQuery["sort"],
+  Prisma.TransactionOrderByWithRelationInput[]
+> = {
+  date_desc: [
+    {
       date: "desc"
     },
-    date_asc: {
+    {
+      createdAt: "desc"
+    }
+  ],
+  date_asc: [
+    {
       date: "asc"
     },
-    created_desc: {
+    {
       createdAt: "desc"
-    },
-    created_asc: {
+    }
+  ],
+  created_desc: [
+    {
+      createdAt: "desc"
+    }
+  ],
+  created_asc: [
+    {
       createdAt: "asc"
     }
-  };
+  ]
+};
 
   const skip = (query.page - 1) * query.limit;
 

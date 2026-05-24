@@ -120,21 +120,30 @@ function transactionMatchesParams(
   return true;
 }
 
+function compareCreatedAtDesc(firstItem: Transaction, secondItem: Transaction) {
+  return (
+    new Date(secondItem.createdAt).getTime() -
+    new Date(firstItem.createdAt).getTime()
+  );
+}
+
 function sortTransactions(items: Transaction[], sort: TransactionSort | undefined) {
   const activeSort = sort ?? "date_desc";
 
   return [...items].sort((firstItem, secondItem) => {
     if (activeSort === "date_asc") {
-      return (
-        new Date(firstItem.date).getTime() - new Date(secondItem.date).getTime()
-      );
+      const dateDifference =
+        new Date(firstItem.date).getTime() - new Date(secondItem.date).getTime();
+
+      if (dateDifference !== 0) {
+        return dateDifference;
+      }
+
+      return compareCreatedAtDesc(firstItem, secondItem);
     }
 
     if (activeSort === "created_desc") {
-      return (
-        new Date(secondItem.createdAt).getTime() -
-        new Date(firstItem.createdAt).getTime()
-      );
+      return compareCreatedAtDesc(firstItem, secondItem);
     }
 
     if (activeSort === "created_asc") {
@@ -144,9 +153,14 @@ function sortTransactions(items: Transaction[], sort: TransactionSort | undefine
       );
     }
 
-    return (
-      new Date(secondItem.date).getTime() - new Date(firstItem.date).getTime()
-    );
+    const dateDifference =
+      new Date(secondItem.date).getTime() - new Date(firstItem.date).getTime();
+
+    if (dateDifference !== 0) {
+      return dateDifference;
+    }
+
+    return compareCreatedAtDesc(firstItem, secondItem);
   });
 }
 
