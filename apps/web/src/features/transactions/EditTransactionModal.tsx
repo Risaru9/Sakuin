@@ -18,10 +18,13 @@ import {
 import type { Category } from "../categories/category.types";
 import { updateTransaction } from "./transaction.service";
 import {
+  getSummaryCacheSnapshot,
   getTransactionListCacheSnapshot,
   markTransactionDerivedDataStale,
+  restoreSummaryCacheSnapshot,
   restoreTransactionListCacheSnapshot,
-  updateTransactionInListCaches
+  updateTransactionInListCaches,
+  updateTransactionInSummaryCache
 } from "./transaction-cache";
 import type {
   Transaction,
@@ -321,12 +324,21 @@ export function EditTransactionModal({
       });
 
       const previousTransactionQueries =
-        getTransactionListCacheSnapshot(queryClient);
+          getTransactionListCacheSnapshot(queryClient);
+        const previousSummary = getSummaryCacheSnapshot(queryClient);
 
-      updateTransactionInListCaches(queryClient, optimisticTransaction);
+        updateTransactionInListCaches(queryClient, optimisticTransaction);
+
+        if (transaction) {
+          updateTransactionInSummaryCache(queryClient, {
+            previousTransaction: transaction,
+            nextTransaction: optimisticTransaction
+          });
+        }
 
       return {
-        previousTransactionQueries
+        previousTransactionQueries,
+        previousSummary
       };
     },
 
@@ -336,6 +348,8 @@ export function EditTransactionModal({
         context?.previousTransactionQueries
       );
 
+      restoreSummaryCacheSnapshot(queryClient, context?.previousSummary);
+
       addToast({
         variant: "error",
         title: "Gagal memperbarui transaksi",
@@ -343,8 +357,19 @@ export function EditTransactionModal({
       });
     },
 
-    onSuccess: ({ updatedTransaction, createdCategory }) => {
+    onSuccess: ({ updatedTransaction, createdCategory }, _variables, context) => {
       updateTransactionInListCaches(queryClient, updatedTransaction);
+
+      if (transaction) {
+        if (context?.previousSummary) {
+          restoreSummaryCacheSnapshot(queryClient, context.previousSummary);
+        }
+
+        updateTransactionInSummaryCache(queryClient, {
+          previousTransaction: transaction,
+          nextTransaction: updatedTransaction
+        });
+      }
 
       addToast({
         variant: "success",

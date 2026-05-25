@@ -26,8 +26,11 @@ import { EditTransactionModal } from "./EditTransactionModal";
 import { QuickTransactionModal } from "./QuickTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
 import {
+  getSummaryCacheSnapshot,
   markTransactionDerivedDataStale,
-  removeTransactionFromListCaches
+  removeTransactionFromListCaches,
+  removeTransactionFromSummaryCache,
+  restoreSummaryCacheSnapshot
 } from "./transaction-cache";
 import type {
   Transaction,
@@ -323,16 +326,19 @@ export function TransactionsPage() {
       });
 
       const previousTransactionQueries =
-        queryClient.getQueriesData<TransactionListResponse>({
-          queryKey: queryKeys.transactions.all
-        });
+      queryClient.getQueriesData<TransactionListResponse>({
+        queryKey: queryKeys.transactions.all
+      });
+    const previousSummary = getSummaryCacheSnapshot(queryClient);
 
-      removeTransactionFromListCaches(queryClient, transaction.id);
+    removeTransactionFromListCaches(queryClient, transaction.id);
+    removeTransactionFromSummaryCache(queryClient, transaction);
 
-      return {
-        previousTransactionQueries,
-        deletedTransactionName: transaction.note || transaction.category.name
-      };
+    return {
+      previousTransactionQueries,
+      previousSummary,
+      deletedTransactionName: transaction.note || transaction.category.name
+    };
     },
 
     onError: (caughtError, _transaction, context) => {
@@ -341,6 +347,8 @@ export function TransactionsPage() {
           queryClient.setQueryData(queryKey, data);
         }
       }
+
+      restoreSummaryCacheSnapshot(queryClient, context?.previousSummary);
 
       const message = getErrorMessage(caughtError);
 

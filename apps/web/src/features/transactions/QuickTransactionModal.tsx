@@ -23,9 +23,12 @@ import type { Category } from "../categories/category.types";
 import { createTransactionsBulk } from "./transaction.service";
 import {
   addTransactionsToListCaches,
+  addTransactionsToSummaryCache,
+  getSummaryCacheSnapshot,
   getTransactionListCacheSnapshot,
   markTransactionDerivedDataStale,
   removeTransactionFromListCaches,
+  restoreSummaryCacheSnapshot,
   restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
 import {
@@ -467,6 +470,8 @@ export function QuickTransactionModal({
         const previousTransactionQueries =
           getTransactionListCacheSnapshot(queryClient);
 
+        const previousSummary = getSummaryCacheSnapshot(queryClient);
+
         const optimisticTransactions = buildOptimisticTransactionsFromDrafts({
           drafts: items,
           categories
@@ -474,12 +479,14 @@ export function QuickTransactionModal({
 
         if (optimisticTransactions.length > 0) {
           addTransactionsToListCaches(queryClient, optimisticTransactions);
+          addTransactionsToSummaryCache(queryClient, optimisticTransactions);
         }
 
         onClose();
 
         return {
           previousTransactionQueries,
+          previousSummary,
           optimisticTransactionIds: optimisticTransactions.map(
             (transaction) => transaction.id
           )
@@ -496,7 +503,12 @@ export function QuickTransactionModal({
           removeTransactionFromListCaches(queryClient, optimisticTransactionId);
         }
 
+        if (context?.previousSummary) {
+          restoreSummaryCacheSnapshot(queryClient, context.previousSummary);
+        }
+
         addTransactionsToListCaches(queryClient, savedTransactions);
+        addTransactionsToSummaryCache(queryClient, savedTransactions);
 
         markTransactionDerivedDataStale(queryClient, {
           includeCategories: createdCategoryCount > 0
@@ -521,6 +533,7 @@ export function QuickTransactionModal({
           queryClient,
           context?.previousTransactionQueries
         );
+        restoreSummaryCacheSnapshot(queryClient, context?.previousSummary);
 
         const message = getErrorMessage(caughtError);
 

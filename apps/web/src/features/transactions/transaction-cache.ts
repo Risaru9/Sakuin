@@ -1,5 +1,6 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/query-keys";
+import type { SummaryData, SummaryTransaction } from "../summary/summary.types";
 import type {
   Transaction,
   TransactionListResponse,
@@ -35,6 +36,218 @@ function toNumber(value: string | number | null | undefined) {
   }
 
   return numberValue;
+}
+
+function formatSummaryAmount(value: number) {
+  return value.toFixed(2);
+}
+
+function getCurrentMonthRange() {
+  const now = new Date();
+
+  return {
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
+    endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 0, 0, 0, 0)
+  };
+}
+
+function isTransactionInCurrentMonth(transaction: Transaction) {
+  const transactionDate = new Date(transaction.date);
+
+  if (Number.isNaN(transactionDate.getTime())) {
+    return false;
+  }
+
+  const { startDate, endDate } = getCurrentMonthRange();
+
+  return transactionDate >= startDate && transactionDate < endDate;
+}
+
+function getSignedIncomeDelta(transaction: Transaction) {
+  return transaction.type === "INCOME" ? toNumber(transaction.amount) : 0;
+}
+
+function getSignedExpenseDelta(transaction: Transaction) {
+  return transaction.type === "EXPENSE" ? toNumber(transaction.amount) : 0;
+}
+
+function addAmount(value: string, delta: number) {
+  return formatSummaryAmount(toNumber(value) + delta);
+}
+
+function subtractAmount(value: string, delta: number) {
+  return formatSummaryAmount(toNumber(value) - delta);
+}
+
+function recalculateBalance(input: {
+  income: string;
+  expense: string;
+}) {
+  return formatSummaryAmount(toNumber(input.income) - toNumber(input.expense));
+}
+
+function mapTransactionToSummaryTransaction(
+  transaction: Transaction
+): SummaryTransaction {
+  return {
+    id: transaction.id,
+    type: transaction.type,
+    amount: transaction.amount,
+    note: transaction.note,
+    date: transaction.date,
+    category: {
+      id: transaction.category.id,
+      name: transaction.category.name,
+      type: transaction.category.type,
+      icon: transaction.category.icon,
+      color: transaction.category.color,
+      isDefault: transaction.category.isDefault
+    },
+    createdAt: transaction.createdAt,
+    updatedAt: transaction.updatedAt
+  };
+}
+
+function sortSummaryTransactions(items: SummaryTransaction[]) {
+  return [...items].sort((firstItem, secondItem) => {
+    const dateDifference =
+      new Date(secondItem.date).getTime() - new Date(firstItem.date).getTime();
+
+    if (dateDifference !== 0) {
+      return dateDifference;
+    }
+
+    return (
+      new Date(secondItem.createdAt ?? 0).getTime() -
+      new Date(firstItem.createdAt ?? 0).getTime()
+    );
+  });
+}
+
+function addRecentTransaction(
+  recentTransactions: SummaryTransaction[],
+  transaction: Transaction
+) {
+  const nextTransaction = mapTransactionToSummaryTransaction(transaction);
+
+  const withoutDuplicate = recentTransactions.filter(
+    (item) => item.id !== transaction.id
+  );
+
+  return sortSummaryTransactions([nextTransaction, ...withoutDuplicate]).slice(
+    0,
+    5
+  );
+}
+
+function updateRecentTransaction(
+  recentTransactions: SummaryTransaction[],
+  transaction: Transaction
+) {
+  const exists = recentTransactions.some((item) => item.id === transaction.id);
+
+  if (!exists) {
+    return addRecentTransaction(recentTransactions, transaction);
+  }
+
+  return sortSummaryTransactions(
+    recentTransactions.map((item) =>
+      item.id === transaction.id
+        ? mapTransactionToSummaryTransaction(transaction)
+        : item
+    )
+  ).slice(0, 5);
+}
+
+function removeRecentTransaction(
+  recentTransactions: SummaryTransaction[],
+  transactionId: string
+) {
+  return recentTransactions.filter((item) => item.id !== transactionId);
+}
+
+function patchSummaryAmountsForAdd(
+  summary: SummaryData,
+  transaction: Transaction
+): SummaryData {
+  const incomeDelta = getSignedIncomeDelta(transaction);
+  const expenseDelta = getSignedExpenseDelta(transaction);
+
+  const totalIncome = addAmount(summary.totalIncome, incomeDelta);
+  const totalExpense = addAmount(summary.totalExpense, expenseDelta);
+
+  const isCurrentMonth = isTransactionInCurrentMonth(transaction);
+
+  const incomeThisMonth = isCurrentMonth
+    ? addAmount(summary.incomeThisMonth, incomeDelta)
+    : summary.incomeThisMonth;
+
+  const expenseThisMonth = isCurrentMonth
+    ? addAmount(summary.expenseThisMonth, expenseDelta)
+    : summary.expenseThisMonth;
+
+  return {
+    ...summary,
+    totalIncome,
+    totalExpense,
+    balance: recalculateBalance({
+      income: totalIncome,
+      expense: totalExpense
+    }),
+    incomeThisMonth,
+    expenseThisMonth,
+    balanceThisMonth: recalculateBalance({
+      income: incomeThisMonth,
+      expense: expenseThisMonth
+    }),
+    transactionCount: summary.transactionCount + 1,
+    recentTransactions: addRecentTransaction(
+      summary.recentTransactions,
+      transaction
+    )
+  };
+}
+
+function patchSummaryAmountsForDelete(
+  summary: SummaryData,
+  transaction: Transaction
+): SummaryData {
+  const incomeDelta = getSignedIncomeDelta(transaction);
+  const expenseDelta = getSignedExpenseDelta(transaction);
+
+  const totalIncome = subtractAmount(summary.totalIncome, incomeDelta);
+  const totalExpense = subtractAmount(summary.totalExpense, expenseDelta);
+
+  const isCurrentMonth = isTransactionInCurrentMonth(transaction);
+
+  const incomeThisMonth = isCurrentMonth
+    ? subtractAmount(summary.incomeThisMonth, incomeDelta)
+    : summary.incomeThisMonth;
+
+  const expenseThisMonth = isCurrentMonth
+    ? subtractAmount(summary.expenseThisMonth, expenseDelta)
+    : summary.expenseThisMonth;
+
+  return {
+    ...summary,
+    totalIncome,
+    totalExpense,
+    balance: recalculateBalance({
+      income: totalIncome,
+      expense: totalExpense
+    }),
+    incomeThisMonth,
+    expenseThisMonth,
+    balanceThisMonth: recalculateBalance({
+      income: incomeThisMonth,
+      expense: expenseThisMonth
+    }),
+    transactionCount: Math.max(summary.transactionCount - 1, 0),
+    recentTransactions: removeRecentTransaction(
+      summary.recentTransactions,
+      transaction.id
+    )
+  };
 }
 
 function getTransactionCategoryId(transaction: Transaction) {
@@ -379,6 +592,97 @@ export function removeTransactionFromListCaches(
   updateTransactionListCaches(queryClient, (data) =>
     removeTransactionFromList(data, transactionId)
   );
+}
+
+export function getSummaryCacheSnapshot(queryClient: QueryClient) {
+  return queryClient.getQueryData<SummaryData>(queryKeys.summary);
+}
+
+export function restoreSummaryCacheSnapshot(
+  queryClient: QueryClient,
+  snapshot: SummaryData | undefined
+) {
+  if (!snapshot) {
+    return;
+  }
+
+  queryClient.setQueryData(queryKeys.summary, snapshot);
+}
+
+export function addTransactionToSummaryCache(
+  queryClient: QueryClient,
+  transaction: Transaction
+) {
+  queryClient.setQueryData<SummaryData>(queryKeys.summary, (currentSummary) => {
+    if (!currentSummary) {
+      return currentSummary;
+    }
+
+    return patchSummaryAmountsForAdd(currentSummary, transaction);
+  });
+}
+
+export function addTransactionsToSummaryCache(
+  queryClient: QueryClient,
+  transactions: Transaction[]
+) {
+  queryClient.setQueryData<SummaryData>(queryKeys.summary, (currentSummary) => {
+    if (!currentSummary) {
+      return currentSummary;
+    }
+
+    return transactions.reduce(
+      (summary, transaction) =>
+        patchSummaryAmountsForAdd(summary, transaction),
+      currentSummary
+    );
+  });
+}
+
+export function removeTransactionFromSummaryCache(
+  queryClient: QueryClient,
+  transaction: Transaction
+) {
+  queryClient.setQueryData<SummaryData>(queryKeys.summary, (currentSummary) => {
+    if (!currentSummary) {
+      return currentSummary;
+    }
+
+    return patchSummaryAmountsForDelete(currentSummary, transaction);
+  });
+}
+
+export function updateTransactionInSummaryCache(
+  queryClient: QueryClient,
+  input: {
+    previousTransaction: Transaction;
+    nextTransaction: Transaction;
+  }
+) {
+  queryClient.setQueryData<SummaryData>(queryKeys.summary, (currentSummary) => {
+    if (!currentSummary) {
+      return currentSummary;
+    }
+
+    const afterDelete = patchSummaryAmountsForDelete(
+      currentSummary,
+      input.previousTransaction
+    );
+
+    const afterAdd = patchSummaryAmountsForAdd(
+      afterDelete,
+      input.nextTransaction
+    );
+
+    return {
+      ...afterAdd,
+      transactionCount: currentSummary.transactionCount,
+      recentTransactions: updateRecentTransaction(
+        afterAdd.recentTransactions,
+        input.nextTransaction
+      )
+    };
+  });
 }
 
 export function markTransactionDerivedDataStale(

@@ -32,9 +32,12 @@ import type {
 import { useToast } from "../../components/toast/ToastProvider";
 import {
   addTransactionToListCaches,
+  addTransactionToSummaryCache,
+  getSummaryCacheSnapshot,
   getTransactionListCacheSnapshot,
   markTransactionDerivedDataStale,
   removeTransactionFromListCaches,
+  restoreSummaryCacheSnapshot,
   restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
 
@@ -298,6 +301,8 @@ export function AddTransactionModal({
 
       const previousTransactionQueries =
         getTransactionListCacheSnapshot(queryClient);
+      
+      const previousSummary = getSummaryCacheSnapshot(queryClient);
 
       const normalizedCustomCategoryName = customCategoryName
         ? normalizeCategoryName(customCategoryName)
@@ -323,22 +328,29 @@ export function AddTransactionModal({
         });
 
         addTransactionToListCaches(queryClient, optimisticTransaction);
+        addTransactionToSummaryCache(queryClient, optimisticTransaction);
       }
 
       resetForm();
       onClose();
 
-      return {
-        optimisticTransactionId: optimisticTransaction?.id ?? null,
-        previousTransactionQueries
-      };
+    return {
+      optimisticTransactionId: optimisticTransaction?.id ?? null,
+      previousTransactionQueries,
+      previousSummary
+    };
     },
-        onSuccess: ({ transaction, createdCategory }, _variables, context) => {
+    onSuccess: ({ transaction, createdCategory }, _variables, context) => {
       if (context?.optimisticTransactionId) {
         removeTransactionFromListCaches(queryClient, context.optimisticTransactionId);
       }
 
+      if (context?.previousSummary) {
+        restoreSummaryCacheSnapshot(queryClient, context.previousSummary);
+      }
+
       addTransactionToListCaches(queryClient, transaction);
+      addTransactionToSummaryCache(queryClient, transaction);
 
       markTransactionDerivedDataStale(queryClient, {
         includeCategories: Boolean(createdCategory)
@@ -360,6 +372,8 @@ export function AddTransactionModal({
         queryClient,
         context?.previousTransactionQueries
       );
+
+      restoreSummaryCacheSnapshot(queryClient, context?.previousSummary);
 
       addToast({
         variant: "error",
