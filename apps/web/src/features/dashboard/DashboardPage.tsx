@@ -8,6 +8,7 @@ import {
   ArrowUpCircle,
   CalendarDays,
   CheckCircle2,
+  Clock3,
   Loader2,
   MessageSquare,
   PiggyBank,
@@ -948,6 +949,94 @@ function FinancialCheckupCard({
 const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
 const DASHBOARD_PROFILE_STALE_TIME = 5 * 60_000;
+const DAILY_REVIEW_STORAGE_PREFIX = "sakuin_daily_review_completed_v1";
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getDailyReviewStorageKey(userId: string | null | undefined) {
+  return `${DAILY_REVIEW_STORAGE_PREFIX}:${userId ?? "anonymous"}`;
+}
+
+function getStoredDailyReviewDate(storageKey: string) {
+  try {
+    return localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredDailyReviewDate(storageKey: string, dateKey: string) {
+  try {
+    localStorage.setItem(storageKey, dateKey);
+  } catch {
+    // localStorage can be unavailable in restricted browser modes.
+  }
+}
+
+function DailyReviewCard({
+  completed,
+  onComplete,
+  onOpenQuickTransaction
+}: {
+  completed: boolean;
+  onComplete: () => void;
+  onOpenQuickTransaction: () => void;
+}) {
+  if (completed) {
+    return null;
+  }
+
+  return (
+    <section className="mb-4 rounded-[1.5rem] border border-indigo-100 bg-indigo-50 p-3.5 shadow-sm sm:mb-5 sm:rounded-[1.75rem] sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+        <div className="flex min-w-0 gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-100">
+            <Clock3 className="h-5 w-5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-sm font-black text-indigo-950">
+              Review harian 30 detik
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-indigo-800 sm:text-sm sm:leading-6">
+              Ada transaksi hari ini yang belum masuk? Catat sekarang supaya
+              dashboard tetap akurat.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:flex sm:shrink-0 sm:items-center">
+          <Button
+            className="rounded-2xl bg-indigo-700 text-white hover:bg-indigo-800"
+            onClick={onOpenQuickTransaction}
+            size="md"
+            type="button"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Catat yang terlewat
+          </Button>
+
+          <Button
+            className="rounded-2xl bg-white text-indigo-800 hover:bg-indigo-100"
+            onClick={onComplete}
+            size="md"
+            type="button"
+            variant="secondary"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Sudah lengkap
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -957,6 +1046,9 @@ export function DashboardPage() {
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
+  const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
+    string | null
+  >(null);
 
     const summaryQuery = useQuery({
   queryKey: queryKeys.summary,
@@ -1015,9 +1107,31 @@ const profileQuery = useQuery({
     setDashboardPriorityGoalIdState(storedPriorityGoalId);
   }, [goalsQuery.data]);
 
+  const todayReviewDate = getLocalDateKey();
+  const dailyReviewStorageKey = getDailyReviewStorageKey(user?.id);
+  const isDailyReviewCompleted = dailyReviewCompletedDate === todayReviewDate;
+
+  useEffect(() => {
+    setDailyReviewCompletedDate(getStoredDailyReviewDate(dailyReviewStorageKey));
+  }, [dailyReviewStorageKey]);
+
+  function completeDailyReview() {
+    setStoredDailyReviewDate(dailyReviewStorageKey, todayReviewDate);
+    setDailyReviewCompletedDate(todayReviewDate);
+  }
+
+  function openDailyQuickTransaction() {
+    setIsQuickTransactionOpen(true);
+  }
+
   function refreshDashboardData() {
   // Mutation handlers already update transaction and summary caches optimistically.
   // Heavy derived data is marked stale in the background by transaction-cache.ts.
+  }
+
+  function handleTransactionSuccess() {
+    completeDailyReview();
+    refreshDashboardData();
   }
 
   function retrySummaryData() {
@@ -1075,6 +1189,12 @@ const profileQuery = useQuery({
             <Settings className="h-5 w-5" />
           </Link>
         </header>
+
+        <DailyReviewCard
+          completed={isDailyReviewCompleted}
+          onComplete={completeDailyReview}
+          onOpenQuickTransaction={openDailyQuickTransaction}
+        />
 
         {summaryError ? (
           <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
@@ -1299,13 +1419,13 @@ const profileQuery = useQuery({
       <QuickTransactionModal
         open={isQuickTransactionOpen}
         onClose={() => setIsQuickTransactionOpen(false)}
-        onSuccess={refreshDashboardData}
+        onSuccess={handleTransactionSuccess}
       />
 
       <AddTransactionModal
         open={isAddTransactionOpen}
         onClose={() => setIsAddTransactionOpen(false)}
-        onSuccess={refreshDashboardData}
+        onSuccess={handleTransactionSuccess}
       />
     </>
   );
