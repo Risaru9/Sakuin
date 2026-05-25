@@ -1544,3 +1544,492 @@ Jangan membuat fitur sensitif tanpa security design.
 Selalu validasi lokal sebelum commit.
 Selalu cek CI dan deployment setelah push.
 ```
+
+## Performance & Core UX Handoff Notes
+
+Bagian ini mencatat status terbaru optimisasi performance dan core UX Sakuin setelah fase transaksi, dashboard, dan production latency optimization.
+
+---
+
+### Current Performance Status
+
+Core transaction flow dan dashboard performance sudah melewati beberapa optimisasi penting.
+
+Status terbaru:
+
+```txt
+[✓] Stable transaction ordering selesai
+[✓] True optimistic add transaction selesai
+[✓] True optimistic edit transaction selesai
+[✓] True optimistic delete transaction selesai
+[✓] True optimistic Quick Transaction selesai
+[✓] Backend bulk transaction endpoint selesai
+[✓] Frontend Quick Transaction sudah memakai bulk endpoint
+[✓] Summary endpoint query shape optimization selesai
+[✓] Summary cache patch untuk nilai dashboard dasar selesai
+[✓] Production region latency issue berhasil diidentifikasi dan diperbaiki
+```
+
+Setelah deployment region disesuaikan agar backend Vercel lebih dekat dengan Supabase database region, production webapp terasa jauh lebih cepat.
+
+---
+
+### Important Production Finding
+
+Masalah performance production sebelumnya bukan terutama berasal dari React, ukuran bundle, atau rendering frontend.
+
+Hasil observasi Network tab menunjukkan endpoint kecil seperti:
+
+```txt
+/api/auth/me
+/api/profile
+/api/goals
+/api/categories
+/api/transactions
+```
+
+sempat memakan waktu beberapa detik.
+
+Ini menunjukkan bottleneck utama berada pada production API latency, terutama jarak region antara backend Vercel Function dan Supabase database.
+
+Supabase database Sakuin berada di region:
+
+```txt
+Oceania / Sydney
+```
+
+Karena itu, backend Vercel Function harus ditempatkan di region yang sama atau paling dekat dengan Sydney.
+
+Catatan penting:
+
+```txt
+Jangan hanya mengubah region frontend.
+Yang paling penting adalah region backend API project,
+karena backend API yang melakukan koneksi ke Supabase/PostgreSQL.
+```
+
+Setelah region backend disesuaikan, production performance membaik signifikan.
+
+---
+
+### Request Timing / Observability
+
+Backend tidak memiliki file terpisah bernama:
+
+```txt
+request-logger.middleware.ts
+```
+
+Request ID dan request timing sudah digabung di:
+
+```txt
+apps/api/src/middlewares/request-id.middleware.ts
+```
+
+Middleware tersebut mencatat safe request log:
+
+```txt
+requestId
+method
+path
+status
+durationMs
+timestamp
+```
+
+Log ini digunakan untuk membedakan apakah bottleneck terjadi di:
+
+```txt
+frontend/browser/network
+backend function
+database query
+cold start/serverless
+region latency
+```
+
+Log request tidak boleh menyimpan data sensitif seperti:
+
+```txt
+password
+token
+Authorization header
+raw request body
+transaction note
+transaction amount
+categoryId mentah dari payload
+private financial details
+```
+
+---
+
+### Completed Transaction Performance Improvements
+
+#### Stable Transaction Ordering
+
+Transaksi sekarang diurutkan secara stabil.
+
+Aturan sorting:
+
+```txt
+date_desc:
+  date DESC
+  createdAt DESC
+
+date_asc:
+  date ASC
+  createdAt DESC
+
+created_desc:
+  createdAt DESC
+
+created_asc:
+  createdAt ASC
+```
+
+Tujuan:
+
+```txt
+Jika beberapa transaksi memiliki tanggal transaksi yang sama,
+input terbaru tetap tampil lebih atas di dalam tanggal tersebut.
+```
+
+Backend dan frontend cache sorting sudah diselaraskan agar optimistic row tidak berubah posisi secara aneh setelah data final dari backend masuk.
+
+---
+
+#### True Optimistic Transaction Updates
+
+Add, edit, delete, dan Quick Transaction sudah memakai optimistic update.
+
+Expected behavior:
+
+```txt
+Add transaction:
+  row langsung muncul sebelum server selesai
+
+Edit transaction:
+  row langsung berubah sebelum server selesai
+
+Delete transaction:
+  row langsung hilang sebelum server selesai
+
+Quick Transaction:
+  semua draft langsung muncul sebagai optimistic rows
+```
+
+Jika server sukses:
+
+```txt
+optimistic row diganti dengan data final dari backend
+```
+
+Jika server gagal:
+
+```txt
+cache rollback ke kondisi sebelumnya
+```
+
+---
+
+#### Quick Transaction Bulk Endpoint
+
+Quick Transaction sebelumnya mengirim banyak request:
+
+```txt
+POST /api/transactions
+POST /api/transactions
+POST /api/transactions
+```
+
+Sekarang Quick Transaction memakai satu endpoint:
+
+```txt
+POST /api/transactions/bulk
+```
+
+Backend bulk endpoint behavior:
+
+```txt
+Jika semua item valid:
+  semua transaksi dibuat.
+
+Jika satu item invalid:
+  seluruh bulk operation gagal.
+  tidak ada transaksi yang dibuat.
+```
+
+Audit event tetap dicatat aman per transaksi tanpa menyimpan amount, note, atau categoryId mentah di metadata audit.
+
+---
+
+### Completed Summary Performance Improvements
+
+Summary endpoint sudah dioptimasi tanpa mengubah response contract frontend.
+
+Optimisasi yang sudah dilakukan:
+
+```txt
+[✓] Multiple amount aggregate diganti dengan groupBy per type
+[✓] Category summary diganti dengan groupBy categoryId + type
+[✓] Recent transactions memakai date DESC + createdAt DESC
+[✓] getAiFinancialContext dijalankan paralel dengan query summary
+[✓] /api/summary response contract tetap sama
+```
+
+Response `/api/summary` masih menyediakan:
+
+```txt
+totalIncome
+totalExpense
+balance
+safeBalanceLimit
+isBelowSafeLimit
+safeToSpend
+financialCheckup
+incomeThisMonth
+expenseThisMonth
+balanceThisMonth
+transactionCount
+recentTransactions
+expenseByCategory
+incomeByCategory
+monthlyTrend
+```
+
+---
+
+### Summary Cache Patch
+
+Frontend sudah menambahkan optimistic patch untuk nilai dashboard dasar.
+
+Field yang dipatch secara optimistic:
+
+```txt
+totalIncome
+totalExpense
+balance
+incomeThisMonth
+expenseThisMonth
+balanceThisMonth
+transactionCount
+recentTransactions
+```
+
+Field yang tetap disinkronkan dari backend:
+
+```txt
+safeToSpend
+financialCheckup
+monthlyTrend
+incomeByCategory
+expenseByCategory
+```
+
+Alasannya:
+
+```txt
+safeToSpend, financialCheckup, monthlyTrend, dan category summary adalah derived data yang lebih kompleks.
+Lebih aman jika tetap dihitung oleh backend agar konsisten.
+```
+
+---
+
+### Files Most Relevant to Performance Work
+
+Frontend transaction performance:
+
+```txt
+apps/web/src/features/transactions/transaction-cache.ts
+apps/web/src/features/transactions/AddTransactionModal.tsx
+apps/web/src/features/transactions/EditTransactionModal.tsx
+apps/web/src/features/transactions/QuickTransactionModal.tsx
+apps/web/src/features/transactions/TransactionsPage.tsx
+apps/web/src/features/transactions/transaction.service.ts
+apps/web/src/features/transactions/transaction.types.ts
+```
+
+Dashboard performance:
+
+```txt
+apps/web/src/features/dashboard/DashboardPage.tsx
+apps/web/src/features/summary/summary.service.ts
+apps/web/src/features/summary/summary.types.ts
+```
+
+Backend transaction performance:
+
+```txt
+apps/api/src/modules/transactions/transaction.schema.ts
+apps/api/src/modules/transactions/transaction.types.ts
+apps/api/src/modules/transactions/transaction.service.ts
+apps/api/src/modules/transactions/transaction.controller.ts
+apps/api/src/modules/transactions/transaction.route.ts
+apps/api/tests/transaction.test.ts
+```
+
+Backend summary performance:
+
+```txt
+apps/api/src/modules/summary/summary.service.ts
+apps/api/src/modules/summary/summary.types.ts
+apps/api/tests/summary.test.ts
+```
+
+Request timing:
+
+```txt
+apps/api/src/middlewares/request-id.middleware.ts
+```
+
+Detailed performance notes:
+
+```txt
+docs/PERFORMANCE.md
+```
+
+---
+
+### Production Performance Diagnosis Flow
+
+Jika production terasa lambat lagi, jangan langsung refactor frontend.
+
+Ikuti urutan diagnosis ini:
+
+```txt
+1. Buka Browser DevTools → Network.
+2. Filter Fetch/XHR.
+3. Catat durasi endpoint:
+   - /api/auth/me
+   - /api/profile
+   - /api/goals
+   - /api/categories
+   - /api/transactions
+   - /api/transactions/bulk
+   - /api/summary
+4. Jika endpoint kecil lambat, cek region backend API dan Supabase.
+5. Jika hanya /api/summary lambat, cek summary query dan AI financial context.
+6. Jika endpoint cepat tetapi UI lambat, cek optimistic cache dan active refetch.
+```
+
+Interpretasi penting:
+
+```txt
+/api/profile kecil tetapi 3-4 detik:
+  kemungkinan besar region/cold start/database latency
+
+/api/summary saja lambat:
+  kemungkinan summary query atau derived insight berat
+
+UI transaksi lambat padahal API cepat:
+  kemungkinan optimistic cache tidak jalan atau tertimpa active refetch
+```
+
+---
+
+### Deployment Region Rule
+
+Current known database region:
+
+```txt
+Supabase database: Oceania / Sydney
+```
+
+Backend Vercel Function harus berada di region yang sama atau paling dekat dengan region database.
+
+Jika region mismatch, gejala yang mungkin muncul:
+
+```txt
+/api/auth/me lambat
+/api/profile lambat
+/api/transactions lambat
+/api/summary sangat lambat
+production terasa lambat walaupun local cepat
+```
+
+Setelah region backend disesuaikan dengan database region, production Sakuin terasa jauh lebih cepat.
+
+---
+
+### Future Performance Candidate
+
+Karena production sudah terasa cepat setelah region diperbaiki, split summary endpoint belum wajib dilakukan sekarang.
+
+Namun jika dashboard first load kembali terasa berat, kandidat optimisasi berikutnya adalah:
+
+```txt
+GET /api/summary/basic
+GET /api/summary/insights
+```
+
+`/api/summary/basic` berisi data ringan:
+
+```txt
+totalIncome
+totalExpense
+balance
+incomeThisMonth
+expenseThisMonth
+balanceThisMonth
+transactionCount
+recentTransactions
+safeBalanceLimit
+isBelowSafeLimit
+```
+
+`/api/summary/insights` berisi data berat:
+
+```txt
+safeToSpend
+financialCheckup
+monthlyTrend
+incomeByCategory
+expenseByCategory
+```
+
+Target behavior:
+
+```txt
+Dashboard render data utama cepat.
+Insight berat menyusul per-card.
+Tidak ada full-page loading hanya karena insight berat belum selesai.
+```
+
+---
+
+### Final Regression Checklist
+
+Setelah performance-related changes, cek:
+
+```txt
+[ ] Homepage terbuka normal
+[ ] Login email/password normal
+[ ] Login Google normal
+[ ] Dashboard first load terasa cepat
+[ ] Dashboard tidak full reload berat saat balik dari halaman lain
+[ ] Tambah transaksi manual dari dashboard terasa instan
+[ ] Tambah transaksi manual dari /transactions terasa instan
+[ ] Edit transaksi terasa instan
+[ ] Delete transaksi terasa instan
+[ ] Quick Transaction 3-5 item terasa cepat
+[ ] Urutan transaksi tanggal sama: input terbaru tampil lebih atas
+[ ] Safe-to-Spend tetap tampil
+[ ] Financial Checkup tetap tampil
+[ ] AI Assistant tetap bisa menjawab
+[ ] Export tetap normal
+[ ] Profile tetap normal
+[ ] Goals tetap normal
+```
+
+---
+
+### Current Recommendation
+
+Untuk kondisi saat ini:
+
+```txt
+[✓] Jangan lakukan refactor besar lagi jika production sudah terasa cepat.
+[✓] Jangan split summary endpoint dulu kecuali first load dashboard kembali terasa berat.
+[✓] Pertahankan optimistic CRUD + bulk transaction endpoint.
+[✓] Pertahankan backend region dekat Supabase.
+[✓] Jadikan docs/PERFORMANCE.md sebagai referensi utama sebelum optimisasi lanjutan.
+```

@@ -1836,3 +1836,322 @@ Kesimpulan:
 Sakuin boleh lanjut pengembangan fitur non-sensitif dengan tetap menjalankan validasi.
 Untuk fitur sensitif, lakukan security design dulu sebelum coding.
 ```
+
+## Safe Performance Logging
+
+Sakuin menggunakan request ID middleware untuk request tracing dan performance diagnostics.
+
+File terkait:
+
+```txt
+apps/api/src/middlewares/request-id.middleware.ts
+```
+
+Tidak ada file terpisah bernama:
+
+```txt
+request-logger.middleware.ts
+```
+
+Request ID dan request timing sudah digabung di `request-id.middleware.ts`.
+
+---
+
+### Logged Request Fields
+
+Request log hanya boleh mencatat metadata aman berikut:
+
+```txt
+requestId
+method
+path
+status
+durationMs
+timestamp
+```
+
+Contoh struktur log:
+
+```json
+{
+  "level": "info",
+  "event": "http_request",
+  "requestId": "example-request-id",
+  "method": "GET",
+  "path": "/api/summary",
+  "status": 200,
+  "durationMs": 523,
+  "timestamp": "2026-05-25T00:00:00.000Z"
+}
+```
+
+Log ini dipakai untuk membedakan apakah bottleneck terjadi di:
+
+```txt
+frontend/browser/network
+backend function
+database query
+cold start/serverless
+deployment region latency
+```
+
+---
+
+### Sensitive Data That Must Not Be Logged
+
+Request performance logging tidak boleh menyimpan data sensitif.
+
+Data yang tidak boleh dicatat:
+
+```txt
+password
+token
+Authorization header
+raw request body
+raw request headers
+transaction note
+transaction amount
+categoryId mentah dari payload
+email mentah dari payload
+Google OAuth token
+password reset token
+AI prompt mentah yang mengandung data finansial pribadi
+private financial details
+```
+
+Jika perlu menganalisis endpoint lambat, gunakan metadata aman seperti:
+
+```txt
+method
+path
+status
+durationMs
+requestId
+```
+
+Jangan menambahkan body payload ke log production.
+
+---
+
+### Request ID Safety
+
+Incoming request ID hanya boleh dipakai jika formatnya aman.
+
+Current request ID pattern:
+
+```txt
+^[A-Za-z0-9._:-]{1,128}$
+```
+
+Jika incoming request ID kosong atau tidak valid, backend membuat request ID baru dengan `randomUUID()`.
+
+Tujuannya:
+
+```txt
+mencegah header injection
+mencegah request ID terlalu panjang
+mencegah karakter berbahaya masuk ke log
+```
+
+---
+
+### Error Response Safety
+
+Response error harus tetap menyertakan request ID jika tersedia, tetapi tidak boleh membocorkan detail internal production.
+
+Aturan umum:
+
+```txt
+4xx:
+  boleh mengembalikan pesan validasi atau error yang aman untuk user.
+
+5xx production:
+  gunakan pesan umum seperti "Internal server error".
+  jangan mengembalikan stack trace.
+  jangan mengembalikan detail exception internal.
+```
+
+Request ID dapat dipakai untuk mencari log internal tanpa menampilkan detail sensitif ke user.
+
+---
+
+### Audit Log and Performance Log Separation
+
+Audit log dan performance/request log memiliki tujuan berbeda.
+
+Audit log digunakan untuk mencatat event penting seperti:
+
+```txt
+transaction.created
+transaction.updated
+transaction.deleted
+goal.created
+goal.updated
+goal.deleted
+category.created
+category.updated
+category.deleted
+auth/security-related events
+```
+
+Performance/request log digunakan untuk mencatat metadata request:
+
+```txt
+method
+path
+status
+durationMs
+requestId
+timestamp
+```
+
+Performance log tidak boleh menggantikan audit log, dan audit log tidak boleh diisi data mentah sensitif hanya demi debugging performance.
+
+---
+
+### Transaction Logging Rules
+
+Untuk endpoint transaksi, log tidak boleh menyimpan:
+
+```txt
+amount
+note
+categoryId dari payload
+raw body transaksi
+```
+
+Metadata audit yang aman boleh berupa indikator seperti:
+
+```txt
+type
+hasNote
+dateProvided
+source
+changedFields
+reason
+```
+
+Contoh metadata aman:
+
+```json
+{
+  "type": "EXPENSE",
+  "hasNote": true,
+  "dateProvided": true,
+  "source": "bulk"
+}
+```
+
+Contoh metadata yang tidak aman:
+
+```json
+{
+  "amount": "15000",
+  "note": "makan ayam geprek",
+  "categoryId": "cat_expense_food"
+}
+```
+
+---
+
+### AI Logging Rules
+
+AI assistant tidak boleh mencatat prompt mentah user ke performance log production jika prompt berisi data finansial pribadi.
+
+Hindari log yang berisi:
+
+```txt
+raw user prompt
+raw transaction notes
+raw financial context
+raw Gemini prompt
+raw provider response jika mengandung data pribadi
+```
+
+Jika perlu debugging AI, gunakan metadata aman seperti:
+
+```txt
+intent
+provider name
+model name
+status
+durationMs
+fallbackUsed
+requestId
+```
+
+---
+
+### Production Performance Diagnosis
+
+Jika production terasa lambat, diagnosis harus dimulai dari metadata aman.
+
+Urutan diagnosis:
+
+```txt
+1. Browser DevTools → Network.
+2. Catat durasi endpoint.
+3. Cocokkan dengan requestId jika tersedia.
+4. Cek Vercel logs berdasarkan requestId.
+5. Bandingkan browser timing dengan backend durationMs.
+```
+
+Interpretasi:
+
+```txt
+Browser Network lambat, backend durationMs cepat:
+  kemungkinan network, region, proxy, atau cold start luar aplikasi.
+
+Browser Network lambat, backend durationMs juga lambat:
+  kemungkinan query database, Prisma, Supabase, atau service logic lambat.
+
+Endpoint kecil seperti /api/profile lambat:
+  cek region backend API dan Supabase database.
+
+Hanya /api/summary lambat:
+  cek summary query dan derived financial insight.
+```
+
+---
+
+### Deployment Region Security Note
+
+Performance optimization tidak boleh dilakukan dengan membocorkan secret atau memindahkan service role key ke frontend.
+
+Yang boleh dilakukan:
+
+```txt
+mengubah Vercel backend function region
+menyesuaikan backend API dekat dengan Supabase database
+menggunakan anon key hanya jika memang untuk Supabase client publik
+menjaga service role key tetap hanya di backend
+```
+
+Yang tidak boleh dilakukan:
+
+```txt
+memasukkan Supabase service role key ke frontend
+mencatat DATABASE_URL ke log
+mencatat JWT_SECRET ke log
+mencatat Google OAuth secret ke log
+mencatat Gmail SMTP credential ke log
+```
+
+---
+
+### Current Production Performance Finding
+
+Temuan production terbaru:
+
+```txt
+Supabase database Sakuin berada di region Oceania / Sydney.
+Production sebelumnya terasa lambat karena API latency tinggi.
+Setelah Vercel deployment/backend region disesuaikan agar dekat dengan Supabase region, webapp production terasa jauh lebih cepat.
+```
+
+Keputusan ini dicatat juga di:
+
+```txt
+docs/PERFORMANCE.md
+docs/HANDOFF.md
+```
