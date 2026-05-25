@@ -222,13 +222,18 @@ function buildTitle(status: FinancialCheckupStatus) {
 function buildHeadline(input: {
   status: FinancialCheckupStatus;
   focusCategoryName: string | null;
+  focusCategoryIsMaterialRisk: boolean;
 }) {
   if (input.status === "GOOD") {
+    if (input.focusCategoryName && !input.focusCategoryIsMaterialRisk) {
+      return `Kondisi bulan ini masih terkendali. Kategori ${input.focusCategoryName} sementara menjadi pengeluaran terbesar, tetapi nominalnya belum menjadi risiko utama.`;
+    }
+
     return "Kondisi bulan ini masih terkendali. Pertahankan pola pengeluaran dan tetap arahkan surplus ke goal atau saldo aman.";
   }
 
   if (input.status === "WATCH") {
-    return input.focusCategoryName
+    return input.focusCategoryName && input.focusCategoryIsMaterialRisk
       ? `Bulan ini masih bisa dikendalikan, tetapi kategori ${input.focusCategoryName} perlu jadi fokus kontrol.`
       : "Bulan ini masih bisa dikendalikan, tetapi ritme pengeluaran perlu dipantau.";
   }
@@ -271,9 +276,9 @@ function buildReason(input: {
       return "Ritme pengeluaran bulan ini berjalan terlalu cepat dibanding progres periode berjalan.";
     }
 
-  if (input.focusCategoryName && input.focusCategoryIsMaterialRisk) {
-    return `Kategori ${input.focusCategoryName} mengambil porsi besar dari total pengeluaran bulan ini.`;
-  }
+    if (input.focusCategoryName && input.focusCategoryIsMaterialRisk) {
+      return `Kategori ${input.focusCategoryName} mengambil porsi besar dari total pengeluaran bulan ini.`;
+    }
 
     if (
       input.context.monthComparison.expenseChangePercent !== null &&
@@ -283,6 +288,14 @@ function buildReason(input: {
     }
 
     return "Kondisi masih bisa dikendalikan, tetapi ada sinyal pengeluaran yang perlu dipantau.";
+  }
+
+  if (
+    input.expenseToIncomeRatio !== null &&
+    input.focusCategoryName &&
+    !input.focusCategoryIsMaterialRisk
+  ) {
+    return `Rasio pengeluaran terhadap pemasukan masih sekitar ${input.expenseToIncomeRatio}%, cashflow bulan ini masih positif, dan kategori ${input.focusCategoryName} belum menjadi risiko utama.`;
   }
 
   if (input.expenseToIncomeRatio !== null) {
@@ -295,6 +308,7 @@ function buildReason(input: {
 function buildAction(input: {
   status: FinancialCheckupStatus;
   focusCategoryName: string | null;
+  focusCategoryIsMaterialRisk: boolean;
   suggestedDailyLimit: number | null;
 }) {
   if (input.status === "UNKNOWN") {
@@ -309,14 +323,18 @@ function buildAction(input: {
 
   if (input.status === "WATCH") {
     if (input.suggestedDailyLimit !== null) {
-      return input.focusCategoryName
+      return input.focusCategoryName && input.focusCategoryIsMaterialRisk
         ? `Batasi pengeluaran harian mendekati batas aman dan pantau kategori ${input.focusCategoryName}.`
         : "Batasi pengeluaran harian mendekati batas aman sampai akhir bulan.";
     }
 
-    return input.focusCategoryName
+    return input.focusCategoryName && input.focusCategoryIsMaterialRisk
       ? `Tetapkan batas sederhana untuk kategori ${input.focusCategoryName} dan evaluasi lagi setelah beberapa transaksi.`
       : "Pantau transaksi harian dan hindari pembelian impulsif.";
+  }
+
+  if (input.focusCategoryName && !input.focusCategoryIsMaterialRisk) {
+    return `Pertahankan pola pengeluaran saat ini. Tetap catat transaksi rutin agar kategori ${input.focusCategoryName} bisa dipantau dengan data yang lebih lengkap.`;
   }
 
   return "Pertahankan pola pengeluaran saat ini dan arahkan surplus ke goal atau saldo aman.";
@@ -367,7 +385,8 @@ export function buildFinancialCheckup(
     title: buildTitle(status),
     headline: buildHeadline({
       status,
-      focusCategoryName
+      focusCategoryName,
+      focusCategoryIsMaterialRisk
     }),
     focusCategoryName,
     focusCategoryAmount,
@@ -382,6 +401,7 @@ export function buildFinancialCheckup(
     action: buildAction({
       status,
       focusCategoryName,
+      focusCategoryIsMaterialRisk,
       suggestedDailyLimit: context.safeToSpend.suggestedDailyLimit
     }),
     warnings,

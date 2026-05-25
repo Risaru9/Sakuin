@@ -348,11 +348,19 @@ function buildReason(input: {
       return "Jika ritme pengeluaran saat ini berlanjut, cashflow akhir bulan berisiko turun di bawah batas aman.";
     }
 
-  if (input.topRiskCategoryName && input.topRiskCategoryIsMaterialRisk) {
-    return `Cashflow masih bisa dipakai, tetapi kategori ${input.topRiskCategoryName} sudah menjadi sumber pengeluaran terbesar.`;
-  }
+    if (input.topRiskCategoryName && input.topRiskCategoryIsMaterialRisk) {
+      return `Cashflow masih bisa dipakai, tetapi kategori ${input.topRiskCategoryName} sudah menjadi sumber pengeluaran terbesar yang perlu dipantau.`;
+    }
 
     return "Kondisi masih bisa dikendalikan, tetapi pengeluaran perlu dipantau agar tidak melewati batas aman.";
+  }
+
+  if (
+    input.topRiskCategoryName &&
+    input.topRiskCategoryAmount > 0 &&
+    !input.topRiskCategoryIsMaterialRisk
+  ) {
+    return `Cashflow bulan ini masih positif dan ruang aman masih tersedia. Kategori ${input.topRiskCategoryName} sementara menjadi pengeluaran terbesar, tetapi nominalnya belum menjadi risiko utama.`;
   }
 
   return "Cashflow bulan ini masih positif dan masih ada ruang aman setelah memperhitungkan safe balance limit.";
@@ -370,7 +378,7 @@ function buildAction(input: {
 
   if (input.status === "HOLD") {
     return input.topRiskCategoryName
-      ? `Tahan pengeluaran non-prioritas dan fokus kontrol kategori ${input.topRiskCategoryName}.`
+      ? `Tahan pengeluaran non-prioritas dulu dan fokus kontrol kategori ${input.topRiskCategoryName}.`
       : "Tahan pengeluaran non-prioritas sampai cashflow kembali aman.";
   }
 
@@ -379,10 +387,10 @@ function buildAction(input: {
       return input.topRiskCategoryName
         ? `Batasi pengeluaran harian maksimal sekitar Rp${input.suggestedDailyLimit.toLocaleString(
             "id-ID"
-          )} dan pantau kategori ${input.topRiskCategoryName}.`
+          )} dan pantau kategori ${input.topRiskCategoryName} agar tidak membesar.`
         : `Batasi pengeluaran harian maksimal sekitar Rp${input.suggestedDailyLimit.toLocaleString(
             "id-ID"
-          )}.`;
+          )} sampai kondisi lebih stabil.`;
     }
 
     return "Pantau pengeluaran harian dan hindari transaksi non-prioritas.";
