@@ -115,3 +115,28 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cacheFirst(request));
   }
 });
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || "/dashboard";
+  const urlToOpen = new URL(targetUrl, self.location.origin).href;
+
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true
+      })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.navigate(urlToOpen);
+            return client.focus();
+          }
+        }
+
+        return clients.openWindow(urlToOpen);
+      })
+  );
+});

@@ -8,7 +8,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  Bell,
+  BellOff,
   CheckCircle2,
+  Clock3,
   Loader2,
   LogOut,
   RefreshCcw,
@@ -21,6 +24,15 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
+import {
+  DEFAULT_TRANSACTION_REMINDER_SETTINGS,
+  getBrowserNotificationPermission,
+  getTransactionReminderSettings,
+  requestBrowserNotificationPermission,
+  setTransactionReminderSettings,
+  type TransactionReminderFrequency,
+  type TransactionReminderSettings
+} from "../../lib/transaction-reminder";
 import { useAuth } from "../auth/auth-context";
 import { getUserProfile, updateUserProfile } from "./profile.service";
 import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
@@ -32,6 +44,28 @@ type ProfileFormState = {
   name: string;
   safeBalanceLimit: string;
 };
+
+const reminderFrequencyOptions: Array<{
+  value: TransactionReminderFrequency;
+  label: string;
+}> = [
+  {
+    value: "EVENING",
+    label: "Sekali malam"
+  },
+  {
+    value: "EVERY_1_HOUR",
+    label: "Setiap 1 jam"
+  },
+  {
+    value: "EVERY_2_HOURS",
+    label: "Setiap 2 jam"
+  },
+  {
+    value: "EVERY_4_HOURS",
+    label: "Setiap 4 jam"
+  }
+];
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -96,6 +130,29 @@ function toFormSafeBalanceLimit(value: string | number | null | undefined) {
   return sanitizeNumericInput(String(Math.trunc(Number(value ?? 0))));
 }
 
+function getNotificationPermissionLabel(permission: string) {
+  if (permission === "granted") {
+    return "Diizinkan";
+  }
+
+  if (permission === "denied") {
+    return "Diblokir browser";
+  }
+
+  if (permission === "unsupported") {
+    return "Tidak didukung";
+  }
+
+  return "Belum diminta";
+}
+
+function getHourOptions() {
+  return Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: `${String(hour).padStart(2, "0")}:00`
+  }));
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -108,6 +165,13 @@ export function ProfilePage() {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [reminderSettings, setReminderSettingsState] =
+    useState<TransactionReminderSettings>(
+      DEFAULT_TRANSACTION_REMINDER_SETTINGS
+    );
+  const [notificationPermission, setNotificationPermission] = useState(() =>
+    getBrowserNotificationPermission()
+  );
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
@@ -309,6 +373,49 @@ export function ProfilePage() {
     });
   }
 
+  function saveReminderSettings(settings: TransactionReminderSettings) {
+    setTransactionReminderSettings(user?.id, settings);
+  }
+
+  async function handleReminderEnabledChange(enabled: boolean) {
+    if (enabled) {
+      const permission = await requestBrowserNotificationPermission();
+
+      setNotificationPermission(permission);
+
+      if (permission !== "granted") {
+        addToast({
+          variant: "error",
+          title: "Notifikasi belum aktif",
+          description:
+            "Browser belum memberi izin notifikasi. Kamu masih bisa memakai Review Harian di Dashboard."
+        });
+
+        return;
+      }
+    }
+
+    saveReminderSettings({
+      ...reminderSettings,
+      enabled
+    });
+
+    addToast({
+      variant: enabled ? "success" : "info",
+      title: enabled ? "Pengingat transaksi aktif" : "Pengingat transaksi mati",
+      description: enabled
+        ? "Sakuin akan mengingatkan sesuai batas yang kamu pilih."
+        : "Sakuin tidak akan mengirim pengingat transaksi dari browser ini."
+    });
+  }
+
+  function updateReminderSettings(updates: Partial<TransactionReminderSettings>) {
+    saveReminderSettings({
+      ...reminderSettings,
+      ...updates
+    });
+  }
+
   useEffect(() => {
     if (!profile) {
       return;
@@ -320,10 +427,33 @@ export function ProfilePage() {
     });
   }, [profile]);
 
+  useEffect(() => {
+    setReminderSettingsState(getTransactionReminderSettings(user?.id));
+    setNotificationPermission(getBrowserNotificationPermission());
+
+    function handleReminderSettingsChange() {
+      setReminderSettingsState(getTransactionReminderSettings(user?.id));
+      setNotificationPermission(getBrowserNotificationPermission());
+    }
+
+    window.addEventListener(
+      "sakuin:transaction-reminder-settings",
+      handleReminderSettingsChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "sakuin:transaction-reminder-settings",
+        handleReminderSettingsChange
+      );
+    };
+  }, [user?.id]);
+
   const displayedName = profile?.name ?? user?.name ?? "User";
   const displayedEmail = profile?.email ?? user?.email ?? "-";
   const displayedSafeLimit =
     profile?.safeBalanceLimit ?? user?.safeBalanceLimit ?? "0";
+  const hourOptions = getHourOptions();
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
@@ -531,6 +661,177 @@ export function ProfilePage() {
                     Aktif
                   </p>
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-[1.75rem] border border-indigo-100 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-950">
+                    Pengingat Transaksi
+                  </p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                    Notifikasi berhenti otomatis jika review harian sudah
+                    selesai.
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    reminderSettings.enabled
+                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700"
+                      : "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
+                  }
+                >
+                  {reminderSettings.enabled ? (
+                    <Bell className="h-5 w-5" />
+                  ) : (
+                    <BellOff className="h-5 w-5" />
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black text-slate-700">
+                      Status notifikasi
+                    </p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                      {getNotificationPermissionLabel(notificationPermission)}
+                    </p>
+                  </div>
+
+                  <button
+                    className={
+                      reminderSettings.enabled
+                        ? "inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-xs font-black text-white transition hover:bg-black"
+                        : "inline-flex min-h-10 items-center justify-center rounded-2xl bg-indigo-700 px-4 text-xs font-black text-white transition hover:bg-indigo-800"
+                    }
+                    onClick={() =>
+                      void handleReminderEnabledChange(!reminderSettings.enabled)
+                    }
+                    type="button"
+                  >
+                    {reminderSettings.enabled ? "Matikan" : "Aktifkan"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                    Frekuensi
+                  </span>
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    value={reminderSettings.frequency}
+                    onChange={(event) =>
+                      updateReminderSettings({
+                        frequency: event.target
+                          .value as TransactionReminderFrequency
+                      })
+                    }
+                  >
+                    {reminderFrequencyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                    Maksimal per hari
+                  </span>
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    value={reminderSettings.maxPerDay}
+                    onChange={(event) =>
+                      updateReminderSettings({
+                        maxPerDay: Number(event.target.value)
+                      })
+                    }
+                  >
+                    <option value={1}>1 kali</option>
+                    <option value={2}>2 kali</option>
+                    <option value={3}>3 kali</option>
+                  </select>
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                      Jangan ganggu
+                    </span>
+                    <select
+                      className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                      value={reminderSettings.quietStartHour}
+                      onChange={(event) =>
+                        updateReminderSettings({
+                          quietStartHour: Number(event.target.value)
+                        })
+                      }
+                    >
+                      {hourOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                      Sampai
+                    </span>
+                    <select
+                      className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                      value={reminderSettings.quietEndHour}
+                      onChange={(event) =>
+                        updateReminderSettings({
+                          quietEndHour: Number(event.target.value)
+                        })
+                      }
+                    >
+                      {hourOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                    Jam malam
+                  </span>
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    value={reminderSettings.eveningHour}
+                    onChange={(event) =>
+                      updateReminderSettings({
+                        eveningHour: Number(event.target.value)
+                      })
+                    }
+                  >
+                    {hourOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 text-xs font-semibold leading-5 text-indigo-800">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Default-nya 1 kali per hari. Pengingat ini tidak menampilkan
+                  nominal, saldo, atau detail transaksi.
+                </p>
               </div>
             </section>
 

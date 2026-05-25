@@ -18,6 +18,12 @@ import {
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import {
+  getDailyReviewStorageKey,
+  getLocalDateKey,
+  getStoredDailyReviewDate,
+  setStoredDailyReviewDate
+} from "../../lib/daily-review";
 import { queryKeys } from "../../lib/query-keys";
 import { useAuth } from "../auth/auth-context";
 import { getGoals } from "../goals/goal.service";
@@ -949,35 +955,6 @@ function FinancialCheckupCard({
 const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
 const DASHBOARD_PROFILE_STALE_TIME = 5 * 60_000;
-const DAILY_REVIEW_STORAGE_PREFIX = "sakuin_daily_review_completed_v1";
-
-function getLocalDateKey(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getDailyReviewStorageKey(userId: string | null | undefined) {
-  return `${DAILY_REVIEW_STORAGE_PREFIX}:${userId ?? "anonymous"}`;
-}
-
-function getStoredDailyReviewDate(storageKey: string) {
-  try {
-    return localStorage.getItem(storageKey);
-  } catch {
-    return null;
-  }
-}
-
-function setStoredDailyReviewDate(storageKey: string, dateKey: string) {
-  try {
-    localStorage.setItem(storageKey, dateKey);
-  } catch {
-    // localStorage can be unavailable in restricted browser modes.
-  }
-}
 
 function DailyReviewCard({
   completed,

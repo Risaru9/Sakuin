@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
+import { TransactionReminderRunner } from "../components/reminders/TransactionReminderRunner";
 import { ToastProvider } from "../components/toast/ToastProvider";
 import { AuthProvider } from "../features/auth/auth-context";
 import { queryClient } from "../lib/query-client";
@@ -30,6 +31,8 @@ export function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
+          <TransactionReminderRunner />
+
           <RouterProvider router={router} />
 
           <PwaUpdatePrompt
