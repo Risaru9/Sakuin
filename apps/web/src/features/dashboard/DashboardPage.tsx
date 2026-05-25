@@ -590,8 +590,8 @@ function SafeToSpendCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
-        <div className="flex min-h-40 items-center justify-center rounded-2xl bg-slate-50">
+      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
             <p className="text-xs font-bold">Menghitung aman dipakai...</p>
@@ -603,8 +603,8 @@ function SafeToSpendCard({
 
   if (!safeToSpend) {
     return (
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
-        <div className="rounded-2xl bg-slate-50 p-4">
+      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Aman Dipakai belum tersedia
           </p>
@@ -622,33 +622,33 @@ function SafeToSpendCard({
 
   const headline =
     safeToSpend.status === "SAFE"
-      ? "Kondisi masih aman untuk dipakai dengan tetap menjaga batas aman."
+      ? "Masih aman dipakai dengan tetap menjaga batas aman."
       : safeToSpend.status === "WATCH"
-        ? "Masih ada ruang pakai, tetapi pengeluaran perlu dipantau."
+        ? "Masih bisa dipakai, tapi perlu dipantau."
         : safeToSpend.status === "HOLD"
-          ? "Ruang aman sedang tipis. Tahan pengeluaran non-prioritas dulu."
-          : "Catat pemasukan dan pengeluaran dulu agar batas aman bisa dihitung.";
+          ? "Tahan pengeluaran non-prioritas dulu."
+          : "Catat transaksi dulu agar batas aman bisa dihitung.";
 
-  const warningLabel =
-    safeToSpend.status === "SAFE" ? "Catatan ringan" : "Perlu diperhatikan";
+  const shouldShowWarning =
+    safeToSpend.status !== "SAFE" && Boolean(primaryWarning);
 
   return (
     <div
       className={[
-        "overflow-hidden rounded-[1.5rem] border p-4 shadow-sm sm:rounded-[2rem] sm:p-6",
+        "overflow-hidden rounded-[1.35rem] border p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6",
         style.card
       ].join(" ")}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className={["text-base font-black", style.text].join(" ")}>
+            <p className={["text-sm font-black sm:text-base", style.text].join(" ")}>
               Aman Dipakai
             </p>
 
             <span
               className={[
-                "inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1",
+                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[11px]",
                 style.badge
               ].join(" ")}
             >
@@ -656,120 +656,103 @@ function SafeToSpendCard({
             </span>
           </div>
 
-          <p className={["mt-2 text-xs font-semibold leading-5", style.muted].join(" ")}>
+          <p className={["mt-1.5 text-[11px] font-semibold leading-4 sm:mt-2 sm:text-xs sm:leading-5", style.muted].join(" ")}>
             {headline}
           </p>
         </div>
 
         <div
           className={[
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl sm:h-10 sm:w-10",
             style.icon
           ].join(" ")}
         >
           {safeToSpend.status === "SAFE" ? (
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2 className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : safeToSpend.status === "HOLD" ? (
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : (
-            <Activity className="h-5 w-5" />
+            <Activity className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           )}
         </div>
       </div>
 
-      <div className="rounded-[1.25rem] bg-white/85 p-3.5 ring-1 ring-white/80 sm:p-4">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-          Sisa aman bulan ini
-        </p>
-        <p className="mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-          {formatRupiah(safeToSpend.availableToSpend)}
-        </p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          Setelah memperhitungkan batas aman yang kamu tetapkan.
-        </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-white/80 sm:p-4">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Sisa aman
+          </p>
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 sm:text-2xl">
+            {formatCompactRupiah(safeToSpend.availableToSpend)}
+          </p>
+        </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-slate-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-              Limit harian
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              {hasDailyLimit
-                ? `${formatCompactRupiah(safeToSpend.suggestedDailyLimit)} / hari`
-                : "-"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-              Sisa hari
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              {safeToSpend.remainingDays} hari
-            </p>
-          </div>
+        <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-white/80 sm:p-4">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Limit harian
+          </p>
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 sm:text-2xl">
+            {hasDailyLimit
+              ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
+              : "-"}
+          </p>
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2">
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
-          <p className="text-xs font-bold text-slate-500">Ritme pengeluaran</p>
-          <p className="shrink-0 text-right text-xs font-black text-slate-950">
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-white/80">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Ritme
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950">
             {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
-          <p className="text-xs font-bold text-slate-500">Fokus kontrol</p>
-          <p className="min-w-0 truncate text-right text-xs font-black text-slate-950">
+        <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-white/80">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Fokus
+          </p>
+          <p className="mt-1 truncate text-xs font-black text-slate-950">
             {safeToSpend.topRiskCategoryName ?? "Belum ada"}
           </p>
         </div>
-
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
-          <p className="text-xs font-bold text-slate-500">Rasio expense</p>
-          <p className="shrink-0 text-right text-xs font-black text-slate-950">
-            {safeToSpend.expenseToIncomeRatio === null
-              ? "-"
-              : `${safeToSpend.expenseToIncomeRatio}%`}
-          </p>
-        </div>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-white/80">
-        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-          {safeToSpend.reason}
-        </p>
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-white/80">
+      <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80 sm:mt-3 sm:p-4">
         <p className="text-xs font-black text-slate-950">Aksi utama</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
           {safeToSpend.action}
         </p>
       </div>
 
-      {primaryWarning ? (
-        <div className="mt-3 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+      <div className="mt-3 hidden rounded-2xl bg-white/75 p-4 ring-1 ring-white/80 sm:block">
+        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {safeToSpend.reason}
+        </p>
+      </div>
+
+      {shouldShowWarning ? (
+        <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80 sm:mt-3">
           <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-slate-800">{warningLabel}</p>
+              <p className="font-black text-slate-800">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
         </div>
       ) : null}
 
-    <Link
-      className="group relative mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20"
-      to="/asisten"
-    >
-      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
-      <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
-      <span className="relative z-10 text-white">Tanya Asisten</span>
-    </Link>
+      <Link
+        className="group relative mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-xs font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20 sm:mt-4 sm:min-h-11 sm:text-sm"
+        to="/asisten"
+      >
+        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
+        <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
+        <span className="relative z-10 text-white">Tanya Asisten</span>
+      </Link>
     </div>
   );
 }
@@ -783,8 +766,8 @@ function FinancialCheckupCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
-        <div className="flex min-h-40 items-center justify-center rounded-2xl bg-slate-50">
+      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
             <p className="text-xs font-bold">Mengecek kondisi keuangan...</p>
@@ -796,8 +779,8 @@ function FinancialCheckupCard({
 
   if (!financialCheckup) {
     return (
-      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
-        <div className="rounded-2xl bg-slate-50 p-4">
+      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Checkup Keuangan belum tersedia
           </p>
@@ -812,29 +795,29 @@ function FinancialCheckupCard({
   const style = getFinancialCheckupStatusStyle(financialCheckup.status);
   const primaryWarning = financialCheckup.warnings[0] ?? null;
 
-  const warningLabel =
-    financialCheckup.status === "GOOD" ? "Catatan ringan" : "Perlu diperhatikan";
+  const shouldShowWarning =
+    financialCheckup.status !== "GOOD" && Boolean(primaryWarning);
 
   const focusLabel =
-    financialCheckup.focusCategoryName ?? "Belum ada fokus khusus";
+    financialCheckup.focusCategoryName ?? "Belum ada fokus";
 
   return (
     <div
       className={[
-        "overflow-hidden rounded-[1.5rem] border p-4 shadow-sm sm:rounded-[2rem] sm:p-6",
+        "overflow-hidden rounded-[1.35rem] border p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6",
         style.card
       ].join(" ")}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className={["text-base font-black", style.text].join(" ")}>
+            <p className={["text-sm font-black sm:text-base", style.text].join(" ")}>
               Checkup Keuangan
             </p>
 
             <span
               className={[
-                "inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1",
+                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[11px]",
                 style.badge
               ].join(" ")}
             >
@@ -842,117 +825,122 @@ function FinancialCheckupCard({
             </span>
           </div>
 
-          <p className={["mt-2 text-xs font-semibold leading-5", style.muted].join(" ")}>
+          <p className={["mt-1.5 text-[11px] font-semibold leading-4 sm:mt-2 sm:text-xs sm:leading-5", style.muted].join(" ")}>
             {financialCheckup.headline}
           </p>
         </div>
 
         <div
           className={[
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl sm:h-10 sm:w-10",
             style.icon
           ].join(" ")}
         >
           {financialCheckup.status === "GOOD" ? (
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2 className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : financialCheckup.status === "RISK" ? (
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : (
-            <Activity className="h-5 w-5" />
+            <Activity className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           )}
         </div>
       </div>
 
-      <div className="rounded-[1.25rem] bg-white/80 p-3.5 ring-1 ring-slate-100 sm:p-4">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-          Fokus checkup
-        </p>
-        <p className="mt-1 truncate text-base font-black text-slate-950 sm:text-lg">
-          {focusLabel}
-        </p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          {financialCheckup.focusCategoryName
-            ? `Nominal fokus: ${formatRupiah(financialCheckup.focusCategoryAmount)}`
-            : "Belum ada kategori yang perlu difokuskan secara khusus."}
-        </p>
+      <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-100 sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+              Fokus checkup
+            </p>
+            <p className="mt-1 truncate text-sm font-black text-slate-950 sm:text-lg">
+              {focusLabel}
+            </p>
+          </div>
+
+          <p className="shrink-0 text-right text-xs font-black text-slate-500">
+            {financialCheckup.focusCategoryName
+              ? formatCompactRupiah(financialCheckup.focusCategoryAmount)
+              : "-"}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-            Rasio Expense
+            Rasio
           </p>
-          <p className="mt-1 text-sm font-black text-slate-950">
+          <p className="mt-1 text-xs font-black text-slate-950">
             {financialCheckup.metrics.expenseToIncomeRatio === null
               ? "-"
               : `${financialCheckup.metrics.expenseToIncomeRatio}%`}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
             Cashflow
           </p>
-          <p className="mt-1 truncate text-sm font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-slate-950">
             {formatCompactRupiah(financialCheckup.metrics.netCashflow)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-            Sisa Aman
+            Sisa aman
           </p>
-          <p className="mt-1 truncate text-sm font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-slate-950">
             {formatCompactRupiah(financialCheckup.metrics.availableToSpend)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-            Limit Harian
+            Limit
           </p>
-          <p className="mt-1 truncate text-sm font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-slate-950">
             {financialCheckup.metrics.suggestedDailyLimit === null
               ? "-"
-              : `${formatCompactRupiah(financialCheckup.metrics.suggestedDailyLimit)} / hari`}
+              : formatCompactRupiah(financialCheckup.metrics.suggestedDailyLimit)}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100">
-        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-          {financialCheckup.reason}
-        </p>
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100">
+      <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100 sm:mt-3 sm:p-4">
         <p className="text-xs font-black text-slate-950">Aksi utama</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
           {financialCheckup.action}
         </p>
       </div>
 
-      {primaryWarning ? (
-        <div className="mt-3 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+      <div className="mt-3 hidden rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100 sm:block">
+        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {financialCheckup.reason}
+        </p>
+      </div>
+
+      {shouldShowWarning ? (
+        <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100 sm:mt-3">
           <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-slate-800">{warningLabel}</p>
+              <p className="font-black text-slate-800">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
         </div>
       ) : null}
 
-    <Link
-      className="group relative mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20"
-      to="/asisten"
-    >
-      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
-      <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
-      <span className="relative z-10 text-white">Bahas dengan Asisten</span>
-    </Link>
+      <Link
+        className="group relative mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-xs font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20 sm:mt-4 sm:min-h-11 sm:text-sm"
+        to="/asisten"
+      >
+        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
+        <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
+        <span className="relative z-10 text-white">Bahas dengan Asisten</span>
+      </Link>
     </div>
   );
 }
