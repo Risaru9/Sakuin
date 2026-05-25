@@ -261,15 +261,19 @@ export function TransactionsPage() {
   );
 
   const categoriesQuery = useQuery({
-    queryKey: queryKeys.categories,
-    queryFn: () => getCategories()
-  });
+  queryKey: queryKeys.categories,
+  queryFn: () => getCategories(),
+  staleTime: 5 * 60_000,
+  refetchOnWindowFocus: false
+});
 
-  const transactionsQuery = useQuery({
-    queryKey: queryKeys.transactions.list(transactionParams),
-    queryFn: () => getTransactions(transactionParams),
-    placeholderData: (previousData) => previousData
-  });
+const transactionsQuery = useQuery({
+  queryKey: queryKeys.transactions.list(transactionParams),
+  queryFn: () => getTransactions(transactionParams),
+  placeholderData: (previousData) => previousData,
+  staleTime: 30_000,
+  refetchOnWindowFocus: false
+});
 
   const categories = categoriesQuery.data ?? [];
   const transactions = transactionsQuery.data?.items ?? [];

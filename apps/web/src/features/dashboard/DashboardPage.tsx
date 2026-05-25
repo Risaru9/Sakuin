@@ -904,6 +904,10 @@ function FinancialCheckupCard({
   );
 }
 
+const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
+const DASHBOARD_GOALS_STALE_TIME = 60_000;
+const DASHBOARD_PROFILE_STALE_TIME = 5 * 60_000;
+
 export function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -913,20 +917,26 @@ export function DashboardPage() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
 
-  const summaryQuery = useQuery({
-    queryKey: queryKeys.summary,
-    queryFn: getSummary
-  });
+    const summaryQuery = useQuery({
+  queryKey: queryKeys.summary,
+  queryFn: getSummary,
+  staleTime: DASHBOARD_SUMMARY_STALE_TIME,
+  refetchOnWindowFocus: false
+});
 
-  const goalsQuery = useQuery({
-    queryKey: queryKeys.goals,
-    queryFn: getGoals
-  });
+const goalsQuery = useQuery({
+  queryKey: queryKeys.goals,
+  queryFn: getGoals,
+  staleTime: DASHBOARD_GOALS_STALE_TIME,
+  refetchOnWindowFocus: false
+});
 
-  const profileQuery = useQuery({
-    queryKey: queryKeys.profile,
-    queryFn: getUserProfile
-  });
+const profileQuery = useQuery({
+  queryKey: queryKeys.profile,
+  queryFn: getUserProfile,
+  staleTime: DASHBOARD_PROFILE_STALE_TIME,
+  refetchOnWindowFocus: false
+});
 
   const summary = summaryQuery.data ?? null;
   const goals = goalsQuery.data ?? [];
@@ -964,10 +974,11 @@ export function DashboardPage() {
     setDashboardPriorityGoalIdState(storedPriorityGoalId);
   }, [goalsQuery.data]);
 
-   function refreshDashboardData() {
-    // Mutation handlers already update relevant caches
-    // and refresh summary in the background.
+  function refreshDashboardData() {
+  // Mutation handlers already update transaction and summary caches optimistically.
+  // Heavy derived data is marked stale in the background by transaction-cache.ts.
   }
+
   function retrySummaryData() {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.summary

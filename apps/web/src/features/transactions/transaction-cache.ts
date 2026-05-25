@@ -697,12 +697,14 @@ export function markTransactionDerivedDataStale(
   });
 
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.summary
+    queryKey: queryKeys.summary,
+    refetchType: "inactive"
   });
 
   if (options.includeCategories) {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.categories
+      queryKey: queryKeys.categories,
+      refetchType: "inactive"
     });
   }
 }
