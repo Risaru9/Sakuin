@@ -51,6 +51,11 @@ const TRANSACTION_DRAFT_SUGGESTIONS = [
 ];
 
 const MAX_RESPONSE_SUGGESTIONS = 4;
+const AI_CATEGORY_DOMINANCE_WARNING_SHARE = 40;
+const AI_MATERIAL_EXPENSE_THRESHOLD = 100_000;
+const AI_MATERIAL_EXPENSE_RATIO_THRESHOLD = 20;
+const AI_REPEATED_CATEGORY_TRANSACTION_THRESHOLD = 8;
+const AI_MIN_TRANSACTIONS_FOR_CATEGORY_RISK = 5;
 
 const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
   "kalau",
@@ -366,6 +371,65 @@ function roundOneDecimal(value: number) {
   return Number(value.toFixed(1));
 }
 
+function calculateExpenseRatio(input: {
+  income: number;
+  expense: number;
+}) {
+  if (input.income <= 0) {
+    return null;
+  }
+
+  return roundOneDecimal((input.expense / input.income) * 100);
+}
+
+function isMaterialExpenseCategoryConcern(input: {
+  transactionCount: number;
+  totalExpense: number;
+  expenseToIncomeRatio: number | null;
+  categoryExpenseShare: number;
+  categoryIncomeShare: number;
+  categoryTransactionCount: number;
+}) {
+  if (input.categoryExpenseShare < AI_CATEGORY_DOMINANCE_WARNING_SHARE) {
+    return false;
+  }
+
+  if (input.totalExpense < AI_MATERIAL_EXPENSE_THRESHOLD) {
+    return false;
+  }
+
+  const hasMeaningfulExpenseRatio =
+    input.expenseToIncomeRatio !== null &&
+    input.expenseToIncomeRatio >= AI_MATERIAL_EXPENSE_RATIO_THRESHOLD;
+
+  const hasEnoughTransactions =
+    input.transactionCount >= AI_MIN_TRANSACTIONS_FOR_CATEGORY_RISK;
+
+  const categoryUsesLargeIncomeShare = input.categoryIncomeShare >= 30;
+
+  const categoryIsRepeatedOften =
+    input.categoryTransactionCount >= AI_REPEATED_CATEGORY_TRANSACTION_THRESHOLD;
+
+  return (
+    hasMeaningfulExpenseRatio ||
+    hasEnoughTransactions ||
+    categoryUsesLargeIncomeShare ||
+    categoryIsRepeatedOften
+  );
+}
+
+function isMaterialIncrease(input: {
+  amount: number;
+  changePercent: number | null;
+  threshold: number;
+}) {
+  return (
+    input.amount >= AI_MATERIAL_EXPENSE_THRESHOLD &&
+    input.changePercent !== null &&
+    input.changePercent >= input.threshold
+  );
+}
+
 function calculateNumericChangePercent(currentValue: number, previousValue: number) {
   if (previousValue === 0) {
     if (currentValue === 0) {
@@ -618,25 +682,59 @@ function buildSpendingPatternInsight(
   const expenseChangePercent = context.monthComparison.expenseChangePercent;
   const riskSignals: string[] = [];
 
-  if (topCategory.percentageOfExpense >= 40) {
+  const expenseToIncomeRatio = calculateExpenseRatio({
+    income: totalIncome,
+    expense: totalExpense
+  });
+
+  const isTopCategoryMaterialConcern = isMaterialExpenseCategoryConcern({
+    transactionCount: context.currentMonth.transactionCount,
+    totalExpense,
+    expenseToIncomeRatio,
+    categoryExpenseShare: topCategory.percentageOfExpense,
+    categoryIncomeShare: totalIncome > 0 ? topCategory.percentageOfIncome : 0,
+    categoryTransactionCount: topCategory.transactionCount
+  });
+
+  const isTopCategoryLargeIncomeShare =
+    topCategory.percentageOfIncome >= 30 &&
+    topCategoryAmount >= AI_MATERIAL_EXPENSE_THRESHOLD;
+
+  const isTopCategoryRepeatedOften =
+    topCategory.transactionCount >= AI_REPEATED_CATEGORY_TRANSACTION_THRESHOLD &&
+    totalExpense >= AI_MATERIAL_EXPENSE_THRESHOLD;
+
+  const totalExpenseIncreasedMaterially = isMaterialIncrease({
+    amount: totalExpense,
+    changePercent: expenseChangePercent,
+    threshold: 40
+  });
+
+  const topCategoryIncreasedMaterially = isMaterialIncrease({
+    amount: topCategoryAmount,
+    changePercent: topCategoryChangePercent,
+    threshold: 50
+  });
+
+  if (isTopCategoryMaterialConcern) {
     riskSignals.push(
       "Satu kategori mengambil porsi besar dari total pengeluaran bulan ini."
     );
   }
 
-  if (topCategory.percentageOfIncome >= 30) {
+  if (isTopCategoryLargeIncomeShare) {
     riskSignals.push(
       "Kategori terbesar sudah memakai porsi besar dari pemasukan bulan ini."
     );
   }
 
-  if (expenseChangePercent !== null && expenseChangePercent >= 25) {
+  if (totalExpenseIncreasedMaterially) {
     riskSignals.push("Total pengeluaran naik cukup besar dibanding bulan lalu.");
   }
 
   if (
     topCategoryChangePercent === null &&
-    topCategoryAmount > 0 &&
+    topCategoryAmount >= AI_MATERIAL_EXPENSE_THRESHOLD &&
     topCategoryPreviousAmount === 0
   ) {
     riskSignals.push(
@@ -644,20 +742,17 @@ function buildSpendingPatternInsight(
     );
   }
 
-  if (topCategoryChangePercent !== null && topCategoryChangePercent >= 25) {
+  if (topCategoryIncreasedMaterially) {
     riskSignals.push("Kategori terbesar naik cukup besar dibanding bulan lalu.");
   }
 
-  if (topCategory.transactionCount >= 8) {
+  if (isTopCategoryRepeatedOften) {
     riskSignals.push(
       "Kategori terbesar muncul cukup sering, jadi kemungkinan dipengaruhi transaksi kecil yang berulang."
     );
   }
 
-  if (
-    (expenseChangePercent !== null && expenseChangePercent >= 40) ||
-    (topCategoryChangePercent !== null && topCategoryChangePercent >= 50)
-  ) {
+  if (totalExpenseIncreasedMaterially || topCategoryIncreasedMaterially) {
     return {
       status: "Meningkat tajam",
       topCategoryName: topCategory.name,
@@ -676,9 +771,9 @@ function buildSpendingPatternInsight(
   }
 
   if (
-    topCategory.percentageOfExpense >= 40 ||
-    topCategory.percentageOfIncome >= 30 ||
-    topCategory.transactionCount >= 8
+    isTopCategoryMaterialConcern ||
+    isTopCategoryLargeIncomeShare ||
+    isTopCategoryRepeatedOften
   ) {
     return {
       status: "Perlu dikontrol",
@@ -707,9 +802,12 @@ function buildSpendingPatternInsight(
     topCategoryPreviousAmount,
     topCategoryChangePercent,
     expenseChangePercent,
-    mainDriver: `Kategori terbesar bulan ini adalah ${topCategory.name}, tetapi porsinya belum terlihat terlalu dominan.`,
+    mainDriver:
+      topCategory.percentageOfExpense >= AI_CATEGORY_DOMINANCE_WARNING_SHARE
+        ? `Kategori terbesar bulan ini adalah ${topCategory.name}, tetapi nominal dan rasionya belum terlihat sebagai risiko besar.`
+        : `Kategori terbesar bulan ini adalah ${topCategory.name}, tetapi porsinya belum terlihat terlalu dominan.`,
     advice:
-      "Tetap pantau kategori terbesar agar tidak naik perlahan, terutama jika transaksi kecil mulai sering muncul.",
+      "Pertahankan pola saat ini dan tetap catat transaksi rutin agar pola pengeluaran terbaca lebih akurat.",
     riskSignals
   };
 }
@@ -1859,11 +1957,11 @@ function buildSpendingAnalysisResponse(
   });
 
   const suggestions = buildDynamicFinancialSuggestions({
-  intent: "SPENDING_ANALYSIS",
-  healthSnapshot,
-  spendingInsight,
-  actionPlan
-});
+    intent: "SPENDING_ANALYSIS",
+    healthSnapshot,
+    spendingInsight,
+    actionPlan
+  });
 
   if (toNumber(context.currentMonth.totalExpense) <= 0 || !topCategory) {
     return {
@@ -1903,19 +2001,28 @@ function buildSpendingAnalysisResponse(
           context.monthComparison.expenseChangePercent
         )} dibanding bulan lalu.`;
 
+  const lowExpenseDominantCategoryNote =
+    spendingInsight.status === "Terkendali" &&
+    spendingInsight.topCategoryName &&
+    spendingInsight.topCategoryExpenseShare >= AI_CATEGORY_DOMINANCE_WARNING_SHARE
+      ? "Meski porsinya terlihat besar, nominalnya belum terlihat sebagai risiko besar."
+      : "";
+
+  const priorityText =
+    spendingInsight.status === "Terkendali"
+      ? `pantau ${topCategory.name} tanpa perlu over-warning`
+      : `fokus ke ${topCategory.name} dulu`;
+
+  const actionText =
+    spendingInsight.status === "Terkendali"
+      ? spendingInsight.advice
+      : actionPlan.nextStep;
+
   return {
     intent: "SPENDING_ANALYSIS",
     reply: `Pengeluaranmu bulan ini ${formatRupiah(
       context.currentMonth.totalExpense
-    )}. Prioritas: pantau ${
-      topCategory.name
-    } terlebih dahulu. Alasan: kategori ini menjadi pengeluaran terbesar, totalnya ${formatRupiah(
-      topCategory.amount
-    )}, sekitar ${topCategory.percentageOfExpense}% dari seluruh pengeluaran, dan muncul dalam ${
-      topCategory.transactionCount
-    } transaksi. ${expenseTrendText} ${categoryTrendText} Aksi: ${
-      actionPlan.nextStep
-    }`,
+    )}. Prioritas: ${priorityText}. Alasan: ${spendingInsight.mainDriver} ${lowExpenseDominantCategoryNote} ${expenseTrendText} ${categoryTrendText} Aksi: ${actionText}`,
     cards: buildCards([
       {
         label: "Total Pengeluaran",
@@ -1940,7 +2047,7 @@ function buildSpendingAnalysisResponse(
       },
       ...buildSpendingPatternCards(spendingInsight)
     ]),
-      suggestions
+    suggestions
   };
 }
 
@@ -2093,10 +2200,15 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
     };
   }
 
-  const categoryAdvice =
-    topCategory.percentageOfIncome >= 30
+  const shouldFocusCategory =
+    spendingInsight.status === "Perlu dikontrol" ||
+    spendingInsight.status === "Meningkat tajam";
+
+  const categoryAdvice = shouldFocusCategory
+    ? topCategory.percentageOfIncome >= 30
       ? `Kategori ${topCategory.name} cukup besar dibanding pemasukanmu bulan ini.`
-      : `Kategori ${topCategory.name} adalah pengeluaran terbesar bulan ini.`;
+      : `Kategori ${topCategory.name} menjadi prioritas karena kontribusinya mulai perlu dikontrol.`
+    : `Kategori ${topCategory.name} memang menjadi pengeluaran terbesar, tetapi dari data saat ini belum terlihat sebagai risiko besar.`;
 
   const repeatedTransactionAdvice =
     topCategory.transactionCount >= 8
@@ -2111,9 +2223,11 @@ function buildSavingAdviceResponse(context: AiFinancialContext): AiChatResponse 
 
   return {
     intent: "SAVING_ADVICE",
-    reply: `Langkah paling aman sekarang: ${actionPlan.mainAction}. Prioritas: fokus ke ${
-    topCategory.name
-    } dulu. Alasan: ${categoryAdvice}${repeatedTransactionAdvice} ${safeToSpendText} Aksi: ${
+    reply: `Langkah paling aman sekarang: ${
+      actionPlan.mainAction
+    }. Prioritas: ${
+      shouldFocusCategory ? `fokus ke ${topCategory.name} dulu` : actionPlan.mainAction
+    }. Alasan: ${categoryAdvice}${repeatedTransactionAdvice} ${safeToSpendText} Aksi: ${
       actionPlan.nextStep
     }${dailyLimitAdvice}`,
     cards: buildCards([
@@ -2332,38 +2446,29 @@ function buildFinancialPrompt(input: {
     input.baseResponse.reply,
     "",
     "ANSWER QUALITY RULES:",
-    "- Jawab pertanyaan user secara langsung dan on-point.",
-    "- Gunakan struktur jawaban: PRIORITAS - ALASAN - AKSI.",
-    "- Kalimat pertama harus berisi prioritas tindakan atau keputusan utama.",
-    "- Setelah itu jelaskan alasan singkat berdasarkan financial health snapshot, spending pattern insight, consultant action plan, scenario analysis, atau context.",
-    "- Tutup dengan 1 sampai 3 aksi konkret yang bisa dilakukan user.",
-    "- Jangan membahas hal yang tidak ditanya kecuali benar-benar relevan.",
-    "- Jika user bertanya aman/tidak, sehat/tidak, atau boros/tidak, mulai jawaban dengan status financial health atau spending pattern.",
-    "- Jika user bertanya 'boros di mana', sebutkan kategori prioritas kontrol terlebih dahulu.",
-    "- Jika user bertanya pengeluaran naik karena apa, gunakan spending pattern insight sebagai sumber utama.",
-    "- Jika user bertanya realistis/tidak, mulai jawaban dengan verdict.",
-    "- Jika user meminta lanjutan, lanjutkan penjelasan finansial terakhir dari conversation context.",
-    "- Jika user bertanya target tabungan, hitung kebutuhan tabungan per bulan bila data tersedia.",
-    "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang.",
-    "- Angka penting harus konsisten dengan context, financial health snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
+    "- Jawab pertanyaan user secara langsung, natural, dan sesuai konteks pertanyaannya.",
+    "- Hindari jawaban terlalu panjang; prioritaskan jawaban ringkas, jelas, dan langsung bisa dipakai user.",
+    "- Hindari saran generik; jika data tersedia, sebutkan kategori, batas, nominal, status, atau langkah praktis yang relevan.",
+    "- Gunakan struktur jawaban: PRIORITAS - ALASAN - AKSI sebagai default, tetapi jangan terlalu kaku jika user hanya bertanya singkat, meminta klarifikasi, atau sedang follow-up.",
+    "- Untuk pertanyaan 'boros di mana', sebutkan kategori prioritas jika memang material. Jika kategori terbesar belum material, jelaskan bahwa kategori itu terbesar sementara tetapi belum menjadi risiko besar.",
+    "- Untuk pertanyaan 'apa yang harus saya kurangi', beri satu prioritas utama jika ada sinyal material. Jika belum ada sinyal besar, sarankan tetap pantau dan catat transaksi rutin.",
+    "- Untuk pertanyaan realistis/tidak, mulai dengan verdict, lalu jelaskan hitungan dan risiko.",
+    "- Untuk follow-up seperti 'lanjutannya apa', 'terus?', 'kalau begitu?', gunakan recent conversation context dan lanjutkan pembahasan terakhir selama masih relevan dengan keuangan pribadi.",
+    "- Jangan menakut-nakuti user saat status financial health aman, safe-to-spend aman, dan warning besar tidak ada.",
+    "- Jangan menyebut kategori dominan sebagai risiko besar jika nominalnya kecil, rasio pengeluaran rendah, dan backend summary menyatakan tidak ada warning besar.",
+    "- Tetap tegas jika status HOLD/RISK, cashflow negatif, pengeluaran mendekati pemasukan, atau ada warning material dari backend.",
+    "- Jangan membahas hal yang tidak ditanya kecuali benar-benar membantu keputusan user.",
+    "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang secara singkat dan beri langkah berikutnya.",
+    "- Angka penting harus konsisten dengan context, financial health snapshot, safe-to-spend snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
-    "- Jika purchase decision impact tersedia, jangan melawan keputusan pembelian, risk level, sisa aman setelah pembelian, alasan, dan aksi deterministik dari backend.",
-    "- Jika user bertanya apakah boleh membeli/jajan/belanja sekarang, mulai dari purchase decision impact.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",
-    "- Jika financial checkup snapshot tersedia, jangan melawan status checkup, prioritas, fokus kategori, alasan, aksi, dan warning deterministik dari backend.",
-    "- Jika user bertanya checkup keuangan, kesehatan keuangan, status keuangan, atau aman/berisiko, mulai dari status checkup lalu jelaskan alasan dan aksi utama.",
-    "- Jika safe-to-spend snapshot tersedia, jangan melawan status, sisa aman, batas harian aman, pace, alasan, dan aksi deterministik dari backend.",
-    "- Jika user bertanya masih aman belanja berapa, boleh jajan berapa, atau batas harian aman, mulai dari status safe-to-spend, sisa aman, dan batas harian aman.",
-    "- Jika spending pattern insight tersedia, jangan melawan kategori prioritas, nominal, porsi, tren, dan saran deterministik dari backend.",
-    "- Jika consultant action plan tersedia, jangan melawan prioritas aksi, langkah utama, alasan, dan guardrail deterministik dari backend.",
-    "- Jika user bertanya apa yang harus dilakukan sekarang, mulai dari langkah utama consultant action plan.",
-    "- Cards di frontend sudah menampilkan angka utama, jadi reply fokus pada interpretasi dan saran.",
-    "- Jangan mengulang terlalu banyak angka jika angka tersebut sudah ada di cards, kecuali angka itu penting untuk menjelaskan alasan.",
-    "- Hindari jawaban terlalu panjang. Maksimal 3 paragraf pendek atau 4 bullet pendek jika analisis kompleks.",
-    "- Hindari saran generik. Saran harus spesifik terhadap kategori, kondisi cashflow, pola pengeluaran, atau goal user.",
+    "- Jika safe-to-spend snapshot tersedia, jangan melawan status, reason, action, dan warnings dari backend.",
+    "- Jangan membocorkan userId, email, token, requestId, catatan transaksi mentah, atau data internal.",
+    "- Jangan mengklaim bisa menyimpan transaksi kecuali response memang berupa draft transaksi yang perlu direview user.",
     "",
     "TASK:",
     "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, dan deterministic backend summary.",
+    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, financial checkup snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, purchase decision impact, dan deterministic backend summary.",
     "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
     "Jangan terlalu panjang.",

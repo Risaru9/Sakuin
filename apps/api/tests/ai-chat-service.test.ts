@@ -1029,8 +1029,19 @@ describe("AI chat service contract", () => {
       "PRIORITAS - ALASAN - AKSI"
     );
     expect(serializedProviderInput).toContain(
-      "Kalimat pertama harus berisi prioritas tindakan"
+      "Gunakan struktur jawaban: PRIORITAS - ALASAN - AKSI sebagai default"
     );
+
+    expect(serializedProviderInput).toContain("jangan terlalu kaku");
+
+    expect(serializedProviderInput).toContain(
+      "Jangan menakut-nakuti user saat status financial health aman"
+    );
+
+    expect(serializedProviderInput).toContain(
+      "Jika kategori terbesar belum material"
+    );
+
     expect(serializedProviderInput).toContain(
       "1 sampai 3 aksi konkret"
     );
@@ -1832,4 +1843,64 @@ describe("AI chat service contract", () => {
       "Checkup provider food note sensitif"
     );
   });
+
+  it("tidak over-warning saat kategori dominan tetapi expense masih kecil", async () => {
+  const user = await createTestUser("low-expense-dominant-category");
+
+  const incomeCategory = await createCategory({
+    userId: user.id,
+    name: "Gaji",
+    type: "INCOME"
+  });
+
+  const foodCategory = await createCategory({
+    userId: user.id,
+    name: "Makanan",
+    type: "EXPENSE"
+  });
+
+  await prisma.transaction.createMany({
+    data: [
+      {
+        userId: user.id,
+        categoryId: incomeCategory.id,
+        type: "INCOME",
+        amount: "350000",
+        note: "Income kecil sensitif",
+        date: getCurrentMonthDate(1)
+      },
+      {
+        userId: user.id,
+        categoryId: foodCategory.id,
+        type: "EXPENSE",
+        amount: "10000",
+        note: "Makanan kecil sensitif",
+        date: getCurrentMonthDate(5)
+      }
+    ]
+  });
+
+  const response = await getAiChatResponse({
+    userId: user.id,
+    message: "saya boros di mana bulan ini?"
+  });
+
+  const serializedResponse = JSON.stringify(response);
+
+  expect(response.intent).toBe("SPENDING_ANALYSIS");
+  expect(
+    response.cards.some(
+      (card) => card.label === "Pola Pengeluaran" && card.value === "Terkendali"
+    )
+  ).toBe(true);
+  expect(
+    response.cards.some(
+      (card) => card.label === "Prioritas Kontrol" && card.value === "Makanan"
+    )
+  ).toBe(true);
+  expect(serializedResponse).toContain("Makanan");
+  expect(serializedResponse).toContain("belum terlihat sebagai risiko besar");
+  expect(serializedResponse).not.toContain("Makanan kecil sensitif");
+  expect(serializedResponse).not.toContain("Income kecil sensitif");
+});
 });
