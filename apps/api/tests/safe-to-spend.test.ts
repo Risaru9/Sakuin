@@ -199,6 +199,40 @@ describe("Safe-to-Spend engine", () => {
     expect(result.action).toContain("Kamu masih bisa memakai");
   });
 
+  it("tidak menghasilkan WATCH hanya karena kategori dominan jika expense masih kecil", () => {
+  const context = createFinancialContext({
+    safeBalanceLimit: "30000.00",
+    currentMonth: {
+      totalIncome: "350000.00",
+      totalExpense: "10000.00",
+      netCashflow: "340000.00",
+      transactionCount: 4,
+      topExpenseCategories: [
+        {
+          name: "Makanan",
+          amount: "10000.00",
+          transactionCount: 2,
+          percentageOfExpense: 100,
+          percentageOfIncome: 2.9
+        }
+      ]
+    }
+  });
+
+  const result = calculateSafeToSpend(context);
+
+  expect(result.status).toBe("SAFE");
+  expect(result.spendingPaceStatus).toBe("ON_TRACK");
+  expect(result.netCashflow).toBe(340000);
+  expect(result.availableToSpend).toBe(310000);
+  expect(result.expenseToIncomeRatio).toBe(2.9);
+  expect(result.topRiskCategoryName).toBe("Makanan");
+  expect(result.warnings).not.toContain(
+    "Kategori Makanan mengambil porsi besar dari total pengeluaran."
+  );
+  expect(result.reason).toContain("Cashflow bulan ini masih positif");
+});
+
   it("memasukkan warning goal overdue jika ada goal melewati deadline", () => {
     const context = createFinancialContext({
       currentMonth: {

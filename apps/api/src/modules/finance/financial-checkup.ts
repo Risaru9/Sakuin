@@ -47,6 +47,11 @@ function roundOneDecimal(value: number) {
   return Number(value.toFixed(1));
 }
 
+const CATEGORY_DOMINANCE_WARNING_SHARE = 40;
+const MATERIAL_CATEGORY_EXPENSE_THRESHOLD = 100_000;
+const MATERIAL_CATEGORY_EXPENSE_RATIO_THRESHOLD = 20;
+const MATERIAL_CATEGORY_TRANSACTION_COUNT_THRESHOLD = 5;
+
 function calculateExpenseToIncomeRatio(input: {
   totalIncome: number;
   totalExpense: number;
@@ -58,6 +63,36 @@ function calculateExpenseToIncomeRatio(input: {
   return roundOneDecimal((input.totalExpense / input.totalIncome) * 100);
 }
 
+function isFocusCategoryMaterialRisk(input: {
+  transactionCount: number;
+  totalExpense: number;
+  expenseToIncomeRatio: number | null;
+  focusCategoryExpenseShare: number;
+}) {
+  if (input.focusCategoryExpenseShare < CATEGORY_DOMINANCE_WARNING_SHARE) {
+    return false;
+  }
+
+  if (input.totalExpense <= 0) {
+    return false;
+  }
+
+  const hasMeaningfulExpenseAmount =
+    input.totalExpense >= MATERIAL_CATEGORY_EXPENSE_THRESHOLD;
+
+  const hasMeaningfulExpenseRatio =
+    input.expenseToIncomeRatio !== null &&
+    input.expenseToIncomeRatio >= MATERIAL_CATEGORY_EXPENSE_RATIO_THRESHOLD;
+
+  const hasEnoughTransactions =
+    input.transactionCount >= MATERIAL_CATEGORY_TRANSACTION_COUNT_THRESHOLD;
+
+  return (
+    hasMeaningfulExpenseAmount &&
+    (hasMeaningfulExpenseRatio || hasEnoughTransactions)
+  );
+}
+
 function getTopExpenseCategory(context: AiFinancialContext) {
   return context.currentMonth.topExpenseCategories[0] ?? null;
 }
@@ -66,7 +101,7 @@ function buildWarnings(input: {
   context: AiFinancialContext;
   expenseToIncomeRatio: number | null;
   focusCategoryName: string | null;
-  focusCategoryExpenseShare: number;
+  focusCategoryIsMaterialRisk: boolean;
 }) {
   const warnings: string[] = [];
 
@@ -85,7 +120,7 @@ function buildWarnings(input: {
     warnings.push("Rasio pengeluaran terhadap pemasukan sudah tinggi.");
   }
 
-  if (input.focusCategoryName && input.focusCategoryExpenseShare >= 40) {
+  if (input.focusCategoryName && input.focusCategoryIsMaterialRisk) {
     warnings.push(
       `Kategori ${input.focusCategoryName} mengambil porsi besar dari total pengeluaran.`
     );
@@ -108,7 +143,7 @@ function buildWarnings(input: {
 function determineStatus(input: {
   context: AiFinancialContext;
   expenseToIncomeRatio: number | null;
-  focusCategoryExpenseShare: number;
+  focusCategoryIsMaterialRisk: boolean;
 }): FinancialCheckupStatus {
   if (input.context.currentMonth.transactionCount === 0) {
     return "UNKNOWN";
@@ -138,7 +173,7 @@ function determineStatus(input: {
     return "WATCH";
   }
 
-  if (input.focusCategoryExpenseShare >= 40) {
+  if (input.focusCategoryIsMaterialRisk) {
     return "WATCH";
   }
 
@@ -212,7 +247,7 @@ function buildReason(input: {
   netCashflow: number;
   expenseToIncomeRatio: number | null;
   focusCategoryName: string | null;
-  focusCategoryExpenseShare: number;
+  focusCategoryIsMaterialRisk: boolean;
   context: AiFinancialContext;
 }) {
   if (input.status === "UNKNOWN") {
@@ -236,9 +271,9 @@ function buildReason(input: {
       return "Ritme pengeluaran bulan ini berjalan terlalu cepat dibanding progres periode berjalan.";
     }
 
-    if (input.focusCategoryName && input.focusCategoryExpenseShare >= 40) {
-      return `Kategori ${input.focusCategoryName} mengambil porsi besar dari total pengeluaran bulan ini.`;
-    }
+  if (input.focusCategoryName && input.focusCategoryIsMaterialRisk) {
+    return `Kategori ${input.focusCategoryName} mengambil porsi besar dari total pengeluaran bulan ini.`;
+  }
 
     if (
       input.context.monthComparison.expenseChangePercent !== null &&
@@ -294,18 +329,27 @@ export function buildFinancialCheckup(
   const totalExpense = toNumber(context.currentMonth.totalExpense);
   const netCashflow = toNumber(context.currentMonth.netCashflow);
   const topCategory = getTopExpenseCategory(context);
+
   const focusCategoryName = topCategory?.name ?? null;
   const focusCategoryAmount = topCategory ? toNumber(topCategory.amount) : 0;
   const focusCategoryExpenseShare = topCategory?.percentageOfExpense ?? 0;
+
   const expenseToIncomeRatio = calculateExpenseToIncomeRatio({
     totalIncome,
     totalExpense
   });
 
+  const focusCategoryIsMaterialRisk = isFocusCategoryMaterialRisk({
+    transactionCount: context.currentMonth.transactionCount,
+    totalExpense,
+    expenseToIncomeRatio,
+    focusCategoryExpenseShare
+  });
+
   const status = determineStatus({
     context,
     expenseToIncomeRatio,
-    focusCategoryExpenseShare
+    focusCategoryIsMaterialRisk
   });
 
   const priority = determinePriority(status);
@@ -314,7 +358,7 @@ export function buildFinancialCheckup(
     context,
     expenseToIncomeRatio,
     focusCategoryName,
-    focusCategoryExpenseShare
+    focusCategoryIsMaterialRisk
   });
 
   return {
@@ -332,7 +376,7 @@ export function buildFinancialCheckup(
       netCashflow,
       expenseToIncomeRatio,
       focusCategoryName,
-      focusCategoryExpenseShare,
+      focusCategoryIsMaterialRisk,
       context
     }),
     action: buildAction({

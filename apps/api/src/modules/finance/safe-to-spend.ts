@@ -29,6 +29,10 @@ export type CalculateSafeToSpendOptions = {
 };
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+const CATEGORY_DOMINANCE_WARNING_SHARE = 40;
+const MATERIAL_CATEGORY_EXPENSE_THRESHOLD = 100_000;
+const MATERIAL_CATEGORY_EXPENSE_RATIO_THRESHOLD = 20;
+const MATERIAL_CATEGORY_TRANSACTION_COUNT_THRESHOLD = 5;
 
 function toNumber(value: string | number | null | undefined) {
   const numberValue = Number(value ?? 0);
@@ -114,6 +118,36 @@ function calculateExpenseToIncomeRatio(input: {
   return roundOneDecimal((input.expense / input.income) * 100);
 }
 
+function isTopExpenseCategoryMaterialRisk(input: {
+  transactionCount: number;
+  expense: number;
+  expenseToIncomeRatio: number | null;
+  topRiskCategoryExpenseShare: number;
+}) {
+  if (input.topRiskCategoryExpenseShare < CATEGORY_DOMINANCE_WARNING_SHARE) {
+    return false;
+  }
+
+  if (input.expense <= 0) {
+    return false;
+  }
+
+  const hasMeaningfulExpenseAmount =
+    input.expense >= MATERIAL_CATEGORY_EXPENSE_THRESHOLD;
+
+  const hasMeaningfulExpenseRatio =
+    input.expenseToIncomeRatio !== null &&
+    input.expenseToIncomeRatio >= MATERIAL_CATEGORY_EXPENSE_RATIO_THRESHOLD;
+
+  const hasEnoughTransactions =
+    input.transactionCount >= MATERIAL_CATEGORY_TRANSACTION_COUNT_THRESHOLD;
+
+  return (
+    hasMeaningfulExpenseAmount &&
+    (hasMeaningfulExpenseRatio || hasEnoughTransactions)
+  );
+}
+
 function calculateProjectedMonthEndExpense(input: {
   expense: number;
   elapsedDays: number;
@@ -165,7 +199,7 @@ function buildWarnings(input: {
   expenseToIncomeRatio: number | null;
   spendingPaceStatus: SpendingPaceStatus;
   topRiskCategoryName: string | null;
-  topRiskCategoryExpenseShare: number;
+  topRiskCategoryIsMaterialRisk: boolean;
   goals: AiFinancialBaseContext["goals"];
 }) {
   const warnings: string[] = [];
@@ -202,7 +236,7 @@ function buildWarnings(input: {
     warnings.push("Ritme pengeluaran perlu dipantau.");
   }
 
-  if (input.topRiskCategoryName && input.topRiskCategoryExpenseShare >= 40) {
+  if (input.topRiskCategoryName && input.topRiskCategoryIsMaterialRisk) {
     warnings.push(
       `Kategori ${input.topRiskCategoryName} mengambil porsi besar dari total pengeluaran.`
     );
@@ -225,7 +259,7 @@ function determineStatus(input: {
   projectedNetCashflow: number;
   safeBalanceLimit: number;
   spendingPaceStatus: SpendingPaceStatus;
-  topRiskCategoryExpenseShare: number;
+  topRiskCategoryIsMaterialRisk: boolean;
 }): SafeToSpendStatus {
   if (input.transactionCount === 0) {
     return "UNKNOWN";
@@ -269,7 +303,7 @@ function determineStatus(input: {
     return "WATCH";
   }
 
-  if (input.topRiskCategoryExpenseShare >= 40) {
+  if (input.topRiskCategoryIsMaterialRisk) {
     return "WATCH";
   }
 
@@ -285,6 +319,7 @@ function buildReason(input: {
   safeBalanceLimit: number;
   topRiskCategoryName: string | null;
   topRiskCategoryAmount: number;
+  topRiskCategoryIsMaterialRisk: boolean;
   spendingPaceStatus: SpendingPaceStatus;
   projectedNetCashflow: number;
 }) {
@@ -313,9 +348,9 @@ function buildReason(input: {
       return "Jika ritme pengeluaran saat ini berlanjut, cashflow akhir bulan berisiko turun di bawah batas aman.";
     }
 
-    if (input.topRiskCategoryName) {
-      return `Cashflow masih bisa dipakai, tetapi kategori ${input.topRiskCategoryName} sudah menjadi sumber pengeluaran terbesar.`;
-    }
+  if (input.topRiskCategoryName && input.topRiskCategoryIsMaterialRisk) {
+    return `Cashflow masih bisa dipakai, tetapi kategori ${input.topRiskCategoryName} sudah menjadi sumber pengeluaran terbesar.`;
+  }
 
     return "Kondisi masih bisa dikendalikan, tetapi pengeluaran perlu dipantau agar tidak melewati batas aman.";
   }
@@ -412,6 +447,13 @@ export function calculateSafeToSpend(
     : 0;
   const topRiskCategoryExpenseShare = topRiskCategory?.percentageOfExpense ?? 0;
 
+    const topRiskCategoryIsMaterialRisk = isTopExpenseCategoryMaterialRisk({
+    transactionCount,
+    expense,
+    expenseToIncomeRatio,
+    topRiskCategoryExpenseShare
+  });
+
   const status = determineStatus({
     transactionCount,
     income,
@@ -422,7 +464,7 @@ export function calculateSafeToSpend(
     projectedNetCashflow,
     safeBalanceLimit,
     spendingPaceStatus,
-    topRiskCategoryExpenseShare
+    topRiskCategoryIsMaterialRisk
   });
 
   const warnings = buildWarnings({
@@ -435,7 +477,7 @@ export function calculateSafeToSpend(
     expenseToIncomeRatio,
     spendingPaceStatus,
     topRiskCategoryName,
-    topRiskCategoryExpenseShare,
+    topRiskCategoryIsMaterialRisk,
     goals: context.goals
   });
 
@@ -463,6 +505,7 @@ export function calculateSafeToSpend(
       safeBalanceLimit,
       topRiskCategoryName,
       topRiskCategoryAmount,
+      topRiskCategoryIsMaterialRisk,
       spendingPaceStatus,
       projectedNetCashflow
     }),

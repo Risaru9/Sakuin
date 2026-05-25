@@ -268,6 +268,63 @@ describe("Financial checkup engine", () => {
     expect(result.metrics.safeToSpendStatus).toBe("SAFE");
   });
 
+  it("menghasilkan GOOD jika kategori dominan hanya karena expense masih kecil", () => {
+  const context = createFinancialContext({
+    safeBalanceLimit: "30000.00",
+    currentMonth: {
+      totalIncome: "350000.00",
+      totalExpense: "10000.00",
+      netCashflow: "340000.00",
+      transactionCount: 4,
+      topExpenseCategories: [
+        {
+          name: "Makanan",
+          amount: "10000.00",
+          transactionCount: 2,
+          percentageOfExpense: 100,
+          percentageOfIncome: 2.9
+        }
+      ]
+    },
+    monthComparison: {
+      expenseChangePercent: 0
+    },
+    safeToSpend: {
+      status: "SAFE",
+      spendingPaceStatus: "ON_TRACK",
+      netCashflow: 340000,
+      safeBalanceLimit: 30000,
+      availableToSpend: 310000,
+      remainingDays: 7,
+      suggestedDailyLimit: 44285,
+      expenseToIncomeRatio: 2.9,
+      monthProgressPercent: 80,
+      expensePacePercent: 2.9,
+      projectedMonthEndExpense: 12000,
+      projectedNetCashflow: 338000,
+      topRiskCategoryName: "Makanan",
+      topRiskCategoryAmount: 10000,
+      reason: "Cashflow bulan ini masih positif.",
+      action: "Kamu masih bisa memakai sekitar Rp44.285 per hari.",
+      warnings: []
+    }
+  });
+
+  const result = buildFinancialCheckup(context);
+
+  expect(result.status).toBe("GOOD");
+  expect(result.priority).toBe("MAINTAIN");
+  expect(result.title).toBe("Checkup Keuangan Baik");
+  expect(result.focusCategoryName).toBe("Makanan");
+  expect(result.focusCategoryAmount).toBe(10000);
+  expect(result.metrics.expenseToIncomeRatio).toBe(2.9);
+  expect(result.metrics.safeToSpendStatus).toBe("SAFE");
+  expect(result.warnings).not.toContain(
+    "Kategori Makanan mengambil porsi besar dari total pengeluaran."
+  );
+  expect(result.reason).toContain("Rasio pengeluaran");
+});
+
   it("memasukkan warning goal overdue", () => {
     const context = createFinancialContext({
       goals: {
