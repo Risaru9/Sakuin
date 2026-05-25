@@ -593,36 +593,36 @@ export function EditTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-4 py-4 backdrop-blur-md sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold text-indigo-700">
-              Edit transaksi
-            </p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-              Perbaiki data transaksi
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Ubah nominal, kategori, tanggal, atau catatan transaksi yang
-              keliru. Jika kategorinya belum ada, pilih kategori Lain lalu
-              simpan sebagai kategori baru.
-            </p>
-          </div>
-
-          <button
-            aria-label="Tutup modal"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
-            onClick={handleClose}
-            type="button"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+      <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-indigo-700 sm:text-sm">
+            Edit transaksi
+          </p>
+          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+            Perbaiki data transaksi
+          </h2>
+          <p className="mt-1 hidden text-sm leading-6 text-slate-500 sm:block">
+            Ubah nominal, kategori, tanggal, atau catatan transaksi yang
+            keliru. Jika kategorinya belum ada, pilih kategori Lain lalu
+            simpan sebagai kategori baru.
+          </p>
         </div>
 
+        <button
+          aria-label="Tutup modal"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10"
+          disabled={isSubmitting}
+          onClick={handleClose}
+          type="button"
+        >
+          <X className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+        </button>
+      </div>
+
         {categoryError ? (
-          <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-medium text-rose-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p>{categoryError}</p>
@@ -638,13 +638,13 @@ export function EditTransactionModal({
         ) : null}
 
         {error ? (
-          <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-medium text-rose-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         ) : null}
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="grid gap-3 sm:gap-4" onSubmit={handleSubmit}>
           <div>
             <p className="mb-2 text-sm font-semibold text-slate-950">
               Tipe transaksi
@@ -654,8 +654,8 @@ export function EditTransactionModal({
               <button
                 className={
                   form.type === "EXPENSE"
-                    ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
-                    : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
+                    ? "rounded-2xl bg-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-white shadow-sm"
+                    : "rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                 }
                 onClick={() => handleTypeChange("EXPENSE")}
                 type="button"
@@ -666,8 +666,8 @@ export function EditTransactionModal({
               <button
                 className={
                   form.type === "INCOME"
-                    ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
-                    : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
+                    ? "rounded-2xl bg-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-white shadow-sm"
+                    : "rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                 }
                 onClick={() => handleTypeChange("INCOME")}
                 type="button"
@@ -705,7 +705,7 @@ export function EditTransactionModal({
             </span>
 
             <select
-              className="min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
               disabled={isLoadingCategories || categoryOptions.length === 0}
               value={form.categoryId}
               onChange={(event) => handleCategoryChange(event.target.value)}
@@ -792,7 +792,7 @@ export function EditTransactionModal({
           ) : null}
 
           {isLoadingCategories ? (
-            <div className="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs font-medium text-slate-600">
+            <div className="flex items-center gap-2 rounded-2xl bg-slate-100 px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs font-medium text-slate-600">
               <Loader2 className="h-4 w-4 animate-spin" />
               Mengambil kategori...
             </div>
@@ -817,7 +817,7 @@ export function EditTransactionModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
               placeholder="Contoh: Makan siang"
               value={form.note}
               onChange={(event) =>

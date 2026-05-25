@@ -547,17 +547,17 @@ export function AddTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-4 py-4 backdrop-blur-md sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold text-[var(--sakuin-purple)]">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+     <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[var(--sakuin-purple)] sm:text-sm">
               Transaksi baru
             </p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-[var(--sakuin-text)]">
+            <h2 className="mt-1 text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-2xl">
               Tambah transaksi
             </h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--sakuin-muted)]">
+            <p className="mt-1 hidden text-sm leading-6 text-[var(--sakuin-muted)] sm:block">
               Catat pemasukan atau pengeluaranmu. Jika kategorinya belum ada,
               pilih kategori Lain lalu simpan sebagai kategori baru.
             </p>
@@ -565,17 +565,17 @@ export function AddTransactionModal({
 
           <button
             aria-label="Tutup modal"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-surface-soft)] text-[var(--sakuin-muted)] transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-surface-soft)] text-[var(--sakuin-muted)] transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10"
             disabled={isSubmitting}
             onClick={handleClose}
             type="button"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           </button>
         </div>
 
         {categoryError ? (
-          <div className="mb-4 flex gap-3 rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
+          <div className="mb-3 flex gap-2.5 rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-3 py-2.5 text-xs font-medium text-[var(--sakuin-red)] sm:mb-4 sm:gap-3 sm:px-4 sm:py-3 sm:text-sm">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p>{categoryError}</p>
@@ -591,13 +591,13 @@ export function AddTransactionModal({
         ) : null}
 
         {error ? (
-          <div className="mb-4 flex gap-3 rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-4 py-3 text-sm font-medium text-[var(--sakuin-red)]">
+          <div className="mb-3 flex gap-2.5 rounded-[1.25rem] border border-[var(--sakuin-red)]/20 bg-[var(--sakuin-red-soft)] px-3 py-2.5 text-xs font-medium text-[var(--sakuin-red)] sm:mb-4 sm:gap-3 sm:px-4 sm:py-3 sm:text-sm">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         ) : null}
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
           <div>
             <p className="mb-2 text-sm font-semibold text-[var(--sakuin-text)]">
               Tipe transaksi
@@ -607,8 +607,8 @@ export function AddTransactionModal({
               <button
                 className={
                   form.type === "EXPENSE"
-                    ? "rounded-[1.25rem] bg-[var(--sakuin-primary)] px-4 py-3 text-sm font-black text-white shadow-sm"
-                    : "rounded-[1.25rem] px-4 py-3 text-sm font-black text-[var(--sakuin-muted)] transition hover:bg-white"
+                    ? "rounded-[1.25rem] bg-[var(--sakuin-primary)] px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-white shadow-sm"
+                    : "rounded-[1.25rem] px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-[var(--sakuin-muted)] transition hover:bg-white"
                 }
                 onClick={() => handleTypeChange("EXPENSE")}
                 type="button"
@@ -619,8 +619,8 @@ export function AddTransactionModal({
               <button
                 className={
                   form.type === "INCOME"
-                    ? "rounded-[1.25rem] bg-[var(--sakuin-primary)] px-4 py-3 text-sm font-black text-white shadow-sm"
-                    : "rounded-[1.25rem] px-4 py-3 text-sm font-black text-[var(--sakuin-muted)] transition hover:bg-white"
+                    ? "rounded-[1.25rem] bg-[var(--sakuin-primary)] px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-white shadow-sm"
+                    : "rounded-[1.25rem] px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm font-black text-[var(--sakuin-muted)] transition hover:bg-white"
                 }
                 onClick={() => handleTypeChange("INCOME")}
                 type="button"
@@ -658,7 +658,7 @@ export function AddTransactionModal({
             </span>
 
             <select
-              className="min-h-12 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10 disabled:cursor-not-allowed disabled:bg-[var(--sakuin-surface-soft)] disabled:text-[var(--sakuin-muted)]"
+              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10 disabled:cursor-not-allowed disabled:bg-[var(--sakuin-surface-soft)] disabled:text-[var(--sakuin-muted)]"
               disabled={isLoadingCategories || categoryOptions.length === 0}
               value={form.categoryId}
               onChange={(event) => handleCategoryChange(event.target.value)}
@@ -739,7 +739,7 @@ export function AddTransactionModal({
           ) : null}
 
           {isLoadingCategories ? (
-            <div className="flex items-center gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-4 py-3 text-xs font-medium text-[var(--sakuin-muted)]">
+            <div className="flex items-center gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs font-medium text-[var(--sakuin-muted)]">
               <Loader2 className="h-4 w-4 animate-spin" />
               Mengambil daftar kategori...
             </div>
@@ -764,7 +764,7 @@ export function AddTransactionModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10"
               placeholder={
                 form.type === "INCOME"
                   ? "Contoh: Gaji bulan ini"
@@ -801,7 +801,7 @@ export function AddTransactionModal({
           </div>
         </form>
 
-        <div className="mt-4 flex items-start gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-4 py-3 text-xs leading-5 text-[var(--sakuin-muted)]">
+        <div className="mt-4 flex items-start gap-2 rounded-[1.25rem] bg-[var(--sakuin-surface-soft)] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs leading-5 text-[var(--sakuin-muted)]">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
             Untuk kategori baru, pilih kategori Lain lalu aktifkan opsi simpan
