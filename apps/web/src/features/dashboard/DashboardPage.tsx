@@ -622,12 +622,15 @@ function SafeToSpendCard({
 
   const headline =
     safeToSpend.status === "SAFE"
-      ? "Kamu masih punya ruang aman untuk pengeluaran bulan ini."
+      ? "Kondisi masih aman untuk dipakai dengan tetap menjaga batas aman."
       : safeToSpend.status === "WATCH"
-        ? "Masih bisa dipakai, tapi pengeluaran perlu dipantau."
+        ? "Masih ada ruang pakai, tetapi pengeluaran perlu dipantau."
         : safeToSpend.status === "HOLD"
-          ? "Sebaiknya tahan pengeluaran non-prioritas dulu."
-          : "Catat transaksi dulu agar batas aman bisa dihitung.";
+          ? "Ruang aman sedang tipis. Tahan pengeluaran non-prioritas dulu."
+          : "Catat pemasukan dan pengeluaran dulu agar batas aman bisa dihitung.";
+
+  const warningLabel =
+    safeToSpend.status === "SAFE" ? "Catatan ringan" : "Perlu diperhatikan";
 
   return (
     <div
@@ -674,12 +677,15 @@ function SafeToSpendCard({
         </div>
       </div>
 
-      <div className="rounded-[1.25rem] bg-white/80 p-4 ring-1 ring-white/80">
+      <div className="rounded-[1.25rem] bg-white/85 p-4 ring-1 ring-white/80">
         <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
           Sisa aman bulan ini
         </p>
         <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
           {formatRupiah(safeToSpend.availableToSpend)}
+        </p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+          Setelah memperhitungkan batas aman yang kamu tetapkan.
         </p>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -706,22 +712,38 @@ function SafeToSpendCard({
       </div>
 
       <div className="mt-3 grid gap-2">
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 px-3 py-2.5 ring-1 ring-white/80">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
           <p className="text-xs font-bold text-slate-500">Ritme pengeluaran</p>
           <p className="shrink-0 text-right text-xs font-black text-slate-950">
             {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 px-3 py-2.5 ring-1 ring-white/80">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
           <p className="text-xs font-bold text-slate-500">Fokus kontrol</p>
           <p className="min-w-0 truncate text-right text-xs font-black text-slate-950">
             {safeToSpend.topRiskCategoryName ?? "Belum ada"}
           </p>
         </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-white/80">
+          <p className="text-xs font-bold text-slate-500">Rasio expense</p>
+          <p className="shrink-0 text-right text-xs font-black text-slate-950">
+            {safeToSpend.expenseToIncomeRatio === null
+              ? "-"
+              : `${safeToSpend.expenseToIncomeRatio}%`}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-white/70 p-4 ring-1 ring-white/80">
+      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-white/80">
+        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {safeToSpend.reason}
+        </p>
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-white/80">
         <p className="text-xs font-black text-slate-950">Aksi utama</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
           {safeToSpend.action}
@@ -729,9 +751,14 @@ function SafeToSpendCard({
       </div>
 
       {primaryWarning ? (
-        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-white/70 p-3 text-xs font-semibold leading-5 text-slate-600 ring-1 ring-white/80">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{primaryWarning}</p>
+        <div className="mt-3 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80">
+          <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-black text-slate-800">{warningLabel}</p>
+              <p className="mt-0.5 font-semibold">{primaryWarning}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -787,6 +814,12 @@ function FinancialCheckupCard({
   const style = getFinancialCheckupStatusStyle(financialCheckup.status);
   const primaryWarning = financialCheckup.warnings[0] ?? null;
 
+  const warningLabel =
+    financialCheckup.status === "GOOD" ? "Catatan ringan" : "Perlu diperhatikan";
+
+  const focusLabel =
+    financialCheckup.focusCategoryName ?? "Belum ada fokus khusus";
+
   return (
     <div
       className={[
@@ -832,16 +865,21 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-            Fokus
-          </p>
-          <p className="mt-1 truncate text-sm font-black text-slate-950">
-            {financialCheckup.focusCategoryName ?? "Belum ada"}
-          </p>
-        </div>
+      <div className="rounded-[1.25rem] bg-white/80 p-4 ring-1 ring-slate-100">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+          Fokus checkup
+        </p>
+        <p className="mt-1 truncate text-lg font-black text-slate-950">
+          {focusLabel}
+        </p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+          {financialCheckup.focusCategoryName
+            ? `Nominal fokus: ${formatRupiah(financialCheckup.focusCategoryAmount)}`
+            : "Belum ada kategori yang perlu difokuskan secara khusus."}
+        </p>
+      </div>
 
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
             Rasio Expense
@@ -870,10 +908,21 @@ function FinancialCheckupCard({
             {formatCompactRupiah(financialCheckup.metrics.availableToSpend)}
           </p>
         </div>
+
+        <div className="rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            Limit Harian
+          </p>
+          <p className="mt-1 truncate text-sm font-black text-slate-950">
+            {financialCheckup.metrics.suggestedDailyLimit === null
+              ? "-"
+              : `${formatCompactRupiah(financialCheckup.metrics.suggestedDailyLimit)} / hari`}
+          </p>
+        </div>
       </div>
 
       <div className="mt-3 rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100">
-        <p className="text-xs font-black text-slate-950">Alasan</p>
+        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
           {financialCheckup.reason}
         </p>
@@ -887,9 +936,14 @@ function FinancialCheckupCard({
       </div>
 
       {primaryWarning ? (
-        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-white/75 p-3 text-xs font-semibold leading-5 text-slate-600 ring-1 ring-slate-100">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{primaryWarning}</p>
+        <div className="mt-3 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100">
+          <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-black text-slate-800">{warningLabel}</p>
+              <p className="mt-0.5 font-semibold">{primaryWarning}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 
