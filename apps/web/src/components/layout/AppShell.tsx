@@ -70,7 +70,7 @@ export function AppShell({
   const displayedEmail = profileEmail ?? user?.email ?? "-";
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24 text-slate-950 lg:pb-0">
+    <main className="min-h-screen bg-slate-50 pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-slate-950 lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
           <Link
@@ -121,14 +121,14 @@ export function AppShell({
           </div>
         </aside>
 
-        <section className="min-w-0 px-4 py-5 sm:px-8 sm:py-8">
+        <section className="min-w-0 px-3.5 py-4 sm:px-8 sm:py-8">
           {children}
         </section>
       </div>
 
       <FloatingAiButton />
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 pb-[calc(0.35rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -138,23 +138,23 @@ export function AppShell({
               <Link
                 className={
                   active
-                    ? "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl bg-slate-950 px-1.5 py-2"
-                    : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+                    ? "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl bg-slate-950 px-1.5 py-1.5"
+                    : "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 py-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
                 }
                 key={item.to}
                 to={item.to}
               >
                 <Icon
                   className={
-                    active ? "h-5 w-5 text-white" : "h-5 w-5 text-slate-500"
+                    active ? "h-4.5 w-4.5 text-white" : "h-4.5 w-4.5 text-slate-500"
                   }
                 />
 
                 <span
                   className={
                     active
-                      ? "text-[9px] font-black text-white"
-                      : "text-[9px] font-black text-slate-500"
+                      ? "text-[8.5px] font-black leading-none text-white"
+                      : "text-[8.5px] font-black leading-none text-slate-500"
                   }
                 >
                   {item.label}
