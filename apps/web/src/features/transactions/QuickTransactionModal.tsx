@@ -272,13 +272,13 @@ function getConfidenceClassName(confidence: QuickTransactionDraft["confidence"])
 function getDraftCardClassName(draft: QuickTransactionDraft, isExpanded: boolean) {
   if (draft.confidence === "low") {
     return isExpanded
-      ? "rounded-2xl border border-amber-300 bg-amber-50 p-3 shadow-sm"
-      : "rounded-2xl border border-amber-200 bg-white p-3 shadow-sm";
+      ? "rounded-[1.25rem] border border-amber-300 bg-amber-50 p-2.5 shadow-sm sm:rounded-2xl sm:p-3"
+      : "rounded-[1.25rem] border border-amber-200 bg-white p-2.5 shadow-sm sm:rounded-2xl sm:p-3";
   }
 
   return isExpanded
-    ? "rounded-2xl border border-indigo-200 bg-indigo-50 p-3 shadow-sm"
-    : "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm";
+    ? "rounded-[1.25rem] border border-indigo-200 bg-indigo-50 p-2.5 shadow-sm sm:rounded-2xl sm:p-3"
+    : "rounded-[1.25rem] border border-slate-200 bg-white p-2.5 shadow-sm sm:rounded-2xl sm:p-3";
 }
 
 function validateAmount(amount: string) {
@@ -695,17 +695,17 @@ export function QuickTransactionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
-      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <p className="inline-flex items-center gap-2 text-sm font-bold text-indigo-700">
+      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-3.5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:rounded-[2rem] sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
+          <div className="min-w-0">
+            <p className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 sm:gap-2 sm:text-sm">
               <Sparkles className="h-4 w-4" />
               Catat cepat
             </p>
-            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+            <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950 sm:text-2xl">
               Buat banyak transaksi dari teks
             </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 hidden text-sm leading-6 text-slate-500 sm:block">
               Tulis transaksi, buat draft, lalu cek item yang perlu diperbaiki
               sebelum disimpan.
             </p>
@@ -713,17 +713,17 @@ export function QuickTransactionModal({
 
           <button
             aria-label="Tutup modal catat cepat"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10"
             disabled={isSaving}
             onClick={handleClose}
             type="button"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
 
         {categoryError || error ? (
-          <div className="mb-4 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <div className="mb-3 flex gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700 sm:mb-4 sm:gap-3 sm:px-4 sm:py-3 sm:text-sm">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p>{categoryError || error}</p>
@@ -741,15 +741,15 @@ export function QuickTransactionModal({
           </div>
         ) : null}
 
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-          <section className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] lg:gap-5">
+          <section className="space-y-3 sm:space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-slate-950">
-                Tanggal default
-              </span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-950 sm:mb-2 sm:text-sm">
+              Tanggal default
+            </span>
 
               <input
-                className="min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 sm:min-h-12 sm:rounded-[1.25rem] sm:px-4 sm:py-3"
                 disabled={isSaving}
                 type="date"
                 value={defaultDate}
@@ -758,12 +758,12 @@ export function QuickTransactionModal({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-slate-950">
-                Catatan transaksi
-              </span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-950 sm:mb-2 sm:text-sm">
+            Catatan transaksi
+            </span>
 
               <textarea
-                className="min-h-44 w-full resize-none rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 sm:min-h-56"
+                className="min-h-32 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 sm:min-h-56 sm:rounded-[1.5rem] sm:px-4 sm:py-3"
                 disabled={isSaving}
                 placeholder={`Contoh:
                 makan 15000
@@ -775,7 +775,7 @@ export function QuickTransactionModal({
               />
             </label>
 
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
+            <div className="hidden rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500 sm:block">
               <p className="font-black text-slate-700">Format cepat:</p>
               <p className="mt-1">
                 Pisahkan transaksi dengan baris baru, koma, atau titik koma.
@@ -784,23 +784,25 @@ export function QuickTransactionModal({
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
-              <Button
-                disabled={!canParse || isLoadingCategories || isSaving}
-                isLoading={isLoadingCategories}
-                onClick={handleParse}
-                type="button"
-                variant="secondary"
-              >
+            <Button
+                  className="min-h-10 rounded-2xl text-xs sm:min-h-11 sm:text-sm"
+                  disabled={!canParse || isLoadingCategories || isSaving}
+                  isLoading={isLoadingCategories}
+                  onClick={handleParse}
+                  type="button"
+                  variant="secondary"
+                >
                 <MessageSquare className="h-4 w-4" />
                 Buat draft
               </Button>
 
-              <Button
-                disabled={drafts.length === 0 || isSaving}
-                isLoading={isSaving}
-                onClick={handleSaveDrafts}
-                type="button"
-              >
+                <Button
+                  className="min-h-10 rounded-2xl text-xs sm:min-h-11 sm:text-sm"
+                  disabled={drafts.length === 0 || isSaving}
+                  isLoading={isSaving}
+                  onClick={handleSaveDrafts}
+                  type="button"
+                >
                 Simpan semua
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -808,13 +810,13 @@ export function QuickTransactionModal({
           </section>
 
           <section>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-3 sm:p-4">
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3 sm:rounded-[1.5rem] sm:p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-black text-slate-950">
                     Draft transaksi
                   </p>
-                  <p className="mt-1 text-xs font-medium text-slate-500">
+                  <p className="mt-1 hidden text-xs font-medium text-slate-500 sm:block">
                     Tampilan ringkas. Buka edit hanya jika perlu.
                   </p>
                 </div>
@@ -832,15 +834,15 @@ export function QuickTransactionModal({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white p-3">
+              <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white p-2.5 sm:p-3">
                   <p className="text-xs font-bold text-slate-500">Income</p>
                   <p className="mt-1 text-sm font-black text-emerald-700">
                     {formatRupiah(draftSummary.totalIncome)}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-white p-3">
+                <div className="rounded-2xl bg-white p-2.5 sm:p-3">
                   <p className="text-xs font-bold text-slate-500">Expense</p>
                   <p className="mt-1 text-sm font-black text-rose-700">
                     {formatRupiah(draftSummary.totalExpense)}
@@ -848,9 +850,9 @@ export function QuickTransactionModal({
                 </div>
               </div>
 
-              <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto pr-1">
+              <div className="mt-3 max-h-[24rem] space-y-2.5 overflow-y-auto pr-1 sm:mt-4 sm:max-h-[32rem] sm:space-y-3">
                 {drafts.length === 0 ? (
-                  <div className="rounded-2xl bg-white p-4 text-center">
+                  <div className="rounded-2xl bg-white p-3.5 text-center sm:p-4">
                     <p className="text-sm font-black text-slate-950">
                       Belum ada draft
                     </p>
@@ -908,10 +910,10 @@ export function QuickTransactionModal({
 
                           <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-black text-slate-950">
+                              <p className="truncate text-xs font-black text-slate-950 sm:text-sm">
                                 {draft.note}
                               </p>
-                              <p className="mt-0.5 text-xs font-medium text-slate-500">
+                              <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 sm:text-xs">
                                 {displayedCategoryName} · {draft.date}
                               </p>
                             </div>
@@ -919,8 +921,8 @@ export function QuickTransactionModal({
                             <p
                               className={
                                 draft.type === "INCOME"
-                                  ? "shrink-0 text-sm font-black text-emerald-700"
-                                  : "shrink-0 text-sm font-black text-rose-700"
+                              ? "shrink-0 text-xs font-black text-emerald-700 sm:text-sm"
+                              : "shrink-0 text-xs font-black text-rose-700 sm:text-sm"
                               }
                             >
                               {draft.type === "INCOME" ? "+" : "-"}{" "}
@@ -938,7 +940,7 @@ export function QuickTransactionModal({
                         <div className="flex shrink-0 items-center gap-1">
                           <button
                             aria-label="Edit draft"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 sm:h-9 sm:w-9"
                             disabled={isSaving}
                             onClick={() => toggleExpandedDraft(draft.id)}
                             type="button"
@@ -952,7 +954,7 @@ export function QuickTransactionModal({
 
                           <button
                             aria-label="Hapus draft"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-700 transition hover:bg-rose-100 sm:h-9 sm:w-9"
                             disabled={isSaving}
                             onClick={() => removeDraft(draft.id)}
                             type="button"
@@ -963,14 +965,14 @@ export function QuickTransactionModal({
                       </div>
 
                       {isExpanded ? (
-                        <div className="mt-4 border-t border-slate-200 pt-4">
+                        <div className="mt-3 border-t border-slate-200 pt-3 sm:mt-4 sm:pt-4">
                           {draft.warning ? (
                             <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-amber-700">
                               {draft.warning}
                             </div>
                           ) : null}
 
-                          <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
                             <label className="block">
                               <span className="mb-1.5 block text-xs font-black text-slate-500">
                                 Tipe
@@ -1065,7 +1067,7 @@ export function QuickTransactionModal({
                             />
                           </label>
 
-                          <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+                          <div className="mt-2.5 rounded-2xl border border-indigo-100 bg-indigo-50 p-2.5 sm:mt-3 sm:p-3">
                             <label className="flex items-start gap-3">
                               <input
                                 checked={draft.saveAsNewCategory}
@@ -1083,7 +1085,7 @@ export function QuickTransactionModal({
                                 <span className="block text-xs font-black text-indigo-950">
                                   Simpan sebagai kategori baru
                                 </span>
-                                <span className="mt-1 block text-xs font-medium leading-5 text-indigo-700">
+                                <span className="mt-1 hidden text-xs font-medium leading-5 text-indigo-700 sm:block">
                                   Aktifkan jika kategori transaksi ini belum ada
                                   dan ingin dipakai lagi nanti.
                                 </span>
@@ -1131,7 +1133,7 @@ export function QuickTransactionModal({
               </div>
 
               {skippedItems.length > 0 ? (
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-2.5 sm:mt-4 sm:p-3">
                   <p className="text-xs font-black text-amber-800">
                     Beberapa item dilewati
                   </p>
