@@ -26,6 +26,8 @@ model User {
   categories           Category[]
   auditLogs            AuditLog[]
   oauthAccounts        OauthAccount[]
+  pushSubscriptions    PushSubscription[]
+  reminderPreference   ReminderPreference?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 }
@@ -112,4 +114,40 @@ model AuditLog {
   @@index([eventType, createdAt])
   @@index([requestId])
   @@index([targetType, targetId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
+model ReminderPreference {
+  id                       String    @id @default(cuid())
+  userId                   String    @unique
+  enabled                  Boolean   @default(false)
+  frequency                String    @default("EVENING")
+  eveningHour              Int       @default(20)
+  quietStartHour           Int       @default(21)
+  quietEndHour             Int       @default(7)
+  maxPerDay                Int       @default(1)
+  timezoneOffsetMinutes    Int       @default(-420)
+  dailyReviewCompletedDate String?
+  lastReminderDate         String?
+  reminderCountToday       Int       @default(0)
+  lastReminderSentAt       DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

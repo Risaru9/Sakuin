@@ -42,7 +42,12 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().optional(),
   GEMINI_MODEL_DEFAULT: z.string().optional(),
   GEMINI_MODEL_COMPLEX: z.string().optional(),
-  GEMINI_MODEL_FALLBACK: z.string().optional()
+  GEMINI_MODEL_FALLBACK: z.string().optional(),
+
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
+  CRON_SECRET: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

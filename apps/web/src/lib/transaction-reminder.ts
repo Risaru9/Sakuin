@@ -1,4 +1,9 @@
 import { getLocalDateKey, isDailyReviewCompletedToday } from "./daily-review";
+import {
+  deletePushSubscription,
+  getVapidPublicKey,
+  savePushSubscription
+} from "../features/reminders/reminder.service";
 
 export type TransactionReminderFrequency =
   | "EVENING"
@@ -13,6 +18,7 @@ export type TransactionReminderSettings = {
   quietStartHour: number;
   quietEndHour: number;
   maxPerDay: number;
+  timezoneOffsetMinutes: number;
 };
 
 type ReminderDeliveryState = {
@@ -30,7 +36,8 @@ export const DEFAULT_TRANSACTION_REMINDER_SETTINGS: TransactionReminderSettings 
   eveningHour: 20,
   quietStartHour: 21,
   quietEndHour: 7,
-  maxPerDay: 1
+  maxPerDay: 1,
+  timezoneOffsetMinutes: new Date().getTimezoneOffset()
 };
 
 const frequencyMinutes: Record<TransactionReminderFrequency, number | null> = {
@@ -88,7 +95,10 @@ function normalizeReminderSettings(
     eveningHour: clampHour(value?.eveningHour, fallback.eveningHour),
     quietStartHour: clampHour(value?.quietStartHour, fallback.quietStartHour),
     quietEndHour: clampHour(value?.quietEndHour, fallback.quietEndHour),
-    maxPerDay: clampMaxPerDay(value?.maxPerDay, fallback.maxPerDay)
+    maxPerDay: clampMaxPerDay(value?.maxPerDay, fallback.maxPerDay),
+    timezoneOffsetMinutes: Number.isInteger(value?.timezoneOffsetMinutes)
+      ? Number(value?.timezoneOffsetMinutes)
+      : new Date().getTimezoneOffset()
   };
 }
 
@@ -248,6 +258,88 @@ export async function requestBrowserNotificationPermission() {
   }
 
   return Notification.requestPermission();
+}
+
+function urlBase64ToUint8Array(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
+function getPushSubscriptionPayload(subscription: PushSubscription) {
+  const subscriptionJson = subscription.toJSON();
+
+  if (
+    !subscriptionJson.endpoint ||
+    !subscriptionJson.keys?.p256dh ||
+    !subscriptionJson.keys.auth
+  ) {
+    throw new Error("Push subscription browser tidak lengkap.");
+  }
+
+  return {
+    endpoint: subscriptionJson.endpoint,
+    keys: {
+      p256dh: subscriptionJson.keys.p256dh,
+      auth: subscriptionJson.keys.auth
+    },
+    userAgent: navigator.userAgent
+  };
+}
+
+export async function subscribeBrowserToPushReminder() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    throw new Error("Browser belum mendukung Web Push.");
+  }
+
+  const permission = await requestBrowserNotificationPermission();
+
+  if (permission !== "granted") {
+    throw new Error("Izin notifikasi belum diberikan.");
+  }
+
+  const { publicKey } = await getVapidPublicKey();
+  const currentRegistration = await navigator.serviceWorker.getRegistration();
+
+  if (!currentRegistration) {
+    throw new Error("Service worker belum aktif. Install atau buka ulang Sakuin dulu.");
+  }
+
+  const registration = await navigator.serviceWorker.ready;
+  const existingSubscription =
+    await registration.pushManager.getSubscription();
+
+  const subscription =
+    existingSubscription ??
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    }));
+
+  return savePushSubscription(getPushSubscriptionPayload(subscription));
+}
+
+export async function unsubscribeBrowserFromPushReminder() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
+
+  if (!subscription) {
+    return;
+  }
+
+  await deletePushSubscription(subscription.endpoint);
+  await subscription.unsubscribe();
 }
 
 export function shouldSendTransactionReminder(input: {

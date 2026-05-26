@@ -42,6 +42,7 @@ import type {
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
 import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
+import { completeRemoteDailyReview } from "../reminders/reminder.service";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -1095,6 +1096,9 @@ const profileQuery = useQuery({
   function completeDailyReview() {
     setStoredDailyReviewDate(dailyReviewStorageKey, todayReviewDate);
     setDailyReviewCompletedDate(todayReviewDate);
+    completeRemoteDailyReview(todayReviewDate).catch(() => {
+      // Local review state still keeps the dashboard experience responsive.
+    });
   }
 
   function openDailyQuickTransaction() {

@@ -28,12 +28,17 @@ import {
   DEFAULT_TRANSACTION_REMINDER_SETTINGS,
   getBrowserNotificationPermission,
   getTransactionReminderSettings,
-  requestBrowserNotificationPermission,
   setTransactionReminderSettings,
+  subscribeBrowserToPushReminder,
+  unsubscribeBrowserFromPushReminder,
   type TransactionReminderFrequency,
   type TransactionReminderSettings
 } from "../../lib/transaction-reminder";
 import { useAuth } from "../auth/auth-context";
+import {
+  getRemoteReminderSettings,
+  updateRemoteReminderSettings
+} from "../reminders/reminder.service";
 import { getUserProfile, updateUserProfile } from "./profile.service";
 import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
 
@@ -374,39 +379,68 @@ export function ProfilePage() {
   }
 
   function saveReminderSettings(settings: TransactionReminderSettings) {
+    setReminderSettingsState(settings);
     setTransactionReminderSettings(user?.id, settings);
+
+    updateRemoteReminderSettings(settings).catch((caughtError: unknown) => {
+      const message = getErrorMessage(caughtError);
+
+      addToast({
+        variant: "error",
+        title: "Pengaturan pengingat belum tersimpan",
+        description: message
+      });
+    });
   }
 
   async function handleReminderEnabledChange(enabled: boolean) {
-    if (enabled) {
-      const permission = await requestBrowserNotificationPermission();
+    try {
+      if (enabled) {
+        await subscribeBrowserToPushReminder();
+        setNotificationPermission(getBrowserNotificationPermission());
+      } else {
+        await unsubscribeBrowserFromPushReminder();
+      }
 
-      setNotificationPermission(permission);
+      saveReminderSettings({
+        ...reminderSettings,
+        enabled
+      });
 
-      if (permission !== "granted") {
+      addToast({
+        variant: enabled ? "success" : "info",
+        title: enabled
+          ? "Pengingat transaksi aktif"
+          : "Pengingat transaksi mati",
+        description: enabled
+          ? "Sakuin akan mengingatkan sesuai batas yang kamu pilih."
+          : "Sakuin tidak akan mengirim pengingat transaksi dari browser ini."
+      });
+    } catch (caughtError) {
+      setNotificationPermission(getBrowserNotificationPermission());
+
+      addToast({
+        variant: "error",
+        title: "Notifikasi belum aktif",
+        description:
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Browser belum bisa mengaktifkan pengingat transaksi."
+      });
+
+      if (enabled) {
+        saveReminderSettings({
+          ...reminderSettings,
+          enabled: false
+        });
+      } else {
         addToast({
           variant: "error",
-          title: "Notifikasi belum aktif",
-          description:
-            "Browser belum memberi izin notifikasi. Kamu masih bisa memakai Review Harian di Dashboard."
+          title: "Subscription belum bisa dimatikan",
+          description: "Coba lagi beberapa saat lagi."
         });
-
-        return;
       }
     }
-
-    saveReminderSettings({
-      ...reminderSettings,
-      enabled
-    });
-
-    addToast({
-      variant: enabled ? "success" : "info",
-      title: enabled ? "Pengingat transaksi aktif" : "Pengingat transaksi mati",
-      description: enabled
-        ? "Sakuin akan mengingatkan sesuai batas yang kamu pilih."
-        : "Sakuin tidak akan mengirim pengingat transaksi dari browser ini."
-    });
   }
 
   function updateReminderSettings(updates: Partial<TransactionReminderSettings>) {
@@ -430,6 +464,25 @@ export function ProfilePage() {
   useEffect(() => {
     setReminderSettingsState(getTransactionReminderSettings(user?.id));
     setNotificationPermission(getBrowserNotificationPermission());
+
+    getRemoteReminderSettings()
+      .then((settings) => {
+        const nextSettings: TransactionReminderSettings = {
+          enabled: settings.enabled,
+          frequency: settings.frequency,
+          eveningHour: settings.eveningHour,
+          quietStartHour: settings.quietStartHour,
+          quietEndHour: settings.quietEndHour,
+          maxPerDay: settings.maxPerDay,
+          timezoneOffsetMinutes: settings.timezoneOffsetMinutes
+        };
+
+        setReminderSettingsState(nextSettings);
+        setTransactionReminderSettings(user?.id, nextSettings);
+      })
+      .catch(() => {
+        // Local settings remain usable if backend sync is temporarily unavailable.
+      });
 
     function handleReminderSettingsChange() {
       setReminderSettingsState(getTransactionReminderSettings(user?.id));

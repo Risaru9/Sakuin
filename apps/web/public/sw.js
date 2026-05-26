@@ -39,6 +39,40 @@ self.addEventListener("message", (event) => {
   }
 });
 
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "Review transaksi hari ini",
+    body: "Ada transaksi yang belum dicatat? Cek 30 detik supaya dashboard tetap akurat.",
+    icon: "/icons/pwa-192.png",
+    badge: "/icons/maskable-192.png",
+    tag: "sakuin-transaction-reminder",
+    url: "/dashboard"
+  };
+
+  if (event.data) {
+    try {
+      payload = {
+        ...payload,
+        ...event.data.json()
+      };
+    } catch {
+      payload.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      tag: payload.tag,
+      data: {
+        url: payload.url
+      }
+    })
+  );
+});
+
 function isSameOriginRequest(request) {
   const url = new URL(request.url);
   return url.origin === self.location.origin;
