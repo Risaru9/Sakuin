@@ -5,7 +5,6 @@ import {
   Download,
   Home,
   Settings,
-  Sparkles,
   Target
 } from "lucide-react";
 import { FloatingAiButton } from "../ai/FloatingAiButton";
@@ -69,8 +68,6 @@ export function AppShell({
 
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
-  const assistantActive = location.pathname.startsWith("/asisten");
-
   return (
     <main className="min-h-screen bg-[#f7f5ef] pb-24 text-black lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -118,42 +115,6 @@ export function AppShell({
               );
             })}
           </nav>
-
-          <Link
-            className={[
-              "group relative mt-6 overflow-hidden rounded-3xl border border-black p-4 transition duration-300 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-yellow-300/40",
-              assistantActive
-                ? "bg-black text-white shadow-[6px_6px_0_#fde047]"
-                : "bg-yellow-300 text-black shadow-[6px_6px_0_#000] hover:shadow-[9px_9px_0_#000]"
-            ].join(" ")}
-            to="/asisten"
-          >
-            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.55),transparent)] animate-[sakuinShine_4s_ease-in-out_infinite]" />
-            <div className="relative flex items-start gap-3">
-              <span
-                className={
-                  assistantActive
-                    ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
-                    : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300"
-                }
-              >
-                <Sparkles className="h-5 w-5 animate-[sakuinSoftPulse_2.8s_ease-in-out_infinite]" />
-              </span>
-
-              <div className="min-w-0">
-                <p className="text-sm font-black">Asisten Sakuin</p>
-                <p
-                  className={
-                    assistantActive
-                      ? "mt-1 text-xs font-semibold leading-5 text-white/70"
-                      : "mt-1 text-xs font-semibold leading-5 text-black/70"
-                  }
-                >
-                  Tanya kondisi uangmu tanpa bongkar banyak menu.
-                </p>
-              </div>
-            </div>
-          </Link>
 
           <div className="mt-auto rounded-3xl border border-black/10 bg-zinc-50 p-4">
             <p className="truncate text-sm font-black text-black">

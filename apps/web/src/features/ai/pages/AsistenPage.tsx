@@ -468,7 +468,7 @@ function IntentBadge({ intent }: { intent?: string }) {
   }
 
   return (
-    <span className="inline-flex w-fit rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700 ring-1 ring-violet-100">
+    <span className="inline-flex w-fit rounded-full bg-yellow-50 px-2.5 py-1 text-[10px] font-black text-black ring-1 ring-black/10">
       {formatIntentLabel(intent)}
     </span>
   );
@@ -546,10 +546,10 @@ function TransactionDraftPanel({
   const canCancel = !isSaving && !isSaved && !isCancelled;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-violet-100/80 px-3 py-3">
+    <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-black/10 bg-yellow-50 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-black/10 px-3 py-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-wide text-violet-700">
+          <p className="text-[11px] font-black uppercase tracking-wide text-black">
             {title}
           </p>
           <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
@@ -628,7 +628,7 @@ function TransactionDraftPanel({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-violet-100/80 px-3 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-black/10 px-3 py-3">
         <span
           className={[
             "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
@@ -645,7 +645,7 @@ function TransactionDraftPanel({
         ) : null}
       </div>
 
-      <div className="grid gap-2 border-t border-violet-100/80 px-3 py-3 sm:grid-cols-2">
+      <div className="grid gap-2 border-t border-black/10 px-3 py-3 sm:grid-cols-2">
         <button
           className={[
             "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black shadow-sm transition sm:text-sm",
@@ -713,7 +713,7 @@ function TransactionDraftPanel({
       </div>
 
       {draft.warnings.length > 0 ? (
-        <div className="space-y-2 border-t border-violet-100/80 px-3 py-3">
+        <div className="space-y-2 border-t border-black/10 px-3 py-3">
           {draft.warnings.map((warning, index) => (
             <div
               className="flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-800"
@@ -800,7 +800,7 @@ function ChatBubble({
           className={
             isUser
               ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white sm:h-9 sm:w-9"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 sm:h-9 sm:w-9"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black shadow-md shadow-black/10 sm:h-9 sm:w-9"
           }
         >
           {isUser ? (
@@ -935,7 +935,7 @@ function ChatBubble({
             <div className="mt-3 flex flex-wrap gap-2">
               {visibleSuggestions.map((suggestion) => (
                 <button
-                  className="rounded-full bg-violet-50 px-3 py-1.5 text-left text-[10px] font-black leading-4 text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full bg-yellow-50 px-3 py-1.5 text-left text-[10px] font-black leading-4 text-black ring-1 ring-black/10 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={disabled}
                   key={`${message.id}-${suggestion}`}
                   onClick={() => onSuggestionClick(suggestion)}
@@ -1740,8 +1740,8 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-slate-200 lg:shadow-xl lg:shadow-slate-950/5">
-        <header className="shrink-0 border-b border-slate-100 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
+      <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
+        <header className="shrink-0 border-b border-black/10 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
           <div className="flex items-start gap-3">
             <Link
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
@@ -1752,7 +1752,7 @@ export function AsistenPage() {
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
                   <Sparkles className="h-3.5 w-3.5" />
                   Asisten Sakuin
                 </p>
@@ -1783,7 +1783,7 @@ export function AsistenPage() {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f5ef] px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
           <div className="space-y-4">
             {messages.map((message) => (
               <ChatBubble
@@ -1810,7 +1810,7 @@ export function AsistenPage() {
             {isSubmitting ? (
               <div className="flex justify-start">
                 <div className="flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 sm:h-9 sm:w-9">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black shadow-md shadow-black/10 sm:h-9 sm:w-9">
                     <Bot className="h-4 w-4" />
                   </div>
 
@@ -1837,7 +1837,7 @@ export function AsistenPage() {
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
-                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+                className="shrink-0 rounded-full border border-black/10 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-black/20 hover:bg-yellow-50 hover:text-black disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
                 disabled={isSubmitting}
                 key={prompt}
                 onClick={() => handlePromptClick(prompt)}
@@ -1851,7 +1851,7 @@ export function AsistenPage() {
           <form className="flex items-end gap-2 sm:gap-3" onSubmit={handleSubmit}>
             <div className="min-w-0 flex-1">
               <textarea
-                className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/30 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={isSubmitting}
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}

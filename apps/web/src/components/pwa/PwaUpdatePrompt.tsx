@@ -24,12 +24,12 @@ export function PwaUpdatePrompt({
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-[280] px-4 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm sm:px-0">
-      <div className="overflow-hidden rounded-[1.5rem] border border-indigo-100 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-        <div className="h-1 w-full bg-indigo-500" />
+      <div className="overflow-hidden rounded-[1.5rem] border border-black/10 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
+        <div className="h-1 w-full bg-yellow-300" />
 
         <div className="p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black ring-1 ring-black/10">
               <RefreshCcw className="h-5 w-5" />
             </div>
 

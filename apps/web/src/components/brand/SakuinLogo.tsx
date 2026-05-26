@@ -11,23 +11,26 @@ export function SakuinLogo({
 }: SakuinLogoProps) {
   const iconSizeClass = size === "sm" ? "h-10 w-10" : "h-12 w-12";
   const titleSizeClass = size === "sm" ? "text-base" : "text-lg";
+  const markSizeClass = size === "sm" ? "text-xs" : "text-sm";
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <img
-        alt="Sakuin logo"
+      <div
+        aria-label="Sakuin logo"
         className={[
-          "shrink-0 rounded-[1.25rem] object-cover shadow-lg shadow-violet-500/20 ring-1 ring-violet-200/70",
-          iconSizeClass
+          "flex shrink-0 items-center justify-center rounded-xl bg-yellow-300 font-black text-black ring-1 ring-black/10",
+          iconSizeClass,
+          markSizeClass
         ].join(" ")}
-        src="/icons/sakuin-logo.svg?v=2"
-      />
+      >
+        S
+      </div>
 
       {showText ? (
         <div className="min-w-0">
           <p
             className={[
-              "truncate font-black leading-none tracking-tight text-slate-950",
+              "truncate font-black leading-none text-black",
               titleSizeClass
             ].join(" ")}
           >
@@ -35,7 +38,7 @@ export function SakuinLogo({
           </p>
 
           {subtitle ? (
-            <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+            <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
               {subtitle}
             </p>
           ) : null}
