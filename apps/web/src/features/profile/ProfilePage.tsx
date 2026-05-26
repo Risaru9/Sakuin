@@ -511,25 +511,25 @@ export function ProfilePage() {
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
       <div className="mx-auto w-full max-w-7xl space-y-5 pb-6">
-        <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white via-indigo-50/70 to-violet-50 p-4 shadow-xl shadow-slate-950/5 sm:rounded-[2rem] sm:p-6">
+        <section className="rounded-3xl border border-black bg-yellow-300 p-4 text-black shadow-[8px_8px_0_#000] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">
+              <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
                 Sakuin Profile
               </p>
 
-              <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+              <h1 className="mt-3 text-2xl font-black tracking-tight text-black sm:text-4xl">
                 Pengaturan Akun
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
-                Kelola nama akun dan batas saldo aman untuk membantu dashboard
-                membaca kondisi keuanganmu.
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-black/75">
+                Kelola info penting saja: profil, batas saldo aman, dan
+                pengingat transaksi.
               </p>
             </div>
 
             <Button
-              className="w-full rounded-2xl bg-white text-slate-950 shadow-sm hover:bg-slate-50 sm:w-auto"
+              className="w-full rounded-xl border-black/15 bg-white text-black shadow-sm hover:bg-yellow-50 sm:w-auto"
               disabled={profileQuery.isFetching}
               onClick={refreshProfile}
               type="button"
@@ -546,7 +546,7 @@ export function ProfilePage() {
         </section>
 
         {queryError || error ? (
-          <div className="rounded-[1.25rem] border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm sm:rounded-2xl">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
               <div className="min-w-0">
@@ -570,32 +570,32 @@ export function ProfilePage() {
         ) : null}
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5 sm:rounded-[2rem]">
-            <div className="border-b border-slate-100 p-4 sm:p-6">
+          <section className="min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm">
+            <div className="border-b border-black/10 p-4 sm:p-6">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-indigo-100 text-indigo-700 sm:h-14 sm:w-14 sm:rounded-[1.25rem]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-14 sm:w-14">
                   <UserCircle className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-black text-indigo-700">
+                    <p className="text-sm font-black text-zinc-500">
                       Profile
                     </p>
 
                     {isBackgroundFetching ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-black text-black">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Sync
                       </span>
                     ) : null}
                   </div>
 
-                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-black sm:text-2xl">
                     {displayedName}
                   </h2>
 
-                  <p className="mt-1 truncate text-sm font-medium text-slate-500">
+                  <p className="mt-1 truncate text-sm font-medium text-zinc-500">
                     {displayedEmail}
                   </p>
                 </div>
@@ -604,8 +604,8 @@ export function ProfilePage() {
 
             <div className="p-4 sm:p-6">
               {isLoadingProfile ? (
-                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-slate-50">
-                  <div className="flex items-center gap-3 text-slate-500">
+                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-yellow-50">
+                  <div className="flex items-center gap-3 text-zinc-600">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <p className="text-sm font-bold">Mengambil profile...</p>
                   </div>
@@ -616,6 +616,7 @@ export function ProfilePage() {
                     label="Nama"
                     name="name"
                     type="text"
+                    className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
                     placeholder="Masukkan nama"
                     value={form.name}
                     onChange={(event) =>
@@ -631,6 +632,7 @@ export function ProfilePage() {
                       label="Safe balance limit"
                       name="safeBalanceLimit"
                       type="text"
+                      className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       placeholder="Contoh: 500000"
@@ -641,17 +643,17 @@ export function ProfilePage() {
                       }
                     />
 
-                    <p className="text-xs font-semibold leading-5 text-slate-500">
+                    <p className="text-xs font-semibold leading-5 text-zinc-600">
                       Hanya angka. Minimal Rp 0 dan maksimal{" "}
                       {MAX_SAFE_BALANCE_LIMIT_LABEL}.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  <div className="rounded-2xl border border-black/10 bg-yellow-50 p-4">
+                    <p className="text-xs font-black uppercase text-zinc-500">
                       Fungsi safe balance limit
                     </p>
-                    <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                    <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
                       Jika saldo berada di bawah batas ini, dashboard akan
                       menampilkan status <strong>Waspada</strong>. Jika saldo
                       berada di atas batas ini, dashboard akan menampilkan status{" "}
@@ -661,7 +663,7 @@ export function ProfilePage() {
 
                   <div className="grid gap-3 pt-2 sm:grid-cols-2">
                     <Button
-                      className="min-h-12 rounded-2xl bg-slate-950 text-white hover:bg-black"
+                      className="min-h-12 rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
                       disabled={isSubmitting}
                       isLoading={isSubmitting}
                       type="submit"
@@ -671,7 +673,7 @@ export function ProfilePage() {
                     </Button>
 
                     <Link
-                      className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
+                      className="inline-flex min-h-12 items-center justify-center rounded-xl border border-black/10 bg-white px-5 text-sm font-black text-black shadow-sm transition hover:bg-yellow-100"
                       to="/dashboard"
                     >
                       Kembali ke Dashboard
@@ -683,33 +685,33 @@ export function ProfilePage() {
           </section>
 
           <aside className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-1">
-            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
-              <p className="text-sm font-black text-slate-950">Ringkasan</p>
+            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-black text-black">Ringkasan</p>
 
               <div className="mt-4 grid gap-3">
-                <div className="min-w-0 rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-bold text-slate-500">
+                <div className="min-w-0 rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-bold text-zinc-500">
                     Email akun
                   </p>
-                  <p className="mt-1 truncate text-sm font-black text-slate-950">
+                  <p className="mt-1 truncate text-sm font-black text-black">
                     {displayedEmail}
                   </p>
                 </div>
 
-                <div className="min-w-0 rounded-2xl bg-indigo-50 p-4">
-                  <p className="text-xs font-bold text-indigo-700">
+                <div className="min-w-0 rounded-2xl bg-yellow-100 p-4">
+                  <p className="text-xs font-bold text-black">
                     Safe balance limit
                   </p>
-                  <p className="mt-1 break-words text-xl font-black text-indigo-700">
+                  <p className="mt-1 break-words text-xl font-black text-black">
                     {formatRupiah(displayedSafeLimit)}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-emerald-50 p-4">
-                  <p className="text-xs font-bold text-emerald-700">
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-bold text-zinc-500">
                     Status akun
                   </p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-emerald-700">
+                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-black">
                     <CheckCircle2 className="h-5 w-5" />
                     Aktif
                   </p>
@@ -717,13 +719,13 @@ export function ProfilePage() {
               </div>
             </section>
 
-            <section className="rounded-[1.75rem] border border-indigo-100 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-black text-slate-950">
+                  <p className="text-sm font-black text-black">
                     Pengingat Transaksi
                   </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                  <p className="mt-1 text-xs font-semibold leading-5 text-zinc-600">
                     Notifikasi berhenti otomatis jika review harian sudah
                     selesai.
                   </p>
@@ -732,8 +734,8 @@ export function ProfilePage() {
                 <div
                   className={
                     reminderSettings.enabled
-                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700"
-                      : "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
+                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
+                      : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600"
                   }
                 >
                   {reminderSettings.enabled ? (
@@ -744,13 +746,13 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+              <div className="mt-4 rounded-2xl bg-yellow-50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black text-slate-700">
+                    <p className="text-xs font-black text-black">
                       Status notifikasi
                     </p>
-                    <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                    <p className="mt-0.5 text-xs font-semibold text-zinc-600">
                       {getNotificationPermissionLabel(notificationPermission)}
                     </p>
                   </div>
@@ -758,8 +760,8 @@ export function ProfilePage() {
                   <button
                     className={
                       reminderSettings.enabled
-                        ? "inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-xs font-black text-white transition hover:bg-black"
-                        : "inline-flex min-h-10 items-center justify-center rounded-2xl bg-indigo-700 px-4 text-xs font-black text-white transition hover:bg-indigo-800"
+                        ? "inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
+                        : "inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
                     }
                     onClick={() =>
                       void handleReminderEnabledChange(!reminderSettings.enabled)
@@ -773,11 +775,11 @@ export function ProfilePage() {
 
               <div className="mt-4 grid gap-3">
                 <label className="block">
-                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  <span className="text-xs font-black uppercase text-zinc-500">
                     Frekuensi
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
                     value={reminderSettings.frequency}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -795,11 +797,11 @@ export function ProfilePage() {
                 </label>
 
                 <label className="block">
-                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  <span className="text-xs font-black uppercase text-zinc-500">
                     Maksimal per hari
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
                     value={reminderSettings.maxPerDay}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -815,11 +817,11 @@ export function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block">
-                    <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                    <span className="text-xs font-black uppercase text-zinc-500">
                       Jangan ganggu
                     </span>
                     <select
-                      className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                      className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
                       value={reminderSettings.quietStartHour}
                       onChange={(event) =>
                         updateReminderSettings({
@@ -836,11 +838,11 @@ export function ProfilePage() {
                   </label>
 
                   <label className="block">
-                    <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                    <span className="text-xs font-black uppercase text-zinc-500">
                       Sampai
                     </span>
                     <select
-                      className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                      className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
                       value={reminderSettings.quietEndHour}
                       onChange={(event) =>
                         updateReminderSettings({
@@ -858,11 +860,11 @@ export function ProfilePage() {
                 </div>
 
                 <label className="block">
-                  <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  <span className="text-xs font-black uppercase text-zinc-500">
                     Jam malam
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
                     value={reminderSettings.eveningHour}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -879,7 +881,7 @@ export function ProfilePage() {
                 </label>
               </div>
 
-              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 text-xs font-semibold leading-5 text-indigo-800">
+              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-yellow-50 p-3 text-xs font-semibold leading-5 text-zinc-700">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
                   Default-nya 1 kali per hari. Pengingat ini tidak menampilkan
@@ -888,15 +890,15 @@ export function ProfilePage() {
               </div>
             </section>
 
-            <section className="rounded-[1.75rem] border border-rose-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
-              <p className="text-sm font-black text-slate-950">Keluar Akun</p>
-              <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+            <section className="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-black text-black">Keluar Akun</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
                 Logout hanya menghapus sesi login dari browser ini. Data akun
                 tetap tersimpan di backend.
               </p>
 
               <Button
-                className="mt-4 min-h-12 w-full rounded-2xl bg-rose-600 text-white hover:bg-rose-700"
+                className="mt-4 min-h-12 w-full rounded-xl bg-rose-600 text-white hover:bg-rose-700"
                 onClick={handleLogout}
                 variant="danger"
               >

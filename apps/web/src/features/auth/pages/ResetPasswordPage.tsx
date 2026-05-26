@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, KeyRound, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowLeft, KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { SakuinLogo } from "../../../components/brand/SakuinLogo";
+import { SakuinIdentityLogo } from "../../../components/brand/SakuinIdentityLogo";
 import { ApiClientError } from "../../../lib/api-client";
 import { resetPasswordUser } from "../auth.service";
 
@@ -108,29 +108,19 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="relative min-h-[100dvh] overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-purple-500/30">
-      
-      {/* BACKGROUND AMBIENT EFFECT */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-[10%] -top-[10%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.07),transparent_60%)]"></div>
-        <div className="absolute -right-[10%] top-[20%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05),transparent_60%)]"></div>
-        <div className="absolute -bottom-[20%] left-[20%] h-[50rem] w-[50rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.05),transparent_60%)]"></div>
-      </div>
-
-      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md items-center justify-center px-4 py-6 sm:px-6">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-black selection:bg-yellow-300">
+      <section className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center justify-center px-4 py-6 sm:px-6">
         <div className="w-full min-w-0 py-4">
-          
-          {/* Header */}
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3">
             <Link
-            className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
-            to="/"
+              className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
+              to="/"
             >
-            <SakuinLogo subtitle="Personal finance app" size="sm" />
+              <SakuinIdentityLogo size="sm" />
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 px-3.5 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-slate-900"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-3.5 text-xs font-bold text-black shadow-sm transition hover:bg-yellow-100"
               to="/login"
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -138,33 +128,32 @@ export function ResetPasswordPage() {
             </Link>
           </div>
 
-          {/* Form Container */}
-          <div className="w-full min-w-0 rounded-[2rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl sm:p-10">
+          <div className="w-full min-w-0 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-10">
             <div className="mb-8">
-              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100/70 text-purple-600 shadow-inner">
+              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-300 text-black">
                 <KeyRound className="h-7 w-7" />
               </div>
 
-              <p className="text-sm font-bold uppercase tracking-wider text-purple-600">
+              <p className="text-sm font-bold uppercase text-zinc-500">
                 Password baru
               </p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-black">
                 Buat password baru
               </h1>
-              <p className="mt-3 text-sm leading-relaxed text-slate-500">
+              <p className="mt-3 text-sm leading-6 text-zinc-600">
                 Masukkan password baru untuk akun Sakuin kamu. Password minimal
                 8 karakter dan harus mengandung angka.
               </p>
             </div>
 
             {successMessage ? (
-              <div className="mb-6 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 px-4 py-3.5 text-sm font-bold text-emerald-700 shadow-sm backdrop-blur-sm">
+              <div className="mb-6 rounded-2xl border border-black/10 bg-yellow-100 px-4 py-3.5 text-sm font-bold text-black">
                 {successMessage}
               </div>
             ) : null}
 
             {error ? (
-              <div className="mb-6 break-words rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3.5 text-sm font-bold text-rose-700 shadow-sm backdrop-blur-sm">
+              <div className="mb-6 break-words rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3.5 text-sm font-bold text-rose-700">
                 {error}
               </div>
             ) : null}
@@ -175,6 +164,7 @@ export function ResetPasswordPage() {
                 name="password"
                 type="password"
                 autoComplete="new-password"
+                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
                 placeholder="Password123"
                 value={form.password}
                 disabled={!hasToken || Boolean(successMessage)}
@@ -191,6 +181,7 @@ export function ResetPasswordPage() {
                 name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
+                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
                 placeholder="Ulangi password baru"
                 value={form.confirmPassword}
                 disabled={!hasToken || Boolean(successMessage)}
@@ -203,7 +194,7 @@ export function ResetPasswordPage() {
               />
 
               <Button
-                className="w-full rounded-xl mt-2"
+                className="mt-2 w-full rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
@@ -214,11 +205,11 @@ export function ResetPasswordPage() {
               </Button>
             </form>
 
-            <div className="mt-8 space-y-4 text-center text-sm font-medium text-slate-500">
+            <div className="mt-8 space-y-4 text-center text-sm font-medium text-zinc-600">
               <p>
                 Sudah ingat password?{" "}
                 <Link
-                  className="font-bold text-purple-600 transition hover:text-purple-700 hover:underline"
+                  className="font-bold text-black transition hover:text-yellow-700 hover:underline"
                   to="/login"
                 >
                   Kembali login
@@ -228,7 +219,7 @@ export function ResetPasswordPage() {
               <p>
                 Link bermasalah?{" "}
                 <Link
-                  className="font-bold text-slate-900 transition hover:underline"
+                  className="font-bold text-black transition hover:underline"
                   to="/forgot-password"
                 >
                   Kirim ulang link

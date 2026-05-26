@@ -2,20 +2,17 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Link, Navigate } from "react-router-dom";
 import {
   ArrowRight,
-  BarChart3,
   Download,
   ExternalLink,
   Loader2,
   MessageSquare,
-  PiggyBank,
   ShieldCheck,
-  Smartphone,
   Tags,
   Target,
   WalletCards
 } from "lucide-react";
-import { SakuinLogo } from "../components/brand/SakuinLogo";
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
+import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
 import { buttonClassName } from "../components/ui/button";
 import { useAuth } from "../features/auth/auth-context";
 
@@ -92,10 +89,10 @@ const AsistenPage = lazy(() =>
 
 function LoadingScreen() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50/50 px-4 backdrop-blur-sm">
-      <div className="flex items-center gap-4 rounded-2xl border border-white/60 bg-white/80 px-6 py-5 shadow-xl shadow-purple-900/5 backdrop-blur-xl">
-        <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
-        <p className="text-sm font-semibold tracking-wide text-slate-600">
+    <main className="flex min-h-screen items-center justify-center bg-white px-4">
+      <div className="flex items-center gap-4 rounded-2xl border border-black/10 bg-white px-6 py-5 shadow-sm">
+        <Loader2 className="h-6 w-6 animate-spin text-black" />
+        <p className="text-sm font-semibold tracking-wide text-zinc-600">
           Memuat Sakuin...
         </p>
       </div>
@@ -141,83 +138,78 @@ function HomePage() {
       icon: WalletCards,
       title: "Catat transaksi",
       description:
-        "Simpan pemasukan dan pengeluaran harian dengan kategori yang rapi."
+        "Input pemasukan dan pengeluaran harian tanpa spreadsheet manual."
     },
     {
       icon: Tags,
-      title: "Kelola kategori",
+      title: "Rapikan kategori",
       description:
-        "Gunakan kategori default atau buat kategori custom sesuai kebiasaanmu."
+        "Pisahkan uang makan, transport, hiburan, tabungan, dan kebutuhan lain."
     },
     {
       icon: Target,
-      title: "Pantau goals",
+      title: "Pantau target",
       description:
-        "Buat target tabungan dan pantau progress-nya dari satu dashboard."
+        "Lihat progress tabungan supaya tujuan finansial tidak cuma jadi niat."
     },
     {
       icon: Download,
       title: "Export laporan",
       description:
-        "Unduh transaksi ke JSON, CSV, atau XLSX untuk arsip dan analisis."
+        "Unduh data saat kamu butuh arsip, audit pribadi, atau analisis lanjutan."
     }
   ];
 
   const usageSteps = [
     {
-      title: "Buat akun",
+      title: "Buat akun atau login",
       description:
-        "Daftar dengan email atau Google, lalu semua data keuanganmu dipisahkan berdasarkan akun."
+        "Mulai dari akun pribadi agar data keuanganmu tersimpan terpisah dan aman."
     },
     {
-      title: "Catat transaksi",
+      title: "Catat uang masuk dan keluar",
       description:
-        "Masukkan income atau expense, pilih kategori, tanggal, dan catatan."
+        "Masukkan nominal, kategori, tanggal, dan catatan singkat saat transaksi terjadi."
     },
     {
-      title: "Pantau dashboard",
+      title: "Baca ringkasan harian",
       description:
-        "Lihat saldo, pengeluaran, pemasukan, trend bulanan, dan transaksi terbaru."
+        "Gunakan dashboard untuk melihat saldo, pemasukan, pengeluaran, dan tren."
     },
     {
-      title: "Evaluasi keuangan",
+      title: "Perbaiki kebiasaan",
       description:
-        "Gunakan goals, safe balance limit, dan export laporan untuk mengambil keputusan."
+        "Review pola pengeluaran, set target tabungan, lalu ambil keputusan lebih sadar."
     }
   ];
 
+  const benefits = [
+    "Tidak perlu mengingat transaksi dari kepala.",
+    "Lebih cepat sadar saat pengeluaran mulai bocor.",
+    "Target tabungan terlihat jelas dan mudah dipantau.",
+    "Data bisa diekspor saat kamu butuh laporan."
+  ];
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900 selection:bg-purple-500/30">
-      
-      {/* BACKGROUND AMBIENT EFFECT */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-[10%] -top-[10%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.07),transparent_60%)]"></div>
-        <div className="absolute -right-[10%] top-[20%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05),transparent_60%)]"></div>
-        <div className="absolute -bottom-[20%] left-[20%] h-[50rem] w-[50rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.05),transparent_60%)]"></div>
-      </div>
-
-      <section className="relative z-10 mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        
-        {/* HEADER */}
-        <header className="sticky top-4 z-50 flex items-center justify-between rounded-full border border-slate-200/60 bg-white/80 px-4 py-2.5 shadow-md backdrop-blur-xl sm:px-6">
-        <Link className="min-w-0" to="/">
-          <SakuinLogo subtitle="Personal finance web app" size="md" />
-        </Link>
-
+    <main className="min-h-screen bg-white text-black selection:bg-yellow-300">
+      <section className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <header className="sticky top-4 z-50 flex items-center justify-between rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm sm:px-5">
+          <Link className="min-w-0" to="/">
+            <SakuinIdentityLogo />
+          </Link>
           <div className="flex shrink-0 items-center gap-2.5">
             <Link
               className={buttonClassName({
                 variant: "ghost",
                 size: "sm",
-                className: "hidden sm:inline-flex font-bold !text-slate-700 hover:!text-slate-900"
+                className: "hidden font-semibold !text-black hover:!bg-yellow-50 sm:inline-flex"
               })}
               to="/login"
             >
               Login
             </Link>
-
             <Link
-              className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-black !text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-5 text-sm font-semibold !text-white shadow-sm transition hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
               to="/register"
             >
               <span>Daftar</span>
@@ -226,140 +218,277 @@ function HomePage() {
           </div>
         </header>
 
-        {/* HERO SECTION */}
-        <section className="grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-12 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:py-16">
+        <section className="grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-14">
           <div className="flex flex-col items-start">
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200/60 bg-purple-50/60 px-3.5 py-1.5 text-xs font-bold text-purple-700 shadow-sm backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-yellow-300 bg-yellow-100 px-3.5 py-1.5 text-xs font-bold text-black">
               <ShieldCheck className="h-4 w-4" />
-              Personal finance web app
+              Catat uang pribadi dengan lebih sadar
             </div>
 
-            <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl xl:text-[4rem] xl:leading-[1.1]">
-              Kelola uang pribadi dengan lebih rapi & tenang.
+            <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-black sm:text-5xl lg:text-6xl xl:text-[4rem] xl:leading-[1.05]">
+              Sakuin membantu kamu tahu uangmu pergi ke mana.
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Sakuin membantu kamu mencatat pemasukan, mengontrol pengeluaran,
-              mengatur kategori, dan memantau target tabungan dalam satu *webapp* yang ringan dan aman.
+            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-700 sm:text-lg">
+              Sakuin adalah web app pengelola keuangan pribadi untuk mencatat
+              pemasukan, pengeluaran, kategori, dan target tabungan. Tujuannya
+              sederhana: membantu kamu membangun kebiasaan finansial yang rapi
+              tanpa proses yang rumit.
             </p>
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center">
               <Link
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-6 text-base font-black !text-white shadow-md transition hover:bg-slate-800 sm:w-auto"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-black px-6 text-base font-bold !text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto"
                 to="/register"
               >
-                <span>Mulai gratis</span>
+                <span>Mulai catat sekarang</span>
                 <ArrowRight className="ml-2 h-4 w-4 !text-white" />
               </Link>
-              
               <Link
                 className={buttonClassName({
                   variant: "secondary",
                   size: "lg",
-                  className: "min-h-12 rounded-xl border border-slate-200 bg-white/80 px-6 text-base font-black !text-slate-900 shadow-sm transition hover:bg-slate-50 w-full sm:w-auto"
+                  className:
+                    "min-h-12 w-full rounded-xl border border-black/15 bg-yellow-100 px-6 text-base font-bold !text-black shadow-sm transition hover:bg-yellow-200 sm:w-auto"
                 })}
                 to="/login"
               >
-                Login
+                Masuk akun
               </Link>
-
               <div className="w-full sm:w-auto">
-                 <InstallAppButton label="Install Sakuin" variant="hero" />
+                <InstallAppButton
+                  label="Install Sakuin"
+                  variant="hero"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-6 text-base font-bold text-black shadow-sm transition hover:bg-zinc-50 sm:w-auto"
+                />
               </div>
             </div>
 
             <div className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                { icon: PiggyBank, title: "Goals", desc: "Pantau tabungan", color: "text-purple-600", bg: "bg-purple-100/70" },
-                { icon: WalletCards, title: "Transaksi", desc: "Catat keuangan", color: "text-emerald-600", bg: "bg-emerald-100/70" },
-                { icon: Smartphone, title: "Mobile-first", desc: "Nyaman di semua HP", color: "text-amber-600", bg: "bg-amber-100/70" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-200/50 bg-white/50 p-3.5 shadow-sm backdrop-blur-sm">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.bg} ${item.color}`}>
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black truncate text-slate-900">{item.title}</p>
-                    <p className="text-xs font-medium truncate text-slate-500">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
+              <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+                <p className="text-2xl font-black text-black">30 detik</p>
+                <p className="mt-1 text-sm font-medium text-zinc-600">
+                  Cukup untuk review transaksi harian.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-black/10 bg-yellow-100 p-4 shadow-sm">
+                <p className="text-2xl font-black text-black">4 fitur</p>
+                <p className="mt-1 text-sm font-medium text-zinc-700">
+                  Transaksi, kategori, goals, export.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+                <p className="text-2xl font-black text-black">Mobile</p>
+                <p className="mt-1 text-sm font-medium text-zinc-600">
+                  Nyaman dipakai dari HP sehari-hari.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* HERO VISUAL MOCKUP */}
           <div className="mx-auto w-full max-w-md lg:ml-auto lg:max-w-lg">
-            <div className="rounded-[2rem] border border-slate-200/60 bg-white/60 p-4 shadow-xl backdrop-blur-md sm:p-5">
-              
-              <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md sm:p-6">
+            <div className="rounded-3xl border border-black bg-white p-4 shadow-[12px_12px_0_#facc15] sm:p-5">
+              <div className="rounded-2xl bg-black p-5 text-white sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-medium text-slate-400">Total Balance</p>
+                    <p className="text-xs font-medium text-zinc-400">Saldo bulan ini</p>
                     <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Rp 7.500.000</p>
                   </div>
-                  <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-300 ring-1 ring-emerald-500/30">
-                    Aman
+                  <span className="rounded-full bg-yellow-300 px-2.5 py-1 text-xs font-bold text-black">
+                    Terkontrol
                   </span>
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white/5 p-3.5 ring-1 ring-white/10">
-                    <p className="text-xs font-medium text-slate-400">Income</p>
-                    <p className="mt-0.5 text-sm font-black text-emerald-400">+ Rp 10 jt</p>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                    <p className="text-xs font-medium text-zinc-400">Masuk</p>
+                    <p className="mt-0.5 text-sm font-black text-yellow-300">+ Rp 10 jt</p>
                   </div>
-                  <div className="rounded-xl bg-white/5 p-3.5 ring-1 ring-white/10">
-                    <p className="text-xs font-medium text-slate-400">Expense</p>
-                    <p className="mt-0.5 text-sm font-black text-rose-400">- Rp 2,5 jt</p>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                    <p className="text-xs font-medium text-zinc-400">Keluar</p>
+                    <p className="mt-0.5 text-sm font-black text-white">- Rp 2,5 jt</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/40 bg-white/90 p-4 shadow-sm">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Goals Aktif</p>
+                <div className="rounded-2xl border border-black/10 bg-yellow-100 p-4">
+                  <p className="text-xs font-bold uppercase text-zinc-500">Goals aktif</p>
                   <p className="mt-0.5 text-xl font-black text-slate-900">3</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/40 bg-white/90 p-4 shadow-sm">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Export Format</p>
+                <div className="rounded-2xl border border-black/10 bg-white p-4">
+                  <p className="text-xs font-bold uppercase text-zinc-500">Export</p>
                   <p className="mt-0.5 text-xl font-black text-slate-900">3 Jenis</p>
                 </div>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-purple-100 bg-purple-50/50 p-4 shadow-sm">
+              <div className="mt-3 rounded-2xl border border-black/10 bg-white p-4">
                 <div className="flex items-start gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700 shadow-inner">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black">
                     <MessageSquare className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-900">Bantu kembangkan Sakuin</p>
-                    <p className="mt-0.5 text-xs font-medium leading-relaxed text-slate-500">
-                      Masukan dari pengguna membantu kami menentukan perbaikan berikutnya.
+                    <p className="text-sm font-black text-black">Dibangun dari feedback</p>
+                    <p className="mt-0.5 text-xs font-medium leading-relaxed text-zinc-600">
+                      Masukan user dipakai untuk menentukan fitur berikutnya.
                     </p>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </section>
 
-        {/* FEEDBACK SECTION */}
-        <section id="feedback" className="py-12 sm:py-16">
-          <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-slate-200/60 bg-white/60 p-5 shadow-lg backdrop-blur-md sm:p-8 lg:grid-cols-[1fr_0.8fr] lg:items-center lg:gap-12">
+        <section className="border-y border-black bg-black py-12 text-white sm:py-16">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
             <div>
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+              <p className="text-sm font-bold uppercase text-yellow-300">
+                Apa itu Sakuin?
+              </p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                Tempat sederhana untuk mencatat dan memahami keuangan pribadi.
+              </h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                "Bukan aplikasi akuntansi rumit.",
+                "Bukan spreadsheet yang harus dirapikan manual.",
+                "Bukan sekadar catatan, tapi bahan evaluasi."
+              ].map((item) => (
+                <div
+                  className="rounded-2xl border border-white/15 bg-white/5 p-5"
+                  key={item}
+                >
+                  <p className="text-sm font-semibold leading-6 text-zinc-100">
+                    {item}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-14 sm:py-18">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+            <div>
+              <p className="text-sm font-bold uppercase text-zinc-500">
+                Cara menggunakan
+              </p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-black sm:text-4xl">
+                Alurnya dibuat untuk kebiasaan harian, bukan pekerjaan tambahan.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-zinc-600">
+                Kamu cukup mencatat transaksi, membaca ringkasan, lalu melakukan
+                evaluasi kecil. Semakin rutin dipakai, semakin jelas pola uangmu.
+              </p>
+            </div>
+
+            <div className="grid gap-3">
+              {usageSteps.map((step, index) => (
+                <div
+                  className="grid grid-cols-[3rem_1fr] gap-4 rounded-2xl border border-black/10 bg-white p-4 shadow-sm"
+                  key={step.title}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-300 text-base font-black text-black">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-black">
+                      {step.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 sm:py-16">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="inline-flex items-center justify-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold uppercase text-black">
+              Fungsi utama
+            </span>
+            <h2 className="mt-4 text-2xl font-black tracking-tight text-black sm:text-3xl">
+              Fitur yang fokus pada masalah nyata user.
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-600 sm:text-base">
+              Tidak dibuat untuk terlihat ramai. Setiap fitur membantu kamu
+              mencatat, memahami, atau mengevaluasi uang pribadi.
+            </p>
+          </div>
+
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {featureCards.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm"
+                  key={feature.title}
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-300 text-black">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 text-base font-black text-black">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="py-12 sm:py-16">
+          <div className="grid grid-cols-1 gap-6 rounded-3xl border border-black bg-yellow-300 p-6 shadow-[8px_8px_0_#000] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase text-black/70">
+                Keuntungan untuk user
+              </p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-black">
+                Yang berubah bukan cuma catatan, tapi cara melihat uang.
+              </h2>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {benefits.map((benefit) => (
+                <div
+                  className="rounded-2xl border border-black/15 bg-white p-4"
+                  key={benefit}
+                >
+                  <div className="flex gap-3">
+                    <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
+                    <p className="text-sm font-semibold leading-6 text-black">
+                      {benefit}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="feedback" className="py-12 sm:py-16">
+          <div className="grid grid-cols-1 gap-8 rounded-3xl border border-black/10 bg-zinc-50 p-5 shadow-sm sm:p-8 lg:grid-cols-[1fr_0.8fr] lg:items-center lg:gap-12">
+            <div>
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-black text-yellow-300">
                 <MessageSquare className="h-6 w-6" />
               </div>
-              <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              <h2 className="mt-4 text-2xl font-black tracking-tight text-black sm:text-3xl">
                 Punya saran, keluhan, atau ide fitur?
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+              <p className="mt-3 text-sm leading-7 text-zinc-600 sm:text-base">
                 Sakuin terus dikembangkan berdasarkan kebutuhan nyata pengguna.
-                Kamu bisa membantu dengan mengisi *form feedback* singkat mengenai kenyamanan sistem.
+                Feedback kamu membantu menentukan fitur mana yang paling layak
+                diprioritaskan berikutnya.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-purple-600 px-6 text-base font-black !text-white shadow-md transition hover:bg-purple-700 sm:w-auto"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-black px-6 text-base font-bold !text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto"
                   href={FEEDBACK_FORM_URL}
                   rel="noreferrer"
                   target="_blank"
@@ -371,7 +500,8 @@ function HomePage() {
                   className={buttonClassName({
                     variant: "secondary",
                     size: "lg",
-                    className: "min-h-12 rounded-xl border border-slate-200 bg-white px-6 font-black !text-slate-800 shadow-sm transition hover:bg-slate-50 w-full sm:w-auto"
+                    className:
+                      "min-h-12 w-full rounded-xl border border-black/15 bg-yellow-100 px-6 font-bold !text-black shadow-sm transition hover:bg-yellow-200 sm:w-auto"
                   })}
                   to="/register"
                 >
@@ -380,8 +510,8 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/60 bg-slate-50/80 p-5 text-center sm:p-6">
-              <div className="mx-auto rounded-xl bg-white p-3 shadow-inner max-w-[14rem] border border-slate-100">
+            <div className="rounded-2xl border border-black/10 bg-white p-5 text-center sm:p-6">
+              <div className="mx-auto max-w-[14rem] rounded-xl border border-black/10 bg-white p-3">
                 <img
                   alt="QR Code Form Feedback Sakuin"
                   className="mx-auto aspect-square w-full object-contain"
@@ -389,127 +519,29 @@ function HomePage() {
                   src={FEEDBACK_QR_IMAGE_PATH}
                 />
               </div>
-              <h3 className="mt-4 text-sm font-black text-slate-900">Scan QR untuk memberi feedback</h3>
-              <p className="mx-auto mt-1 max-w-[16rem] text-xs font-medium text-slate-500">
+              <h3 className="mt-4 text-sm font-black text-black">
+                Scan QR untuk memberi feedback
+              </h3>
+              <p className="mx-auto mt-1 max-w-[16rem] text-xs font-medium text-zinc-600">
                 Arahkan kamera HP ke QR code, atau klik tombol di atas.
               </p>
             </div>
           </div>
         </section>
 
-        {/* FEATURES SECTION (NO HOVER FOR NON-BUTTONS) */}
-        <section className="py-12 sm:py-16">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-600">
-              Fungsi Utama
-            </span>
-            <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-              Semua kebutuhan dasar pencatatan keuangan pribadi.
-            </h2>
-            <p className="mt-3 text-sm text-slate-500 sm:text-base">
-              Fokus Sakuin adalah membuat manajemen keuangan sesederhana mungkin tanpa komplikasi alur kerja.
-            </p>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {featureCards.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-sm"
-                  key={feature.title}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-4 text-base font-black text-slate-900">{feature.title}</h3>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                    {feature.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* HOW TO USE SECTION */}
-        <section className="grid grid-cols-1 gap-10 py-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:py-16">
-          <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 shadow-sm sm:p-8">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white">
-              <BarChart3 className="h-5 w-5" />
-            </div>
-            <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-              Cara menggunakan Sakuin
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Sakuin dibuat untuk ekosistem instan. Anda tidak memerlukan konfigurasi berbelit-belit untuk memulai pelacakan keuangan harian.
-            </p>
-          </div>
-
-          <div className="grid gap-3">
-            {usageSteps.map((step, index) => (
-              <div
-                className="flex gap-4 rounded-2xl border border-slate-200/50 bg-white/60 p-4.5 shadow-sm"
-                key={step.title}
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white">
-                  {index + 1}
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">{step.title}</h3>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* VISION SECTION */}
-        <section className="py-12 sm:py-16">
-          <div className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-6 shadow-xl sm:p-10">
-            <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/10 blur-2xl"></div>
-            
-            <div className="relative z-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  Visi Sakuin
-                </span>
-                <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">
-                  Membantu pengguna lebih sadar & tenang dalam mengelola uang.
-                </h2>
-              </div>
-
-              <div className="grid gap-3">
-                {[
-                  { title: "Rapi", desc: "Transaksi dicatat dengan kategori, tanggal, dan anotasi jelas." },
-                  { title: "Terkontrol", desc: "Dasbor informatif membantu mengamankan batas saldo aman harian." },
-                  { title: "Bisa Dievaluasi", desc: "Ekspor berkas fleksibel memudahkan prapemrosesan di spreadsheet." }
-                ].map((item, i) => (
-                  <div key={i} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm font-black text-white">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FINAL CTA */}
         <section className="pb-16 pt-8 text-center">
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200/60 bg-white/60 p-8 shadow-md backdrop-blur-md sm:p-12">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-              Mulai rapikan pencatatan keuanganmu hari ini.
+          <div className="mx-auto max-w-3xl rounded-3xl border border-black/10 bg-white p-8 shadow-sm sm:p-12">
+            <h2 className="text-3xl font-black tracking-tight text-black sm:text-4xl">
+              Mulai pahami keuanganmu dari transaksi hari ini.
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-sm text-slate-500 sm:text-base">
-              Registrasi dalam beberapa detik, pantau arus kas harian, dan kendalikan penuh sirkulasi finansial Anda.
+            <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-zinc-600 sm:text-base">
+              Tidak perlu menunggu akhir bulan. Catat sedikit demi sedikit,
+              lalu biarkan datanya membantu kamu mengambil keputusan.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-6 text-base font-black !text-white shadow-md transition hover:bg-slate-800 sm:w-auto"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-black px-6 text-base font-bold !text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto"
                 to="/register"
               >
                 <span>Buat akun gratis</span>
@@ -520,20 +552,24 @@ function HomePage() {
                 className={buttonClassName({
                   variant: "secondary",
                   size: "lg",
-                  className: "min-h-12 w-full rounded-xl border border-slate-200 bg-white/80 px-6 font-black !text-slate-900 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                  className:
+                    "min-h-12 w-full rounded-xl border border-black/15 bg-yellow-100 px-6 font-bold !text-black shadow-sm transition hover:bg-yellow-200 sm:w-auto"
                 })}
                 to="/login"
               >
                 Login
               </Link>
-              
+
               <div className="w-full sm:w-auto">
-                 <InstallAppButton label="Install Sakuin" variant="hero" />
+                <InstallAppButton
+                  label="Install Sakuin"
+                  variant="hero"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-6 text-base font-bold text-black shadow-sm transition hover:bg-zinc-50 sm:w-auto"
+                />
               </div>
             </div>
           </div>
         </section>
-
       </section>
     </main>
   );

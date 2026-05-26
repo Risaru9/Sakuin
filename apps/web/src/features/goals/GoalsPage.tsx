@@ -106,26 +106,26 @@ function GoalCard({
   const progress = getGoalProgress(goal);
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+    <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm transition hover:bg-yellow-50">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-lg font-black text-slate-950">
+          <p className="truncate text-lg font-black text-black">
             {goal.name}
           </p>
 
-          <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+          <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
             <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(goal.deadline)}
           </p>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">
+          <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-black">
             {progress}%
           </span>
 
           {isDashboardPriority ? (
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
+            <span className="rounded-full bg-black px-3 py-1 text-[10px] font-black text-yellow-300">
               Dashboard
             </span>
           ) : null}
@@ -133,20 +133,20 @@ function GoalCard({
       </div>
 
       {goal.description ? (
-        <p className="mt-3 text-sm leading-6 text-slate-600">
+        <p className="mt-3 text-sm leading-6 text-zinc-600">
           {goal.description}
         </p>
       ) : null}
 
       <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
+        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold text-zinc-500">
           <span className="truncate">{formatRupiah(goal.currentAmount)}</span>
           <span className="shrink-0">{formatRupiah(goal.targetAmount)}</span>
         </div>
 
-        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
           <div
-            className="h-full rounded-full bg-indigo-700"
+            className="h-full rounded-full bg-yellow-300"
             style={{
               width: `${progress}%`
             }}
@@ -158,8 +158,8 @@ function GoalCard({
         <button
           className={
             isDashboardPriority
-              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-100 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-200"
-              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-indigo-100 px-3 text-xs font-black text-indigo-700 transition hover:bg-indigo-200"
+              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-3 text-xs font-black text-yellow-300 transition hover:bg-zinc-800"
+              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-yellow-100 px-3 text-xs font-black text-black transition hover:bg-yellow-200"
           }
           onClick={() => onSetDashboardPriority(goal)}
           type="button"
@@ -173,7 +173,7 @@ function GoalCard({
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 text-xs font-black text-white transition hover:bg-black"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-3 text-xs font-black text-white transition hover:bg-zinc-800"
           onClick={() => onAddProgress(goal)}
           type="button"
         >
@@ -182,7 +182,7 @@ function GoalCard({
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-yellow-100 px-3 text-xs font-black text-black transition hover:bg-yellow-200"
           onClick={() => onEdit(goal)}
           type="button"
         >
@@ -191,7 +191,7 @@ function GoalCard({
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isDeleting}
           onClick={() => onDelete(goal)}
           type="button"
@@ -414,19 +414,19 @@ export function GoalsPage() {
     <AppShell>
       <header className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-indigo-700">Sakuin Goals</p>
+          <p className="text-sm font-black text-zinc-500">Sakuin Goals</p>
 
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-black sm:text-4xl">
             Goals Tabungan
           </h1>
 
-          <p className="mt-1 text-sm font-medium text-slate-500">
+          <p className="mt-1 text-sm font-medium text-zinc-600">
             Pantau target tabungan dan progres pencapaiannya.
           </p>
         </div>
 
         <Button
-          className="rounded-2xl bg-slate-950 text-white hover:bg-black"
+          className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
           onClick={handleCreate}
           size="md"
         >
@@ -435,32 +435,32 @@ export function GoalsPage() {
         </Button>
       </header>
 
-      <div className="mb-5 rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 sm:p-7">
+      <div className="mb-5 rounded-3xl border border-black bg-yellow-300 p-5 text-black shadow-[8px_8px_0_#000] sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-300">
+            <p className="text-sm font-semibold text-black/70">
               Total Progress Goals
             </p>
 
             <p className="mt-2 text-4xl font-black">{overallProgress}%</p>
 
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="mt-2 text-sm text-black/75">
               {formatRupiah(totalCurrent)} terkumpul dari{" "}
               {formatRupiah(totalTarget)} target.
             </p>
           </div>
 
           {isBackgroundFetching ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Memperbarui
             </div>
           ) : null}
         </div>
 
-        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/60">
           <div
-            className="h-full rounded-full bg-indigo-400"
+            className="h-full rounded-full bg-black"
             style={{
               width: `${overallProgress}%`
             }}
@@ -490,8 +490,8 @@ export function GoalsPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex min-h-52 items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white">
-          <div className="flex items-center gap-3 text-slate-500">
+        <div className="flex min-h-52 items-center justify-center rounded-3xl border border-black/10 bg-white">
+          <div className="flex items-center gap-3 text-zinc-600">
             <Loader2 className="h-5 w-5 animate-spin" />
             <p className="text-sm font-bold">Mengambil goals...</p>
           </div>
@@ -499,15 +499,15 @@ export function GoalsPage() {
       ) : null}
 
       {!isLoading && goals.length === 0 ? (
-        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-lg font-black text-slate-950">Belum ada goal</p>
+        <div className="rounded-3xl border border-black/10 bg-white p-8 text-center shadow-sm">
+          <p className="text-lg font-black text-black">Belum ada goal</p>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-zinc-600">
             Tambahkan target tabungan pertama kamu.
           </p>
 
           <Button
-            className="mt-5 rounded-2xl bg-slate-950 text-white hover:bg-black"
+            className="mt-5 rounded-xl bg-black text-white hover:bg-zinc-800"
             onClick={handleCreate}
           >
             <Plus className="h-4 w-4" />

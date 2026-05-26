@@ -55,5 +55,61 @@ a {
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(253, 224, 71, 0.65);
+}
+
+@keyframes sakuinFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes sakuinShine {
+  0%,
+  58% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes sakuinSoftPulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes sakuinNavMarker {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[sakuinFloat_3\.6s_ease-in-out_infinite\],
+  .animate-\[sakuinShine_4s_ease-in-out_infinite\],
+  .animate-\[sakuinShine_4\.2s_ease-in-out_infinite\],
+  .animate-\[sakuinSoftPulse_2\.8s_ease-in-out_infinite\],
+  .animate-\[sakuinNavMarker_1\.8s_ease-in-out_infinite\] {
+    animation: none;
+  }
 }

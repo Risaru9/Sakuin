@@ -270,24 +270,24 @@ export function ExportPage() {
     <AppShell>
       <header className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-indigo-700">Sakuin Export</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          <p className="text-sm font-black text-zinc-500">Sakuin Export</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-black sm:text-4xl">
             Export Data
           </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
+          <p className="mt-1 text-sm font-medium text-zinc-600">
             Unduh data transaksi dalam format JSON, CSV, atau Excel.
           </p>
         </div>
 
-        <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white sm:flex">
+        <div className="hidden h-12 w-12 items-center justify-center rounded-xl bg-yellow-300 text-black sm:flex">
           <Database className="h-5 w-5" />
         </div>
       </header>
 
-      <div className="mb-5 rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 sm:p-7">
+      <div className="mb-5 rounded-3xl border border-black bg-yellow-300 p-5 text-black shadow-[8px_8px_0_#000] sm:p-7">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-black/70">
               <Filter className="h-4 w-4" />
               Filter Data Export
             </p>
@@ -296,32 +296,32 @@ export function ExportPage() {
               Atur data sebelum download
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-black/75">
               Pilih jenis transaksi, rentang tanggal, dan nama file sebelum
               mengunduh laporan.
             </p>
           </div>
 
           {downloadMutation.isPending ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Menyiapkan file
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
               <ShieldCheck className="h-3.5 w-3.5" />
               Export siap
             </div>
           )}
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/10 p-1">
+        <div className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/60 p-1">
           {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
             <button
               className={
                 typeFilter === item
-                  ? "rounded-xl bg-white px-3 py-3 text-xs font-black text-slate-950"
-                  : "rounded-xl px-3 py-3 text-xs font-black text-white/70 transition hover:bg-white/10 hover:text-white"
+                  ? "rounded-xl bg-black px-3 py-3 text-xs font-black text-white"
+                  : "rounded-xl px-3 py-3 text-xs font-black text-black/65 transition hover:bg-white hover:text-black"
               }
               disabled={downloadMutation.isPending}
               key={item}
@@ -335,11 +335,11 @@ export function ExportPage() {
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-xs font-black text-slate-300">
+            <span className="mb-2 block text-xs font-black text-black/70">
               Tanggal mulai
             </span>
             <input
-              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+              className="min-h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-100 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={downloadMutation.isPending}
               type="date"
               value={startDate}
@@ -351,11 +351,11 @@ export function ExportPage() {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-black text-slate-300">
+            <span className="mb-2 block text-xs font-black text-black/70">
               Tanggal akhir
             </span>
             <input
-              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+              className="min-h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-100 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={downloadMutation.isPending}
               type="date"
               value={endDate}
@@ -373,11 +373,11 @@ export function ExportPage() {
           </div>
         ) : null}
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4">
           <label className="flex items-center gap-3">
             <input
               checked={isCustomFileNameEnabled}
-              className="h-4 w-4 accent-indigo-500"
+              className="h-4 w-4 accent-black"
               disabled={downloadMutation.isPending}
               type="checkbox"
               onChange={(event) => {
@@ -385,7 +385,7 @@ export function ExportPage() {
                 setError(null);
               }}
             />
-            <span className="text-sm font-black text-white">
+            <span className="text-sm font-black text-black">
               Gunakan nama file custom
             </span>
           </label>
@@ -393,11 +393,11 @@ export function ExportPage() {
           {isCustomFileNameEnabled ? (
             <div className="mt-4">
               <label className="block">
-                <span className="mb-2 block text-xs font-black text-slate-300">
+                <span className="mb-2 block text-xs font-black text-zinc-500">
                   Nama file
                 </span>
                 <input
-                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-400/30 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="min-h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold text-black outline-none transition placeholder:text-zinc-400 focus:border-black focus:ring-4 focus:ring-yellow-100 disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={downloadMutation.isPending}
                   maxLength={MAX_CUSTOM_FILE_NAME_LENGTH}
                   placeholder="Contoh: laporan-transaksi-mei-2026"
@@ -408,7 +408,7 @@ export function ExportPage() {
                 />
               </label>
 
-              <p className="mt-2 text-xs leading-5 text-slate-300">
+              <p className="mt-2 text-xs leading-5 text-zinc-600">
                 Tidak perlu menulis ekstensi file. Karakter ilegal akan diganti
                 otomatis. Maksimal {MAX_CUSTOM_FILE_NAME_LENGTH} karakter.
               </p>
@@ -416,13 +416,13 @@ export function ExportPage() {
           ) : null}
         </div>
 
-        <div className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-3">
+        <div className="mt-5 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 sm:grid-cols-3">
           {activeFilterSummary.map((item) => (
             <div key={item.label}>
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
+              <p className="text-[11px] font-black uppercase text-zinc-500">
                 {item.label}
               </p>
-              <p className="mt-1 break-words text-sm font-black text-white">
+              <p className="mt-1 break-words text-sm font-black text-black">
                 {item.value}
               </p>
             </div>
@@ -431,7 +431,7 @@ export function ExportPage() {
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-black px-4 text-sm font-black text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={downloadMutation.isPending}
             onClick={resetFilters}
             type="button"
@@ -471,32 +471,32 @@ export function ExportPage() {
 
           return (
             <div
-              className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm transition hover:bg-yellow-50"
               key={option.format}
             >
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-300 text-black">
                 <Icon className="h-6 w-6" />
               </div>
 
-              <h2 className="text-lg font-black text-slate-950">
+              <h2 className="text-lg font-black text-black">
                 {option.title}
               </h2>
 
-              <p className="mt-2 min-h-16 text-sm leading-6 text-slate-500">
+              <p className="mt-2 min-h-16 text-sm leading-6 text-zinc-600">
                 {option.description}
               </p>
 
-              <div className="mt-4 rounded-2xl bg-slate-50 p-3">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
+              <div className="mt-4 rounded-2xl bg-zinc-50 p-3">
+                <p className="text-[11px] font-black uppercase text-zinc-500">
                   Nama file
                 </p>
-                <p className="mt-1 break-words text-xs font-bold text-slate-700">
+                <p className="mt-1 break-words text-xs font-bold text-zinc-700">
                   {previewFileName}
                 </p>
               </div>
 
               <Button
-                className="mt-5 w-full rounded-2xl bg-slate-950 text-white hover:bg-black"
+                className="mt-5 w-full rounded-xl bg-black text-white hover:bg-zinc-800"
                 disabled={downloadMutation.isPending}
                 onClick={() => handleDownload(option.format)}
               >
@@ -514,31 +514,31 @@ export function ExportPage() {
         })}
       </div>
 
-      <div className="mt-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-black text-slate-950">Catatan Export</h2>
+      <div className="mt-5 rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-black text-black">Catatan Export</h2>
 
-        <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-600 sm:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="font-black text-slate-950">JSON</p>
+        <div className="mt-3 grid gap-3 text-sm leading-6 text-zinc-600 sm:grid-cols-3">
+          <div className="rounded-2xl bg-yellow-50 p-4">
+            <p className="font-black text-black">JSON</p>
             <p className="mt-1">Cocok untuk backup dan kebutuhan teknis.</p>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="font-black text-slate-950">CSV</p>
+          <div className="rounded-2xl bg-yellow-50 p-4">
+            <p className="font-black text-black">CSV</p>
             <p className="mt-1">
               Cocok untuk analisis sederhana di spreadsheet.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="font-black text-slate-950">XLSX</p>
+          <div className="rounded-2xl bg-yellow-50 p-4">
+            <p className="font-black text-black">XLSX</p>
             <p className="mt-1">
               File Excel membuka data transaksi dalam format spreadsheet.
             </p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-6 text-indigo-800">
+        <div className="mt-4 rounded-2xl border border-black/10 bg-yellow-50 p-4 text-sm leading-6 text-zinc-700">
           <div className="flex items-start gap-3">
             <CalendarDays className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
@@ -548,7 +548,7 @@ export function ExportPage() {
           </div>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
+        <div className="mt-3 rounded-2xl border border-black/10 bg-zinc-50 p-4 text-sm leading-6 text-zinc-700">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <p>

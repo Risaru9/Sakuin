@@ -127,40 +127,40 @@ function formatSpendingPaceStatus(status: SafeToSpendData["spendingPaceStatus"])
 function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
   if (status === "SAFE") {
     return {
-      card: "border-emerald-200 bg-emerald-50",
+      card: "border-black/10 bg-white",
       badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
       icon: "bg-emerald-600 text-white",
-      text: "text-emerald-900",
-      muted: "text-emerald-700"
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   if (status === "WATCH") {
     return {
-      card: "border-amber-200 bg-amber-50",
+      card: "border-black/10 bg-white",
       badge: "bg-amber-100 text-amber-800 ring-amber-200",
-      icon: "bg-amber-500 text-white",
-      text: "text-amber-950",
-      muted: "text-amber-800"
+      icon: "bg-yellow-300 text-black",
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   if (status === "HOLD") {
     return {
-      card: "border-rose-200 bg-rose-50",
+      card: "border-rose-200 bg-white",
       badge: "bg-rose-100 text-rose-700 ring-rose-200",
       icon: "bg-rose-600 text-white",
-      text: "text-rose-950",
-      muted: "text-rose-800"
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   return {
-    card: "border-slate-200 bg-slate-50",
+    card: "border-black/10 bg-white",
     badge: "bg-slate-100 text-slate-700 ring-slate-200",
     icon: "bg-slate-700 text-white",
-    text: "text-slate-950",
-    muted: "text-slate-600"
+    text: "text-black",
+    muted: "text-zinc-600"
   };
 }
 
@@ -183,40 +183,40 @@ function formatFinancialCheckupStatus(status: FinancialCheckupData["status"]) {
 function getFinancialCheckupStatusStyle(status: FinancialCheckupData["status"]) {
   if (status === "GOOD") {
     return {
-      card: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      card: "border-black/10 bg-white",
       badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
       icon: "bg-emerald-600 text-white",
-      text: "text-emerald-950",
-      muted: "text-emerald-700"
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   if (status === "WATCH") {
     return {
-      card: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      card: "border-black/10 bg-white",
       badge: "bg-amber-100 text-amber-800 ring-amber-200",
-      icon: "bg-amber-500 text-white",
-      text: "text-amber-950",
-      muted: "text-amber-800"
+      icon: "bg-yellow-300 text-black",
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   if (status === "RISK") {
     return {
-      card: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      card: "border-rose-200 bg-white",
       badge: "bg-rose-100 text-rose-700 ring-rose-200",
       icon: "bg-rose-600 text-white",
-      text: "text-rose-950",
-      muted: "text-rose-800"
+      text: "text-black",
+      muted: "text-zinc-600"
     };
   }
 
   return {
-    card: "border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white",
+    card: "border-black/10 bg-white",
     badge: "bg-slate-100 text-slate-700 ring-slate-200",
     icon: "bg-slate-700 text-white",
-    text: "text-slate-950",
-    muted: "text-slate-600"
+    text: "text-black",
+    muted: "text-zinc-600"
   };
 }
 
@@ -310,10 +310,10 @@ function getPriorityGoal(goals: Goal[], priorityGoalId: string | null) {
 
 function SummarySkeleton() {
   return (
-    <div className="flex min-h-[11rem] items-center justify-center rounded-[1.5rem] bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/10 sm:min-h-[16rem] sm:rounded-[2rem] sm:p-8">
+    <div className="flex min-h-[11rem] items-center justify-center rounded-3xl border border-black/10 bg-white p-4 text-black shadow-sm sm:min-h-[16rem] sm:p-8">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
-        <p className="text-sm font-semibold text-slate-300">
+        <Loader2 className="h-5 w-5 animate-spin text-black" />
+        <p className="text-sm font-semibold text-zinc-600">
           Memuat ringkasan keuangan...
         </p>
       </div>
@@ -325,13 +325,13 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
   const isIncome = transaction.type === "INCOME";
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 transition hover:border-slate-200 hover:bg-white hover:shadow-sm sm:gap-4 sm:p-4">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white p-3 shadow-sm transition hover:bg-yellow-50 sm:gap-4 sm:p-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div
           className={
             isIncome
-              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"
-              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-700"
+              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
+              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300"
           }
         >
           {isIncome ? (
@@ -342,11 +342,11 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-slate-950">
+          <p className="truncate text-sm font-black text-black">
             {transaction.note || transaction.category.name}
           </p>
-          <p className="mt-0.5 text-xs font-medium text-slate-500">
-            {transaction.category.name} · {formatDate(transaction.date)}
+          <p className="mt-0.5 text-xs font-medium text-zinc-500">
+            {transaction.category.name} - {formatDate(transaction.date)}
           </p>
         </div>
       </div>
@@ -354,8 +354,8 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
       <p
         className={
           isIncome
-            ? "shrink-0 text-right text-xs font-black text-emerald-700 sm:text-sm"
-            : "shrink-0 text-right text-xs font-black text-rose-700 sm:text-sm"
+            ? "shrink-0 text-right text-xs font-black text-black sm:text-sm"
+            : "shrink-0 text-right text-xs font-black text-zinc-700 sm:text-sm"
         }
       >
         {isIncome ? "+" : "-"} {formatCompactRupiah(transaction.amount)}
@@ -377,14 +377,14 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-[1.5rem] bg-slate-50 px-4 text-center text-sm font-medium text-slate-500">
+      <div className="flex h-32 items-center justify-center rounded-2xl bg-yellow-50 px-4 text-center text-sm font-medium text-zinc-600">
         Belum ada data trend bulanan.
       </div>
     );
   }
 
   return (
-    <div className="relative rounded-[1.35rem] border border-slate-100 bg-white p-3.5 shadow-sm sm:rounded-[1.5rem] sm:p-6">
+    <div className="relative rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
       
       {/* Garis Bantu (Grid) Latar Belakang */}
       <div className="absolute left-4 right-4 top-10 bottom-20 z-0 flex flex-col justify-between px-2 sm:left-6 sm:right-6">
@@ -406,7 +406,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
             >
               {/* Tooltip Melayang Bergaya Glassmorphism */}
               <div className="pointer-events-none absolute -top-16 left-1/2 z-50 mb-2 w-max -translate-x-1/2 scale-95 opacity-0 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-100 group-hover:opacity-100">
-                <div className="rounded-xl border border-white/60 bg-white/80 px-3 py-2 text-xs shadow-xl backdrop-blur-md ring-1 ring-slate-900/5">
+                <div className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs shadow-sm">
                   <p className="mb-1 border-b border-slate-100 pb-1 font-bold text-slate-700">
                     {getMonthLabel(item.month)}
                   </p>
@@ -427,7 +427,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pemasukan */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-gradient-to-t from-emerald-400 to-emerald-500 opacity-80 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100 group-hover:shadow-[0_4px_12px_rgba(16,185,129,0.4)]"
+                    className="w-full rounded-t-md bg-yellow-300 opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
                     style={{ height: `${incomeHeight}%` }}
                   />
                 </div>
@@ -435,7 +435,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pengeluaran */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-gradient-to-t from-rose-400 to-rose-500 opacity-80 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100 group-hover:shadow-[0_4px_12px_rgba(244,63,94,0.4)]"
+                    className="w-full rounded-t-md bg-black opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
                     style={{ height: `${expenseHeight}%` }}
                   />
                 </div>
@@ -454,11 +454,11 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
       {/* Legend */}
       <div className="relative z-10 mt-6 flex flex-wrap items-center justify-center gap-5 border-t border-slate-100 pt-5 text-xs font-bold text-slate-500">
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-t from-emerald-400 to-emerald-500 shadow-sm" />
+          <span className="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-sm" />
           Pemasukan
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-t from-rose-400 to-rose-500 shadow-sm" />
+          <span className="h-2.5 w-2.5 rounded-full bg-black shadow-sm" />
           Pengeluaran
         </span>
       </div>
@@ -483,18 +483,18 @@ function DashboardGoalsCard({
   );
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-6">
+    <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-slate-950">
+          <h2 className="text-base font-black text-black">
             Goals Tabungan
           </h2>
-          <p className="mt-1 text-xs font-medium text-slate-500">
+          <p className="mt-1 text-xs font-medium text-zinc-600">
             Ringkasan target tabungan aktif.
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black">
           <PiggyBank className="h-5 w-5" />
         </div>
       </div>
@@ -530,7 +530,7 @@ function DashboardGoalsCard({
           </p>
 
           <Link
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-indigo-700 px-4 text-xs font-black shadow-sm transition hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-700/20"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-black px-4 text-xs font-black shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
             to="/goals"
           >
             <span className="text-white">Buka Goals</span>
@@ -546,7 +546,7 @@ function DashboardGoalsCard({
                 {priorityGoal.name}
               </p>
 
-              <p className="mt-1 text-[11px] font-black text-indigo-700">
+              <p className="mt-1 text-[11px] font-black text-black">
                 {isUserSelectedPriority
                   ? "Prioritas pilihanmu"
                   : "Rekomendasi otomatis"}
@@ -558,7 +558,7 @@ function DashboardGoalsCard({
               </p>
             </div>
 
-            <span className="shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">
+            <span className="shrink-0 rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-black">
               {getGoalProgress(priorityGoal)}%
             </span>
           </div>
@@ -570,7 +570,7 @@ function DashboardGoalsCard({
 
           <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-indigo-700"
+              className="h-full rounded-full bg-yellow-300"
               style={{
                 width: `${getGoalProgress(priorityGoal)}%`
               }}
@@ -578,7 +578,7 @@ function DashboardGoalsCard({
           </div>
 
           <Link
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-indigo-700 px-4 text-xs font-black shadow-sm transition hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-700/20"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-black px-4 text-xs font-black shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
             to="/goals"
           >
             <span className="text-white">Kelola Goals</span>
@@ -598,7 +598,7 @@ function SafeToSpendCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
         <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -611,7 +611,7 @@ function SafeToSpendCard({
 
   if (!safeToSpend) {
     return (
-      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
         <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Aman Dipakai belum tersedia
@@ -643,11 +643,11 @@ function SafeToSpendCard({
   return (
     <div
       className={[
-        "overflow-hidden rounded-[1.35rem] border p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6",
+        "rounded-3xl border p-3.5 shadow-sm sm:p-5",
         style.card
       ].join(" ")}
     >
-      <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className={["text-sm font-black sm:text-base", style.text].join(" ")}>
@@ -664,14 +664,14 @@ function SafeToSpendCard({
             </span>
           </div>
 
-          <p className={["mt-1.5 text-[11px] font-semibold leading-4 sm:mt-2 sm:text-xs sm:leading-5", style.muted].join(" ")}>
+          <p className={["mt-1.5 text-xs font-semibold leading-5", style.muted].join(" ")}>
             {headline}
           </p>
         </div>
 
         <div
           className={[
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl sm:h-10 sm:w-10",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10",
             style.icon
           ].join(" ")}
         >
@@ -685,21 +685,21 @@ function SafeToSpendCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-white/80 sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl bg-yellow-50 p-3 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Sisa aman
           </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 sm:text-2xl">
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-black sm:text-xl">
             {formatCompactRupiah(safeToSpend.availableToSpend)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-white/80 sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Limit harian
           </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 sm:text-2xl">
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-black sm:text-xl">
             {hasDailyLimit
               ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
               : "-"}
@@ -707,46 +707,46 @@ function SafeToSpendCard({
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-white/80">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+      <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Ritme
           </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-black">
             {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-white/80">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Fokus
           </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-black">
             {safeToSpend.topRiskCategoryName ?? "Belum ada"}
           </p>
         </div>
       </div>
 
-      <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80 sm:mt-3 sm:p-4">
-        <p className="text-xs font-black text-slate-950">Aksi utama</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-black/10">
+        <p className="text-[10px] font-black uppercase text-zinc-500">Aksi utama</p>
+        <p className="mt-1.5 text-xs font-semibold leading-5 text-black">
           {safeToSpend.action}
         </p>
       </div>
 
-      <div className="mt-3 hidden rounded-2xl bg-white/75 p-4 ring-1 ring-white/80 sm:block">
-        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/10">
+        <p className="text-[10px] font-black uppercase text-zinc-500">Kenapa status ini?</p>
+        <p className="mt-1.5 text-xs font-medium leading-5 text-zinc-700">
           {safeToSpend.reason}
         </p>
       </div>
 
       {shouldShowWarning ? (
-        <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-white/80 sm:mt-3">
-          <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
+        <div className="mt-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3">
+          <div className="flex items-start gap-2 text-xs leading-5 text-zinc-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-slate-800">Perlu diperhatikan</p>
+              <p className="font-black text-black">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
@@ -754,12 +754,11 @@ function SafeToSpendCard({
       ) : null}
 
       <Link
-        className="group relative mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-xs font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20 sm:mt-4 sm:min-h-11 sm:text-sm"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
         to="/asisten"
       >
-        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
-        <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
-        <span className="relative z-10 text-white">Tanya Asisten</span>
+        <MessageSquare className="h-4 w-4 text-white" />
+        <span className="text-white">Tanya Asisten</span>
       </Link>
     </div>
   );
@@ -774,7 +773,7 @@ function FinancialCheckupCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
         <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -787,7 +786,7 @@ function FinancialCheckupCard({
 
   if (!financialCheckup) {
     return (
-      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
         <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Checkup Keuangan belum tersedia
@@ -812,11 +811,11 @@ function FinancialCheckupCard({
   return (
     <div
       className={[
-        "overflow-hidden rounded-[1.35rem] border p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6",
+        "rounded-3xl border p-3.5 shadow-sm sm:p-5",
         style.card
       ].join(" ")}
     >
-      <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className={["text-sm font-black sm:text-base", style.text].join(" ")}>
@@ -833,14 +832,14 @@ function FinancialCheckupCard({
             </span>
           </div>
 
-          <p className={["mt-1.5 text-[11px] font-semibold leading-4 sm:mt-2 sm:text-xs sm:leading-5", style.muted].join(" ")}>
+          <p className={["mt-1.5 text-xs font-semibold leading-5", style.muted].join(" ")}>
             {financialCheckup.headline}
           </p>
         </div>
 
         <div
           className={[
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl sm:h-10 sm:w-10",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10",
             style.icon
           ].join(" ")}
         >
@@ -854,18 +853,18 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-100 sm:p-4">
+      <div className="mt-4 rounded-2xl bg-yellow-50 p-3 ring-1 ring-black/10">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+            <p className="text-[10px] font-black uppercase text-zinc-500">
               Fokus checkup
             </p>
-            <p className="mt-1 truncate text-sm font-black text-slate-950 sm:text-lg">
+            <p className="mt-1 truncate text-base font-black tracking-tight text-black sm:text-lg">
               {focusLabel}
             </p>
           </div>
 
-          <p className="shrink-0 text-right text-xs font-black text-slate-500">
+          <p className="shrink-0 text-right text-xs font-black text-black">
             {financialCheckup.focusCategoryName
               ? formatCompactRupiah(financialCheckup.focusCategoryAmount)
               : "-"}
@@ -873,41 +872,41 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+      <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Rasio
           </p>
-          <p className="mt-1 text-xs font-black text-slate-950">
+          <p className="mt-1 text-xs font-black text-black">
             {financialCheckup.metrics.expenseToIncomeRatio === null
               ? "-"
               : `${financialCheckup.metrics.expenseToIncomeRatio}%`}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Cashflow
           </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-black">
             {formatCompactRupiah(financialCheckup.metrics.netCashflow)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Sisa aman
           </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-black">
             {formatCompactRupiah(financialCheckup.metrics.availableToSpend)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white/75 px-3 py-2 ring-1 ring-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
             Limit
           </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950">
+          <p className="mt-1 truncate text-xs font-black text-black">
             {financialCheckup.metrics.suggestedDailyLimit === null
               ? "-"
               : formatCompactRupiah(financialCheckup.metrics.suggestedDailyLimit)}
@@ -915,26 +914,26 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100 sm:mt-3 sm:p-4">
-        <p className="text-xs font-black text-slate-950">Aksi utama</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-black/10">
+        <p className="text-[10px] font-black uppercase text-zinc-500">Aksi utama</p>
+        <p className="mt-1.5 text-xs font-semibold leading-5 text-black">
           {financialCheckup.action}
         </p>
       </div>
 
-      <div className="mt-3 hidden rounded-2xl bg-white/75 p-4 ring-1 ring-slate-100 sm:block">
-        <p className="text-xs font-black text-slate-950">Kenapa status ini?</p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/10">
+        <p className="text-[10px] font-black uppercase text-zinc-500">Kenapa status ini?</p>
+        <p className="mt-1.5 text-xs font-medium leading-5 text-zinc-700">
           {financialCheckup.reason}
         </p>
       </div>
 
       {shouldShowWarning ? (
-        <div className="mt-2 rounded-2xl bg-white/75 p-3 ring-1 ring-slate-100 sm:mt-3">
-          <div className="flex items-start gap-2 text-xs leading-5 text-slate-600">
+        <div className="mt-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3">
+          <div className="flex items-start gap-2 text-xs leading-5 text-zinc-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-slate-800">Perlu diperhatikan</p>
+              <p className="font-black text-black">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
@@ -942,12 +941,11 @@ function FinancialCheckupCard({
       ) : null}
 
       <Link
-        className="group relative mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black px-4 text-xs font-semibold text-white transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-4 focus:ring-white/20 sm:mt-4 sm:min-h-11 sm:text-sm"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
         to="/asisten"
       >
-        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
-        <MessageSquare className="relative z-10 h-4 w-4 text-white transition-transform duration-300 ease-out group-hover:scale-110" />
-        <span className="relative z-10 text-white">Bahas dengan Asisten</span>
+        <MessageSquare className="h-4 w-4 text-white" />
+        <span className="text-white">Bahas dengan Asisten</span>
       </Link>
     </div>
   );
@@ -971,18 +969,18 @@ function DailyReviewCard({
   }
 
   return (
-    <section className="mb-4 rounded-[1.5rem] border border-indigo-100 bg-indigo-50 p-3.5 shadow-sm sm:mb-5 sm:rounded-[1.75rem] sm:p-5">
+    <section className="mb-4 rounded-3xl border border-black bg-yellow-300 p-3.5 shadow-[6px_6px_0_#000] sm:mb-5 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
         <div className="flex min-w-0 gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-100">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300">
             <Clock3 className="h-5 w-5" />
           </div>
 
           <div className="min-w-0">
-            <p className="text-sm font-black text-indigo-950">
+            <p className="text-sm font-black text-black">
               Review harian 30 detik
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-indigo-800 sm:text-sm sm:leading-6">
+            <p className="mt-1 text-xs font-semibold leading-5 text-black/75 sm:text-sm sm:leading-6">
               Ada transaksi hari ini yang belum masuk? Catat sekarang supaya
               dashboard tetap akurat.
             </p>
@@ -991,7 +989,7 @@ function DailyReviewCard({
 
         <div className="grid gap-2 sm:flex sm:shrink-0 sm:items-center">
           <Button
-            className="rounded-2xl bg-indigo-700 text-white hover:bg-indigo-800"
+            className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
             onClick={onOpenQuickTransaction}
             size="md"
             type="button"
@@ -1001,7 +999,7 @@ function DailyReviewCard({
           </Button>
 
           <Button
-            className="rounded-2xl bg-white text-indigo-800 hover:bg-indigo-100"
+            className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100 focus-visible:ring-yellow-400"
             onClick={onComplete}
             size="md"
             type="button"
@@ -1129,20 +1127,20 @@ const profileQuery = useQuery({
       <AppShell profileName={displayedName} profileEmail={displayedEmail}>
         <header className="mb-4 flex items-center justify-between gap-3 sm:mb-7 sm:gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-black text-indigo-700">
+            <p className="text-sm font-black text-zinc-500">
               Dashboard Sakuin
             </p>
-            <h1 className="mt-1 truncate text-xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Status Keuangan
+            <h1 className="mt-1 truncate text-xl font-black tracking-tight text-black sm:text-4xl">
+              Ringkasan Hari Ini
             </h1>
-            <p className="mt-1 hidden text-sm font-medium text-slate-500 sm:block">
-              Ringkasan kondisi keuangan akun {displayedName}.
+            <p className="mt-1 hidden text-sm font-medium text-zinc-600 sm:block">
+              Hai {displayedName}, ini gambaran ringan kondisi uangmu.
             </p>
           </div>
 
           <div className="hidden items-center gap-2 sm:flex">
             <Button
-              className="rounded-2xl"
+              className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100"
               onClick={() => setIsQuickTransactionOpen(true)}
               size="md"
               type="button"
@@ -1153,7 +1151,7 @@ const profileQuery = useQuery({
             </Button>
 
             <Button
-              className="rounded-2xl bg-slate-950 text-white hover:bg-black"
+              className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
               onClick={() => setIsAddTransactionOpen(true)}
               size="md"
               type="button"
@@ -1164,7 +1162,7 @@ const profileQuery = useQuery({
           </div>
 
           <Link
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 sm:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white text-black shadow-sm transition hover:bg-yellow-100 sm:hidden"
             to="/profile"
           >
             <Settings className="h-5 w-5" />
@@ -1203,19 +1201,16 @@ const profileQuery = useQuery({
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
-              <div className="relative overflow-hidden rounded-[1.5rem] bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/15 sm:rounded-[2rem] sm:p-8">
-                <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-
-                <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="rounded-3xl border border-black bg-yellow-300 p-4 text-black shadow-[10px_10px_0_#000] sm:p-8">
+                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-300 sm:text-sm">
+                    <p className="text-xs font-semibold text-black/70 sm:text-sm">
                       Total Saldo Aktif
                     </p>
-                    <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
+                    <p className="mt-2 text-3xl font-black tracking-tight text-black sm:text-5xl">
                       {formatRupiah(summary?.balance)}
                     </p>
-                    <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300 sm:text-sm sm:leading-6">
+                    <p className="mt-2 max-w-xl text-xs leading-5 text-black/75 sm:text-sm sm:leading-6">
                       {summary?.isBelowSafeLimit
                         ? "Saldo kamu sedang di bawah batas aman."
                         : "Saldo kamu masih berada di atas batas aman."}
@@ -1225,8 +1220,8 @@ const profileQuery = useQuery({
                   <div
                     className={
                       summary?.isBelowSafeLimit
-                        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-rose-400/40 bg-rose-400/10 px-3 py-1.5 text-xs font-black text-rose-200"
-                        : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200"
+                        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-black text-black"
+                        : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-black text-black"
                     }
                   >
                     {summary?.isBelowSafeLimit ? (
@@ -1238,38 +1233,38 @@ const profileQuery = useQuery({
                   </div>
                 </div>
 
-                <div className="relative z-10 mt-5 grid grid-cols-2 gap-2.5 border-t border-white/10 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
-                  <div className="rounded-2xl bg-white/10 p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-slate-300">
+                <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-black/15 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
+                  <div className="rounded-2xl border border-black/10 bg-white p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-zinc-500">
                       Pemasukan
                     </p>
-                    <p className="mt-1.5 text-base font-black text-emerald-300 sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
                       {formatRupiah(summary?.totalIncome)}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl bg-white/10 p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-slate-300">
+                  <div className="rounded-2xl border border-black/10 bg-white p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-zinc-500">
                       Pengeluaran
                     </p>
-                    <p className="mt-1.5 text-base font-black text-rose-300 sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
                       {formatRupiah(summary?.totalExpense)}
                     </p>
                   </div>
 
-                  <div className="col-span-2 rounded-2xl bg-white/10 p-3 sm:col-span-1 sm:p-4">
-                    <p className="text-xs font-semibold text-slate-300">
+                  <div className="col-span-2 rounded-2xl border border-black/10 bg-white p-3 sm:col-span-1 sm:p-4">
+                    <p className="text-xs font-semibold text-zinc-500">
                       Batas Aman
                     </p>
-                    <p className="mt-1.5 text-base font-black text-white sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
                       {formatRupiah(summary?.safeBalanceLimit)}
                     </p>
                   </div>
                 </div>
 
-                <div className="relative z-10 mt-4 grid gap-2 sm:hidden">
+                <div className="mt-4 grid gap-2 sm:hidden">
                   <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-black text-sm font-black text-white shadow-sm transition hover:bg-zinc-800"
                     onClick={() => setIsQuickTransactionOpen(true)}
                     type="button"
                   >
@@ -1278,7 +1273,7 @@ const profileQuery = useQuery({
                   </button>
 
                   <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-black text-white ring-1 ring-white/20 transition hover:bg-white/15"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black ring-1 ring-black/15 transition hover:bg-yellow-100"
                     onClick={() => setIsAddTransactionOpen(true)}
                     type="button"
                   >
@@ -1289,12 +1284,12 @@ const profileQuery = useQuery({
               </div>
             )}
 
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+            <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
               <div className="mb-4">
-              <h2 className="text-base font-black text-slate-950 sm:text-lg">
+              <h2 className="text-base font-black text-black sm:text-lg">
                 Statistik 6 Bulan
               </h2>
-              <p className="mt-1 text-xs font-medium text-slate-500 sm:text-sm">
+              <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
                 Pergerakan arus kas bulanan.
               </p>
               </div>
@@ -1302,12 +1297,12 @@ const profileQuery = useQuery({
               <TrendChart items={summary?.monthlyTrend ?? []} />
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:rounded-[2rem] sm:p-6">
+            <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
               <div className="mb-4">
-                <h2 className="text-base font-black text-slate-950 sm:text-lg">
+                <h2 className="text-base font-black text-black sm:text-lg">
                   Transaksi Terbaru
                 </h2>
-                <p className="mt-1 text-xs font-medium text-slate-500 sm:text-sm">
+                <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
                   Aktivitas terakhir dari akunmu.
                 </p>
               </div>
@@ -1321,7 +1316,7 @@ const profileQuery = useQuery({
                     />
                   ))
                 ) : (
-                  <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
+                  <div className="rounded-2xl bg-yellow-50 p-6 text-center text-sm font-semibold text-zinc-600">
                     Belum ada transaksi terbaru.
                   </div>
                 )}
@@ -1331,43 +1326,43 @@ const profileQuery = useQuery({
 
           <aside className="space-y-4 sm:space-y-5">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
-              <div className="flex items-center gap-3 rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:gap-4 sm:rounded-[1.5rem] sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-11 sm:w-11">
                   <ArrowUpCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500">
+                  <p className="text-xs font-bold text-zinc-500">
                     Income Bulan Ini
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-slate-950 sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
                     {formatRupiah(summary?.incomeThisMonth)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:gap-4 sm:rounded-[1.5rem] sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300 sm:h-11 sm:w-11">
                   <ArrowDownCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500">
+                  <p className="text-xs font-bold text-zinc-500">
                     Expense Bulan Ini
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-slate-950 sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
                     {formatRupiah(summary?.expenseThisMonth)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-[1.35rem] border border-slate-200 bg-white p-3.5 shadow-sm sm:gap-4 sm:rounded-[1.5rem] sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700 sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-11 sm:w-11">
                   <Activity className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500">
+                  <p className="text-xs font-bold text-zinc-500">
                     Total Transaksi
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-slate-950 sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
                     {summary?.transactionCount ?? 0}{" "}
                     <span className="text-sm font-semibold text-slate-500">
                       kali
