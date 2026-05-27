@@ -12,7 +12,9 @@ import {
   Ban,
   Bot,
   CheckCircle2,
+  LifeBuoy,
   Loader2,
+  RefreshCcw,
   Save,
   Send,
   Sparkles,
@@ -38,17 +40,59 @@ import type {
 const CHAT_HISTORY_STORAGE_PREFIX = "sakuin_ai_chat_history_v1";
 const SAVED_DRAFT_STORAGE_PREFIX = "sakuin_ai_saved_draft_ids_v1";
 const CANCELLED_DRAFT_STORAGE_PREFIX = "sakuin_ai_cancelled_draft_ids_v1";
+const SUPPORT_EMAIL = "sakuinofficial@gmail.com";
+const AI_SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+  "Bantuan Asisten Sakuin"
+)}&body=${encodeURIComponent(
+  "Halo Sakuin,\n\nSaya mengalami kendala saat menggunakan Asisten Sakuin.\n\nKendala yang terjadi:\n\nPerangkat/browser yang digunakan:\n\nTerima kasih."
+)}`;
 
-const SUGGESTED_PROMPTS = [
-  "Buat ringkasan kondisi keuangan saya",
-  "Pengeluaran bulan ini gimana?",
-  "Saya boros di kategori apa?",
-  "Apakah saya masih aman jajan hari ini?",
-  "Bagaimana cara menghemat minggu ini?",
-  "Target tabungan saya masih realistis?",
-  "Apa tindakan keuangan terbaik hari ini?",
-  "Bantu saya memahami pola pengeluaran saya"
-];
+const SUGGESTED_PROMPT_OPTIONS = [
+  {
+    label: "Ringkasan",
+    prompt: "Buat ringkasan kondisi keuangan saya",
+    helper: "Lihat kondisi uangmu"
+  },
+  {
+    label: "Pengeluaran",
+    prompt: "Pengeluaran bulan ini gimana?",
+    helper: "Baca arus keluar bulan ini"
+  },
+  {
+    label: "Boros",
+    prompt: "Saya boros di kategori apa?",
+    helper: "Temukan kategori dominan"
+  },
+  {
+    label: "Aman jajan?",
+    prompt: "Apakah saya masih aman jajan hari ini?",
+    helper: "Cek safe-to-spend"
+  },
+  {
+    label: "Hemat minggu ini",
+    prompt: "Bagaimana cara menghemat minggu ini?",
+    helper: "Minta langkah praktis"
+  },
+  {
+    label: "Goal",
+    prompt: "Target tabungan saya masih realistis?",
+    helper: "Evaluasi target tabungan"
+  },
+  {
+    label: "Aksi hari ini",
+    prompt: "Apa tindakan keuangan terbaik hari ini?",
+    helper: "Pilih langkah kecil"
+  },
+  {
+    label: "Pola",
+    prompt: "Bantu saya memahami pola pengeluaran saya",
+    helper: "Lihat kebiasaan transaksi"
+  }
+] as const;
+
+const SUGGESTED_PROMPTS = SUGGESTED_PROMPT_OPTIONS.map(
+  (option) => option.prompt
+);
 
 const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;
 const MAX_STORED_MESSAGES = 80;
@@ -66,6 +110,14 @@ type SavableTransactionDraftEntry = TransactionDraftEntry & {
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function shouldReduceMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) {
+    return false;
+  }
+
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function getChatHistoryStorageKey(userId: string | undefined) {
@@ -490,7 +542,7 @@ function TypewriterContent({
   );
 
   useEffect(() => {
-    if (!shouldAnimate) {
+    if (!shouldAnimate || shouldReduceMotion()) {
       setVisibleTokenCount(tokens.length);
       return;
     }
@@ -787,16 +839,16 @@ function ChatBubble({
     savableDraftEntries.map((entry) => entry.draft)
   );
 
-    return (
-      <div
-        className={isUser ? "flex justify-end" : "flex justify-start"}
-        ref={messageRef}
-      >
+  return (
+    <div
+      className={isUser ? "flex justify-end" : "flex justify-start"}
+      ref={messageRef}
+    >
       <div
         className={
           isUser
-            ? "flex max-w-[92%] flex-row-reverse items-start gap-2 sm:max-w-[78%] sm:gap-3 lg:max-w-[70%]"
-            : "flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]"
+            ? "flex max-w-[84%] flex-row-reverse items-start gap-2 sm:max-w-[76%] sm:gap-3 lg:max-w-[68%]"
+            : "flex max-w-[88%] items-start gap-2 sm:max-w-[80%] sm:gap-3 lg:max-w-[72%]"
         }
       >
         <div
@@ -826,7 +878,7 @@ function ChatBubble({
             </div>
           ) : null}
 
-          <p className="whitespace-pre-line text-[13px] font-semibold leading-6 sm:text-sm">
+          <p className="whitespace-pre-line break-words text-[13px] font-semibold leading-6 sm:text-sm">
             <TypewriterContent
               content={message.content}
               shouldAnimate={shouldAnimateContent}
@@ -917,16 +969,16 @@ function ChatBubble({
           ) : null}
 
           {!isUser && message.cards && message.cards.length > 0 ? (
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {message.cards.map((card) => (
                 <div
                   className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5"
                   key={`${message.id}-${card.label}`}
                 >
-                  <p className="truncate text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+                  <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
                     {card.label}
                   </p>
-                  <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+                  <p className="mt-1 break-words text-xs font-black text-slate-950 sm:text-sm">
                     {card.value}
                   </p>
                 </div>
@@ -938,6 +990,7 @@ function ChatBubble({
             <div className="mt-3 flex flex-wrap gap-2">
               {visibleSuggestions.map((suggestion) => (
                 <button
+                  aria-label={`Kirim prompt: ${suggestion}`}
                   className="rounded-full bg-yellow-50 px-3 py-1.5 text-left text-[10px] font-black leading-4 text-black ring-1 ring-black/10 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={disabled}
                   key={`${message.id}-${suggestion}`}
@@ -983,11 +1036,12 @@ function ClearHistoryDialog({
           </div>
 
           <button
+            aria-label="Tutup dialog hapus riwayat"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
             onClick={onClose}
             type="button"
           >
-            <X className="h-4 w-4" />
+            <X aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
 
@@ -1017,6 +1071,8 @@ export function AsistenPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const userMessageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AiChatMessage[]>([
@@ -1033,6 +1089,7 @@ export function AsistenPage() {
     Set<string>
   >(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [savedDraftIdsLoaded, setSavedDraftIdsLoaded] = useState(false);
   const [cancelledDraftIdsLoaded, setCancelledDraftIdsLoaded] = useState(false);
@@ -1073,6 +1130,36 @@ export function AsistenPage() {
       });
     });
   }
+
+  function scrollToChatEnd(behavior: ScrollBehavior = "smooth") {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        chatEndRef.current?.scrollIntoView({
+          behavior: shouldReduceMotion() ? "auto" : behavior,
+          block: "end"
+        });
+      });
+    });
+  }
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
+  }, [input]);
+
+  useEffect(() => {
+    if (!historyLoaded) {
+      return;
+    }
+
+    scrollToChatEnd("smooth");
+  }, [historyLoaded, isSubmitting, messages.length]);
 
   useEffect(() => {
     const storageKey = getChatHistoryStorageKey(user?.id);
@@ -1377,6 +1464,7 @@ export function AsistenPage() {
     scrollToUserMessage(userMessage.id);
     setInput("");
     setError(null);
+    setLastFailedPrompt(null);
     setIsSubmitting(true);
 
     try {
@@ -1393,6 +1481,7 @@ export function AsistenPage() {
       const messageText = getErrorMessage(caughtError);
 
       setError(messageText);
+      setLastFailedPrompt(normalizedMessage);
 
       setMessages((currentMessages) => [
         ...currentMessages,
@@ -1707,6 +1796,14 @@ export function AsistenPage() {
     void submitMessage(prompt);
   }
 
+  function handleRetryLastFailedPrompt() {
+    if (!lastFailedPrompt || isSubmitting) {
+      return;
+    }
+
+    void submitMessage(lastFailedPrompt);
+  }
+
   function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) {
       return;
@@ -1747,6 +1844,7 @@ export function AsistenPage() {
         <header className="shrink-0 border-b border-black/10 bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5 sm:py-4 lg:px-6 lg:pt-4">
           <div className="flex items-start gap-3">
             <Link
+              aria-label="Kembali ke dashboard"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
               to="/dashboard"
             >
@@ -1776,6 +1874,7 @@ export function AsistenPage() {
             </div>
 
             <button
+              aria-label="Hapus riwayat chat"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
               onClick={() => setIsClearHistoryDialogOpen(true)}
               title="Hapus riwayat chat"
@@ -1786,7 +1885,13 @@ export function AsistenPage() {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f5ef] px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
+        <div
+          aria-label="Percakapan Asisten Sakuin"
+          aria-live="polite"
+          aria-relevant="additions text"
+          className="min-h-0 flex-1 overflow-y-auto bg-[#f7f5ef] px-3 py-3 sm:px-5 sm:py-5 lg:px-6"
+          role="log"
+        >
           <div className="space-y-4">
             {messages.map((message) => (
               <ChatBubble
@@ -1795,7 +1900,9 @@ export function AsistenPage() {
                 key={message.id}
                 message={message}
                 messageRef={
-                message.role === "user" ? setUserMessageRef(message.id) : undefined
+                  message.role === "user"
+                    ? setUserMessageRef(message.id)
+                    : undefined
                 }
                 onCancelDraft={cancelDraftMessage}
                 onSaveAllDrafts={handleSaveAllDrafts}
@@ -1826,40 +1933,91 @@ export function AsistenPage() {
                 </div>
               </div>
             ) : null}
+
+            <div ref={chatEndRef} aria-hidden="true" />
           </div>
         </div>
 
         <footer className="shrink-0 border-t border-slate-100 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 sm:px-5 sm:py-3 lg:pb-3">
           {error ? (
-            <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold leading-5 text-rose-700 sm:text-sm">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div
+              className="mb-3 grid gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold leading-5 text-rose-700 sm:text-sm"
+              role="alert"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="min-w-0">
+                  <p>{error}</p>
+                  <p className="mt-1 text-[11px] font-bold leading-5 text-rose-600/80 sm:text-xs">
+                    Coba ulangi pesan terakhir, atau hubungi support kalau
+                    kendala terus muncul.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {lastFailedPrompt ? (
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isSubmitting}
+                    onClick={handleRetryLastFailedPrompt}
+                    type="button"
+                  >
+                    <RefreshCcw aria-hidden="true" className="h-3.5 w-3.5" />
+                    Coba lagi
+                  </button>
+                ) : null}
+
+                <a
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-black text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-100"
+                  href={AI_SUPPORT_MAILTO}
+                >
+                  <LifeBuoy aria-hidden="true" className="h-3.5 w-3.5" />
+                  Hubungi support
+                </a>
+              </div>
             </div>
           ) : null}
 
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-            {SUGGESTED_PROMPTS.map((prompt) => (
+          <div
+            aria-label="Prompt rekomendasi"
+            className="mb-3 flex gap-2 overflow-x-auto pb-1"
+          >
+            {SUGGESTED_PROMPT_OPTIONS.map((option) => (
               <button
-                className="shrink-0 rounded-full border border-black/10 bg-white px-3 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-black/20 hover:bg-yellow-50 hover:text-black disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+                aria-label={`Kirim prompt: ${option.prompt}`}
+                className="shrink-0 rounded-2xl border border-black/10 bg-white px-3 py-2 text-left shadow-sm transition hover:border-black/20 hover:bg-yellow-50 hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSubmitting}
-                key={prompt}
-                onClick={() => handlePromptClick(prompt)}
+                key={option.prompt}
+                onClick={() => handlePromptClick(option.prompt)}
                 type="button"
               >
-                {prompt}
+                <span className="block text-[11px] font-black text-slate-800 sm:text-xs">
+                  {option.label}
+                </span>
+                <span className="block max-w-36 truncate text-[10px] font-semibold text-slate-500">
+                  {option.helper}
+                </span>
               </button>
             ))}
           </div>
 
-          <form className="flex items-end gap-2 sm:gap-3" onSubmit={handleSubmit}>
+          <form
+            aria-label="Kirim pesan ke Asisten Sakuin"
+            className="flex items-end gap-2 sm:gap-3"
+            onSubmit={handleSubmit}
+          >
             <div className="min-w-0 flex-1">
               <textarea
+                aria-label="Tulis pertanyaan atau transaksi untuk Asisten Sakuin"
                 className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/30 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={isSubmitting}
+                enterKeyHint="send"
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
                 placeholder="Tanya keuangan atau catat transaksi..."
+                ref={textareaRef}
                 rows={1}
                 value={input}
               />
@@ -1869,6 +2027,7 @@ export function AsistenPage() {
             </div>
 
             <button
+              aria-label="Kirim pesan"
               className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting || input.trim().length === 0}
               type="submit"
