@@ -6,20 +6,20 @@
     sans-serif;
   color-scheme: light;
 
-  --sakuin-bg: #fafafa;
+  --sakuin-bg: #f6faff;
   --sakuin-surface: #ffffff;
-  --sakuin-surface-soft: #f8fafc;
-  --sakuin-text: #1f2937;
-  --sakuin-muted: #6b7280;
-  --sakuin-border: #e2e8f0;
-  --sakuin-ink: #1f2937;
-  --sakuin-primary: #0a8e8c;
-  --sakuin-primary-soft: #e6f7f6;
-  --sakuin-secondary: #146c94;
-  --sakuin-secondary-soft: #e8f4fb;
-  --sakuin-focus: #0a8e8c;
-  --sakuin-ai: #5e4ae3;
-  --sakuin-ai-soft: #eef2ff;
+  --sakuin-surface-soft: #eff6ff;
+  --sakuin-text: #0f172a;
+  --sakuin-muted: #64748b;
+  --sakuin-border: #dbe7fb;
+  --sakuin-ink: #0b1220;
+  --sakuin-primary: #2563eb;
+  --sakuin-primary-soft: #dbeafe;
+  --sakuin-secondary: #1d4ed8;
+  --sakuin-secondary-soft: #eff6ff;
+  --sakuin-focus: #3b82f6;
+  --sakuin-ai: #1e40af;
+  --sakuin-ai-soft: #e0ecff;
   --sakuin-green: #2e7d32;
   --sakuin-green-soft: #e8f5e9;
   --sakuin-red: #d32f2f;
@@ -28,7 +28,7 @@
   --sakuin-amber-soft: #fef3c7;
   --sakuin-radius-card: 1.5rem;
   --sakuin-radius-control: 1.25rem;
-  --sakuin-shadow-card: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --sakuin-shadow-card: 0 18px 50px rgba(37, 99, 235, 0.09);
   --sakuin-shadow-modal: 0 30px 90px rgba(15, 23, 42, 0.28);
   --sakuin-mobile-nav-height: calc(5.9rem + env(safe-area-inset-bottom));
   --sakuin-mobile-content-bottom: calc(7.25rem + env(safe-area-inset-bottom));
@@ -74,7 +74,7 @@ a {
 }
 
 ::selection {
-  background: rgba(10, 142, 140, 0.22);
+  background: rgba(37, 99, 235, 0.2);
 }
 
 @keyframes sakuinFloat {

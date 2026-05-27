@@ -97,8 +97,8 @@ function MobileNavigationLink({
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-black px-1.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
-          : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-zinc-500 transition active:bg-yellow-50 active:text-black motion-reduce:transition-none"
+          ? "relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-1.5 py-2 text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)]"
+          : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-slate-500 transition hover:bg-[var(--sakuin-primary-soft)] active:bg-[var(--sakuin-primary-soft)] active:text-[var(--sakuin-primary)] motion-reduce:transition-none"
       }
       to={item.to}
     >
@@ -106,8 +106,8 @@ function MobileNavigationLink({
         aria-hidden="true"
         className={
           active
-            ? "relative h-5 w-5 text-yellow-300"
-            : "h-5 w-5 text-zinc-500"
+            ? "relative h-5 w-5 text-white"
+            : "h-5 w-5 text-slate-500"
         }
       />
 
@@ -115,7 +115,7 @@ function MobileNavigationLink({
         className={
           active
             ? "relative text-[10px] font-black text-white"
-            : "text-[10px] font-black text-zinc-500"
+            : "text-[10px] font-black text-slate-500"
         }
       >
         {item.label}
@@ -165,7 +165,7 @@ export function AppShell({
                   aria-current={active ? "page" : undefined}
                   className={
                     active
-                      ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(10,142,140,0.18)]"
+                      ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
                       : "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-text)]"
                   }
                   key={item.to}
@@ -210,7 +210,7 @@ export function AppShell({
       {shouldShowMobileNavigation ? (
         <nav
           aria-label="Navigasi utama mobile"
-          className="fixed inset-x-0 bottom-0 z-50 min-h-[var(--sakuin-mobile-nav-height)] border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 min-h-[var(--sakuin-mobile-nav-height)] border-t border-[var(--sakuin-border)] bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-16px_40px_rgba(37,99,235,0.1)] backdrop-blur lg:hidden"
         >
           <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.75rem_1fr_1fr] items-end gap-1">
             {leftMobileNavigationItems.map((item) => (

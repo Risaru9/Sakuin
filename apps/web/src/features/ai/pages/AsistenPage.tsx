@@ -2028,7 +2028,7 @@ export function AsistenPage() {
 
             <button
               aria-label="Kirim pesan"
-              className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[#4f3bcf] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting || input.trim().length === 0}
               type="submit"
             >

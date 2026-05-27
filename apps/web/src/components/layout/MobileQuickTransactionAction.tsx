@@ -60,7 +60,7 @@ export function FloatingAssistantButton() {
   return (
     <Link
       aria-label="Buka Asisten Sakuin"
-      className="fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black bg-yellow-300 text-black shadow-[4px_4px_0_#000] transition duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#000] focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0.5 active:shadow-[2px_2px_0_#000] motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
+      className="fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-ai)] text-white shadow-[0_18px_36px_rgba(30,64,175,0.28)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
       title="Buka Asisten Sakuin"
       to="/asisten"
     >
@@ -104,20 +104,20 @@ export function MobileMainActionMenu() {
         <>
           <button
             aria-label="Tutup menu aksi transaksi"
-            className="fixed inset-0 z-[55] cursor-default bg-black/10 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none"
+            className="fixed inset-x-0 top-0 bottom-[var(--sakuin-mobile-nav-height)] z-[45] cursor-default bg-slate-950/15 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none"
             onClick={() => setIsMenuOpen(false)}
             type="button"
           />
 
           <div
             aria-label="Menu aksi transaksi"
-            className="pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.65rem)] left-1/2 z-[70] h-32 w-56 -translate-x-1/2 transition duration-200 motion-reduce:transition-none"
+            className="pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.45rem)] left-1/2 z-[70] h-[6.25rem] w-44 -translate-x-1/2 transition duration-200 motion-reduce:transition-none"
             id={dialogId}
             role="dialog"
           >
             <button
               aria-label="Catat Biasa"
-              className="pointer-events-auto absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-black/10 bg-yellow-300 text-black shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              className="pointer-events-auto absolute left-1/2 top-0 inline-flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
               onClick={() => openModal("manual")}
               title="Catat Biasa"
               type="button"
@@ -127,7 +127,7 @@ export function MobileMainActionMenu() {
 
             <button
               aria-label="Catat Cepat"
-              className="pointer-events-auto absolute bottom-2 left-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-black text-yellow-300 shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              className="pointer-events-auto absolute bottom-2 left-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_16px_34px_rgba(29,78,216,0.24)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
               onClick={() => openModal("quick")}
               title="Catat Cepat"
               type="button"
@@ -137,7 +137,7 @@ export function MobileMainActionMenu() {
 
             <button
               aria-label="Export data"
-              className="pointer-events-auto absolute bottom-2 right-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white text-black shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              className="pointer-events-auto absolute bottom-2 right-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_16px_34px_rgba(37,99,235,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
               onClick={openExport}
               title="Export"
               type="button"
@@ -156,17 +156,17 @@ export function MobileMainActionMenu() {
           isMenuOpen ? "Tutup menu aksi transaksi" : "Buka menu aksi transaksi"
         }
         className={[
-          "relative -mt-8 mx-auto flex h-[4.7rem] w-[4.7rem] items-center justify-center rounded-full border border-black bg-black text-yellow-300 shadow-[0_16px_32px_rgba(0,0,0,0.24)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:translate-y-0.5 motion-reduce:transition-none",
-          isMenuOpen ? "shadow-[0_10px_24px_rgba(0,0,0,0.22)]" : ""
+          "relative -mt-7 mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_36px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-reduce:transition-none",
+          isMenuOpen ? "bg-[var(--sakuin-secondary)] shadow-[0_12px_28px_rgba(29,78,216,0.24)]" : ""
         ].join(" ")}
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >
-        <span className="absolute inset-2 rounded-full bg-yellow-300" />
+        <span className="absolute inset-2 rounded-full bg-white/12" />
         <Plus
           aria-hidden="true"
           className={[
-            "relative h-7 w-7 text-black transition-transform duration-200 motion-reduce:transition-none",
+            "relative h-7 w-7 text-white transition-transform duration-200 motion-reduce:transition-none",
             isMenuOpen ? "rotate-45" : "rotate-0"
           ].join(" ")}
         />
@@ -234,28 +234,28 @@ export function DesktopMainActionMenu() {
         <>
           <button
             aria-label="Tutup menu aksi transaksi"
-            className="fixed inset-0 z-[55] cursor-default bg-black/10 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none"
+            className="fixed inset-0 z-[55] cursor-default bg-slate-950/15 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none"
             onClick={() => setIsMenuOpen(false)}
             type="button"
           />
 
           <div
             aria-label="Menu aksi transaksi"
-            className="fixed bottom-24 right-6 z-[70] w-full max-w-sm rounded-[1.75rem] border border-black/10 bg-white p-3 shadow-[0_24px_70px_rgba(0,0,0,0.18)] transition duration-200 motion-reduce:transition-none"
+            className="fixed bottom-24 right-6 z-[70] w-full max-w-sm rounded-[1.75rem] border border-[var(--sakuin-border)] bg-white p-3 shadow-[0_24px_70px_rgba(37,99,235,0.16)] transition duration-200 motion-reduce:transition-none"
             id={dialogId}
             role="dialog"
           >
             <div className="mb-2 flex items-center justify-between gap-3 px-1">
               <div>
-                <p className="text-sm font-black text-black">Aksi cepat</p>
-                <p className="text-xs font-semibold text-zinc-500">
+                <p className="text-sm font-black text-[var(--sakuin-text)]">Aksi cepat</p>
+                <p className="text-xs font-semibold text-[var(--sakuin-muted)]">
                   Catat transaksi atau buka export.
                 </p>
               </div>
 
               <button
                 aria-label="Tutup menu aksi transaksi"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] transition hover:bg-[var(--sakuin-secondary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                 onClick={() => setIsMenuOpen(false)}
                 type="button"
               >
@@ -265,11 +265,11 @@ export function DesktopMainActionMenu() {
 
             <div className="grid gap-2">
               <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-black px-3.5 py-3 text-left text-white shadow-sm transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
+                className="flex min-h-16 items-center gap-3 rounded-2xl border border-[var(--sakuin-primary)]/10 bg-[var(--sakuin-primary)] px-3.5 py-3 text-left text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0 motion-reduce:transition-none"
                 onClick={() => openModal("quick")}
                 type="button"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                   <MessageSquare aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <span className="min-w-0">
@@ -281,32 +281,32 @@ export function DesktopMainActionMenu() {
               </button>
 
               <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-yellow-50 px-3.5 py-3 text-left text-black shadow-sm transition hover:-translate-y-0.5 hover:bg-yellow-100 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
+                className="flex min-h-16 items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left text-[var(--sakuin-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0 motion-reduce:transition-none"
                 onClick={() => openModal("manual")}
                 type="button"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black ring-1 ring-black/10">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-border)]">
                   <WalletCards aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-black">Catat Biasa</span>
-                  <span className="block text-xs font-semibold text-zinc-600">
+                  <span className="block text-xs font-semibold text-[var(--sakuin-muted)]">
                     Isi nominal, kategori, tanggal, dan catatan sendiri.
                   </span>
                 </span>
               </button>
 
               <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-white px-3.5 py-3 text-left text-black shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
+                className="flex min-h-16 items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3.5 py-3 text-left text-[var(--sakuin-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0 motion-reduce:transition-none"
                 onClick={openExport}
                 type="button"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-yellow-300">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
                   <Download aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-black">Export</span>
-                  <span className="block text-xs font-semibold text-zinc-600">
+                  <span className="block text-xs font-semibold text-[var(--sakuin-muted)]">
                     Unduh data saat perlu laporan.
                   </span>
                 </span>
@@ -323,7 +323,7 @@ export function DesktopMainActionMenu() {
         aria-label={
           isMenuOpen ? "Tutup menu aksi transaksi" : "Buka menu aksi transaksi"
         }
-        className="fixed bottom-24 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black bg-black text-yellow-300 shadow-[4px_4px_0_#fde047] transition duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#fde047] focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0.5 active:shadow-[2px_2px_0_#fde047] motion-reduce:transition-none"
+        className="fixed bottom-24 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_36px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-reduce:transition-none"
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >

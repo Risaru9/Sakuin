@@ -238,7 +238,7 @@ export function RegisterPage() {
             </Link>
           </div>
 
-          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-8 text-white shadow-[0_22px_55px_rgba(10,142,140,0.16)]">
+          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-8 text-white shadow-[0_22px_55px_rgba(37,99,235,0.16)]">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-3.5 py-1.5 text-xs font-bold text-[var(--sakuin-text)]">
               <Sparkles className="h-4 w-4" />
               Finance in your pocket

@@ -309,7 +309,7 @@ function HomePage() {
           </div>
 
           <div className="mx-auto w-full max-w-md lg:ml-auto lg:max-w-lg">
-            <div className="rounded-3xl border border-[var(--sakuin-secondary)] bg-white p-4 shadow-[0_24px_60px_rgba(10,142,140,0.16)] sm:p-5">
+            <div className="rounded-3xl border border-[var(--sakuin-secondary)] bg-white p-4 shadow-[0_24px_60px_rgba(37,99,235,0.16)] sm:p-5">
               <div className="rounded-2xl bg-[var(--sakuin-secondary)] p-5 text-white sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -466,7 +466,7 @@ function HomePage() {
         </section>
 
         <section className="py-12 sm:py-16">
-          <div className="grid grid-cols-1 gap-6 rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+          <div className="grid grid-cols-1 gap-6 rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <p className="text-sm font-bold uppercase text-white/80">
                 Keuntungan untuk user
@@ -685,7 +685,7 @@ function InstallGuidePage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-5 shadow-[0_22px_55px_rgba(10,142,140,0.16)]">
+            <div className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-5 shadow-[0_22px_55px_rgba(37,99,235,0.16)]">
               <div className="rounded-2xl bg-white p-5 shadow-sm">
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
@@ -809,7 +809,7 @@ function PrivacyPolicyPage() {
         </header>
 
         <section className="py-10 sm:py-14">
-          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-8">
+          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-8">
             <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
               Privacy Policy
             </p>
@@ -972,7 +972,7 @@ function AccountDeletionPage() {
 
         <section className="py-10 sm:py-14">
           <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-8">
+            <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-8">
               <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
                 Account Deletion
               </p>

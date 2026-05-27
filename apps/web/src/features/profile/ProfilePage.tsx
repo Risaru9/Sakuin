@@ -572,7 +572,7 @@ export function ProfilePage() {
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
       <div className="mx-auto w-full max-w-7xl space-y-5 pb-6">
-        <section className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-4 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-6">
+        <section className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-4 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">

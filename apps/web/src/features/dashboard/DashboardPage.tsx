@@ -1423,7 +1423,7 @@ const profileQuery = useQuery({
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
-              <div className="rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-green)] to-[#66bb6a] p-4 text-white shadow-[0_22px_55px_rgba(46,125,50,0.18)] sm:p-8">
+              <div className="rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-primary)] to-[var(--sakuin-secondary)] p-4 text-white shadow-[0_22px_55px_rgba(37,99,235,0.18)] sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white/85 sm:text-sm">
