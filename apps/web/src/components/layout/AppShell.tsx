@@ -69,7 +69,7 @@ export function AppShell({
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
   return (
-    <main className="min-h-screen bg-[#f7f5ef] pb-24 text-black lg:pb-0">
+    <main className="min-h-screen bg-[#f7f5ef] pb-[calc(6.5rem+env(safe-area-inset-bottom))] text-black lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-black/10 bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(0,0,0,0.03)] lg:flex lg:flex-col">
           <Link
@@ -133,7 +133,7 @@ export function AppShell({
 
       <FloatingAiButton />
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 px-2 py-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -144,7 +144,7 @@ export function AppShell({
                 className={
                   active
                     ? "relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-black px-1.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
-                    : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-zinc-500 transition hover:bg-yellow-50 hover:text-black"
+                    : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-zinc-500 transition active:bg-yellow-50 active:text-black"
                 }
                 key={item.to}
                 to={item.to}
@@ -160,8 +160,8 @@ export function AppShell({
                 <span
                   className={
                     active
-                      ? "relative text-[9px] font-black text-white"
-                      : "text-[9px] font-black text-zinc-500"
+                      ? "relative text-[10px] font-black text-white"
+                      : "text-[10px] font-black text-zinc-500"
                   }
                 >
                   {item.label}

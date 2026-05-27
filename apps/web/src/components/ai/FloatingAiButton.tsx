@@ -11,7 +11,7 @@ export function FloatingAiButton() {
   return (
     <Link
       aria-label="Buka Asisten Sakuin"
-      className="group fixed bottom-24 right-4 z-30 inline-flex min-h-14 items-center gap-2 overflow-hidden rounded-full border border-black bg-yellow-300 px-3.5 text-sm font-black text-black shadow-[6px_6px_0_#000] ring-1 ring-yellow-100 transition duration-300 animate-[sakuinFloat_3.6s_ease-in-out_infinite] hover:-translate-y-1 hover:shadow-[9px_9px_0_#000] focus:outline-none focus:ring-4 focus:ring-yellow-300/40 lg:bottom-6 lg:right-6 lg:px-4"
+      className="group fixed bottom-6 right-6 z-30 hidden min-h-14 items-center gap-2 overflow-hidden rounded-full border border-black bg-yellow-300 px-4 text-sm font-black text-black shadow-[6px_6px_0_#000] ring-1 ring-yellow-100 transition duration-300 animate-[sakuinFloat_3.6s_ease-in-out_infinite] hover:-translate-y-1 hover:shadow-[9px_9px_0_#000] focus:outline-none focus:ring-4 focus:ring-yellow-300/40 sm:inline-flex"
       to="/asisten"
     >
       <span className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.65),transparent)] animate-[sakuinShine_4.2s_ease-in-out_infinite]" />

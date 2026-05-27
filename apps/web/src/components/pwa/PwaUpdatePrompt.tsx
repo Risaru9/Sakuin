@@ -23,7 +23,7 @@ export function PwaUpdatePrompt({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-4 z-[280] px-4 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm sm:px-0">
+    <div className="fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[280] px-4 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm sm:px-0">
       <div className="overflow-hidden rounded-[1.5rem] border border-black/10 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
         <div className="h-1 w-full bg-yellow-300" />
 
