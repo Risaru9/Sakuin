@@ -159,6 +159,22 @@ function getHourOptions() {
   }));
 }
 
+function formatHourLabel(hour: number) {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function getReminderFrequencySummary(settings: TransactionReminderSettings) {
+  if (settings.frequency === "EVENING") {
+    return `Sekali malam mulai ${formatHourLabel(settings.eveningHour)}`;
+  }
+
+  const option = reminderFrequencyOptions.find(
+    (item) => item.value === settings.frequency
+  );
+
+  return option?.label ?? "Mengikuti pengaturanmu";
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -773,6 +789,38 @@ export function ProfilePage() {
                   >
                     {reminderSettings.enabled ? "Matikan" : "Aktifkan"}
                   </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2 rounded-2xl border border-black/10 bg-white p-3">
+                <p className="text-xs font-black uppercase text-zinc-500">
+                  Aturan anti-risih
+                </p>
+
+                <div className="grid gap-2 text-xs font-semibold leading-5 text-zinc-700">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <p>
+                      {getReminderFrequencySummary(reminderSettings)}, maksimal{" "}
+                      {reminderSettings.maxPerDay} kali per hari.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <p>
+                      Tidak mengganggu dari{" "}
+                      {formatHourLabel(reminderSettings.quietStartHour)} sampai{" "}
+                      {formatHourLabel(reminderSettings.quietEndHour)}.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <p>
+                      Berhenti otomatis setelah review harian ditandai selesai.
+                    </p>
+                  </div>
                 </div>
               </div>
 

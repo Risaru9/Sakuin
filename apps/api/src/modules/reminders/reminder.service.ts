@@ -371,7 +371,17 @@ function buildNotificationPayload() {
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",
     tag: "sakuin-transaction-reminder",
-    url: "/dashboard"
+    url: "/dashboard",
+    actions: [
+      {
+        action: "open-review",
+        title: "Review sekarang"
+      },
+      {
+        action: "remind-later",
+        title: "Nanti"
+      }
+    ]
   });
 }
 

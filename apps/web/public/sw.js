@@ -1,4 +1,4 @@
-const CACHE_VERSION = "sakuin-pwa-v5";
+const CACHE_VERSION = "sakuin-pwa-v6";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -46,7 +46,17 @@ self.addEventListener("push", (event) => {
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",
     tag: "sakuin-transaction-reminder",
-    url: "/dashboard"
+    url: "/dashboard",
+    actions: [
+      {
+        action: "open-review",
+        title: "Review sekarang"
+      },
+      {
+        action: "remind-later",
+        title: "Nanti"
+      }
+    ]
   };
 
   if (event.data) {
@@ -66,6 +76,7 @@ self.addEventListener("push", (event) => {
       icon: payload.icon,
       badge: payload.badge,
       tag: payload.tag,
+      actions: payload.actions || [],
       data: {
         url: payload.url
       }
@@ -152,6 +163,10 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
+  if (event.action === "remind-later") {
+    return;
+  }
 
   const targetUrl = event.notification.data?.url || "/dashboard";
   const urlToOpen = new URL(targetUrl, self.location.origin).href;
