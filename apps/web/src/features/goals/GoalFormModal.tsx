@@ -301,7 +301,7 @@ export function GoalFormModal({
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-indigo-700">
+            <p className="text-sm font-black text-black">
               {isEditMode ? "Edit goal" : "Goal baru"}
             </p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
@@ -398,7 +398,7 @@ export function GoalFormModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
               placeholder="Contoh: Target laptop untuk kuliah dan kerja"
               value={form.description}
               onChange={(event) =>

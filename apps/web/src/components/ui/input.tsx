@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "min-h-12 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10",
+            "min-h-12 w-full rounded-[var(--sakuin-radius-control)] border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-ink)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/40",
             error
               ? "border-[var(--sakuin-red)] focus:border-[var(--sakuin-red)] focus:ring-[var(--sakuin-red)]/10"
               : null,

@@ -597,7 +597,7 @@ export function EditTransactionModal({
       <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-indigo-700 sm:text-sm">
+          <p className="text-xs font-bold text-black sm:text-sm">
             Edit transaksi
           </p>
           <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
@@ -705,7 +705,7 @@ export function EditTransactionModal({
             </span>
 
             <select
-              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
               disabled={isLoadingCategories || categoryOptions.length === 0}
               value={form.categoryId}
               onChange={(event) => handleCategoryChange(event.target.value)}
@@ -733,11 +733,11 @@ export function EditTransactionModal({
           </label>
 
           {canCreateInlineCategory ? (
-            <div className="rounded-[1.5rem] border border-indigo-100 bg-indigo-50 p-4">
+            <div className="rounded-[1.5rem] border border-yellow-200 bg-yellow-50 p-4">
               <label className="flex items-start gap-3">
                 <input
                   checked={form.saveAsNewCategory}
-                  className="mt-1 h-4 w-4 rounded border-indigo-300 text-indigo-700 focus:ring-indigo-600"
+                  className="mt-1 h-4 w-4 rounded border-yellow-300 text-black focus:ring-yellow-300"
                   type="checkbox"
                   onChange={(event) =>
                     setForm((current) => ({
@@ -751,10 +751,10 @@ export function EditTransactionModal({
                 />
 
                 <span>
-                  <span className="block text-sm font-black text-indigo-950">
+                  <span className="block text-sm font-black text-black">
                     Simpan sebagai kategori baru
                   </span>
-                  <span className="mt-1 block text-xs font-medium leading-5 text-indigo-700">
+                  <span className="mt-1 block text-xs font-medium leading-5 text-black">
                     Cocok untuk transaksi yang sering muncul, misalnya Laundry,
                     Parkir, Kopi, atau Freelance.
                   </span>
@@ -781,7 +781,7 @@ export function EditTransactionModal({
                     }
                   />
 
-                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-indigo-700">
+                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-black">
                     <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     Jika nama kategori sudah ada, Sakuin akan memakai kategori
                     tersebut dan tidak membuat duplikat.
@@ -817,7 +817,7 @@ export function EditTransactionModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
               placeholder="Contoh: Makan siang"
               value={form.note}
               onChange={(event) =>

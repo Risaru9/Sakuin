@@ -12,15 +12,24 @@
   --sakuin-text: #17131f;
   --sakuin-muted: #756f82;
   --sakuin-border: #e8e1d6;
-  --sakuin-primary: #18151f;
-  --sakuin-purple: #0b0b0b;
-  --sakuin-purple-soft: #fef3c7;
+  --sakuin-ink: #0b0b0b;
+  --sakuin-yellow: #fde047;
+  --sakuin-yellow-soft: #fef9c3;
+  --sakuin-focus: #fde047;
+  --sakuin-primary: var(--sakuin-ink);
+  --sakuin-primary-soft: var(--sakuin-yellow-soft);
+  --sakuin-ai: var(--sakuin-ink);
+  --sakuin-ai-soft: var(--sakuin-yellow-soft);
   --sakuin-green: #16a34a;
   --sakuin-green-soft: #dcfce7;
   --sakuin-red: #dc2626;
   --sakuin-red-soft: #fee2e2;
   --sakuin-amber: #d97706;
   --sakuin-amber-soft: #fef3c7;
+  --sakuin-radius-card: 1.5rem;
+  --sakuin-radius-control: 1.25rem;
+  --sakuin-shadow-card: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --sakuin-shadow-modal: 0 30px 90px rgba(15, 23, 42, 0.28);
   --sakuin-mobile-nav-height: calc(5.9rem + env(safe-area-inset-bottom));
   --sakuin-mobile-content-bottom: calc(7.25rem + env(safe-area-inset-bottom));
 }

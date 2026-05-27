@@ -70,10 +70,10 @@ function getToastStyle(variant: ToastVariant) {
   }
 
   return {
-    iconWrapper: "bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200",
+    iconWrapper: "bg-yellow-100 text-black ring-1 ring-yellow-200",
     title: "text-slate-950",
     description: "text-slate-600",
-    accent: "bg-indigo-500",
+    accent: "bg-yellow-300",
     Icon: Info
   };
 }

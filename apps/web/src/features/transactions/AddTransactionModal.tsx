@@ -554,7 +554,7 @@ export function AddTransactionModal({
      <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-bold text-[var(--sakuin-purple)] sm:text-sm">
+            <p className="text-xs font-bold text-[var(--sakuin-ink)] sm:text-sm">
               Transaksi baru
             </p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-2xl">
@@ -661,7 +661,7 @@ export function AddTransactionModal({
             </span>
 
             <select
-              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10 disabled:cursor-not-allowed disabled:bg-[var(--sakuin-surface-soft)] disabled:text-[var(--sakuin-muted)]"
+              className="min-h-11 sm:min-h-12 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-ink)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/40 disabled:cursor-not-allowed disabled:bg-[var(--sakuin-surface-soft)] disabled:text-[var(--sakuin-muted)]"
               disabled={isLoadingCategories || categoryOptions.length === 0}
               value={form.categoryId}
               onChange={(event) => handleCategoryChange(event.target.value)}
@@ -683,11 +683,11 @@ export function AddTransactionModal({
           </label>
 
           {canCreateInlineCategory ? (
-            <div className="rounded-[1.5rem] border border-indigo-100 bg-indigo-50 p-4">
+            <div className="rounded-[1.5rem] border border-yellow-200 bg-yellow-50 p-4">
               <label className="flex items-start gap-3">
                 <input
                   checked={form.saveAsNewCategory}
-                  className="mt-1 h-4 w-4 rounded border-indigo-300 text-indigo-700 focus:ring-indigo-600"
+                  className="mt-1 h-4 w-4 rounded border-yellow-300 text-black focus:ring-yellow-300"
                   type="checkbox"
                   onChange={(event) =>
                     setForm((current) => ({
@@ -701,10 +701,10 @@ export function AddTransactionModal({
                 />
 
                 <span>
-                  <span className="block text-sm font-black text-indigo-950">
+                  <span className="block text-sm font-black text-black">
                     Simpan sebagai kategori baru
                   </span>
-                  <span className="mt-1 block text-xs font-medium leading-5 text-indigo-700">
+                  <span className="mt-1 block text-xs font-medium leading-5 text-black">
                     Cocok untuk transaksi yang sering muncul, misalnya Laundry,
                     Parkir, Kopi, atau Freelance.
                   </span>
@@ -731,7 +731,7 @@ export function AddTransactionModal({
                     }
                   />
 
-                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-indigo-700">
+                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-black">
                     <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     Jika nama kategori sudah ada, Sakuin akan memakai kategori
                     tersebut dan tidak membuat duplikat.
@@ -767,7 +767,7 @@ export function AddTransactionModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-purple)] focus:ring-4 focus:ring-[var(--sakuin-purple)]/10"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-[var(--sakuin-text)] outline-none transition placeholder:text-[var(--sakuin-muted)]/70 focus:border-[var(--sakuin-ink)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/40"
               placeholder={
                 form.type === "INCOME"
                   ? "Contoh: Gaji bulan ini"

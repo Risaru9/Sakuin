@@ -475,7 +475,7 @@ export function CategoriesPage() {
     <AppShell>
       <header className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-indigo-700">Sakuin Category</p>
+          <p className="text-sm font-black text-black">Sakuin Category</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
             Kelola Kategori
           </h1>
@@ -511,7 +511,7 @@ export function CategoriesPage() {
 
         <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-bold text-slate-500">Custom Category</p>
-          <p className="mt-1 text-2xl font-black text-indigo-700">
+          <p className="mt-1 text-2xl font-black text-black">
             {totalCustomCategories}
           </p>
         </div>
@@ -673,7 +673,7 @@ export function CategoriesPage() {
                 </p>
 
                 {isBackgroundFetching ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black text-black">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Sync
                   </span>

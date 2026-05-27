@@ -22,11 +22,11 @@ export const buttonClassName = ({
 } = {}) => {
   const variantClassName: Record<ButtonVariant, string> = {
     primary:
-      "bg-[var(--sakuin-primary)] text-white shadow-sm hover:bg-black focus-visible:ring-[var(--sakuin-primary)]",
+      "bg-[var(--sakuin-primary)] text-white shadow-sm hover:bg-black focus-visible:ring-[var(--sakuin-focus)]",
     secondary:
-      "border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] shadow-sm hover:bg-[var(--sakuin-surface-soft)] focus-visible:ring-[var(--sakuin-purple)]",
+      "border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] shadow-sm hover:bg-[var(--sakuin-surface-soft)] focus-visible:ring-[var(--sakuin-focus)]",
     ghost:
-      "bg-transparent text-[var(--sakuin-muted)] hover:bg-black/5 hover:text-[var(--sakuin-text)] focus-visible:ring-[var(--sakuin-purple)]",
+      "bg-transparent text-[var(--sakuin-muted)] hover:bg-black/5 hover:text-[var(--sakuin-text)] focus-visible:ring-[var(--sakuin-focus)]",
     danger:
       "bg-[var(--sakuin-red)] text-white shadow-sm hover:bg-red-700 focus-visible:ring-[var(--sakuin-red)]"
   };
