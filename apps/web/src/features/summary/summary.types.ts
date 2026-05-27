@@ -90,6 +90,25 @@ export type FinancialCheckupData = {
   };
 };
 
+export type SummaryHabitData = {
+  currentMonthTransactionDays: number;
+  currentMonthDaysElapsed: number;
+  currentMonthCompletenessPercent: number;
+  transactionsToday: number;
+  expenseTransactionsToday: number;
+  lastTransactionDate: string | null;
+  daysSinceLastTransaction: number | null;
+  last7DaysTransactionCount: number;
+  last7DaysExpense: string;
+  last7DaysTopExpenseCategory: {
+    name: string;
+    amount: string;
+    transactionCount: number;
+  } | null;
+  habitStatus: "NO_DATA" | "LIGHT" | "ACTIVE" | "STALE";
+  habitMessage: string;
+};
+
 export type SummaryData = {
   totalIncome: string;
   totalExpense: string;
@@ -98,6 +117,7 @@ export type SummaryData = {
   isBelowSafeLimit: boolean;
   safeToSpend: SafeToSpendData;
   financialCheckup: FinancialCheckupData;
+  habit: SummaryHabitData | null;
 
   incomeThisMonth: string;
   expenseThisMonth: string;

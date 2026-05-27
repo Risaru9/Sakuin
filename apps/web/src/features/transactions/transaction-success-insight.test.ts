@@ -54,6 +54,7 @@ function createSummary(): SummaryData {
         projectedNetCashflow: 2400000
       }
     },
+    habit: null,
     incomeThisMonth: "3000000.00",
     expenseThisMonth: "500000.00",
     balanceThisMonth: "2500000.00",

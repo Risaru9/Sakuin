@@ -64,6 +64,25 @@ type FinancialCheckupData = {
   };
 };
 
+type SummaryHabitData = {
+  currentMonthTransactionDays: number;
+  currentMonthDaysElapsed: number;
+  currentMonthCompletenessPercent: number;
+  transactionsToday: number;
+  expenseTransactionsToday: number;
+  lastTransactionDate: string | null;
+  daysSinceLastTransaction: number | null;
+  last7DaysTransactionCount: number;
+  last7DaysExpense: string;
+  last7DaysTopExpenseCategory: {
+    name: string;
+    amount: string;
+    transactionCount: number;
+  } | null;
+  habitStatus: "NO_DATA" | "LIGHT" | "ACTIVE" | "STALE";
+  habitMessage: string;
+};
+
 type SummaryData = {
   totalIncome: string;
   totalExpense: string;
@@ -72,6 +91,7 @@ type SummaryData = {
   isBelowSafeLimit: boolean;
   safeToSpend: SafeToSpendData;
   financialCheckup: FinancialCheckupData;
+  habit: SummaryHabitData | null;
 
   incomeThisMonth: string;
   expenseThisMonth: string;
@@ -346,6 +366,22 @@ describe("Summary API", () => {
       "Kategori Makanan mengambil porsi besar dari total pengeluaran."
     );
 
+    expect(body.data.habit).toBeTruthy();
+    expect(body.data.habit?.currentMonthTransactionDays).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.currentMonthDaysElapsed).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.currentMonthCompletenessPercent).toBeGreaterThan(0);
+    expect(body.data.habit?.transactionsToday).toBeGreaterThanOrEqual(2);
+    expect(body.data.habit?.expenseTransactionsToday).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.last7DaysTransactionCount).toBeGreaterThanOrEqual(2);
+    expect(body.data.habit?.last7DaysExpense).toBe("250000.00");
+    expect(body.data.habit?.last7DaysTopExpenseCategory).toMatchObject({
+      name: "Makanan",
+      amount: "250000.00",
+      transactionCount: 1
+    });
+    expect(body.data.habit?.habitStatus).not.toBe("NO_DATA");
+    expect(body.data.habit?.habitMessage).toBeTruthy();
+
     expect(body.data.transactionCount).toBe(2);
     expect(body.data.recentTransactions).toHaveLength(2);
   }, 20000);
@@ -382,6 +418,9 @@ describe("Summary API", () => {
     expect(JSON.stringify(body.data.financialCheckup)).not.toContain(userBId);
     expect(JSON.stringify(body.data.financialCheckup)).not.toContain(userB.email);
     expect(JSON.stringify(body.data.financialCheckup)).not.toContain("8000000");
+    expect(JSON.stringify(body.data.habit)).not.toContain(userBId);
+    expect(JSON.stringify(body.data.habit)).not.toContain(userB.email);
+    expect(JSON.stringify(body.data.habit)).not.toContain("8000000");
   }, 20000);
 
   it("GET /api/summary menghasilkan incomeByCategory dan expenseByCategory", async () => {

@@ -1,5 +1,6 @@
 import type { FinancialCheckupResult } from "../finance/financial-checkup.js";
 import type { SafeToSpendResult } from "../finance/safe-to-spend.js";
+import type { AiFinancialHabitContext } from "../ai/ai-financial-context.js";
 
 export type SummaryAmount = string;
 
@@ -43,6 +44,7 @@ export type SummaryResponse = {
   isBelowSafeLimit: boolean;
   safeToSpend: SafeToSpendResult;
   financialCheckup: FinancialCheckupResult;
+  habit: AiFinancialHabitContext | null;
 
   incomeThisMonth: SummaryAmount;
   expenseThisMonth: SummaryAmount;

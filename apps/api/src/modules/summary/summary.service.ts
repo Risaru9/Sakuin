@@ -393,6 +393,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     isBelowSafeLimit,
     safeToSpend: aiFinancialContext.safeToSpend,
     financialCheckup,
+    habit: aiFinancialContext.habit ?? null,
 
     incomeThisMonth: decimalToString(incomeThisMonth),
     expenseThisMonth: decimalToString(expenseThisMonth),

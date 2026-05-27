@@ -38,6 +38,7 @@ import type {
   FinancialCheckupData,
   MonthlyTrendItem,
   SafeToSpendData,
+  SummaryHabitData,
   SummaryTransaction
 } from "../summary/summary.types";
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
@@ -956,12 +957,99 @@ const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
 const DASHBOARD_PROFILE_STALE_TIME = 5 * 60_000;
 
+function clampPercent(value: number | null | undefined) {
+  return Math.min(Math.max(toNumber(value), 0), 100);
+}
+
+function formatHabitStatus(status: SummaryHabitData["habitStatus"]) {
+  if (status === "NO_DATA") {
+    return "Mulai";
+  }
+
+  if (status === "LIGHT") {
+    return "Ringan";
+  }
+
+  if (status === "STALE") {
+    return "Perbarui";
+  }
+
+  return "Aktif";
+}
+
+function getDailyReviewContent(habit: SummaryHabitData | null | undefined) {
+  if (!habit) {
+    return {
+      statusLabel: "Review",
+      title: "Review harian 30 detik",
+      message:
+        "Ada transaksi hari ini yang belum masuk? Catat sekarang supaya dashboard tetap akurat.",
+      primaryAction: "Catat yang terlewat"
+    };
+  }
+
+  if (habit.transactionsToday > 0) {
+    return {
+      statusLabel: formatHabitStatus(habit.habitStatus),
+      title: `${habit.transactionsToday} transaksi sudah masuk hari ini`,
+      message:
+        habit.expenseTransactionsToday > 0
+          ? `${habit.expenseTransactionsToday} pengeluaran hari ini sudah tercatat. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat.`
+          : "Data hari ini sudah mulai terisi. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat.",
+      primaryAction: "Tambah lagi"
+    };
+  }
+
+  if (habit.habitStatus === "NO_DATA") {
+    return {
+      statusLabel: "Mulai",
+      title: "Mulai catatan hari ini",
+      message:
+        "Belum ada transaksi bulan ini. Catat satu transaksi pertama agar Sakuin mulai bisa membaca pola uangmu.",
+      primaryAction: "Catat pertama"
+    };
+  }
+
+  if (habit.habitStatus === "STALE") {
+    return {
+      statusLabel: "Perbarui",
+      title: "Data perlu diperbarui",
+      message:
+        habit.daysSinceLastTransaction === null
+          ? "Belum ada transaksi terbaru. Catat transaksi hari ini agar insight tetap akurat."
+          : `Transaksi terakhir tercatat ${habit.daysSinceLastTransaction} hari lalu. Tambahkan catatan terbaru supaya insight tidak terasa basi.`,
+      primaryAction: "Catat terbaru"
+    };
+  }
+
+  if (habit.habitStatus === "LIGHT") {
+    return {
+      statusLabel: "Ringan",
+      title: "Data bulan ini masih ringan",
+      message:
+        "Catat transaksi kecil yang sering terlewat agar Sakuin lebih mudah membaca pola bocor uang.",
+      primaryAction: "Catat cepat"
+    };
+  }
+
+  return {
+    statusLabel: "Aktif",
+    title: "Jaga ritme catatan hari ini",
+    message:
+      habit.habitMessage ||
+      "Pencatatan bulan ini sudah cukup rutin. Cek sebentar apakah transaksi hari ini sudah lengkap.",
+    primaryAction: "Catat yang terlewat"
+  };
+}
+
 function DailyReviewCard({
   completed,
+  habit,
   onComplete,
   onOpenQuickTransaction
 }: {
   completed: boolean;
+  habit?: SummaryHabitData | null;
   onComplete: () => void;
   onOpenQuickTransaction: () => void;
 }) {
@@ -969,22 +1057,70 @@ function DailyReviewCard({
     return null;
   }
 
+  const content = getDailyReviewContent(habit);
+  const completionPercent = clampPercent(
+    habit?.currentMonthCompletenessPercent ?? 0
+  );
+
   return (
     <section className="mb-4 rounded-3xl border border-black bg-yellow-300 p-3.5 shadow-[6px_6px_0_#000] sm:mb-5 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
-        <div className="flex min-w-0 gap-3">
+        <div className="flex min-w-0 flex-1 gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300">
             <Clock3 className="h-5 w-5" />
           </div>
 
-          <div className="min-w-0">
-            <p className="text-sm font-black text-black">
-              Review harian 30 detik
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-black text-black">
+                {content.title}
+              </p>
+              <span className="rounded-full bg-black px-2.5 py-1 text-[10px] font-black uppercase text-yellow-300">
+                {content.statusLabel}
+              </span>
+            </div>
             <p className="mt-1 text-xs font-semibold leading-5 text-black/75 sm:text-sm sm:leading-6">
-              Ada transaksi hari ini yang belum masuk? Catat sekarang supaya
-              dashboard tetap akurat.
+              {content.message}
             </p>
+
+            {habit ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="rounded-2xl bg-white/70 p-2.5 ring-1 ring-black/10">
+                  <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase text-black/60">
+                    <span>Hari tercatat</span>
+                    <span>
+                      {habit.currentMonthTransactionDays}/
+                      {habit.currentMonthDaysElapsed}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+                    <div
+                      className="h-full rounded-full bg-black transition-[width]"
+                      style={{ width: `${completionPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:min-w-52">
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
+                    <p className="text-[10px] font-black uppercase text-black/60">
+                      Hari ini
+                    </p>
+                    <p className="mt-0.5 text-sm font-black text-black">
+                      {habit.transactionsToday}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
+                    <p className="text-[10px] font-black uppercase text-black/60">
+                      7 hari
+                    </p>
+                    <p className="mt-0.5 text-sm font-black text-black">
+                      {habit.last7DaysTransactionCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -996,7 +1132,7 @@ function DailyReviewCard({
             type="button"
           >
             <MessageSquare className="h-4 w-4" />
-            Catat yang terlewat
+            {content.primaryAction}
           </Button>
 
           <Button
@@ -1180,6 +1316,7 @@ const profileQuery = useQuery({
 
         <DailyReviewCard
           completed={isDailyReviewCompleted}
+          habit={summary?.habit}
           onComplete={completeDailyReview}
           onOpenQuickTransaction={openDailyQuickTransaction}
         />
