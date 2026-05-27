@@ -8,7 +8,6 @@ import {
   Sparkles,
   Target
 } from "lucide-react";
-import { FloatingAiButton } from "../ai/FloatingAiButton";
 import { SakuinIdentityLogo } from "../brand/SakuinIdentityLogo";
 import { MobileQuickTransactionAction } from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
@@ -145,11 +144,10 @@ export function AppShell({
         </section>
       </div>
 
-      <FloatingAiButton />
       <MobileQuickTransactionAction />
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.25rem_1fr_1fr] items-end gap-1">
+        <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.75rem_1fr_1fr] items-end gap-1">
           {[primaryNavigationItems[0], primaryNavigationItems[1]].map((item) => {
             const Icon = item.icon;
             const active = isActivePath(location.pathname, item.to);
@@ -189,19 +187,19 @@ export function AppShell({
             aria-label="Buka Asisten Sakuin"
             className={
               isActivePath(location.pathname, assistantNavigationItem.to)
-                ? "relative -mt-8 flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.5rem] border border-black bg-black px-2 pb-2 pt-3 text-white shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
-                : "relative -mt-8 flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.5rem] border border-black bg-yellow-300 px-2 pb-2 pt-3 text-black shadow-[6px_6px_0_#000] transition active:translate-y-0.5 active:shadow-[4px_4px_0_#000]"
+                ? "relative -mt-8 mx-auto flex min-h-[4.9rem] w-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.6rem] border border-black bg-black px-2 pb-2 pt-3 text-white shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
+                : "relative -mt-8 mx-auto flex min-h-[4.9rem] w-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.6rem] border border-black bg-yellow-300 px-2 pb-2 pt-3 text-black shadow-[0_14px_28px_rgba(0,0,0,0.22)] transition active:translate-y-0.5 active:shadow-[0_9px_20px_rgba(0,0,0,0.20)]"
             }
             to={assistantNavigationItem.to}
           >
             <span
               className={
                 isActivePath(location.pathname, assistantNavigationItem.to)
-                  ? "flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-300 text-black"
-                  : "flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-yellow-300"
+                  ? "relative flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-300 text-black"
+                  : "relative flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-yellow-300"
               }
             >
-              <Sparkles className="absolute right-3 top-2 h-3.5 w-3.5" />
+              <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5" />
               <MessageCircle className="h-5 w-5" />
             </span>
             <span

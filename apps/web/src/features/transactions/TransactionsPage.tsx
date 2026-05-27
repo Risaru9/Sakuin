@@ -8,8 +8,6 @@ import {
   ArrowUpCircle,
   Edit3,
   Loader2,
-  MessageSquare,
-  Plus,
   RefreshCcw,
   Search,
   Trash2
@@ -21,9 +19,7 @@ import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { getCategories } from "../categories/category.service";
-import { AddTransactionModal } from "./AddTransactionModal";
 import { EditTransactionModal } from "./EditTransactionModal";
-import { QuickTransactionModal } from "./QuickTransactionModal";
 import { deleteTransaction, getTransactions } from "./transaction.service";
 import {
   getSummaryCacheSnapshot,
@@ -251,8 +247,6 @@ export function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] =
@@ -475,7 +469,7 @@ const transactionsQuery = useQuery({
   return (
     <>
       <AppShell>
-        <header className="mb-4 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <header className="mb-4 sm:mb-7">
           <div>
             <p className="text-sm font-black text-zinc-500">
               Sakuin Transactions
@@ -486,29 +480,6 @@ const transactionsQuery = useQuery({
             <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
               Edit, hapus, filter, dan telusuri transaksi keuanganmu.
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-            <Button
-              className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100"
-              onClick={() => setIsQuickOpen(true)}
-              size="md"
-              type="button"
-              variant="secondary"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Catat Cepat
-            </Button>
-
-            <Button
-              className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
-              onClick={() => setIsAddOpen(true)}
-              size="md"
-              type="button"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Transaksi
-            </Button>
           </div>
         </header>
 
@@ -757,15 +728,9 @@ const transactionsQuery = useQuery({
                 Belum ada transaksi
               </p>
               <p className="mt-2 text-sm text-zinc-600">
-                Tambahkan transaksi pertama atau ubah filter pencarian.
+                Gunakan tombol Catat di pojok kanan bawah untuk menambahkan
+                transaksi pertama, atau ubah filter pencarian.
               </p>
-              <Button
-                className="mt-5 rounded-xl bg-black text-white hover:bg-zinc-800"
-                onClick={() => setIsAddOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Transaksi
-              </Button>
             </div>
           ) : null}
 
@@ -822,18 +787,6 @@ const transactionsQuery = useQuery({
           </div>
         </div>
       </AppShell>
-
-      <QuickTransactionModal
-        open={isQuickOpen}
-        onClose={() => setIsQuickOpen(false)}
-        onSuccess={refreshTransactionData}
-      />
-
-      <AddTransactionModal
-        open={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSuccess={refreshTransactionData}
-      />
 
       <EditTransactionModal
         open={Boolean(selectedTransaction)}
