@@ -2,11 +2,16 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Link, Navigate } from "react-router-dom";
 import {
   ArrowRight,
+  CheckCircle2,
   Download,
   ExternalLink,
   Loader2,
   MessageSquare,
+  MoreVertical,
+  RefreshCcw,
   ShieldCheck,
+  Share2,
+  Smartphone,
   Tags,
   Target,
   WalletCards
@@ -575,10 +580,167 @@ function HomePage() {
   );
 }
 
+function InstallGuidePage() {
+  const installSteps = [
+    {
+      icon: Smartphone,
+      title: "Android Chrome atau Edge",
+      description:
+        "Tap tombol Install Sakuin. Jika dialog tidak muncul, buka menu browser lalu pilih Install app atau Add to Home screen.",
+      steps: ["Buka sakuin-web.vercel.app", "Tap menu tiga titik", "Pilih Install app", "Buka Sakuin dari home screen"]
+    },
+    {
+      icon: Share2,
+      title: "iPhone atau iPad",
+      description:
+        "iOS biasanya memakai jalur Share dari Safari. Setelah ditambahkan, Sakuin akan tampil seperti aplikasi di home screen.",
+      steps: ["Buka Sakuin di Safari", "Tap tombol Share", "Pilih Add to Home Screen", "Tap Add"]
+    },
+    {
+      icon: MoreVertical,
+      title: "Laptop atau desktop",
+      description:
+        "Chrome dan Edge dapat memasang Sakuin sebagai app window terpisah, tanpa tab browser yang mengganggu.",
+      steps: ["Buka Sakuin di Chrome/Edge", "Klik ikon install di address bar atau menu", "Pilih Install", "Pin app bila perlu"]
+    }
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#f7f5ef] px-4 py-5 text-black sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">
+          <Link className="min-w-0" to="/">
+            <SakuinIdentityLogo subtitle="Install sebagai aplikasi" />
+          </Link>
+
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
+            to="/dashboard"
+          >
+            Buka App
+          </Link>
+        </header>
+
+        <section className="py-10 sm:py-14">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-yellow-100 px-3 py-1.5 text-xs font-black text-black">
+                <Download className="h-4 w-4" />
+                Installable PWA
+              </span>
+
+              <h1 className="mt-5 text-4xl font-black tracking-tight text-black sm:text-5xl">
+                Pakai Sakuin seperti aplikasi mobile.
+              </h1>
+
+              <p className="mt-4 text-base font-medium leading-8 text-zinc-700">
+                Setelah diinstall, Sakuin bisa dibuka dari home screen atau daftar
+                aplikasi. Update fitur tetap masuk otomatis dari web, jadi user
+                tidak perlu install ulang berkali-kali.
+              </p>
+
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <InstallAppButton
+                  label="Install Sakuin"
+                  fallbackToGuide={false}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-black px-6 text-base font-bold text-white shadow-sm transition hover:bg-zinc-800"
+                />
+                <Link
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-black/10 bg-white px-6 text-base font-bold text-black shadow-sm transition hover:bg-yellow-50"
+                  to="/register"
+                >
+                  Buat akun
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-black bg-yellow-300 p-5 shadow-[10px_10px_0_#000]">
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300">
+                    <RefreshCcw className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-black">
+                      Bagaimana update fitur bekerja?
+                    </h2>
+                    <p className="mt-2 text-sm font-medium leading-6 text-zinc-700">
+                      Sakuin mengecek versi baru saat app dibuka kembali. Jika
+                      update siap, app menampilkan tombol update. User cukup tap
+                      tombol itu atau membuka ulang app.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {[
+                    "Tidak perlu uninstall dan install ulang untuk update fitur web.",
+                    "Perubahan besar tetap diuji lewat build sebelum dipush.",
+                    "Jika offline, Sakuin menampilkan fallback sampai koneksi kembali."
+                  ].map((item) => (
+                    <div className="flex items-start gap-3" key={item}>
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-black" />
+                      <p className="text-sm font-semibold leading-6 text-black">
+                        {item}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 pb-12 lg:grid-cols-3">
+          {installSteps.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <article
+                className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm"
+                key={item.title}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-300 text-black">
+                  <Icon className="h-6 w-6" />
+                </div>
+
+                <h2 className="mt-4 text-lg font-black text-black">
+                  {item.title}
+                </h2>
+                <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
+                  {item.description}
+                </p>
+
+                <ol className="mt-4 grid gap-2">
+                  {item.steps.map((step, index) => (
+                    <li
+                      className="grid grid-cols-[1.75rem_1fr] gap-2 text-sm font-semibold leading-6 text-black"
+                      key={step}
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-xs font-black">
+                        {index + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </article>
+            );
+          })}
+        </section>
+      </div>
+    </main>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <HomePage />
+  },
+  {
+    path: "/install",
+    element: <InstallGuidePage />
   },
   {
     path: "/login",

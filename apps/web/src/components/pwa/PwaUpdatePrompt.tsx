@@ -38,8 +38,8 @@ export function PwaUpdatePrompt({
                 Versi baru Sakuin tersedia
               </p>
               <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
-                Update aplikasi untuk memakai versi terbaru yang sudah
-                dideploy.
+                Tap update untuk memakai fitur terbaru. Kamu tidak perlu
+                install ulang aplikasi.
               </p>
             </div>
 
@@ -59,7 +59,7 @@ export function PwaUpdatePrompt({
               onClick={handleUpdateNow}
               type="button"
             >
-              Update sekarang
+              Pakai versi baru
             </button>
 
             <button

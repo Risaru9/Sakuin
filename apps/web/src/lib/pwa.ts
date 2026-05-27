@@ -18,6 +18,8 @@ type InstallPromptListener = (
   event: BeforeInstallPromptEvent | null
 ) => void;
 
+export type InstallPlatform = "ios" | "android" | "desktop" | "unknown";
+
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
 let hasSetupInstallPromptCapture = false;
 let isReloadingForServiceWorkerUpdate = false;
@@ -73,6 +75,54 @@ export function subscribeToInstallPrompt(listener: InstallPromptListener) {
   };
 }
 
+export function getInstallPlatform(): InstallPlatform {
+  if (typeof window === "undefined") {
+    return "unknown";
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+
+  if (/iphone|ipad|ipod/.test(userAgent)) {
+    return "ios";
+  }
+
+  if (/android/.test(userAgent)) {
+    return "android";
+  }
+
+  if (/windows|macintosh|linux|cros/.test(userAgent)) {
+    return "desktop";
+  }
+
+  return "unknown";
+}
+
+export function isStandaloneMode() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+export function getManualInstallMessage() {
+  const platform = getInstallPlatform();
+
+  if (platform === "ios") {
+    return "Untuk iPhone/iPad: buka Sakuin di Safari, tap tombol Share, lalu pilih Add to Home Screen.";
+  }
+
+  if (platform === "android") {
+    return "Jika dialog install belum muncul, buka menu browser Chrome/Edge, lalu pilih Install app atau Add to Home screen.";
+  }
+
+  return "Jika dialog install belum muncul, buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
+}
+
 export function activateWaitingServiceWorker(
   registration: ServiceWorkerRegistration
 ) {
@@ -84,6 +134,15 @@ export function activateWaitingServiceWorker(
   registration.waiting.postMessage({
     type: "SKIP_WAITING"
   });
+}
+
+export async function checkForServiceWorkerUpdate() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.getRegistration();
+  await registration?.update();
 }
 
 export function registerServiceWorker(
@@ -130,6 +189,12 @@ export function registerServiceWorker(
       .catch((error: unknown) => {
         console.error("Gagal register service worker:", error);
       });
+
+    window.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        void checkForServiceWorkerUpdate();
+      }
+    });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (isReloadingForServiceWorkerUpdate) {

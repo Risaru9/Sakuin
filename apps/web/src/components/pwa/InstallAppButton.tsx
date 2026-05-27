@@ -1,9 +1,12 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Download, Info, Smartphone } from "lucide-react";
 import { useToast } from "../toast/ToastProvider";
 import {
   clearDeferredInstallPrompt,
   getDeferredInstallPrompt,
+  getManualInstallMessage,
+  isStandaloneMode,
   subscribeToInstallPrompt,
   type BeforeInstallPromptEvent
 } from "../../lib/pwa";
@@ -12,31 +15,10 @@ type InstallAppButtonVariant = "navbar" | "hero" | "compact";
 
 type InstallAppButtonProps = {
   className?: string;
+  fallbackToGuide?: boolean;
   label?: string;
   variant?: InstallAppButtonVariant;
 };
-
-function isStandaloneMode() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: fullscreen)").matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
-}
-
-function getManualInstallMessage() {
-  const userAgent = window.navigator.userAgent.toLowerCase();
-
-  if (/iphone|ipad|ipod/.test(userAgent)) {
-    return "Untuk iPhone/iPad: buka Sakuin di Safari, tap tombol Share, lalu pilih Add to Home Screen.";
-  }
-
-  if (/android/.test(userAgent)) {
-    return "Jika dialog install belum muncul, buka menu browser Chrome/Edge, lalu pilih Install app atau Add to Home screen.";
-  }
-
-  return "Jika dialog install belum muncul, buka menu browser, lalu pilih Install app atau Apps > Install this site as an app.";
-}
 
 function getButtonClassName(variant: InstallAppButtonVariant, className?: string) {
   if (className) {
@@ -44,22 +26,24 @@ function getButtonClassName(variant: InstallAppButtonVariant, className?: string
   }
 
   if (variant === "navbar") {
-    return "hidden items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-50 md:inline-flex";
+    return "hidden items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-2 text-sm font-black text-black shadow-sm transition hover:bg-yellow-50 md:inline-flex";
   }
 
   if (variant === "compact") {
-    return "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-50";
+    return "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 text-sm font-black text-black shadow-sm transition hover:bg-yellow-50";
   }
 
-  return "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-slate-200 bg-white px-6 text-base font-black text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto";
+  return "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-black/10 bg-white px-6 text-base font-black text-black shadow-sm transition hover:bg-yellow-50 sm:w-auto";
 }
 
 export function InstallAppButton({
   className,
+  fallbackToGuide = true,
   label = "Install Sakuin",
   variant = "hero"
 }: InstallAppButtonProps) {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -99,7 +83,7 @@ export function InstallAppButton({
         variant: "info",
         title: "Sakuin sudah terinstall",
         description:
-          "Aplikasi sedang berjalan sebagai PWA. Jika ada versi baru yang siap dipakai, Sakuin akan menampilkan tombol update.",
+          "Update fitur akan masuk otomatis dari Sakuin. Kamu tidak perlu install ulang berkali-kali.",
         duration: 7000
       });
 
@@ -109,6 +93,11 @@ export function InstallAppButton({
     const installPrompt = deferredPrompt ?? getDeferredInstallPrompt();
 
     if (!installPrompt) {
+      if (fallbackToGuide) {
+        navigate("/install");
+        return;
+      }
+
       addToast({
         variant: "info",
         title: "Install manual dari browser",
