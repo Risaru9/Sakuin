@@ -79,7 +79,7 @@ export function AppShell({
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
   return (
-    <main className="min-h-screen bg-[#f7f5ef] pb-[calc(6.5rem+env(safe-area-inset-bottom))] text-black lg:pb-0">
+    <main className="min-h-screen bg-[#f7f5ef] pb-[var(--sakuin-mobile-content-bottom)] text-black lg:pb-0">
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-black/10 bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(0,0,0,0.03)] lg:flex lg:flex-col">
           <Link
@@ -146,7 +146,10 @@ export function AppShell({
 
       <MobileQuickTransactionAction />
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
+      <nav
+        aria-label="Navigasi utama mobile"
+        className="fixed inset-x-0 bottom-0 z-50 min-h-[var(--sakuin-mobile-nav-height)] border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden"
+      >
         <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.75rem_1fr_1fr] items-end gap-1">
           {[primaryNavigationItems[0], primaryNavigationItems[1]].map((item) => {
             const Icon = item.icon;

@@ -59,7 +59,7 @@ export function MobileQuickTransactionAction() {
         />
       ) : null}
 
-      <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 sm:bottom-6 sm:right-6">
+      <div className="fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.75rem)] right-3 z-40 sm:bottom-6 sm:right-6">
         <div
           className={[
             "absolute bottom-16 right-1 grid gap-3 transition-all duration-200 ease-out sm:bottom-[4.35rem] sm:right-1.5",

@@ -21,25 +21,27 @@
   --sakuin-red-soft: #fee2e2;
   --sakuin-amber: #d97706;
   --sakuin-amber-soft: #fef3c7;
+  --sakuin-mobile-nav-height: calc(5.9rem + env(safe-area-inset-bottom));
+  --sakuin-mobile-content-bottom: calc(7.25rem + env(safe-area-inset-bottom));
 }
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   min-height: 100%;
   background: var(--sakuin-bg);
+  scroll-padding-bottom: var(--sakuin-mobile-content-bottom);
 }
 
 body {
   min-height: 100%;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(124, 58, 237, 0.12), transparent 28rem),
-    radial-gradient(circle at bottom right, rgba(22, 163, 74, 0.08), transparent 24rem),
-    var(--sakuin-bg);
+  background: var(--sakuin-bg);
   color: var(--sakuin-text);
+  overscroll-behavior-y: contain;
 }
 
 button,
@@ -52,6 +54,14 @@ select {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@media (max-width: 1023px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 ::selection {
