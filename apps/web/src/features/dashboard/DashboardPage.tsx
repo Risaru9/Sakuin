@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   Loader2,
   MessageSquare,
   PiggyBank,
@@ -1159,6 +1160,14 @@ const profileQuery = useQuery({
               <Plus className="h-4 w-4" />
               Transaksi
             </Button>
+
+            <Link
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 text-sm font-bold text-black shadow-sm transition hover:bg-yellow-100 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+              to="/export"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Link>
           </div>
 
           <Link
@@ -1280,6 +1289,14 @@ const profileQuery = useQuery({
                     <Plus className="h-4 w-4" />
                     Tambah Manual
                   </button>
+
+                  <Link
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black ring-1 ring-black/15 transition hover:bg-yellow-100"
+                    to="/export"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Laporan
+                  </Link>
                 </div>
               </div>
             )}

@@ -2,13 +2,15 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
-  Download,
   Home,
+  MessageCircle,
   Settings,
+  Sparkles,
   Target
 } from "lucide-react";
 import { FloatingAiButton } from "../ai/FloatingAiButton";
 import { SakuinIdentityLogo } from "../brand/SakuinIdentityLogo";
+import { MobileQuickTransactionAction } from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
 
 type AppShellProps = {
@@ -17,7 +19,7 @@ type AppShellProps = {
   profileEmail?: string;
 };
 
-const navigationItems = [
+const primaryNavigationItems = [
   {
     label: "Home",
     sidebarLabel: "Dashboard",
@@ -31,23 +33,32 @@ const navigationItems = [
     to: "/transactions"
   },
   {
-    label: "Goals",
-    sidebarLabel: "Goals",
-    icon: Target,
-    to: "/goals"
-  },
-  {
-    label: "Export",
-    sidebarLabel: "Export Laporan",
-    icon: Download,
-    to: "/export"
-  },
-  {
     label: "Profile",
     sidebarLabel: "Profile",
     icon: Settings,
     to: "/profile"
+  },
+  {
+    label: "Goals",
+    sidebarLabel: "Goals",
+    icon: Target,
+    to: "/goals"
   }
+];
+
+const assistantNavigationItem = {
+  label: "Asisten",
+  sidebarLabel: "Asisten",
+  icon: MessageCircle,
+  to: "/asisten"
+};
+
+const desktopNavigationItems = [
+  primaryNavigationItems[0],
+  primaryNavigationItems[1],
+  assistantNavigationItem,
+  primaryNavigationItems[3],
+  primaryNavigationItems[2]
 ];
 
 function isActivePath(currentPath: string, targetPath: string) {
@@ -80,9 +91,10 @@ export function AppShell({
           </Link>
 
           <nav className="grid content-start gap-1.5">
-            {navigationItems.map((item) => {
+            {desktopNavigationItems.map((item) => {
               const Icon = item.icon;
               const active = isActivePath(location.pathname, item.to);
+              const isAssistant = item.to === "/asisten";
 
               return (
                 <Link
@@ -102,7 +114,9 @@ export function AppShell({
                     className={
                       active
                         ? "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
-                        : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-yellow-300 group-hover:text-black"
+                        : isAssistant
+                          ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black transition group-hover:bg-black group-hover:text-yellow-300"
+                          : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-yellow-300 group-hover:text-black"
                     }
                   >
                     <Icon className="h-4.5 w-4.5" />
@@ -132,10 +146,76 @@ export function AppShell({
       </div>
 
       <FloatingAiButton />
+      <MobileQuickTransactionAction />
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
-          {navigationItems.map((item) => {
+        <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.25rem_1fr_1fr] items-end gap-1">
+          {[primaryNavigationItems[0], primaryNavigationItems[1]].map((item) => {
+            const Icon = item.icon;
+            const active = isActivePath(location.pathname, item.to);
+
+            return (
+              <Link
+                className={
+                  active
+                    ? "relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-black px-1.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
+                    : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-zinc-500 transition active:bg-yellow-50 active:text-black"
+                }
+                key={item.to}
+                to={item.to}
+              >
+                {active ? (
+                  <span className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-yellow-300 animate-[sakuinNavMarker_1.8s_ease-in-out_infinite]" />
+                ) : null}
+
+                <Icon
+                  className={active ? "relative h-5 w-5 text-yellow-300" : "h-5 w-5 text-zinc-500"}
+                />
+
+                <span
+                  className={
+                    active
+                      ? "relative text-[10px] font-black text-white"
+                      : "text-[10px] font-black text-zinc-500"
+                  }
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          <Link
+            aria-label="Buka Asisten Sakuin"
+            className={
+              isActivePath(location.pathname, assistantNavigationItem.to)
+                ? "relative -mt-8 flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.5rem] border border-black bg-black px-2 pb-2 pt-3 text-white shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
+                : "relative -mt-8 flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-[1.5rem] border border-black bg-yellow-300 px-2 pb-2 pt-3 text-black shadow-[6px_6px_0_#000] transition active:translate-y-0.5 active:shadow-[4px_4px_0_#000]"
+            }
+            to={assistantNavigationItem.to}
+          >
+            <span
+              className={
+                isActivePath(location.pathname, assistantNavigationItem.to)
+                  ? "flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-300 text-black"
+                  : "flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-yellow-300"
+              }
+            >
+              <Sparkles className="absolute right-3 top-2 h-3.5 w-3.5" />
+              <MessageCircle className="h-5 w-5" />
+            </span>
+            <span
+              className={
+                isActivePath(location.pathname, assistantNavigationItem.to)
+                  ? "text-[10px] font-black text-white"
+                  : "text-[10px] font-black text-black"
+              }
+            >
+              Asisten
+            </span>
+          </Link>
+
+          {[primaryNavigationItems[3], primaryNavigationItems[2]].map((item) => {
             const Icon = item.icon;
             const active = isActivePath(location.pathname, item.to);
 
