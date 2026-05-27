@@ -297,11 +297,11 @@ export function GoalFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-4 py-4 backdrop-blur-md sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-black">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
               {isEditMode ? "Edit goal" : "Goal baru"}
             </p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
@@ -398,7 +398,7 @@ export function GoalFormModal({
             </span>
 
             <textarea
-              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+              className="min-h-24 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
               placeholder="Contoh: Target laptop untuk kuliah dan kerja"
               value={form.description}
               onChange={(event) =>

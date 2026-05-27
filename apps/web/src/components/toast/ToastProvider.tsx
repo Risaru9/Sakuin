@@ -70,10 +70,11 @@ function getToastStyle(variant: ToastVariant) {
   }
 
   return {
-    iconWrapper: "bg-yellow-100 text-black ring-1 ring-yellow-200",
+    iconWrapper:
+      "bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-border)]",
     title: "text-slate-950",
     description: "text-slate-600",
-    accent: "bg-yellow-300",
+    accent: "bg-[var(--sakuin-primary)]",
     Icon: Info
   };
 }

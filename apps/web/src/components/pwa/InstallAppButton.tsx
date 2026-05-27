@@ -26,14 +26,14 @@ function getButtonClassName(variant: InstallAppButtonVariant, className?: string
   }
 
   if (variant === "navbar") {
-    return "hidden items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-2 text-sm font-black text-black shadow-sm transition hover:bg-yellow-50 md:inline-flex";
+    return "hidden items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 py-2 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] md:inline-flex";
   }
 
   if (variant === "compact") {
-    return "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 text-sm font-black text-black shadow-sm transition hover:bg-yellow-50";
+    return "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]";
   }
 
-  return "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-black/10 bg-white px-6 text-base font-black text-black shadow-sm transition hover:bg-yellow-50 sm:w-auto";
+  return "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-[var(--sakuin-border)] bg-white px-6 text-base font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:w-auto";
 }
 
 export function InstallAppButton({

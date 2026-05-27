@@ -24,12 +24,12 @@ export function PwaUpdatePrompt({
 
   return (
     <div className="fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[280] px-4 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm sm:px-0">
-      <div className="overflow-hidden rounded-[1.5rem] border border-black/10 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
-        <div className="h-1 w-full bg-yellow-300" />
+      <div className="overflow-hidden rounded-[1.5rem] border border-[var(--sakuin-border)] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
+        <div className="h-1 w-full bg-[var(--sakuin-primary)]" />
 
         <div className="p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black ring-1 ring-black/10">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
               <RefreshCcw className="h-5 w-5" />
             </div>
 
@@ -55,7 +55,7 @@ export function PwaUpdatePrompt({
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
-              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-xs font-black text-white transition hover:bg-black"
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
               onClick={handleUpdateNow}
               type="button"
             >

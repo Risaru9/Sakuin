@@ -106,10 +106,10 @@ function GoalCard({
   const progress = getGoalProgress(goal);
 
   return (
-    <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm transition hover:bg-yellow-50">
+    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-lg font-black text-black">
+          <p className="truncate text-lg font-black text-[var(--sakuin-text)]">
             {goal.name}
           </p>
 
@@ -120,12 +120,12 @@ function GoalCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-black">
+          <span className="rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-1 text-xs font-black text-[var(--sakuin-text)]">
             {progress}%
           </span>
 
           {isDashboardPriority ? (
-            <span className="rounded-full bg-black px-3 py-1 text-[10px] font-black text-yellow-300">
+            <span className="rounded-full bg-[var(--sakuin-secondary)] px-3 py-1 text-[10px] font-black text-white">
               Dashboard
             </span>
           ) : null}
@@ -146,7 +146,7 @@ function GoalCard({
 
         <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
           <div
-            className="h-full rounded-full bg-yellow-300"
+            className="h-full rounded-full bg-[var(--sakuin-primary)]"
             style={{
               width: `${progress}%`
             }}
@@ -158,8 +158,8 @@ function GoalCard({
         <button
           className={
             isDashboardPriority
-              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-3 text-xs font-black text-yellow-300 transition hover:bg-zinc-800"
-              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-yellow-100 px-3 text-xs font-black text-black transition hover:bg-yellow-200"
+              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
+              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
           }
           onClick={() => onSetDashboardPriority(goal)}
           type="button"
@@ -173,7 +173,7 @@ function GoalCard({
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-3 text-xs font-black text-white transition hover:bg-zinc-800"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
           onClick={() => onAddProgress(goal)}
           type="button"
         >
@@ -182,7 +182,7 @@ function GoalCard({
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-yellow-100 px-3 text-xs font-black text-black transition hover:bg-yellow-200"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
           onClick={() => onEdit(goal)}
           type="button"
         >
@@ -416,7 +416,7 @@ export function GoalsPage() {
         <div>
           <p className="text-sm font-black text-zinc-500">Sakuin Goals</p>
 
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-black sm:text-4xl">
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-4xl">
             Goals Tabungan
           </h1>
 
@@ -426,7 +426,7 @@ export function GoalsPage() {
         </div>
 
         <Button
-          className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+          className="rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
           onClick={handleCreate}
           size="md"
         >
@@ -435,23 +435,23 @@ export function GoalsPage() {
         </Button>
       </header>
 
-      <div className="mb-5 rounded-3xl border border-black bg-yellow-300 p-5 text-black shadow-[8px_8px_0_#000] sm:p-7">
+      <div className="mb-5 rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-5 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-black/70">
+            <p className="text-sm font-semibold text-white/85">
               Total Progress Goals
             </p>
 
             <p className="mt-2 text-4xl font-black">{overallProgress}%</p>
 
-            <p className="mt-2 text-sm text-black/75">
+            <p className="mt-2 text-sm text-white/85">
               {formatRupiah(totalCurrent)} terkumpul dari{" "}
               {formatRupiah(totalTarget)} target.
             </p>
           </div>
 
           {isBackgroundFetching ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Memperbarui
             </div>
@@ -460,7 +460,7 @@ export function GoalsPage() {
 
         <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/60">
           <div
-            className="h-full rounded-full bg-black"
+            className="h-full rounded-full bg-[var(--sakuin-secondary)]"
             style={{
               width: `${overallProgress}%`
             }}
@@ -490,7 +490,7 @@ export function GoalsPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex min-h-52 items-center justify-center rounded-3xl border border-black/10 bg-white">
+        <div className="flex min-h-52 items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white">
           <div className="flex items-center gap-3 text-zinc-600">
             <Loader2 className="h-5 w-5 animate-spin" />
             <p className="text-sm font-bold">Mengambil goals...</p>
@@ -499,15 +499,15 @@ export function GoalsPage() {
       ) : null}
 
       {!isLoading && goals.length === 0 ? (
-        <div className="rounded-3xl border border-black/10 bg-white p-8 text-center shadow-sm">
-          <p className="text-lg font-black text-black">Belum ada goal</p>
+        <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-8 text-center shadow-sm">
+          <p className="text-lg font-black text-[var(--sakuin-text)]">Belum ada goal</p>
 
           <p className="mt-2 text-sm text-zinc-600">
             Tambahkan target tabungan pertama kamu.
           </p>
 
           <Button
-            className="mt-5 rounded-xl bg-black text-white hover:bg-zinc-800"
+            className="mt-5 rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)]"
             onClick={handleCreate}
           >
             <Plus className="h-4 w-4" />

@@ -278,7 +278,7 @@ function getDraftCardClassName(draft: QuickTransactionDraft, isExpanded: boolean
   }
 
   return isExpanded
-    ? "rounded-[1.25rem] border border-yellow-200 bg-yellow-50 p-2.5 shadow-sm sm:rounded-2xl sm:p-3"
+    ? "rounded-[1.25rem] border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-2.5 shadow-sm sm:rounded-2xl sm:p-3"
     : "rounded-[1.25rem] border border-slate-200 bg-white p-2.5 shadow-sm sm:rounded-2xl sm:p-3";
 }
 
@@ -696,11 +696,11 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
       <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-3.5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-1.5 text-xs font-bold text-black sm:gap-2 sm:text-sm">
+            <p className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:gap-2 sm:text-sm">
               <Sparkles className="h-4 w-4" />
               Catat cepat
             </p>
@@ -751,7 +751,7 @@ export function QuickTransactionModal({
             </span>
 
               <input
-                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40 sm:min-h-12 sm:rounded-[1.25rem] sm:px-4 sm:py-3"
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 sm:min-h-12 sm:rounded-[1.25rem] sm:px-4 sm:py-3"
                 disabled={isSaving}
                 type="date"
                 value={defaultDate}
@@ -765,7 +765,7 @@ export function QuickTransactionModal({
             </span>
 
               <textarea
-                className="min-h-32 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40 disabled:cursor-not-allowed disabled:bg-slate-100 sm:min-h-56 sm:rounded-[1.5rem] sm:px-4 sm:py-3"
+                className="min-h-32 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 disabled:cursor-not-allowed disabled:bg-slate-100 sm:min-h-56 sm:rounded-[1.5rem] sm:px-4 sm:py-3"
                 disabled={isSaving}
                 placeholder={`Contoh:
                 makan 15000
@@ -980,7 +980,7 @@ export function QuickTransactionModal({
                                 Tipe
                               </span>
                               <select
-                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                                 disabled={isSaving}
                                 value={draft.type}
                                 onChange={(event) =>
@@ -1000,7 +1000,7 @@ export function QuickTransactionModal({
                                 Nominal
                               </span>
                               <input
-                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                                 disabled={isSaving}
                                 inputMode="decimal"
                                 value={draft.amount}
@@ -1017,7 +1017,7 @@ export function QuickTransactionModal({
                                 Kategori
                               </span>
                               <select
-                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40 disabled:bg-slate-100 disabled:text-slate-400"
+                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 disabled:bg-slate-100 disabled:text-slate-400"
                                 disabled={isSaving || draft.saveAsNewCategory}
                                 value={draft.categoryId}
                                 onChange={(event) =>
@@ -1040,7 +1040,7 @@ export function QuickTransactionModal({
                                 Tanggal
                               </span>
                               <input
-                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                                 disabled={isSaving}
                                 type="date"
                                 value={draft.date}
@@ -1058,7 +1058,7 @@ export function QuickTransactionModal({
                               Catatan
                             </span>
                             <input
-                              className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                              className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                               disabled={isSaving}
                               value={draft.note}
                               onChange={(event) =>
@@ -1069,11 +1069,11 @@ export function QuickTransactionModal({
                             />
                           </label>
 
-                          <div className="mt-2.5 rounded-2xl border border-yellow-200 bg-yellow-50 p-2.5 sm:mt-3 sm:p-3">
+                          <div className="mt-2.5 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-2.5 sm:mt-3 sm:p-3">
                             <label className="flex items-start gap-3">
                               <input
                                 checked={draft.saveAsNewCategory}
-                                className="mt-1 h-4 w-4 rounded border-yellow-300 text-black focus:ring-yellow-300"
+                                className="mt-1 h-4 w-4 rounded border-[var(--sakuin-primary)] text-[var(--sakuin-text)] focus:ring-[var(--sakuin-focus)]"
                                 disabled={isSaving}
                                 type="checkbox"
                                 onChange={(event) =>
@@ -1084,10 +1084,10 @@ export function QuickTransactionModal({
                               />
 
                               <span>
-                                <span className="block text-xs font-black text-black">
+                                <span className="block text-xs font-black text-[var(--sakuin-text)]">
                                   Simpan sebagai kategori baru
                                 </span>
-                                <span className="mt-1 hidden text-xs font-medium leading-5 text-black sm:block">
+                                <span className="mt-1 hidden text-xs font-medium leading-5 text-[var(--sakuin-text)] sm:block">
                                   Aktifkan jika kategori transaksi ini belum ada
                                   dan ingin dipakai lagi nanti.
                                 </span>
@@ -1096,11 +1096,11 @@ export function QuickTransactionModal({
 
                             {draft.saveAsNewCategory ? (
                               <label className="mt-3 block">
-                                <span className="mb-1.5 block text-xs font-black text-black">
+                                <span className="mb-1.5 block text-xs font-black text-[var(--sakuin-text)]">
                                   Nama kategori baru
                                 </span>
                                 <input
-                                  className="min-h-11 w-full rounded-2xl border border-yellow-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                                  className="min-h-11 w-full rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                                   disabled={isSaving}
                                   maxLength={MAX_CATEGORY_NAME_LENGTH}
                                   placeholder={

@@ -572,25 +572,25 @@ export function ProfilePage() {
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
       <div className="mx-auto w-full max-w-7xl space-y-5 pb-6">
-        <section className="rounded-3xl border border-black bg-yellow-300 p-4 text-black shadow-[8px_8px_0_#000] sm:p-6">
+        <section className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-4 text-white shadow-[0_20px_50px_rgba(10,142,140,0.15)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
+              <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
                 Sakuin Profile
               </p>
 
-              <h1 className="mt-3 text-2xl font-black tracking-tight text-black sm:text-4xl">
+              <h1 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-4xl">
                 Pengaturan Akun
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-black/75">
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/85">
                 Kelola info penting saja: profil, batas saldo aman, dan
                 pengingat transaksi.
               </p>
             </div>
 
             <Button
-              className="w-full rounded-xl border-black/15 bg-white text-black shadow-sm hover:bg-yellow-50 sm:w-auto"
+              className="w-full rounded-xl border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] shadow-sm hover:bg-[var(--sakuin-primary-soft)] sm:w-auto"
               disabled={profileQuery.isFetching}
               onClick={refreshProfile}
               type="button"
@@ -631,10 +631,10 @@ export function ProfilePage() {
         ) : null}
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm">
-            <div className="border-b border-black/10 p-4 sm:p-6">
+          <section className="min-w-0 overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
+            <div className="border-b border-[var(--sakuin-border)] p-4 sm:p-6">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-14 sm:w-14">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white sm:h-14 sm:w-14">
                   <UserCircle className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
 
@@ -645,14 +645,14 @@ export function ProfilePage() {
                     </p>
 
                     {isBackgroundFetching ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-black text-black">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sakuin-primary-soft)] px-2 py-1 text-[10px] font-black text-[var(--sakuin-text)]">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Sync
                       </span>
                     ) : null}
                   </div>
 
-                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-black sm:text-2xl">
+                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-2xl">
                     {displayedName}
                   </h2>
 
@@ -665,7 +665,7 @@ export function ProfilePage() {
 
             <div className="p-4 sm:p-6">
               {isLoadingProfile ? (
-                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-yellow-50">
+                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)]">
                   <div className="flex items-center gap-3 text-zinc-600">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <p className="text-sm font-bold">Mengambil profile...</p>
@@ -677,7 +677,7 @@ export function ProfilePage() {
                     label="Nama"
                     name="name"
                     type="text"
-                    className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                    className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                     placeholder="Masukkan nama"
                     value={form.name}
                     onChange={(event) =>
@@ -693,7 +693,7 @@ export function ProfilePage() {
                       label="Safe balance limit"
                       name="safeBalanceLimit"
                       type="text"
-                      className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                      className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       placeholder="Contoh: 500000"
@@ -710,7 +710,7 @@ export function ProfilePage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-black/10 bg-yellow-50 p-4">
+                  <div className="rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-4">
                     <p className="text-xs font-black uppercase text-zinc-500">
                       Fungsi safe balance limit
                     </p>
@@ -724,7 +724,7 @@ export function ProfilePage() {
 
                   <div className="grid gap-3 pt-2 sm:grid-cols-2">
                     <Button
-                      className="min-h-12 rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+                      className="min-h-12 rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
                       disabled={isSubmitting}
                       isLoading={isSubmitting}
                       type="submit"
@@ -734,7 +734,7 @@ export function ProfilePage() {
                     </Button>
 
                     <Link
-                      className="inline-flex min-h-12 items-center justify-center rounded-xl border border-black/10 bg-white px-5 text-sm font-black text-black shadow-sm transition hover:bg-yellow-100"
+                      className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-5 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
                       to="/dashboard"
                     >
                       Kembali ke Dashboard
@@ -746,24 +746,24 @@ export function ProfilePage() {
           </section>
 
           <aside className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-1">
-            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
-              <p className="text-sm font-black text-black">Ringkasan</p>
+            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-black text-[var(--sakuin-text)]">Ringkasan</p>
 
               <div className="mt-4 grid gap-3">
                 <div className="min-w-0 rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs font-bold text-zinc-500">
                     Email akun
                   </p>
-                  <p className="mt-1 truncate text-sm font-black text-black">
+                  <p className="mt-1 truncate text-sm font-black text-[var(--sakuin-text)]">
                     {displayedEmail}
                   </p>
                 </div>
 
-                <div className="min-w-0 rounded-2xl bg-yellow-100 p-4">
-                  <p className="text-xs font-bold text-black">
+                <div className="min-w-0 rounded-2xl bg-[var(--sakuin-primary-soft)] p-4">
+                  <p className="text-xs font-bold text-[var(--sakuin-text)]">
                     Safe balance limit
                   </p>
-                  <p className="mt-1 break-words text-xl font-black text-black">
+                  <p className="mt-1 break-words text-xl font-black text-[var(--sakuin-text)]">
                     {formatRupiah(displayedSafeLimit)}
                   </p>
                 </div>
@@ -772,7 +772,7 @@ export function ProfilePage() {
                   <p className="text-xs font-bold text-zinc-500">
                     Status akun
                   </p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-black">
+                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-[var(--sakuin-text)]">
                     <CheckCircle2 className="h-5 w-5" />
                     Aktif
                   </p>
@@ -782,10 +782,10 @@ export function ProfilePage() {
 
             <PwaAppCard />
 
-            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
+            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-black text-black">
+                  <p className="text-sm font-black text-[var(--sakuin-text)]">
                     Pengingat Transaksi
                   </p>
                   <p className="mt-1 text-xs font-semibold leading-5 text-zinc-600">
@@ -797,7 +797,7 @@ export function ProfilePage() {
                 <div
                   className={
                     reminderSettings.enabled
-                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
+                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white"
                       : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600"
                   }
                 >
@@ -809,10 +809,10 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-yellow-50 p-3">
+              <div className="mt-4 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black text-black">
+                    <p className="text-xs font-black text-[var(--sakuin-text)]">
                       Status notifikasi
                     </p>
                     <p className="mt-0.5 text-xs font-semibold text-zinc-600">
@@ -822,7 +822,7 @@ export function ProfilePage() {
 
                   <div className="grid shrink-0 gap-2">
                     <button
-                      className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
                       onClick={() =>
                         void handleReminderEnabledChange(!reminderSettings.enabled)
                       }
@@ -832,7 +832,7 @@ export function ProfilePage() {
                     </button>
 
                     <button
-                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-xs font-black text-black transition hover:bg-yellow-100"
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
                       onClick={() => void handleTestNotification()}
                       type="button"
                     >
@@ -842,14 +842,14 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2 rounded-2xl border border-black/10 bg-white p-3">
+              <div className="mt-4 grid gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3">
                 <p className="text-xs font-black uppercase text-zinc-500">
                   Aturan anti-risih
                 </p>
 
                 <div className="grid gap-2 text-xs font-semibold leading-5 text-zinc-700">
                   <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
                     <p>
                       {getReminderFrequencySummary(reminderSettings)}, maksimal{" "}
                       {reminderSettings.maxPerDay} kali per hari.
@@ -857,7 +857,7 @@ export function ProfilePage() {
                   </div>
 
                   <div className="flex items-start gap-2">
-                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
                     <p>
                       Tidak mengganggu dari{" "}
                       {formatHourLabel(reminderSettings.quietStartHour)} sampai{" "}
@@ -866,7 +866,7 @@ export function ProfilePage() {
                   </div>
 
                   <div className="flex items-start gap-2">
-                    <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
                     <p>
                       Berhenti otomatis setelah review harian ditandai selesai.
                     </p>
@@ -880,7 +880,7 @@ export function ProfilePage() {
                     Frekuensi
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={reminderSettings.frequency}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -902,7 +902,7 @@ export function ProfilePage() {
                     Maksimal per hari
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={reminderSettings.maxPerDay}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -922,7 +922,7 @@ export function ProfilePage() {
                       Jangan ganggu
                     </span>
                     <select
-                      className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                      className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                       value={reminderSettings.quietStartHour}
                       onChange={(event) =>
                         updateReminderSettings({
@@ -943,7 +943,7 @@ export function ProfilePage() {
                       Sampai
                     </span>
                     <select
-                      className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                      className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                       value={reminderSettings.quietEndHour}
                       onChange={(event) =>
                         updateReminderSettings({
@@ -965,7 +965,7 @@ export function ProfilePage() {
                     Jam malam
                   </span>
                   <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={reminderSettings.eveningHour}
                     onChange={(event) =>
                       updateReminderSettings({
@@ -982,7 +982,7 @@ export function ProfilePage() {
                 </label>
               </div>
 
-              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-yellow-50 p-3 text-xs font-semibold leading-5 text-zinc-700">
+              <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 text-xs font-semibold leading-5 text-zinc-700">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
                   Default-nya 1 kali per hari. Pengingat ini tidak menampilkan
@@ -991,13 +991,13 @@ export function ProfilePage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
+            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black ring-1 ring-black/10">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-black">
+                  <p className="text-sm font-black text-[var(--sakuin-text)]">
                     Penghapusan Akun
                   </p>
                   <p className="mt-1 text-sm font-medium leading-6 text-zinc-600">
@@ -1009,7 +1009,7 @@ export function ProfilePage() {
               </div>
 
               <Link
-                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black shadow-sm transition hover:bg-yellow-50"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
                 to="/account-deletion"
               >
                 Request hapus akun
@@ -1017,7 +1017,7 @@ export function ProfilePage() {
             </section>
 
             <section className="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm sm:p-5">
-              <p className="text-sm font-black text-black">Keluar Akun</p>
+              <p className="text-sm font-black text-[var(--sakuin-text)]">Keluar Akun</p>
               <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
                 Logout hanya menghapus sesi login dari browser ini. Data akun
                 tetap tersimpan di backend.

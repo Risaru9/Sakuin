@@ -523,7 +523,7 @@ function IntentBadge({ intent }: { intent?: string }) {
   }
 
   return (
-    <span className="inline-flex w-fit rounded-full bg-yellow-50 px-2.5 py-1 text-[10px] font-black text-black ring-1 ring-black/10">
+    <span className="inline-flex w-fit rounded-full bg-[var(--sakuin-ai-soft)] px-2.5 py-1 text-[10px] font-black text-[var(--sakuin-ai)] ring-1 ring-[var(--sakuin-border)]">
       {formatIntentLabel(intent)}
     </span>
   );
@@ -601,10 +601,10 @@ function TransactionDraftPanel({
   const canCancel = !isSaving && !isSaved && !isCancelled;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-black/10 bg-yellow-50 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-black/10 px-3 py-3">
+    <div className="mt-3 overflow-hidden rounded-[1.1rem] border border-[var(--sakuin-border)] bg-[var(--sakuin-ai-soft)] shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--sakuin-border)] px-3 py-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-wide text-black">
+          <p className="text-[11px] font-black uppercase tracking-wide text-[var(--sakuin-text)]">
             {title}
           </p>
           <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
@@ -683,7 +683,7 @@ function TransactionDraftPanel({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-black/10 px-3 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-[var(--sakuin-border)] px-3 py-3">
         <span
           className={[
             "inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ring-1",
@@ -700,7 +700,7 @@ function TransactionDraftPanel({
         ) : null}
       </div>
 
-      <div className="grid gap-2 border-t border-black/10 px-3 py-3 sm:grid-cols-2">
+      <div className="grid gap-2 border-t border-[var(--sakuin-border)] px-3 py-3 sm:grid-cols-2">
         <button
           className={[
             "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black shadow-sm transition sm:text-sm",
@@ -709,7 +709,7 @@ function TransactionDraftPanel({
               : isCancelled
                 ? "cursor-not-allowed bg-slate-100 text-slate-400"
                 : isReadyToSave
-                  ? "bg-slate-950 text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                  ? "bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
                   : "cursor-not-allowed bg-slate-100 text-slate-400"
           ].join(" ")}
           disabled={!canSave}
@@ -768,7 +768,7 @@ function TransactionDraftPanel({
       </div>
 
       {draft.warnings.length > 0 ? (
-        <div className="space-y-2 border-t border-black/10 px-3 py-3">
+        <div className="space-y-2 border-t border-[var(--sakuin-border)] px-3 py-3">
           {draft.warnings.map((warning, index) => (
             <div
               className="flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-800"
@@ -854,8 +854,8 @@ function ChatBubble({
         <div
           className={
             isUser
-              ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white sm:h-9 sm:w-9"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black shadow-md shadow-black/10 sm:h-9 sm:w-9"
+              ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-secondary)] text-white sm:h-9 sm:w-9"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 sm:h-9 sm:w-9"
           }
         >
           {isUser ? (
@@ -868,7 +868,7 @@ function ChatBubble({
         <div
           className={
             isUser
-              ? "rounded-[1.15rem] rounded-tr-md bg-slate-950 px-4 py-3 text-white shadow-sm"
+              ? "rounded-[1.15rem] rounded-tr-md bg-[var(--sakuin-secondary)] px-4 py-3 text-white shadow-sm"
               : "rounded-[1.15rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-800 shadow-sm shadow-slate-950/5"
           }
         >
@@ -991,7 +991,7 @@ function ChatBubble({
               {visibleSuggestions.map((suggestion) => (
                 <button
                   aria-label={`Kirim prompt: ${suggestion}`}
-                  className="rounded-full bg-yellow-50 px-3 py-1.5 text-left text-[10px] font-black leading-4 text-black ring-1 ring-black/10 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full bg-[var(--sakuin-ai-soft)] px-3 py-1.5 text-left text-[10px] font-black leading-4 text-[var(--sakuin-ai)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-ai-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={disabled}
                   key={`${message.id}-${suggestion}`}
                   onClick={() => onSuggestionClick(suggestion)}
@@ -1022,7 +1022,7 @@ function ClearHistoryDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--sakuin-secondary)]/40 px-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -1840,8 +1840,8 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:z-auto lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
-        <header className="shrink-0 border-b border-black/10 bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5 sm:py-4 lg:px-6 lg:pt-4">
+      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:z-auto lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-[var(--sakuin-border)] lg:shadow-xl lg:shadow-black/5">
+        <header className="shrink-0 border-b border-[var(--sakuin-border)] bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5 sm:py-4 lg:px-6 lg:pt-4">
           <div className="flex items-start gap-3">
             <Link
               aria-label="Kembali ke dashboard"
@@ -1853,7 +1853,7 @@ export function AsistenPage() {
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sakuin-ai-soft)] px-3 py-1 text-xs font-black text-[var(--sakuin-ai)] ring-1 ring-[var(--sakuin-border)]">
                   <Sparkles className="h-3.5 w-3.5" />
                   Asisten Sakuin
                 </p>
@@ -1889,7 +1889,7 @@ export function AsistenPage() {
           aria-label="Percakapan Asisten Sakuin"
           aria-live="polite"
           aria-relevant="additions text"
-          className="min-h-0 flex-1 overflow-y-auto bg-[#f7f5ef] px-3 py-3 sm:px-5 sm:py-5 lg:px-6"
+          className="min-h-0 flex-1 overflow-y-auto bg-[var(--sakuin-bg)] px-3 py-3 sm:px-5 sm:py-5 lg:px-6"
           role="log"
         >
           <div className="space-y-4">
@@ -1920,7 +1920,7 @@ export function AsistenPage() {
             {isSubmitting ? (
               <div className="flex justify-start">
                 <div className="flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black shadow-md shadow-black/10 sm:h-9 sm:w-9">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 sm:h-9 sm:w-9">
                     <Bot className="h-4 w-4" />
                   </div>
 
@@ -1986,7 +1986,7 @@ export function AsistenPage() {
             {SUGGESTED_PROMPT_OPTIONS.map((option) => (
               <button
                 aria-label={`Kirim prompt: ${option.prompt}`}
-                className="shrink-0 rounded-2xl border border-black/10 bg-white px-3 py-2 text-left shadow-sm transition hover:border-black/20 hover:bg-yellow-50 hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="shrink-0 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 text-left shadow-sm transition hover:border-[var(--sakuin-border)] hover:bg-[var(--sakuin-ai-soft)] hover:text-[var(--sakuin-ai)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSubmitting}
                 key={option.prompt}
                 onClick={() => handlePromptClick(option.prompt)}
@@ -2010,7 +2010,7 @@ export function AsistenPage() {
             <div className="min-w-0 flex-1">
               <textarea
                 aria-label="Tulis pertanyaan atau transaksi untuk Asisten Sakuin"
-                className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-black focus:ring-4 focus:ring-yellow-300/30 disabled:cursor-not-allowed disabled:bg-slate-50"
+                className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/20 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={isSubmitting}
                 enterKeyHint="send"
                 maxLength={1000}
@@ -2028,7 +2028,7 @@ export function AsistenPage() {
 
             <button
               aria-label="Kirim pesan"
-              className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+              className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[#4f3bcf] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting || input.trim().length === 0}
               type="submit"
             >

@@ -140,16 +140,16 @@ export function AppShell({
   return (
     <main
       className={[
-        "min-h-screen bg-[#f7f5ef] text-black lg:pb-0",
+        "min-h-screen bg-[var(--sakuin-bg)] text-[var(--sakuin-text)] lg:pb-0",
         shouldShowMobileNavigation
           ? "pb-[var(--sakuin-mobile-content-bottom)]"
           : "pb-0"
       ].join(" ")}
     >
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="sticky top-0 hidden h-screen border-r border-black/10 bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(0,0,0,0.03)] lg:flex lg:flex-col">
+        <aside className="sticky top-0 hidden h-screen border-r border-[var(--sakuin-border)] bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(15,23,42,0.03)] lg:flex lg:flex-col">
           <Link
-            className="mb-8 rounded-2xl px-1 py-1 transition hover:bg-yellow-50"
+            className="mb-8 rounded-2xl px-1 py-1 transition hover:bg-[var(--sakuin-primary-soft)]"
             to="/dashboard"
           >
             <SakuinIdentityLogo subtitle="Personal finance app" size="md" />
@@ -165,8 +165,8 @@ export function AppShell({
                   aria-current={active ? "page" : undefined}
                   className={
                     active
-                      ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-black px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(0,0,0,0.14)]"
-                      : "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-yellow-50 hover:text-black"
+                      ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(10,142,140,0.18)]"
+                      : "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-text)]"
                   }
                   key={item.to}
                   to={item.to}
@@ -174,8 +174,8 @@ export function AppShell({
                   <span
                     className={
                       active
-                        ? "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
-                        : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-yellow-300 group-hover:text-black"
+                        ? "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--sakuin-primary)]"
+                        : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-white group-hover:text-[var(--sakuin-primary)]"
                     }
                   >
                     <Icon className="h-4.5 w-4.5" />
@@ -189,8 +189,8 @@ export function AppShell({
             })}
           </nav>
 
-          <div className="mt-auto rounded-3xl border border-black/10 bg-zinc-50 p-4">
-            <p className="truncate text-sm font-black text-black">
+          <div className="mt-auto rounded-3xl border border-[var(--sakuin-border)] bg-[var(--sakuin-surface-soft)] p-4">
+            <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
               {displayedName}
             </p>
             <p className="mt-1 truncate text-xs font-medium text-zinc-500">

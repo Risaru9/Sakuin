@@ -60,13 +60,13 @@ export function ConfirmDialog({
   const confirmButtonClassName =
     variant === "danger"
       ? "bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-300"
-      : "bg-slate-950 text-white hover:bg-black focus-visible:ring-slate-300";
+      : "bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-slate-300";
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       <button
         aria-label="Tutup dialog"
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+        className="absolute inset-0 bg-[var(--sakuin-secondary)]/40 backdrop-blur-md"
         disabled={loading}
         onClick={onClose}
         type="button"

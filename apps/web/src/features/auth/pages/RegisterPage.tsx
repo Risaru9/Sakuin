@@ -79,7 +79,7 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-black selection:bg-yellow-300">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-[var(--sakuin-text)] selection:bg-[var(--sakuin-primary-soft)]">
       <section className="mx-auto flex min-h-[100dvh] w-full max-w-6xl items-center justify-center px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[0.9fr_1fr] lg:gap-12 lg:px-8">
         <div className="w-full min-w-0 max-w-[28rem] py-4 lg:py-0">
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3 lg:hidden">
@@ -91,7 +91,7 @@ export function RegisterPage() {
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-3.5 text-xs font-bold text-black shadow-sm transition hover:bg-yellow-100"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-3.5 text-xs font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
               to="/"
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -99,12 +99,12 @@ export function RegisterPage() {
             </Link>
           </div>
 
-          <div className="w-full min-w-0 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-10">
+          <div className="w-full min-w-0 rounded-3xl border border-[var(--sakuin-border)] bg-white p-6 shadow-sm sm:p-10">
             <div className="mb-8">
               <p className="text-sm font-bold uppercase text-zinc-500">
                 Mulai sekarang
               </p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-black">
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-[var(--sakuin-text)]">
                 Buat akun
               </h2>
               <p className="mt-2 text-sm leading-6 text-zinc-600">
@@ -141,7 +141,7 @@ export function RegisterPage() {
                 name="name"
                 type="text"
                 autoComplete="name"
-                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Nama kamu"
                 value={form.name}
                 onChange={(event) =>
@@ -157,7 +157,7 @@ export function RegisterPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
-                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="nama@email.com"
                 value={form.email}
                 onChange={(event) =>
@@ -173,7 +173,7 @@ export function RegisterPage() {
                 name="password"
                 type="password"
                 autoComplete="new-password"
-                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Password123"
                 value={form.password}
                 onChange={(event) =>
@@ -185,7 +185,7 @@ export function RegisterPage() {
               />
 
               <Button
-                className="mt-2 w-full rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+                className="mt-2 w-full rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
@@ -200,7 +200,7 @@ export function RegisterPage() {
               <p>
                 Sudah punya akun?{" "}
                 <Link
-                  className="font-bold text-black transition hover:text-yellow-700 hover:underline"
+                  className="font-bold text-[var(--sakuin-text)] transition hover:text-[var(--sakuin-primary)] hover:underline"
                   to="/login"
                 >
                   Login
@@ -210,7 +210,7 @@ export function RegisterPage() {
               <p>
                 Ingin lihat halaman utama?{" "}
                 <Link
-                  className="font-bold text-black transition hover:underline"
+                  className="font-bold text-[var(--sakuin-text)] transition hover:underline"
                   to="/"
                 >
                   Kembali ke Beranda
@@ -230,7 +230,7 @@ export function RegisterPage() {
             </Link>
 
             <Link
-              className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold text-black shadow-sm transition hover:bg-yellow-100"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 py-2 text-xs font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
               to="/"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -238,37 +238,37 @@ export function RegisterPage() {
             </Link>
           </div>
 
-          <div className="rounded-3xl border border-black bg-yellow-300 p-8 shadow-[10px_10px_0_#000]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-3.5 py-1.5 text-xs font-bold text-black">
+          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-8 text-white shadow-[0_22px_55px_rgba(10,142,140,0.16)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-3.5 py-1.5 text-xs font-bold text-[var(--sakuin-text)]">
               <Sparkles className="h-4 w-4" />
               Finance in your pocket
             </div>
 
-            <h1 className="mt-6 max-w-xl text-5xl font-black leading-[1.05] tracking-tight text-black">
+            <h1 className="mt-6 max-w-xl text-5xl font-black leading-[1.05] tracking-tight text-white">
               Bangun kebiasaan finansial yang lebih rapi.
             </h1>
 
-            <p className="mt-5 max-w-lg text-lg leading-8 text-black/75">
+            <p className="mt-5 max-w-lg text-lg leading-8 text-white/85">
               Sakuin membantu kamu memahami arus uang, memantau target tabungan,
               dan menjaga batas saldo aman.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-black/15 bg-white p-5">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-black text-yellow-300">
+              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
                   <BarChart3 className="h-6 w-6" />
                 </div>
-                <p className="text-base font-bold text-black">Dashboard ringkas</p>
+                <p className="text-base font-bold text-[var(--sakuin-text)]">Dashboard ringkas</p>
                 <p className="mt-1 text-sm text-zinc-600">
                   Lihat income, expense, balance, dan trend.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-black/15 bg-white p-5">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-black text-yellow-300">
+              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
                   <PiggyBank className="h-6 w-6" />
                 </div>
-                <p className="text-base font-bold text-black">Goals tabungan</p>
+                <p className="text-base font-bold text-[var(--sakuin-text)]">Goals tabungan</p>
                 <p className="mt-1 text-sm text-zinc-600">
                   Pantau progress target tabunganmu.
                 </p>

@@ -18,7 +18,7 @@ export function SakuinLogo({
       <div
         aria-label="Sakuin logo"
         className={[
-          "flex shrink-0 items-center justify-center rounded-xl bg-yellow-300 font-black text-black ring-1 ring-black/10",
+          "flex shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] font-black text-white ring-1 ring-[var(--sakuin-border)]",
           iconSizeClass,
           markSizeClass
         ].join(" ")}
@@ -30,7 +30,7 @@ export function SakuinLogo({
         <div className="min-w-0">
           <p
             className={[
-              "truncate font-black leading-none text-black",
+              "truncate font-black leading-none text-[var(--sakuin-text)]",
               titleSizeClass
             ].join(" ")}
           >

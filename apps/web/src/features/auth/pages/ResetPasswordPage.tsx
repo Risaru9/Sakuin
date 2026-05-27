@@ -108,7 +108,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-black selection:bg-yellow-300">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-[var(--sakuin-text)] selection:bg-[var(--sakuin-primary-soft)]">
       <section className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center justify-center px-4 py-6 sm:px-6">
         <div className="w-full min-w-0 py-4">
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3">
@@ -120,7 +120,7 @@ export function ResetPasswordPage() {
             </Link>
 
             <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-3.5 text-xs font-bold text-black shadow-sm transition hover:bg-yellow-100"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-3.5 text-xs font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
               to="/login"
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -128,16 +128,16 @@ export function ResetPasswordPage() {
             </Link>
           </div>
 
-          <div className="w-full min-w-0 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-10">
+          <div className="w-full min-w-0 rounded-3xl border border-[var(--sakuin-border)] bg-white p-6 shadow-sm sm:p-10">
             <div className="mb-8">
-              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-300 text-black">
+              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
                 <KeyRound className="h-7 w-7" />
               </div>
 
               <p className="text-sm font-bold uppercase text-zinc-500">
                 Password baru
               </p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-black">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-[var(--sakuin-text)]">
                 Buat password baru
               </h1>
               <p className="mt-3 text-sm leading-6 text-zinc-600">
@@ -147,7 +147,7 @@ export function ResetPasswordPage() {
             </div>
 
             {successMessage ? (
-              <div className="mb-6 rounded-2xl border border-black/10 bg-yellow-100 px-4 py-3.5 text-sm font-bold text-black">
+              <div className="mb-6 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-4 py-3.5 text-sm font-bold text-[var(--sakuin-text)]">
                 {successMessage}
               </div>
             ) : null}
@@ -164,7 +164,7 @@ export function ResetPasswordPage() {
                 name="password"
                 type="password"
                 autoComplete="new-password"
-                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Password123"
                 value={form.password}
                 disabled={!hasToken || Boolean(successMessage)}
@@ -181,7 +181,7 @@ export function ResetPasswordPage() {
                 name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
-                className="rounded-xl border-black/15 focus:border-black focus:ring-yellow-300/40"
+                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Ulangi password baru"
                 value={form.confirmPassword}
                 disabled={!hasToken || Boolean(successMessage)}
@@ -194,7 +194,7 @@ export function ResetPasswordPage() {
               />
 
               <Button
-                className="mt-2 w-full rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+                className="mt-2 w-full rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
                 type="submit"
                 size="lg"
                 isLoading={isSubmitting}
@@ -209,7 +209,7 @@ export function ResetPasswordPage() {
               <p>
                 Sudah ingat password?{" "}
                 <Link
-                  className="font-bold text-black transition hover:text-yellow-700 hover:underline"
+                  className="font-bold text-[var(--sakuin-text)] transition hover:text-[var(--sakuin-primary)] hover:underline"
                   to="/login"
                 >
                   Kembali login
@@ -219,7 +219,7 @@ export function ResetPasswordPage() {
               <p>
                 Link bermasalah?{" "}
                 <Link
-                  className="font-bold text-black transition hover:underline"
+                  className="font-bold text-[var(--sakuin-text)] transition hover:underline"
                   to="/forgot-password"
                 >
                   Kirim ulang link

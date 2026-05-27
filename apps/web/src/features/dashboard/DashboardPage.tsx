@@ -129,20 +129,20 @@ function formatSpendingPaceStatus(status: SafeToSpendData["spendingPaceStatus"])
 function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
   if (status === "SAFE") {
     return {
-      card: "border-black/10 bg-white",
+      card: "border-[var(--sakuin-border)] bg-white",
       badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
       icon: "bg-emerald-600 text-white",
-      text: "text-black",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
 
   if (status === "WATCH") {
     return {
-      card: "border-black/10 bg-white",
+      card: "border-[var(--sakuin-border)] bg-white",
       badge: "bg-amber-100 text-amber-800 ring-amber-200",
-      icon: "bg-yellow-300 text-black",
-      text: "text-black",
+      icon: "bg-[var(--sakuin-amber)] text-white",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
@@ -152,16 +152,16 @@ function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
       card: "border-rose-200 bg-white",
       badge: "bg-rose-100 text-rose-700 ring-rose-200",
       icon: "bg-rose-600 text-white",
-      text: "text-black",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
 
   return {
-    card: "border-black/10 bg-white",
+    card: "border-[var(--sakuin-border)] bg-white",
     badge: "bg-slate-100 text-slate-700 ring-slate-200",
     icon: "bg-slate-700 text-white",
-    text: "text-black",
+    text: "text-[var(--sakuin-text)]",
     muted: "text-zinc-600"
   };
 }
@@ -185,20 +185,20 @@ function formatFinancialCheckupStatus(status: FinancialCheckupData["status"]) {
 function getFinancialCheckupStatusStyle(status: FinancialCheckupData["status"]) {
   if (status === "GOOD") {
     return {
-      card: "border-black/10 bg-white",
+      card: "border-[var(--sakuin-border)] bg-white",
       badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
       icon: "bg-emerald-600 text-white",
-      text: "text-black",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
 
   if (status === "WATCH") {
     return {
-      card: "border-black/10 bg-white",
+      card: "border-[var(--sakuin-border)] bg-white",
       badge: "bg-amber-100 text-amber-800 ring-amber-200",
-      icon: "bg-yellow-300 text-black",
-      text: "text-black",
+      icon: "bg-[var(--sakuin-amber)] text-white",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
@@ -208,16 +208,16 @@ function getFinancialCheckupStatusStyle(status: FinancialCheckupData["status"]) 
       card: "border-rose-200 bg-white",
       badge: "bg-rose-100 text-rose-700 ring-rose-200",
       icon: "bg-rose-600 text-white",
-      text: "text-black",
+      text: "text-[var(--sakuin-text)]",
       muted: "text-zinc-600"
     };
   }
 
   return {
-    card: "border-black/10 bg-white",
+    card: "border-[var(--sakuin-border)] bg-white",
     badge: "bg-slate-100 text-slate-700 ring-slate-200",
     icon: "bg-slate-700 text-white",
-    text: "text-black",
+    text: "text-[var(--sakuin-text)]",
     muted: "text-zinc-600"
   };
 }
@@ -312,9 +312,9 @@ function getPriorityGoal(goals: Goal[], priorityGoalId: string | null) {
 
 function SummarySkeleton() {
   return (
-    <div className="flex min-h-[11rem] items-center justify-center rounded-3xl border border-black/10 bg-white p-4 text-black shadow-sm sm:min-h-[16rem] sm:p-8">
+    <div className="flex min-h-[11rem] items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 text-[var(--sakuin-text)] shadow-sm sm:min-h-[16rem] sm:p-8">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-black" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--sakuin-text)]" />
         <p className="text-sm font-semibold text-zinc-600">
           Memuat ringkasan keuangan...
         </p>
@@ -327,13 +327,13 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
   const isIncome = transaction.type === "INCOME";
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white p-3 shadow-sm transition hover:bg-yellow-50 sm:gap-4 sm:p-4">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:gap-4 sm:p-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div
           className={
             isIncome
-              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
-              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300"
+              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white"
+              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white"
           }
         >
           {isIncome ? (
@@ -344,7 +344,7 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-black">
+          <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
             {transaction.note || transaction.category.name}
           </p>
           <p className="mt-0.5 text-xs font-medium text-zinc-500">
@@ -356,8 +356,8 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
       <p
         className={
           isIncome
-            ? "shrink-0 text-right text-xs font-black text-black sm:text-sm"
-            : "shrink-0 text-right text-xs font-black text-zinc-700 sm:text-sm"
+            ? "shrink-0 text-right text-xs font-black text-[var(--sakuin-green)] sm:text-sm"
+            : "shrink-0 text-right text-xs font-black text-[var(--sakuin-red)] sm:text-sm"
         }
       >
         {isIncome ? "+" : "-"} {formatCompactRupiah(transaction.amount)}
@@ -379,14 +379,14 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-2xl bg-yellow-50 px-4 text-center text-sm font-medium text-zinc-600">
+      <div className="flex h-32 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)] px-4 text-center text-sm font-medium text-zinc-600">
         Belum ada data trend bulanan.
       </div>
     );
   }
 
   return (
-    <div className="relative rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+    <div className="relative rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
       
       {/* Garis Bantu (Grid) Latar Belakang */}
       <div className="absolute left-4 right-4 top-10 bottom-20 z-0 flex flex-col justify-between px-2 sm:left-6 sm:right-6">
@@ -408,7 +408,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
             >
               {/* Tooltip Melayang Bergaya Glassmorphism */}
               <div className="pointer-events-none absolute -top-16 left-1/2 z-50 mb-2 w-max -translate-x-1/2 scale-95 opacity-0 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-100 group-hover:opacity-100">
-                <div className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs shadow-sm">
+                <div className="rounded-xl border border-[var(--sakuin-border)] bg-white px-3 py-2 text-xs shadow-sm">
                   <p className="mb-1 border-b border-slate-100 pb-1 font-bold text-slate-700">
                     {getMonthLabel(item.month)}
                   </p>
@@ -429,7 +429,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pemasukan */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-yellow-300 opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
+                    className="w-full rounded-t-md bg-[var(--sakuin-green)] opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
                     style={{ height: `${incomeHeight}%` }}
                   />
                 </div>
@@ -437,7 +437,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pengeluaran */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-black opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
+                    className="w-full rounded-t-md bg-[var(--sakuin-red)] opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
                     style={{ height: `${expenseHeight}%` }}
                   />
                 </div>
@@ -456,11 +456,11 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
       {/* Legend */}
       <div className="relative z-10 mt-6 flex flex-wrap items-center justify-center gap-5 border-t border-slate-100 pt-5 text-xs font-bold text-slate-500">
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-sm" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[var(--sakuin-green)] shadow-sm" />
           Pemasukan
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-black shadow-sm" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[var(--sakuin-red)] shadow-sm" />
           Pengeluaran
         </span>
       </div>
@@ -485,10 +485,10 @@ function DashboardGoalsCard({
   );
 
   return (
-    <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-black">
+          <h2 className="text-base font-black text-[var(--sakuin-text)]">
             Goals Tabungan
           </h2>
           <p className="mt-1 text-xs font-medium text-zinc-600">
@@ -496,7 +496,7 @@ function DashboardGoalsCard({
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white">
           <PiggyBank className="h-5 w-5" />
         </div>
       </div>
@@ -532,7 +532,7 @@ function DashboardGoalsCard({
           </p>
 
           <Link
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-black px-4 text-xs font-black shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black shadow-sm transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
             to="/goals"
           >
             <span className="text-white">Buka Goals</span>
@@ -548,7 +548,7 @@ function DashboardGoalsCard({
                 {priorityGoal.name}
               </p>
 
-              <p className="mt-1 text-[11px] font-black text-black">
+              <p className="mt-1 text-[11px] font-black text-[var(--sakuin-text)]">
                 {isUserSelectedPriority
                   ? "Prioritas pilihanmu"
                   : "Rekomendasi otomatis"}
@@ -560,7 +560,7 @@ function DashboardGoalsCard({
               </p>
             </div>
 
-            <span className="shrink-0 rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-black">
+            <span className="shrink-0 rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-1 text-xs font-black text-[var(--sakuin-text)]">
               {getGoalProgress(priorityGoal)}%
             </span>
           </div>
@@ -572,7 +572,7 @@ function DashboardGoalsCard({
 
           <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-yellow-300"
+              className="h-full rounded-full bg-[var(--sakuin-primary)]"
               style={{
                 width: `${getGoalProgress(priorityGoal)}%`
               }}
@@ -580,7 +580,7 @@ function DashboardGoalsCard({
           </div>
 
           <Link
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-black px-4 text-xs font-black shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black shadow-sm transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
             to="/goals"
           >
             <span className="text-white">Kelola Goals</span>
@@ -600,7 +600,7 @@ function SafeToSpendCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
         <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -613,7 +613,7 @@ function SafeToSpendCard({
 
   if (!safeToSpend) {
     return (
-      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
         <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Aman Dipakai belum tersedia
@@ -688,20 +688,20 @@ function SafeToSpendCard({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-yellow-50 p-3 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Sisa aman
           </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-black sm:text-xl">
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--sakuin-text)] sm:text-xl">
             {formatCompactRupiah(safeToSpend.availableToSpend)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-3 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Limit harian
           </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-black sm:text-xl">
+          <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--sakuin-text)] sm:text-xl">
             {hasDailyLimit
               ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
               : "-"}
@@ -710,33 +710,33 @@ function SafeToSpendCard({
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Ritme
           </p>
-          <p className="mt-1 truncate text-xs font-black text-black">
+          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
             {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Fokus
           </p>
-          <p className="mt-1 truncate text-xs font-black text-black">
+          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
             {safeToSpend.topRiskCategoryName ?? "Belum ada"}
           </p>
         </div>
       </div>
 
-      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-black/10">
+      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
         <p className="text-[10px] font-black uppercase text-zinc-500">Aksi utama</p>
-        <p className="mt-1.5 text-xs font-semibold leading-5 text-black">
+        <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
           {safeToSpend.action}
         </p>
       </div>
 
-      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/10">
+      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
         <p className="text-[10px] font-black uppercase text-zinc-500">Kenapa status ini?</p>
         <p className="mt-1.5 text-xs font-medium leading-5 text-zinc-700">
           {safeToSpend.reason}
@@ -748,7 +748,7 @@ function SafeToSpendCard({
           <div className="flex items-start gap-2 text-xs leading-5 text-zinc-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-black">Perlu diperhatikan</p>
+              <p className="font-black text-[var(--sakuin-text)]">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
@@ -756,7 +756,7 @@ function SafeToSpendCard({
       ) : null}
 
       <Link
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
         to="/asisten"
       >
         <MessageSquare className="h-4 w-4 text-white" />
@@ -775,7 +775,7 @@ function FinancialCheckupCard({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
         <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -788,7 +788,7 @@ function FinancialCheckupCard({
 
   if (!financialCheckup) {
     return (
-      <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
         <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
           <p className="text-sm font-black text-slate-950">
             Checkup Keuangan belum tersedia
@@ -855,18 +855,18 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl bg-yellow-50 p-3 ring-1 ring-black/10">
+      <div className="mt-4 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase text-zinc-500">
               Fokus checkup
             </p>
-            <p className="mt-1 truncate text-base font-black tracking-tight text-black sm:text-lg">
+            <p className="mt-1 truncate text-base font-black tracking-tight text-[var(--sakuin-text)] sm:text-lg">
               {focusLabel}
             </p>
           </div>
 
-          <p className="shrink-0 text-right text-xs font-black text-black">
+          <p className="shrink-0 text-right text-xs font-black text-[var(--sakuin-text)]">
             {financialCheckup.focusCategoryName
               ? formatCompactRupiah(financialCheckup.focusCategoryAmount)
               : "-"}
@@ -875,40 +875,40 @@ function FinancialCheckupCard({
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Rasio
           </p>
-          <p className="mt-1 text-xs font-black text-black">
+          <p className="mt-1 text-xs font-black text-[var(--sakuin-text)]">
             {financialCheckup.metrics.expenseToIncomeRatio === null
               ? "-"
               : `${financialCheckup.metrics.expenseToIncomeRatio}%`}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Cashflow
           </p>
-          <p className="mt-1 truncate text-xs font-black text-black">
+          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
             {formatCompactRupiah(financialCheckup.metrics.netCashflow)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Sisa aman
           </p>
-          <p className="mt-1 truncate text-xs font-black text-black">
+          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
             {formatCompactRupiah(financialCheckup.metrics.availableToSpend)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-black/10">
+        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Limit
           </p>
-          <p className="mt-1 truncate text-xs font-black text-black">
+          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
             {financialCheckup.metrics.suggestedDailyLimit === null
               ? "-"
               : formatCompactRupiah(financialCheckup.metrics.suggestedDailyLimit)}
@@ -916,14 +916,14 @@ function FinancialCheckupCard({
         </div>
       </div>
 
-      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-black/10">
+      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
         <p className="text-[10px] font-black uppercase text-zinc-500">Aksi utama</p>
-        <p className="mt-1.5 text-xs font-semibold leading-5 text-black">
+        <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
           {financialCheckup.action}
         </p>
       </div>
 
-      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/10">
+      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
         <p className="text-[10px] font-black uppercase text-zinc-500">Kenapa status ini?</p>
         <p className="mt-1.5 text-xs font-medium leading-5 text-zinc-700">
           {financialCheckup.reason}
@@ -935,7 +935,7 @@ function FinancialCheckupCard({
           <div className="flex items-start gap-2 text-xs leading-5 text-zinc-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-black text-black">Perlu diperhatikan</p>
+              <p className="font-black text-[var(--sakuin-text)]">Perlu diperhatikan</p>
               <p className="mt-0.5 font-semibold">{primaryWarning}</p>
             </div>
           </div>
@@ -943,7 +943,7 @@ function FinancialCheckupCard({
       ) : null}
 
       <Link
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
         to="/asisten"
       >
         <MessageSquare className="h-4 w-4 text-white" />
@@ -1105,66 +1105,66 @@ function DailyReviewCard({
   );
 
   return (
-    <section className="mb-4 rounded-3xl border border-black bg-yellow-300 p-3.5 shadow-[6px_6px_0_#000] sm:mb-5 sm:p-5">
+    <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-3.5 shadow-sm sm:mb-5 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
         <div className="flex min-w-0 flex-1 gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white">
             <Clock3 className="h-5 w-5" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-black text-black">
+              <p className="text-sm font-black text-[var(--sakuin-text)]">
                 {content.title}
               </p>
-              <span className="rounded-full bg-black px-2.5 py-1 text-[10px] font-black uppercase text-yellow-300">
+              <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-border)]">
                 {content.statusLabel}
               </span>
             </div>
-            <p className="mt-1 text-xs font-semibold leading-5 text-black/75 sm:text-sm sm:leading-6">
+            <p className="mt-1 text-xs font-semibold leading-5 text-[var(--sakuin-muted)] sm:text-sm sm:leading-6">
               {content.message}
             </p>
 
             {habit ? (
               <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div className="rounded-2xl bg-white/70 p-2.5 ring-1 ring-black/10">
-                  <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase text-black/60">
+                <div className="rounded-2xl bg-white/70 p-2.5 ring-1 ring-[var(--sakuin-border)]">
+                  <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase text-[var(--sakuin-muted)]">
                     <span>Hari tercatat</span>
                     <span>
                       {habit.currentMonthTransactionDays}/
                       {habit.currentMonthDaysElapsed}
                     </span>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-900/10">
                     <div
-                      className="h-full rounded-full bg-black transition-[width]"
+                      className="h-full rounded-full bg-[var(--sakuin-primary)] transition-[width]"
                       style={{ width: `${completionPercent}%` }}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 sm:min-w-64">
-                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
-                    <p className="text-[10px] font-black uppercase text-black/60">
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-[var(--sakuin-border)]">
+                    <p className="text-[10px] font-black uppercase text-[var(--sakuin-muted)]">
                       Hari ini
                     </p>
-                    <p className="mt-0.5 text-sm font-black text-black">
+                    <p className="mt-0.5 text-sm font-black text-[var(--sakuin-text)]">
                       {habit.todayTransactionCount ?? habit.transactionsToday}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
-                    <p className="text-[10px] font-black uppercase text-black/60">
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-[var(--sakuin-border)]">
+                    <p className="text-[10px] font-black uppercase text-[var(--sakuin-muted)]">
                       Streak
                     </p>
-                    <p className="mt-0.5 text-sm font-black text-black">
+                    <p className="mt-0.5 text-sm font-black text-[var(--sakuin-text)]">
                       {formatHabitMetric(habit.currentStreakDays, "h")}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
-                    <p className="text-[10px] font-black uppercase text-black/60">
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-[var(--sakuin-border)]">
+                    <p className="text-[10px] font-black uppercase text-[var(--sakuin-muted)]">
                       Minggu
                     </p>
-                    <p className="mt-0.5 text-sm font-black text-black">
+                    <p className="mt-0.5 text-sm font-black text-[var(--sakuin-text)]">
                       {formatHabitMetric(habit.weeklyActiveDays, "h")}
                     </p>
                   </div>
@@ -1177,7 +1177,7 @@ function DailyReviewCard({
         <div className="grid gap-2 sm:flex sm:shrink-0 sm:items-center">
           {content.primaryTarget === "assistant" ? (
             <Link
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary)] px-4 text-sm font-bold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
               to="/asisten"
             >
               <MessageSquare className="h-4 w-4" />
@@ -1185,7 +1185,7 @@ function DailyReviewCard({
             </Link>
           ) : (
             <Button
-              className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+              className="rounded-xl bg-[var(--sakuin-primary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
               onClick={
                 content.primaryTarget === "complete"
                   ? onComplete
@@ -1204,7 +1204,7 @@ function DailyReviewCard({
           )}
 
           <Button
-            className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100 focus-visible:ring-yellow-400"
+            className="rounded-xl border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] hover:bg-[var(--sakuin-primary-soft)] focus-visible:ring-[var(--sakuin-focus)]"
             onClick={
               content.primaryTarget === "complete"
                 ? onOpenQuickTransaction
@@ -1343,7 +1343,7 @@ const profileQuery = useQuery({
             <p className="text-sm font-black text-zinc-500">
               Dashboard Sakuin
             </p>
-            <h1 className="mt-1 truncate text-xl font-black tracking-tight text-black sm:text-4xl">
+            <h1 className="mt-1 truncate text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-4xl">
               Ringkasan Hari Ini
             </h1>
             <p className="mt-1 hidden text-sm font-medium text-zinc-600 sm:block">
@@ -1353,7 +1353,7 @@ const profileQuery = useQuery({
 
           <div className="hidden items-center gap-2 sm:flex">
             <Button
-              className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100"
+              className="rounded-xl border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] hover:bg-[var(--sakuin-primary-soft)]"
               onClick={() => setIsQuickTransactionOpen(true)}
               size="md"
               type="button"
@@ -1364,7 +1364,7 @@ const profileQuery = useQuery({
             </Button>
 
             <Button
-              className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+              className="rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
               onClick={() => setIsAddTransactionOpen(true)}
               size="md"
               type="button"
@@ -1374,7 +1374,7 @@ const profileQuery = useQuery({
             </Button>
 
             <Link
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 text-sm font-bold text-black shadow-sm transition hover:bg-yellow-100 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
               to="/export"
             >
               <Download className="h-4 w-4" />
@@ -1383,7 +1383,7 @@ const profileQuery = useQuery({
           </div>
 
           <Link
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white text-black shadow-sm transition hover:bg-yellow-100 sm:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:hidden"
             to="/profile"
           >
             <Settings className="h-5 w-5" />
@@ -1423,16 +1423,16 @@ const profileQuery = useQuery({
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
-              <div className="rounded-3xl border border-black bg-yellow-300 p-4 text-black shadow-[10px_10px_0_#000] sm:p-8">
+              <div className="rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-green)] to-[#66bb6a] p-4 text-white shadow-[0_22px_55px_rgba(46,125,50,0.18)] sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-black/70 sm:text-sm">
+                    <p className="text-xs font-semibold text-white/85 sm:text-sm">
                       Total Saldo Aktif
                     </p>
-                    <p className="mt-2 text-3xl font-black tracking-tight text-black sm:text-5xl">
+                    <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
                       {formatRupiah(summary?.balance)}
                     </p>
-                    <p className="mt-2 max-w-xl text-xs leading-5 text-black/75 sm:text-sm sm:leading-6">
+                    <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
                       {summary?.isBelowSafeLimit
                         ? "Saldo kamu sedang di bawah batas aman."
                         : "Saldo kamu masih berada di atas batas aman."}
@@ -1442,8 +1442,8 @@ const profileQuery = useQuery({
                   <div
                     className={
                       summary?.isBelowSafeLimit
-                        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-black text-black"
-                        : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-black text-black"
+                        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
+                        : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
                     }
                   >
                     {summary?.isBelowSafeLimit ? (
@@ -1455,30 +1455,30 @@ const profileQuery = useQuery({
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-black/15 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
-                  <div className="rounded-2xl border border-black/10 bg-white p-3 sm:p-4">
+                <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/25 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
+                  <div className="rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Pemasukan
                     </p>
-                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                       {formatRupiah(summary?.totalIncome)}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-black/10 bg-white p-3 sm:p-4">
+                  <div className="rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Pengeluaran
                     </p>
-                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                       {formatRupiah(summary?.totalExpense)}
                     </p>
                   </div>
 
-                  <div className="col-span-2 rounded-2xl border border-black/10 bg-white p-3 sm:col-span-1 sm:p-4">
+                  <div className="col-span-2 rounded-2xl border border-white/20 bg-white/95 p-3 sm:col-span-1 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Batas Aman
                     </p>
-                    <p className="mt-1.5 text-base font-black text-black sm:text-lg">
+                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                       {formatRupiah(summary?.safeBalanceLimit)}
                     </p>
                   </div>
@@ -1486,7 +1486,7 @@ const profileQuery = useQuery({
 
                 <div className="mt-4 grid gap-2 sm:hidden">
                   <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-black text-sm font-black text-white shadow-sm transition hover:bg-zinc-800"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-primary)]"
                     onClick={() => setIsQuickTransactionOpen(true)}
                     type="button"
                   >
@@ -1495,7 +1495,7 @@ const profileQuery = useQuery({
                   </button>
 
                   <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black ring-1 ring-black/15 transition hover:bg-yellow-100"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-primary-soft)]"
                     onClick={() => setIsAddTransactionOpen(true)}
                     type="button"
                   >
@@ -1504,7 +1504,7 @@ const profileQuery = useQuery({
                   </button>
 
                   <Link
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black ring-1 ring-black/15 transition hover:bg-yellow-100"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-primary-soft)]"
                     to="/export"
                   >
                     <Download className="h-4 w-4" />
@@ -1514,9 +1514,9 @@ const profileQuery = useQuery({
               </div>
             )}
 
-            <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
               <div className="mb-4">
-              <h2 className="text-base font-black text-black sm:text-lg">
+              <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                 Statistik 6 Bulan
               </h2>
               <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
@@ -1527,9 +1527,9 @@ const profileQuery = useQuery({
               <TrendChart items={summary?.monthlyTrend ?? []} />
             </div>
 
-            <div className="rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:p-6">
+            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
               <div className="mb-4">
-                <h2 className="text-base font-black text-black sm:text-lg">
+                <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                   Transaksi Terbaru
                 </h2>
                 <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
@@ -1546,7 +1546,7 @@ const profileQuery = useQuery({
                     />
                   ))
                 ) : (
-                  <div className="rounded-2xl bg-yellow-50 p-6 text-center text-sm font-semibold text-zinc-600">
+                  <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
                     Belum ada transaksi terbaru.
                   </div>
                 )}
@@ -1556,43 +1556,43 @@ const profileQuery = useQuery({
 
           <aside className="space-y-4 sm:space-y-5">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
-              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white sm:h-11 sm:w-11">
                   <ArrowUpCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-zinc-500">
                     Income Bulan Ini
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                     {formatRupiah(summary?.incomeThisMonth)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300 sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white sm:h-11 sm:w-11">
                   <ArrowDownCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-zinc-500">
                     Expense Bulan Ini
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                     {formatRupiah(summary?.expenseThisMonth)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-11 sm:w-11">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
                   <Activity className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-zinc-500">
                     Total Transaksi
                   </p>
-                  <p className="mt-1 truncate text-base font-black text-black sm:text-lg">
+                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                     {summary?.transactionCount ?? 0}{" "}
                     <span className="text-sm font-semibold text-slate-500">
                       kali

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -145,15 +145,15 @@ function TransactionRow({
   )}`;
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-white p-3 shadow-sm transition hover:bg-yellow-50 sm:p-4">
+    <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:p-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-          <div
-            className={
-              isIncome
-                ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black sm:h-11 sm:w-11"
-                : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-yellow-300 sm:h-11 sm:w-11"
-            }
+        <div
+          className={
+            isIncome
+                ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white sm:h-11 sm:w-11"
+                : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white sm:h-11 sm:w-11"
+          }
           >
             {isIncome ? (
               <ArrowUpCircle className="h-5 w-5" />
@@ -163,11 +163,11 @@ function TransactionRow({
           </div>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-black text-black">
+            <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
               {transaction.note || transaction.category.name}
             </p>
             <p className="mt-0.5 truncate text-xs font-medium text-zinc-500 sm:mt-1">
-              {transaction.category.name} · {formatDate(transaction.date)}
+              {transaction.category.name} � {formatDate(transaction.date)}
             </p>
           </div>
         </div>
@@ -175,21 +175,21 @@ function TransactionRow({
         <div className="grid gap-2 sm:grid-cols-[110px_1fr_180px] sm:items-center xl:w-[520px]">
           <div className="flex items-center justify-between gap-2 sm:block">
             <span
-              className={
-                isIncome
-                  ? "inline-flex rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-black text-black sm:px-3 sm:text-xs"
+            className={
+              isIncome
+                  ? "inline-flex rounded-full bg-[var(--sakuin-green-soft)] px-2.5 py-1 text-[11px] font-black text-[var(--sakuin-green)] sm:px-3 sm:text-xs"
                   : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-black text-zinc-700 sm:px-3 sm:text-xs"
-              }
+            }
             >
               {isIncome ? "Income" : "Expense"}
             </span>
 
             <p
-              className={
-                isIncome
-                  ? "text-right text-xs font-black text-black sm:hidden"
-                  : "text-right text-xs font-black text-zinc-700 sm:hidden"
-              }
+            className={
+              isIncome
+                  ? "text-right text-xs font-black text-[var(--sakuin-green)] sm:hidden"
+                  : "text-right text-xs font-black text-[var(--sakuin-red)] sm:hidden"
+            }
             >
               {amountText}
             </p>
@@ -198,8 +198,8 @@ function TransactionRow({
           <p
             className={
               isIncome
-                ? "hidden text-sm font-black text-black sm:block sm:text-right"
-                : "hidden text-sm font-black text-zinc-700 sm:block sm:text-right"
+                ? "hidden text-sm font-black text-[var(--sakuin-green)] sm:block sm:text-right"
+                : "hidden text-sm font-black text-[var(--sakuin-red)] sm:block sm:text-right"
             }
           >
             {amountText}
@@ -207,7 +207,7 @@ function TransactionRow({
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-yellow-100 px-3 text-xs font-black text-black transition hover:bg-yellow-200 sm:min-h-10 sm:gap-2"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)] sm:min-h-10 sm:gap-2"
               onClick={() => onEdit(transaction)}
               type="button"
             >
@@ -492,7 +492,7 @@ const transactionsQuery = useQuery({
             <p className="text-sm font-black text-zinc-500">
               Sakuin Transactions
             </p>
-            <h1 className="mt-1 text-xl font-black tracking-tight text-black sm:text-4xl">
+            <h1 className="mt-1 text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-4xl">
               Kelola Transaksi
             </h1>
             <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
@@ -501,7 +501,7 @@ const transactionsQuery = useQuery({
           </div>
         </header>
 
-        <section className="mb-4 rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:mb-5 sm:p-4">
+        <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:mb-5 sm:p-4">
           <label className="block">
             <span className="text-xs font-black uppercase text-zinc-500">
               Cari transaksi
@@ -510,7 +510,7 @@ const transactionsQuery = useQuery({
             <div className="relative mt-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
-                className="min-h-11 w-full rounded-xl border border-black/10 bg-white pl-11 pr-4 text-sm font-medium text-black outline-none transition placeholder:text-zinc-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white pl-11 pr-4 text-sm font-medium text-[var(--sakuin-text)] outline-none transition placeholder:text-zinc-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Cari catatan transaksi..."
                 type="search"
                 value={search}
@@ -521,16 +521,16 @@ const transactionsQuery = useQuery({
 
           <button
             aria-expanded={isFilterExpanded}
-            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-black/10 bg-yellow-50 px-3.5 py-3 text-left transition hover:bg-yellow-100"
+            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left transition hover:bg-[var(--sakuin-primary-soft)]"
             onClick={() => setIsFilterExpanded((current) => !current)}
             type="button"
           >
             <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black ring-1 ring-black/10">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
                 <SlidersHorizontal className="h-4 w-4" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-black text-black">
+                <span className="block text-sm font-black text-[var(--sakuin-text)]">
                   Filter lanjutan
                 </span>
                 <span className="block truncate text-xs font-semibold text-zinc-600">
@@ -541,7 +541,7 @@ const transactionsQuery = useQuery({
 
             <span className="flex shrink-0 items-center gap-2">
               {advancedFilterCount > 0 ? (
-                <span className="rounded-full bg-black px-2.5 py-1 text-[10px] font-black text-white">
+                <span className="rounded-full bg-[var(--sakuin-secondary)] px-2.5 py-1 text-[10px] font-black text-white">
                   {advancedFilterCount} aktif
                 </span>
               ) : null}
@@ -556,7 +556,7 @@ const transactionsQuery = useQuery({
           </button>
 
           {isFilterExpanded ? (
-            <div className="mt-3 border-t border-black/10 pt-3">
+            <div className="mt-3 border-t border-[var(--sakuin-border)] pt-3">
               <div className="grid gap-3 xl:grid-cols-[1fr_1fr_1fr]">
                 <label className="block">
                   <span className="text-xs font-black uppercase text-zinc-500">
@@ -564,7 +564,7 @@ const transactionsQuery = useQuery({
                   </span>
 
                   <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={categoryId}
                     onChange={(event) => {
                       setCategoryId(event.target.value);
@@ -579,7 +579,7 @@ const transactionsQuery = useQuery({
 
                     {categoryOptions.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.name} ·{" "}
+                        {category.name} �{" "}
                         {category.type === "INCOME" ? "Income" : "Expense"}
                       </option>
                     ))}
@@ -593,7 +593,7 @@ const transactionsQuery = useQuery({
 
                   <input
                     aria-label="Tanggal mulai transaksi"
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     type="date"
                     value={startDate}
                     onChange={(event) => {
@@ -610,7 +610,7 @@ const transactionsQuery = useQuery({
 
                   <input
                     aria-label="Tanggal akhir transaksi"
-                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     type="date"
                     value={endDate}
                     onChange={(event) => {
@@ -622,12 +622,12 @@ const transactionsQuery = useQuery({
               </div>
 
               <div className="mt-3 grid gap-2.5 xl:grid-cols-[1fr_220px_180px_auto] xl:items-center">
-                <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-yellow-100 p-1">
+                <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-[var(--sakuin-primary-soft)] p-1">
                   {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
                     <button
                       className={
                         filter === item
-                          ? "rounded-xl bg-black px-2.5 py-2 text-[11px] font-black text-white sm:px-3 sm:text-xs"
+                          ? "rounded-xl bg-[var(--sakuin-secondary)] px-2.5 py-2 text-[11px] font-black text-white sm:px-3 sm:text-xs"
                           : "rounded-xl px-2.5 py-2 text-[11px] font-black text-zinc-600 hover:bg-white sm:px-3 sm:text-xs"
                       }
                       key={item}
@@ -646,7 +646,7 @@ const transactionsQuery = useQuery({
                 <label className="block">
                   <span className="sr-only">Urutkan transaksi</span>
                   <select
-                    className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={sort}
                     onChange={(event) => {
                       setSort(event.target.value as TransactionSort);
@@ -664,7 +664,7 @@ const transactionsQuery = useQuery({
                 <label className="block">
                   <span className="sr-only">Jumlah transaksi per halaman</span>
                   <select
-                    className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                     value={limit}
                     onChange={(event) => {
                       setLimit(Number(event.target.value));
@@ -690,7 +690,7 @@ const transactionsQuery = useQuery({
                 </Button>
               </div>
 
-              <div className="mt-3 hidden rounded-2xl border border-black/10 bg-yellow-50 px-4 py-3 sm:block">
+              <div className="mt-3 hidden rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-4 py-3 sm:block">
                 <p className="text-xs font-medium leading-relaxed text-zinc-600">
                   Filter tanggal bersifat opsional. Kosongkan tanggal mulai atau
                   tanggal akhir jika ingin menampilkan transaksi tanpa batas
@@ -709,7 +709,7 @@ const transactionsQuery = useQuery({
           <div className="mt-3 flex flex-col gap-2 text-xs font-medium text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
             <p>
               Total data:{" "}
-              <span className="font-black text-black">
+              <span className="font-black text-[var(--sakuin-text)]">
                 {pagination.total}
               </span>{" "}
               transaksi
@@ -718,7 +718,7 @@ const transactionsQuery = useQuery({
             {debouncedSearch ? (
               <p>
                 Search aktif:{" "}
-                <span className="font-black text-black">
+                <span className="font-black text-[var(--sakuin-text)]">
                   {debouncedSearch}
                 </span>
               </p>
@@ -727,14 +727,14 @@ const transactionsQuery = useQuery({
             {startDate || endDate ? (
               <p>
                 Rentang tanggal:{" "}
-                <span className="font-black text-black">
+                <span className="font-black text-[var(--sakuin-text)]">
                   {startDate || "Awal"} - {endDate || "Sekarang"}
                 </span>
               </p>
             ) : null}
 
             {isBackgroundFetching ? (
-              <p className="inline-flex items-center gap-1.5 font-black text-black">
+              <p className="inline-flex items-center gap-1.5 font-black text-[var(--sakuin-text)]">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Memperbarui data...
               </p>
@@ -765,7 +765,7 @@ const transactionsQuery = useQuery({
 
         <div className="grid gap-3">
           {isLoading ? (
-           <div className="flex min-h-36 items-center justify-center rounded-3xl border border-black/10 bg-white sm:min-h-52">
+           <div className="flex min-h-36 items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white sm:min-h-52">
               <div className="flex items-center gap-3 text-zinc-600">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <p className="text-sm font-bold">Mengambil transaksi...</p>
@@ -774,8 +774,8 @@ const transactionsQuery = useQuery({
           ) : null}
 
           {!isLoading && transactions.length === 0 ? (
-            <div className="rounded-3xl border border-black/10 bg-white p-5 text-center shadow-sm sm:p-8">
-              <p className="text-base font-black text-black sm:text-lg">
+            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 text-center shadow-sm sm:p-8">
+              <p className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
                 Belum ada transaksi
               </p>
               <p className="mt-2 text-sm text-zinc-600">
@@ -801,9 +801,9 @@ const transactionsQuery = useQuery({
             : null}
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-black/10 bg-white p-3.5 shadow-sm sm:mt-5 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:mt-5 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-black text-black sm:text-sm">
+            <p className="text-xs font-black text-[var(--sakuin-text)] sm:text-sm">
               {getPaginationLabel(pagination)}
             </p>
             <p className="mt-1 text-xs font-medium text-zinc-600">

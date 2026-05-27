@@ -6,24 +6,24 @@
     sans-serif;
   color-scheme: light;
 
-  --sakuin-bg: #f7f3ea;
+  --sakuin-bg: #fafafa;
   --sakuin-surface: #ffffff;
-  --sakuin-surface-soft: #faf8f3;
-  --sakuin-text: #17131f;
-  --sakuin-muted: #756f82;
-  --sakuin-border: #e8e1d6;
-  --sakuin-ink: #0b0b0b;
-  --sakuin-yellow: #fde047;
-  --sakuin-yellow-soft: #fef9c3;
-  --sakuin-focus: #fde047;
-  --sakuin-primary: var(--sakuin-ink);
-  --sakuin-primary-soft: var(--sakuin-yellow-soft);
-  --sakuin-ai: var(--sakuin-ink);
-  --sakuin-ai-soft: var(--sakuin-yellow-soft);
-  --sakuin-green: #16a34a;
-  --sakuin-green-soft: #dcfce7;
-  --sakuin-red: #dc2626;
-  --sakuin-red-soft: #fee2e2;
+  --sakuin-surface-soft: #f8fafc;
+  --sakuin-text: #1f2937;
+  --sakuin-muted: #6b7280;
+  --sakuin-border: #e2e8f0;
+  --sakuin-ink: #1f2937;
+  --sakuin-primary: #0a8e8c;
+  --sakuin-primary-soft: #e6f7f6;
+  --sakuin-secondary: #146c94;
+  --sakuin-secondary-soft: #e8f4fb;
+  --sakuin-focus: #0a8e8c;
+  --sakuin-ai: #5e4ae3;
+  --sakuin-ai-soft: #eef2ff;
+  --sakuin-green: #2e7d32;
+  --sakuin-green-soft: #e8f5e9;
+  --sakuin-red: #d32f2f;
+  --sakuin-red-soft: #fdecec;
   --sakuin-amber: #d97706;
   --sakuin-amber-soft: #fef3c7;
   --sakuin-radius-card: 1.5rem;
@@ -74,7 +74,7 @@ a {
 }
 
 ::selection {
-  background: rgba(253, 224, 71, 0.65);
+  background: rgba(10, 142, 140, 0.22);
 }
 
 @keyframes sakuinFloat {

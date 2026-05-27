@@ -475,7 +475,7 @@ export function CategoriesPage() {
     <AppShell>
       <header className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-black">Sakuin Category</p>
+          <p className="text-sm font-black text-[var(--sakuin-text)]">Sakuin Category</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
             Kelola Kategori
           </h1>
@@ -511,7 +511,7 @@ export function CategoriesPage() {
 
         <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-bold text-slate-500">Custom Category</p>
-          <p className="mt-1 text-2xl font-black text-black">
+          <p className="mt-1 text-2xl font-black text-[var(--sakuin-text)]">
             {totalCustomCategories}
           </p>
         </div>
@@ -581,7 +581,7 @@ export function CategoriesPage() {
                 <button
                   className={
                     form.type === "EXPENSE"
-                      ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
+                      ? "rounded-2xl bg-[var(--sakuin-secondary)] px-4 py-3 text-sm font-black text-white shadow-sm"
                       : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                   }
                   disabled={isSubmitting}
@@ -599,7 +599,7 @@ export function CategoriesPage() {
                 <button
                   className={
                     form.type === "INCOME"
-                      ? "rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm"
+                      ? "rounded-2xl bg-[var(--sakuin-secondary)] px-4 py-3 text-sm font-black text-white shadow-sm"
                       : "rounded-2xl px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                   }
                   disabled={isSubmitting}
@@ -673,7 +673,7 @@ export function CategoriesPage() {
                 </p>
 
                 {isBackgroundFetching ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black text-black">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sakuin-primary-soft)] px-2 py-1 text-[10px] font-black text-[var(--sakuin-text)]">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Sync
                   </span>
@@ -691,7 +691,7 @@ export function CategoriesPage() {
                 <button
                   className={
                     filter === item
-                      ? "rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white"
+                      ? "rounded-xl bg-[var(--sakuin-secondary)] px-3 py-2 text-xs font-black text-white"
                       : "rounded-xl px-3 py-2 text-xs font-black text-slate-600 hover:bg-white"
                   }
                   key={item}

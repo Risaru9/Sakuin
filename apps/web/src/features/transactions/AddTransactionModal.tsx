@@ -550,7 +550,7 @@ export function AddTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
      <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
           <div className="min-w-0">
@@ -568,7 +568,7 @@ export function AddTransactionModal({
 
           <button
             aria-label="Tutup modal"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-surface-soft)] text-[var(--sakuin-muted)] transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-surface-soft)] text-[var(--sakuin-muted)] transition hover:bg-[var(--sakuin-surface-soft)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10"
             disabled={isSubmitting}
             onClick={handleClose}
             type="button"
@@ -683,11 +683,11 @@ export function AddTransactionModal({
           </label>
 
           {canCreateInlineCategory ? (
-            <div className="rounded-[1.5rem] border border-yellow-200 bg-yellow-50 p-4">
+            <div className="rounded-[1.5rem] border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-4">
               <label className="flex items-start gap-3">
                 <input
                   checked={form.saveAsNewCategory}
-                  className="mt-1 h-4 w-4 rounded border-yellow-300 text-black focus:ring-yellow-300"
+                  className="mt-1 h-4 w-4 rounded border-[var(--sakuin-primary)] text-[var(--sakuin-text)] focus:ring-[var(--sakuin-focus)]"
                   type="checkbox"
                   onChange={(event) =>
                     setForm((current) => ({
@@ -701,10 +701,10 @@ export function AddTransactionModal({
                 />
 
                 <span>
-                  <span className="block text-sm font-black text-black">
+                  <span className="block text-sm font-black text-[var(--sakuin-text)]">
                     Simpan sebagai kategori baru
                   </span>
-                  <span className="mt-1 block text-xs font-medium leading-5 text-black">
+                  <span className="mt-1 block text-xs font-medium leading-5 text-[var(--sakuin-text)]">
                     Cocok untuk transaksi yang sering muncul, misalnya Laundry,
                     Parkir, Kopi, atau Freelance.
                   </span>
@@ -731,7 +731,7 @@ export function AddTransactionModal({
                     }
                   />
 
-                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-black">
+                  <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-[var(--sakuin-text)]">
                     <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     Jika nama kategori sudah ada, Sakuin akan memakai kategori
                     tersebut dan tidak membuat duplikat.
