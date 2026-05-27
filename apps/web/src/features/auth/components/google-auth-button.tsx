@@ -19,7 +19,7 @@ export function GoogleAuthButton({
   onFailure
 }: GoogleAuthButtonProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [buttonWidth, setButtonWidth] = useState(300);
+  const [buttonWidth, setButtonWidth] = useState(320);
 
   useEffect(() => {
     function updateButtonWidth() {
@@ -30,7 +30,7 @@ export function GoogleAuthButton({
       }
 
       const width = currentElement.getBoundingClientRect().width;
-      const nextWidth = Math.max(180, Math.min(360, Math.floor(width)));
+      const nextWidth = Math.max(240, Math.min(400, Math.floor(width)));
 
       setButtonWidth(nextWidth);
     }
@@ -81,12 +81,12 @@ export function GoogleAuthButton({
       }
     >
       <GoogleOAuthProvider clientId={googleClientId}>
-        <div className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden rounded-2xl border border-[var(--sakuin-border)] bg-white px-1 py-1 shadow-sm">
+        <div className="flex min-h-11 w-full min-w-0 items-center justify-center rounded-2xl">
           <GoogleLogin
             text={text}
             size="large"
             theme="outline"
-            shape="pill"
+            shape="rectangular"
             width={`${buttonWidth}`}
             onSuccess={(credentialResponse) => {
               const credential = credentialResponse.credential;

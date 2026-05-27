@@ -60,7 +60,7 @@ export function FloatingAssistantButton() {
   return (
     <Link
       aria-label="Buka Asisten Sakuin"
-      className="fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-ai)] text-white shadow-[0_18px_36px_rgba(30,64,175,0.28)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
+      className="fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
       title="Buka Asisten Sakuin"
       to="/asisten"
     >
@@ -162,7 +162,6 @@ export function MobileMainActionMenu() {
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >
-        <span className="absolute inset-2 rounded-full bg-white/12" />
         <Plus
           aria-hidden="true"
           className={[

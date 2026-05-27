@@ -148,13 +148,13 @@ function TransactionRow({
     <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:p-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-        <div
-          className={
-            isIncome
-                ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white sm:h-11 sm:w-11"
-                : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white sm:h-11 sm:w-11"
-          }
-          >
+            <div
+              className={
+                isIncome
+                ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11"
+                : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11"
+              }
+            >
             {isIncome ? (
               <ArrowUpCircle className="h-5 w-5" />
             ) : (

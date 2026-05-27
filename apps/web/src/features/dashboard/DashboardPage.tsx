@@ -7,6 +7,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   CalendarDays,
+  ChevronDown,
   CheckCircle2,
   Clock3,
   Download,
@@ -332,8 +333,8 @@ function TransactionItem({ transaction }: { transaction: SummaryTransaction }) {
         <div
           className={
             isIncome
-              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white"
-              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white"
+              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15"
+              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15"
           }
         >
           {isIncome ? (
@@ -429,7 +430,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pemasukan */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-[var(--sakuin-green)] opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
+                    className="w-full rounded-t-md bg-[var(--sakuin-green)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
                     style={{ height: `${incomeHeight}%` }}
                   />
                 </div>
@@ -437,7 +438,7 @@ function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
                 {/* Batang Pengeluaran */}
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-[var(--sakuin-red)] opacity-90 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-100"
+                    className="w-full rounded-t-md bg-[var(--sakuin-red)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
                     style={{ height: `${expenseHeight}%` }}
                   />
                 </div>
@@ -1235,6 +1236,7 @@ export function DashboardPage() {
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
+  const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
     string | null
   >(null);
@@ -1484,32 +1486,65 @@ const profileQuery = useQuery({
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-2 sm:hidden">
+                <div className="mt-3 sm:hidden">
                   <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-primary)]"
-                    onClick={() => setIsQuickTransactionOpen(true)}
+                    aria-expanded={isSummaryActionOpen}
+                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/12 px-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/18 focus:outline-none focus:ring-4 focus:ring-white/25"
+                    onClick={() =>
+                      setIsSummaryActionOpen((current) => !current)
+                    }
                     type="button"
                   >
-                    <MessageSquare className="h-4 w-4" />
-                    Catat Cepat
+                    <span>Aksi dashboard</span>
+                    <ChevronDown
+                      className={[
+                        "h-4 w-4 transition-transform duration-300 motion-reduce:transition-none",
+                        isSummaryActionOpen ? "rotate-180" : "rotate-0"
+                      ].join(" ")}
+                    />
                   </button>
 
-                  <button
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-primary-soft)]"
-                    onClick={() => setIsAddTransactionOpen(true)}
-                    type="button"
+                  <div
+                    className={[
+                      "grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-300 ease-out motion-reduce:transition-none",
+                      isSummaryActionOpen
+                        ? "mt-2 grid-rows-[1fr] opacity-100"
+                        : "mt-0 grid-rows-[0fr] opacity-0"
+                    ].join(" ")}
                   >
-                    <Plus className="h-4 w-4" />
-                    Tambah Manual
-                  </button>
+                    <div className="min-h-0">
+                      <div className="grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
+                        <button
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-primary)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                          onClick={() => setIsQuickTransactionOpen(true)}
+                          tabIndex={isSummaryActionOpen ? 0 : -1}
+                          type="button"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          Catat Cepat
+                        </button>
 
-                  <Link
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-primary-soft)]"
-                    to="/export"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export Laporan
-                  </Link>
+                        <button
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/90 text-sm font-black text-[var(--sakuin-text)] ring-1 ring-white/30 transition hover:bg-white"
+                          onClick={() => setIsAddTransactionOpen(true)}
+                          tabIndex={isSummaryActionOpen ? 0 : -1}
+                          type="button"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Tambah Manual
+                        </button>
+
+                        <Link
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-ai-soft)] text-sm font-black text-[var(--sakuin-secondary)] ring-1 ring-white/30 transition hover:bg-white"
+                          tabIndex={isSummaryActionOpen ? 0 : -1}
+                          to="/export"
+                        >
+                          <Download className="h-4 w-4" />
+                          Export Laporan
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1557,7 +1592,7 @@ const profileQuery = useQuery({
           <aside className="space-y-4 sm:space-y-5">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
               <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green)] text-white sm:h-11 sm:w-11">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
                   <ArrowUpCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
@@ -1571,7 +1606,7 @@ const profileQuery = useQuery({
               </div>
 
               <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red)] text-white sm:h-11 sm:w-11">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11">
                   <ArrowDownCircle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
@@ -1585,7 +1620,7 @@ const profileQuery = useQuery({
               </div>
 
               <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white sm:h-11 sm:w-11">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-primary)]/15 sm:h-11 sm:w-11">
                   <Activity className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
