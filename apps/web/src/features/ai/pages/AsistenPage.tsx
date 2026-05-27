@@ -1740,7 +1740,7 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
+      <div className="fixed inset-x-0 top-0 bottom-[calc(var(--sakuin-mobile-nav-height)+1.75rem)] z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
         <header className="shrink-0 border-b border-black/10 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
           <div className="flex items-start gap-3">
             <Link

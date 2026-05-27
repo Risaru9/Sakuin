@@ -30,6 +30,7 @@ import {
   getBrowserNotificationPermission,
   getTransactionReminderSettings,
   setTransactionReminderSettings,
+  sendTestTransactionReminder,
   subscribeBrowserToPushReminder,
   unsubscribeBrowserFromPushReminder,
   type TransactionReminderFrequency,
@@ -434,15 +435,33 @@ export function ProfilePage() {
           : "Sakuin tidak akan mengirim pengingat transaksi dari browser ini."
       });
     } catch (caughtError) {
-      setNotificationPermission(getBrowserNotificationPermission());
+      const nextPermission = getBrowserNotificationPermission();
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Browser belum bisa mengaktifkan pengingat transaksi.";
+
+      setNotificationPermission(nextPermission);
+
+      if (enabled && nextPermission === "granted") {
+        saveReminderSettings({
+          ...reminderSettings,
+          enabled: true
+        });
+
+        addToast({
+          variant: "info",
+          title: "Pengingat lokal aktif",
+          description: `Push server belum tersambung: ${message}. Sakuin tetap bisa mengingatkan saat app sedang terbuka.`
+        });
+
+        return;
+      }
 
       addToast({
         variant: "error",
         title: "Notifikasi belum aktif",
-        description:
-          caughtError instanceof Error
-            ? caughtError.message
-            : "Browser belum bisa mengaktifkan pengingat transaksi."
+        description: message
       });
 
       if (enabled) {
@@ -457,6 +476,31 @@ export function ProfilePage() {
           description: "Coba lagi beberapa saat lagi."
         });
       }
+    }
+  }
+
+  async function handleTestNotification() {
+    try {
+      await sendTestTransactionReminder();
+      setNotificationPermission(getBrowserNotificationPermission());
+
+      addToast({
+        variant: "success",
+        title: "Tes notifikasi dikirim",
+        description:
+          "Jika izin browser aktif, notifikasi Sakuin akan muncul beberapa detik lagi."
+      });
+    } catch (caughtError) {
+      setNotificationPermission(getBrowserNotificationPermission());
+
+      addToast({
+        variant: "error",
+        title: "Tes notifikasi belum berhasil",
+        description:
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Browser belum bisa menampilkan notifikasi Sakuin."
+      });
     }
   }
 
@@ -776,19 +820,25 @@ export function ProfilePage() {
                     </p>
                   </div>
 
-                  <button
-                    className={
-                      reminderSettings.enabled
-                        ? "inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
-                        : "inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
-                    }
-                    onClick={() =>
-                      void handleReminderEnabledChange(!reminderSettings.enabled)
-                    }
-                    type="button"
-                  >
-                    {reminderSettings.enabled ? "Matikan" : "Aktifkan"}
-                  </button>
+                  <div className="grid shrink-0 gap-2">
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-xs font-black text-white transition hover:bg-zinc-800"
+                      onClick={() =>
+                        void handleReminderEnabledChange(!reminderSettings.enabled)
+                      }
+                      type="button"
+                    >
+                      {reminderSettings.enabled ? "Matikan" : "Aktifkan"}
+                    </button>
+
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-xs font-black text-black transition hover:bg-yellow-100"
+                      onClick={() => void handleTestNotification()}
+                      type="button"
+                    >
+                      Tes
+                    </button>
+                  </div>
                 </div>
               </div>
 

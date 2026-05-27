@@ -27,6 +27,13 @@ type ReminderDeliveryState = {
   lastSentAt: string | null;
 };
 
+type ReminderNotificationOptions = NotificationOptions & {
+  actions?: Array<{
+    action: string;
+    title: string;
+  }>;
+};
+
 const REMINDER_SETTINGS_PREFIX = "sakuin_transaction_reminder_settings_v1";
 const REMINDER_DELIVERY_PREFIX = "sakuin_transaction_reminder_delivery_v1";
 
@@ -46,6 +53,17 @@ const frequencyMinutes: Record<TransactionReminderFrequency, number | null> = {
   EVERY_2_HOURS: 120,
   EVERY_4_HOURS: 240
 };
+
+const reminderNotificationActions = [
+  {
+    action: "open-review",
+    title: "Review sekarang"
+  },
+  {
+    action: "remind-later",
+    title: "Nanti"
+  }
+];
 
 function getReminderSettingsKey(userId: string | null | undefined) {
   return `${REMINDER_SETTINGS_PREFIX}:${userId ?? "anonymous"}`;
@@ -294,6 +312,22 @@ function getPushSubscriptionPayload(subscription: PushSubscription) {
   };
 }
 
+async function getReadyServiceWorkerRegistration() {
+  if (!("serviceWorker" in navigator)) {
+    throw new Error("Browser belum mendukung service worker.");
+  }
+
+  const existingRegistration = await navigator.serviceWorker.getRegistration();
+
+  if (!existingRegistration) {
+    await navigator.serviceWorker.register("/sw.js", {
+      scope: "/"
+    });
+  }
+
+  return navigator.serviceWorker.ready;
+}
+
 export async function subscribeBrowserToPushReminder() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Browser belum mendukung Web Push.");
@@ -306,13 +340,7 @@ export async function subscribeBrowserToPushReminder() {
   }
 
   const { publicKey } = await getVapidPublicKey();
-  const currentRegistration = await navigator.serviceWorker.getRegistration();
-
-  if (!currentRegistration) {
-    throw new Error("Service worker belum aktif. Install atau buka ulang Sakuin dulu.");
-  }
-
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await getReadyServiceWorkerRegistration();
   const existingSubscription =
     await registration.pushManager.getSubscription();
 
@@ -340,6 +368,19 @@ export async function unsubscribeBrowserFromPushReminder() {
 
   await deletePushSubscription(subscription.endpoint);
   await subscription.unsubscribe();
+}
+
+function buildTransactionReminderOptions(): ReminderNotificationOptions {
+  return {
+    body: "Ada transaksi yang belum dicatat? Cek 30 detik supaya dashboard tetap akurat.",
+    icon: "/icons/pwa-192.png",
+    badge: "/icons/maskable-192.png",
+    tag: "sakuin-transaction-reminder",
+    data: {
+      url: "/dashboard"
+    },
+    actions: reminderNotificationActions
+  };
 }
 
 export function shouldSendTransactionReminder(input: {
@@ -382,20 +423,12 @@ export async function sendTransactionReminder(
   userId: string | null | undefined
 ) {
   const title = "Review transaksi hari ini";
-  const options: NotificationOptions = {
-    body: "Ada transaksi yang belum dicatat? Cek 30 detik supaya dashboard tetap akurat.",
-    icon: "/icons/pwa-192.png",
-    badge: "/icons/maskable-192.png",
-    tag: "sakuin-transaction-reminder",
-    data: {
-      url: "/dashboard"
-    }
-  };
+  const options = buildTransactionReminderOptions();
 
   if ("serviceWorker" in navigator) {
-    const registration = await navigator.serviceWorker.getRegistration();
+    const registration = await getReadyServiceWorkerRegistration();
 
-    if (registration?.showNotification) {
+    if (registration.showNotification) {
       await registration.showNotification(title, options);
       markTransactionReminderSent(userId);
       return;
@@ -404,6 +437,34 @@ export async function sendTransactionReminder(
 
   new Notification(title, options);
   markTransactionReminderSent(userId);
+}
+
+export async function sendTestTransactionReminder() {
+  const title = "Tes notifikasi Sakuin";
+  const options = {
+    ...buildTransactionReminderOptions(),
+    body: "Notifikasi aktif. Sakuin siap mengingatkan review transaksi sesuai pengaturanmu.",
+    tag: "sakuin-transaction-reminder-test"
+  };
+
+  if (getBrowserNotificationPermission() !== "granted") {
+    const permission = await requestBrowserNotificationPermission();
+
+    if (permission !== "granted") {
+      throw new Error("Izin notifikasi belum diberikan.");
+    }
+  }
+
+  if ("serviceWorker" in navigator) {
+    const registration = await getReadyServiceWorkerRegistration();
+
+    if (registration.showNotification) {
+      await registration.showNotification(title, options);
+      return;
+    }
+  }
+
+  new Notification(title, options);
 }
 
 function markTransactionReminderSent(userId: string | null | undefined) {
