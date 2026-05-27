@@ -237,6 +237,10 @@ Dokumentasi teknis tersedia di:
 docs/API.md       - Dokumentasi endpoint backend
 docs/SECURITY.md  - Dokumentasi security baseline dan risk policy
 docs/HANDOFF.md   - Konteks teknis untuk developer/agent berikutnya
+docs/APP_STORE_READINESS.md - Rencana kesiapan Android/Play Store
+docs/PLAY_STORE_CHECKLIST.md - Checklist store listing dan internal testing
+docs/PRIVACY_POLICY_DRAFT.md - Draft privacy policy untuk store readiness
+docs/UPDATE_STRATEGY.md - Strategi update fitur tanpa install ulang
 ```
 
 ---

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
+import { AppReleaseNotesPrompt } from "../components/pwa/AppReleaseNotesPrompt";
 import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
 import { TransactionReminderRunner } from "../components/pwa/TransactionReminderRunner";
 import { ToastProvider } from "../components/toast/ToastProvider";
@@ -33,6 +34,7 @@ export function App() {
         <ToastProvider>
           <RouterProvider router={router} />
           <TransactionReminderRunner />
+          <AppReleaseNotesPrompt />
 
           <PwaUpdatePrompt
             registration={waitingServiceWorkerRegistration}

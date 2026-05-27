@@ -6,6 +6,11 @@ import {
   getInstallPlatform,
   isStandaloneMode
 } from "../../lib/pwa";
+import {
+  SAKUIN_RELEASE_NOTES,
+  SAKUIN_RELEASE_TITLE,
+  SAKUIN_RELEASE_VERSION
+} from "../../lib/release-notes";
 import { InstallAppButton } from "./InstallAppButton";
 
 function getPlatformLabel() {
@@ -155,6 +160,30 @@ export function PwaAppCard() {
             />
             Cek update
           </button>
+        </div>
+
+        <div className="rounded-2xl border border-black/10 bg-yellow-50 p-3">
+          <p className="text-[10px] font-black uppercase text-zinc-500">
+            Update terbaru
+          </p>
+          <p className="mt-1 text-sm font-black text-black">
+            {SAKUIN_RELEASE_TITLE}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold text-zinc-500">
+            {SAKUIN_RELEASE_VERSION}
+          </p>
+
+          <ul className="mt-3 grid gap-1.5">
+            {SAKUIN_RELEASE_NOTES.slice(0, 2).map((note) => (
+              <li
+                className="flex gap-2 text-xs font-semibold leading-5 text-zinc-700"
+                key={note}
+              >
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-black" />
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
