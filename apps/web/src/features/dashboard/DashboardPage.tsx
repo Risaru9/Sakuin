@@ -1515,7 +1515,7 @@ const profileQuery = useQuery({
                     <div className="min-h-0">
                       <div className="grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
                         <button
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black shadow-sm transition hover:bg-gray-100"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
                           onClick={() => setIsQuickTransactionOpen(true)}
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           type="button"
@@ -1525,7 +1525,7 @@ const profileQuery = useQuery({
                         </button>
 
                         <button
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black shadow-sm transition hover:bg-gray-100"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
                           onClick={() => setIsAddTransactionOpen(true)}
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           type="button"
@@ -1535,7 +1535,7 @@ const profileQuery = useQuery({
                         </button>
 
                         <Link
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-black shadow-sm transition hover:bg-gray-100"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           to="/export"
                         >
