@@ -1083,6 +1083,9 @@ describe("AI chat service contract", () => {
     expect(serializedProviderInput).toContain(
       "Hindari saran generik"
     );
+    expect(serializedProviderInput).toContain("HABIT SNAPSHOT");
+    expect(serializedProviderInput).toContain("Status habit pencatatan");
+    expect(serializedProviderInput).toContain("tanpa nada menekan");
     expect(serializedProviderInput).toContain("CONSULTANT ACTION PLAN");
 
     expect(serializedProviderInput).not.toContain(user.id);

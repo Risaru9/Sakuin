@@ -40,6 +40,7 @@ import {
   restoreSummaryCacheSnapshot,
   restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
+import { buildTransactionSuccessInsight } from "./transaction-success-insight";
 
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
@@ -359,9 +360,11 @@ export function AddTransactionModal({
       addToast({
         variant: "success",
         title: "Transaksi berhasil ditambahkan",
-        description: createdCategory
-          ? `Kategori "${createdCategory.name}" ikut disimpan untuk transaksi berikutnya.`
-          : "Transaksi langsung ditampilkan. Ringkasan diperbarui di background."
+        description: buildTransactionSuccessInsight({
+          transactions: [transaction],
+          previousSummary: context?.previousSummary,
+          createdCategoryCount: createdCategory ? 1 : 0
+        })
       });
 
       void onSuccess();

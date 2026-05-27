@@ -1040,6 +1040,58 @@ function buildSafeToSpendReplySegment(context: AiFinancialContext) {
   )}. ${dailyLimitText}`;
 }
 
+function formatHabitStatus(
+  status: NonNullable<AiFinancialContext["habit"]>["habitStatus"]
+) {
+  if (status === "NO_DATA") {
+    return "Belum ada data";
+  }
+
+  if (status === "LIGHT") {
+    return "Data masih ringan";
+  }
+
+  if (status === "STALE") {
+    return "Perlu diperbarui";
+  }
+
+  return "Aktif";
+}
+
+function buildHabitPromptContext(context: AiFinancialContext) {
+  const habit = context.habit;
+
+  if (!habit) {
+    return "Habit snapshot belum tersedia.";
+  }
+
+  return [
+    `Status habit pencatatan: ${formatHabitStatus(habit.habitStatus)}`,
+    `Hari dengan transaksi bulan ini: ${habit.currentMonthTransactionDays} dari ${habit.currentMonthDaysElapsed} hari berjalan`,
+    `Kelengkapan hari pencatatan bulan ini: ${habit.currentMonthCompletenessPercent}%`,
+    `Transaksi hari ini: ${habit.transactionsToday}`,
+    `Transaksi expense hari ini: ${habit.expenseTransactionsToday}`,
+    `Tanggal transaksi terakhir: ${
+      habit.lastTransactionDate ?? "Belum ada"
+    }`,
+    `Jarak dari transaksi terakhir: ${
+      habit.daysSinceLastTransaction === null
+        ? "Belum ada transaksi"
+        : `${habit.daysSinceLastTransaction} hari`
+    }`,
+    `Transaksi 7 hari terakhir: ${habit.last7DaysTransactionCount}`,
+    `Expense 7 hari terakhir: ${formatRupiah(habit.last7DaysExpense)}`,
+    `Kategori expense terbesar 7 hari terakhir: ${
+      habit.last7DaysTopExpenseCategory
+        ? `${habit.last7DaysTopExpenseCategory.name} (${formatRupiah(
+            habit.last7DaysTopExpenseCategory.amount
+          )}, ${habit.last7DaysTopExpenseCategory.transactionCount} transaksi)`
+        : "Belum ada"
+    }`,
+    `Pesan habit: ${habit.habitMessage}`
+  ].join("\n");
+}
+
 function formatFinancialCheckupStatus(status: FinancialCheckupResult["status"]) {
   if (status === "GOOD") {
     return "Baik";
@@ -2352,6 +2404,7 @@ function buildFinancialSystemInstruction() {
     "Jika SAFE-TO-SPEND SNAPSHOT tersedia, gunakan itu untuk menjawab apakah user masih aman belanja, sisa aman bulan ini, batas harian aman, apakah harus tahan pengeluaran, dan ritme pengeluaran.",
     "Jika FINANCIAL CHECKUP SNAPSHOT tersedia, gunakan itu untuk menjawab checkup keuangan, kesehatan keuangan, kondisi bulan ini sehat atau berisiko, fokus kategori, alasan, dan aksi utama.",
     "Jika SPENDING PATTERN INSIGHT tersedia, gunakan itu untuk menjawab user boros di mana, kategori mana yang perlu dikontrol, dan apa penyebab pengeluaran terasa naik.",
+    "Jika HABIT SNAPSHOT tersedia, gunakan itu untuk menilai apakah data user sudah cukup lengkap atau perlu pencatatan rutin tambahan.",
     "Jika FINANCIAL SCENARIO ANALYSIS tersedia, gunakan analisis itu sebagai sumber utama untuk hitungan target, tenor, kebutuhan bulanan, rasio pendapatan, dan verdict risiko.",
     "Jika PURCHASE DECISION IMPACT tersedia, gunakan itu untuk menjawab apakah pembelian langsung seperti beli barang, jajan, atau belanja hari ini aman dilakukan.",
     "Untuk purchase decision, mulai dari keputusan deterministik: relatif aman, boleh terbatas, tahan dulu, atau belum bisa dinilai.",
@@ -2374,6 +2427,7 @@ function buildFinancialSystemInstruction() {
     "Jika user tidak memberi target nominal atau deadline, jangan mengarang. Minta data yang kurang secara singkat.",
     "Jika context punya income, expense, dan net cashflow, pakai itu untuk menilai kemampuan menabung.",
     "Jika user memberi angka hipotetis, analisis angka tersebut sebagai skenario, tetapi jelaskan bahwa hasil bergantung pada konsistensi pencatatan dan pengeluaran aktual.",
+    "Untuk habit pencatatan, dorong user dengan kalimat ringan dan praktis. Jangan membuat user merasa disalahkan karena belum mencatat.",
     "Jangan menyebut database, backend, JSON, model, API, prompt, atau detail teknis internal.",
     "Jangan memberi nasihat investasi, pinjaman, pajak, hukum, atau keputusan finansial profesional.",
     "Jangan menghakimi user. Hindari kalimat seperti gaji kamu kecil.",
@@ -2432,10 +2486,13 @@ function buildFinancialPrompt(input: {
     "SPENDING PATTERN INSIGHT:",
     buildSpendingPatternPromptContext(spendingInsight),
     "",
+    "HABIT SNAPSHOT:",
+    buildHabitPromptContext(input.context),
+    "",
     "CONSULTANT ACTION PLAN:",
     buildConsultantActionPromptContext(actionPlan),
     "",
-        "FINANCIAL SCENARIO ANALYSIS:",
+    "FINANCIAL SCENARIO ANALYSIS:",
     input.scenario
       ? buildFinancialScenarioPromptContext(input.scenario)
       : "Tidak ada skenario finansial terstruktur terdeteksi.",
@@ -2465,6 +2522,7 @@ function buildFinancialPrompt(input: {
     "- Tetap tegas jika status HOLD/RISK, cashflow negatif, pengeluaran mendekati pemasukan, atau ada warning material dari backend.",
     "- Jangan membahas hal yang tidak ditanya kecuali benar-benar membantu keputusan user.",
     "- Jika data kurang, jangan mengarang. Sebutkan data yang kurang secara singkat dan beri langkah berikutnya.",
+    "- Jika habit snapshot menunjukkan data masih sedikit atau sudah lama tidak dicatat, beri dorongan ringan untuk mencatat transaksi terbaru tanpa nada menekan.",
     "- Angka penting harus konsisten dengan context, financial health snapshot, safe-to-spend snapshot, spending pattern insight, financial scenario analysis, atau angka yang user berikan.",
     "- Jika financial scenario analysis tersedia, jangan melawan verdict dan hitungan deterministik dari backend.",
     "- Jika financial health snapshot tersedia, jangan melawan status dan alasan deterministik dari backend.",

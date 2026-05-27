@@ -42,6 +42,7 @@ import type {
   TransactionType
 } from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
+import { buildTransactionSuccessInsight } from "./transaction-success-insight";
 
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
@@ -517,10 +518,11 @@ export function QuickTransactionModal({
         addToast({
           variant: "success",
           title: "Transaksi cepat berhasil disimpan",
-          description:
-            createdCategoryCount > 0
-              ? `${savedTransactions.length} transaksi dan ${createdCategoryCount} kategori baru berhasil ditambahkan. Ringkasan diperbarui di background.`
-              : `${savedTransactions.length} transaksi berhasil ditambahkan. Ringkasan diperbarui di background.`
+          description: buildTransactionSuccessInsight({
+            transactions: savedTransactions,
+            previousSummary: context?.previousSummary,
+            createdCategoryCount
+          })
         });
 
         void onSuccess();

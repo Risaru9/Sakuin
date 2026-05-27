@@ -217,6 +217,24 @@ describe("AI financial context", () => {
     expect(context.safeToSpend.reason).toContain("kategori Makanan");
     expect(context.safeToSpend.action).toContain("Makanan");  
 
+    expect(context.habit).toMatchObject({
+      currentMonthTransactionDays: 4,
+      currentMonthDaysElapsed: 20,
+      currentMonthCompletenessPercent: 20,
+      transactionsToday: 0,
+      expenseTransactionsToday: 0,
+      daysSinceLastTransaction: 8,
+      last7DaysTransactionCount: 0,
+      last7DaysExpense: "0.00",
+      last7DaysTopExpenseCategory: null,
+      habitStatus: "STALE"
+    });
+
+    expect(context.habit?.lastTransactionDate).toBe(
+      "2026-05-12T08:00:00.000Z"
+    );
+    expect(context.habit?.habitMessage).toContain("Transaksi terakhir");
+
     const serializedContext = JSON.stringify(context);
 
     expect(serializedContext).not.toContain(user.id);
@@ -266,6 +284,21 @@ describe("AI financial context", () => {
     expect(context.safeToSpend.expenseToIncomeRatio).toBeNull();
     expect(context.safeToSpend.topRiskCategoryName).toBeNull();
     expect(context.safeToSpend.warnings).toContain("Belum ada transaksi bulan ini.");
+
+    expect(context.habit).toMatchObject({
+      currentMonthTransactionDays: 0,
+      currentMonthDaysElapsed: 20,
+      currentMonthCompletenessPercent: 0,
+      transactionsToday: 0,
+      expenseTransactionsToday: 0,
+      lastTransactionDate: null,
+      daysSinceLastTransaction: null,
+      last7DaysTransactionCount: 0,
+      last7DaysExpense: "0.00",
+      last7DaysTopExpenseCategory: null,
+      habitStatus: "NO_DATA"
+    });
+    expect(context.habit?.habitMessage).toContain("Belum ada transaksi");
   });
 
   it("gagal jika user tidak ditemukan", async () => {
