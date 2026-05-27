@@ -104,84 +104,46 @@ export function MobileMainActionMenu() {
         <>
           <button
             aria-label="Tutup menu aksi transaksi"
-            className="fixed inset-0 z-[55] cursor-default bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none"
+            className="fixed inset-0 z-[55] cursor-default bg-black/10 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none"
             onClick={() => setIsMenuOpen(false)}
             type="button"
           />
 
           <div
             aria-label="Menu aksi transaksi"
-            className="fixed inset-x-3 bottom-[calc(var(--sakuin-mobile-nav-height)+0.9rem)] z-[70] mx-auto max-w-sm rounded-[1.75rem] border border-black/10 bg-white p-3 shadow-[0_24px_70px_rgba(0,0,0,0.22)] transition duration-200 motion-reduce:transition-none"
+            className="pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.65rem)] left-1/2 z-[70] h-32 w-56 -translate-x-1/2 transition duration-200 motion-reduce:transition-none"
             id={dialogId}
             role="dialog"
           >
-            <div className="mb-2 flex items-center justify-between gap-3 px-1">
-              <div>
-                <p className="text-sm font-black text-black">Mau ngapain?</p>
-                <p className="text-xs font-semibold text-zinc-500">
-                  Pilih cara tercepat untuk lanjut.
-                </p>
-              </div>
+            <button
+              aria-label="Catat Biasa"
+              className="pointer-events-auto absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-black/10 bg-yellow-300 text-black shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              onClick={() => openModal("manual")}
+              title="Catat Biasa"
+              type="button"
+            >
+              <WalletCards aria-hidden="true" className="h-5 w-5" />
+            </button>
 
-              <button
-                aria-label="Tutup menu aksi transaksi"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
-                onClick={() => setIsMenuOpen(false)}
-                type="button"
-              >
-                <X aria-hidden="true" className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              aria-label="Catat Cepat"
+              className="pointer-events-auto absolute bottom-2 left-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-black text-yellow-300 shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              onClick={() => openModal("quick")}
+              title="Catat Cepat"
+              type="button"
+            >
+              <MessageSquare aria-hidden="true" className="h-5 w-5" />
+            </button>
 
-            <div className="grid gap-2">
-              <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-black px-3.5 py-3 text-left text-white shadow-sm transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
-                onClick={() => openModal("quick")}
-                type="button"
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black">
-                  <MessageSquare aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black">Catat Cepat</span>
-                  <span className="block text-xs font-semibold text-white/70">
-                    Tulis natural, Sakuin bantu ubah jadi draft.
-                  </span>
-                </span>
-              </button>
-
-              <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-yellow-50 px-3.5 py-3 text-left text-black shadow-sm transition hover:-translate-y-0.5 hover:bg-yellow-100 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
-                onClick={() => openModal("manual")}
-                type="button"
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black ring-1 ring-black/10">
-                  <WalletCards aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black">Catat Biasa</span>
-                  <span className="block text-xs font-semibold text-zinc-600">
-                    Isi nominal, kategori, tanggal, dan catatan sendiri.
-                  </span>
-                </span>
-              </button>
-
-              <button
-                className="flex min-h-16 items-center gap-3 rounded-2xl border border-black/10 bg-white px-3.5 py-3 text-left text-black shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-yellow-300/40 active:translate-y-0 motion-reduce:transition-none"
-                onClick={openExport}
-                type="button"
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-yellow-300">
-                  <Download aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black">Export</span>
-                  <span className="block text-xs font-semibold text-zinc-600">
-                    Unduh data saat perlu laporan.
-                  </span>
-                </span>
-              </button>
-            </div>
+            <button
+              aria-label="Export data"
+              className="pointer-events-auto absolute bottom-2 right-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white text-black shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-yellow-300/45 active:scale-95 motion-reduce:transition-none"
+              onClick={openExport}
+              title="Export"
+              type="button"
+            >
+              <Download aria-hidden="true" className="h-5 w-5" />
+            </button>
           </div>
         </>
       ) : null}

@@ -4,7 +4,6 @@ import {
   BarChart3,
   Download,
   Home,
-  MessageCircle,
   Settings,
   Target
 } from "lucide-react";
@@ -55,17 +54,11 @@ const primaryNavigationItems = [
   }
 ];
 
-const assistantNavigationItem = {
-  label: "Asisten",
-  sidebarLabel: "Asisten",
-  icon: MessageCircle,
-  to: "/asisten"
-};
+const ASSISTANT_ROUTE = "/asisten";
 
 const desktopNavigationItems = [
   primaryNavigationItems[0],
   primaryNavigationItems[1],
-  assistantNavigationItem,
   primaryNavigationItems[3],
   primaryNavigationItems[4],
   primaryNavigationItems[2]
@@ -77,8 +70,8 @@ const leftMobileNavigationItems = [
 ];
 
 const rightMobileNavigationItems = [
-  assistantNavigationItem,
-  primaryNavigationItems[4]
+  primaryNavigationItems[3],
+  primaryNavigationItems[2]
 ];
 
 function isActivePath(currentPath: string, targetPath: string) {
@@ -93,7 +86,7 @@ function MobileNavigationLink({
   item,
   currentPath
 }: {
-  item: (typeof primaryNavigationItems)[number] | typeof assistantNavigationItem;
+  item: (typeof primaryNavigationItems)[number];
   currentPath: string;
 }) {
   const Icon = item.icon;
@@ -109,10 +102,6 @@ function MobileNavigationLink({
       }
       to={item.to}
     >
-      {active ? (
-        <span className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-yellow-300 animate-[sakuinNavMarker_1.8s_ease-in-out_infinite]" />
-      ) : null}
-
       <Icon
         aria-hidden="true"
         className={
@@ -145,10 +134,7 @@ export function AppShell({
 
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
-  const isAssistantRoute = isActivePath(
-    location.pathname,
-    assistantNavigationItem.to
-  );
+  const isAssistantRoute = isActivePath(location.pathname, ASSISTANT_ROUTE);
   const shouldShowMobileNavigation = !isAssistantRoute;
 
   return (
@@ -173,10 +159,10 @@ export function AppShell({
             {desktopNavigationItems.map((item) => {
               const Icon = item.icon;
               const active = isActivePath(location.pathname, item.to);
-              const isAssistant = item.to === "/asisten";
 
               return (
                 <Link
+                  aria-current={active ? "page" : undefined}
                   className={
                     active
                       ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-black px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(0,0,0,0.14)]"
@@ -185,17 +171,11 @@ export function AppShell({
                   key={item.to}
                   to={item.to}
                 >
-                  {active ? (
-                    <span className="absolute inset-y-2 left-1 w-1 rounded-full bg-yellow-300 animate-[sakuinNavMarker_1.8s_ease-in-out_infinite]" />
-                  ) : null}
-
                   <span
                     className={
                       active
                         ? "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black"
-                        : isAssistant
-                          ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black transition group-hover:bg-black group-hover:text-yellow-300"
-                          : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-yellow-300 group-hover:text-black"
+                        : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-yellow-300 group-hover:text-black"
                     }
                   >
                     <Icon className="h-4.5 w-4.5" />
