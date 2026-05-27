@@ -19,6 +19,7 @@ import {
   UserCircle
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
+import { PwaAppCard } from "../../components/pwa/PwaAppCard";
 import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -718,6 +719,8 @@ export function ProfilePage() {
                 </div>
               </div>
             </section>
+
+            <PwaAppCard />
 
             <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-start justify-between gap-3">

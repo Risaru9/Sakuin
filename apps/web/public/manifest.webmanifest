@@ -1,11 +1,18 @@
-﻿{
+{
+  "id": "/",
   "name": "Sakuin",
   "short_name": "Sakuin",
-  "description": "Personal finance web app",
+  "description": "Personal finance app untuk mencatat transaksi, membaca ringkasan uang, memantau goals, dan membangun kebiasaan finansial harian.",
+  "lang": "id",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8f5ee",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
   "theme_color": "#0b0b0b",
+  "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/pwa-192.png",
@@ -28,6 +35,47 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Catat Transaksi",
+      "short_name": "Catat",
+      "description": "Buka halaman transaksi untuk mencatat pemasukan atau pengeluaran.",
+      "url": "/transactions",
+      "icons": [
+        {
+          "src": "/icons/pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ringkasan Hari Ini",
+      "short_name": "Dashboard",
+      "description": "Lihat ringkasan saldo, pemasukan, pengeluaran, dan review harian.",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Asisten Sakuin",
+      "short_name": "Asisten",
+      "description": "Buka asisten finansial Sakuin untuk bertanya tentang kondisi uangmu.",
+      "url": "/asisten",
+      "icons": [
+        {
+          "src": "/icons/pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
