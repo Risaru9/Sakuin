@@ -1740,8 +1740,8 @@ export function AsistenPage() {
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="fixed inset-x-0 top-0 bottom-[calc(var(--sakuin-mobile-nav-height)+1.75rem)] z-40 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
-        <header className="shrink-0 border-b border-black/10 bg-white px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
+      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:z-auto lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-black/10 lg:shadow-xl lg:shadow-black/5">
+        <header className="shrink-0 border-b border-black/10 bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5 sm:py-4 lg:px-6 lg:pt-4">
           <div className="flex items-start gap-3">
             <Link
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
@@ -1826,7 +1826,7 @@ export function AsistenPage() {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-slate-100 bg-white px-3 py-2.5 sm:px-5 sm:py-3">
+        <footer className="shrink-0 border-t border-slate-100 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 sm:px-5 sm:py-3 lg:pb-3">
           {error ? (
             <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold leading-5 text-rose-700 sm:text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
