@@ -2,6 +2,24 @@ import { describe, expect, it } from "vitest";
 import { classifyAiIntent } from "../src/modules/ai/ai.intent.js";
 
 describe("AI intent classifier", () => {
+  it.each([
+    ["Buat ringkasan kondisi keuangan saya", "FINANCIAL_SUMMARY"],
+    ["Pengeluaran bulan ini gimana?", "SPENDING_ANALYSIS"],
+    ["Saya boros di kategori apa?", "SPENDING_ANALYSIS"],
+    ["Apakah saya masih aman jajan hari ini?", "SAVING_ADVICE"],
+    ["Bagaimana cara menghemat minggu ini?", "SAVING_ADVICE"],
+    ["Target tabungan saya masih realistis?", "GOAL_ANALYSIS"],
+    ["Apa tindakan keuangan terbaik hari ini?", "SAVING_ADVICE"],
+    ["Bantu saya memahami pola pengeluaran saya", "SPENDING_ANALYSIS"]
+  ] as const)(
+    "mengklasifikasikan recommended prompt '%s' sebagai %s",
+    (prompt, expectedIntent) => {
+      const result = classifyAiIntent(prompt);
+
+      expect(result.intent).toBe(expectedIntent);
+    }
+  );
+
   it("mengklasifikasikan pertanyaan ringkasan keuangan", () => {
     const result = classifyAiIntent("kondisi keuangan saya bulan ini gimana?");
 

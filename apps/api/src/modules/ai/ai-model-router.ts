@@ -145,7 +145,7 @@ export function selectAiModelPlan(input: {
       route: "complex",
       primaryModel: env.GEMINI_MODEL_COMPLEX,
       fallbackModel: env.GEMINI_MODEL_FALLBACK,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 2200,
       temperature: 0.25,
       reason: "complex_financial_analysis"
     };
@@ -156,7 +156,7 @@ export function selectAiModelPlan(input: {
       route: "default",
       primaryModel: env.GEMINI_MODEL_DEFAULT,
       fallbackModel: env.GEMINI_MODEL_FALLBACK,
-      maxOutputTokens: 800,
+      maxOutputTokens: 1200,
       temperature: 0.35,
       reason: "simple_financial_assistant"
     };
@@ -166,7 +166,7 @@ export function selectAiModelPlan(input: {
     route: "default",
     primaryModel: env.GEMINI_MODEL_DEFAULT,
     fallbackModel: env.GEMINI_MODEL_FALLBACK,
-    maxOutputTokens: 700,
+    maxOutputTokens: 1200,
     temperature: 0.3,
     reason: "default_financial_assistant"
   };

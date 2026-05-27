@@ -241,6 +241,14 @@ docs/APP_STORE_READINESS.md - Rencana kesiapan Android/Play Store
 docs/PLAY_STORE_CHECKLIST.md - Checklist store listing dan internal testing
 docs/PRIVACY_POLICY_DRAFT.md - Draft privacy policy untuk store readiness
 docs/UPDATE_STRATEGY.md - Strategi update fitur tanpa install ulang
+docs/STORE_LISTING_COPY.md - Copywriting Play Store yang siap dipakai
+docs/STORE_SCREENSHOT_GUIDE.md - Panduan screenshot Play Store
+docs/ANDROID_WRAPPER_READINESS.md - Kesiapan teknis Android wrapper
+docs/ANDROID_INTERNAL_TEST_PLAN.md - Rencana test build Android internal
+docs/PLAY_CONSOLE_DATA_SAFETY.md - Draft jawaban Google Play Data Safety
+docs/PLAY_CONSOLE_REVIEW_NOTES.md - Catatan reviewer untuk submission Play Console
+docs/ACCOUNT_DELETION_SOP.md - SOP request penghapusan akun
+docs/ACCOUNT_DELETION_TECHNICAL_PLAN.md - Rencana teknis deletion non-production
 ```
 
 ---

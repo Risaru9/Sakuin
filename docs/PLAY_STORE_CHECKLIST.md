@@ -8,6 +8,7 @@ Dokumen ini berisi checklist praktis untuk menyiapkan Sakuin masuk Play Store ke
 [ ] User bisa register
 [ ] User bisa login
 [ ] User bisa logout
+[ ] Link request hapus akun dari Profile bisa dibuka
 [ ] Dashboard terbuka cepat
 [ ] Catat transaksi manual berjalan
 [ ] Catat Cepat berjalan
@@ -21,6 +22,19 @@ Dokumen ini berisi checklist praktis untuk menyiapkan Sakuin masuk Play Store ke
 ```
 
 ## 2. Store Listing
+
+Materi final yang lebih siap pakai tersedia di:
+
+```txt
+docs/STORE_LISTING_COPY.md
+docs/STORE_SCREENSHOT_GUIDE.md
+docs/ANDROID_WRAPPER_READINESS.md
+docs/ANDROID_INTERNAL_TEST_PLAN.md
+docs/PLAY_CONSOLE_DATA_SAFETY.md
+docs/PLAY_CONSOLE_REVIEW_NOTES.md
+docs/ACCOUNT_DELETION_SOP.md
+docs/ACCOUNT_DELETION_TECHNICAL_PLAN.md
+```
 
 Nama aplikasi:
 
@@ -80,6 +94,12 @@ Prinsip screenshot:
 
 ## 4. Android Technical Checklist
 
+Detail teknis Android wrapper tersedia di:
+
+```txt
+docs/ANDROID_WRAPPER_READINESS.md
+```
+
 ```txt
 [ ] Package name ditentukan
 [ ] App versioning ditentukan
@@ -88,6 +108,7 @@ Prinsip screenshot:
 [ ] Signing key dibuat dan disimpan aman
 [ ] Production URL final
 [ ] Privacy policy URL final
+[ ] Account deletion URL final
 [ ] Digital Asset Links siap jika TWA
 [ ] Internal testing track dibuat
 [ ] Closed testing track siap jika diperlukan
@@ -104,6 +125,12 @@ Catatan:
 Jangan ganti package name setelah app rilis kecuali benar-benar perlu, karena package name adalah identitas aplikasi Android.
 
 ## 5. Data Safety Checklist
+
+Detail draft Data Safety tersedia di:
+
+```txt
+docs/PLAY_CONSOLE_DATA_SAFETY.md
+```
 
 Data yang diproses Sakuin:
 
@@ -127,6 +154,7 @@ Prinsip Play Store Data Safety:
 - Jelaskan user dapat logout.
 - Jelaskan data tersimpan di backend Sakuin.
 - Jelaskan AI Assistant hanya digunakan untuk konteks fitur finansial Sakuin.
+- Jangan submit production sebelum alur request hapus akun, SOP penghapusan, dan proses teknis deletion diuji.
 
 ## 6. Permission Checklist
 
@@ -154,6 +182,13 @@ Permission yang tidak relevan akan menurunkan trust user dan memperbesar risiko 
 
 ## 7. Internal Test Flow
 
+Detail test plan tersedia di:
+
+```txt
+docs/ANDROID_INTERNAL_TEST_PLAN.md
+docs/PLAY_CONSOLE_REVIEW_NOTES.md
+```
+
 Minimal test sebelum submit:
 
 ```txt
@@ -168,6 +203,7 @@ Minimal test sebelum submit:
 [ ] Reminder aktif
 [ ] Tes notifikasi muncul
 [ ] Logout
+[ ] Link request hapus akun dari Profile
 [ ] Buka ulang app
 [ ] Update app/web tidak membuat user stuck
 ```
@@ -178,6 +214,11 @@ Jangan submit ke production Play Store jika:
 
 ```txt
 [ ] Privacy policy belum publik
+[ ] Account deletion request flow tidak bisa dibuka
+[ ] SOP penghapusan akun belum jelas
+[ ] Rencana teknis account deletion belum tersedia
+[ ] Proses teknis deletion belum diuji di database non-production
+[ ] Test account reviewer belum dibuat
 [ ] Notifikasi belum bisa dites
 [ ] Login gagal di wrapper
 [ ] AI Assistant tertutup keyboard/nav
@@ -191,10 +232,12 @@ Jangan submit ke production Play Store jika:
 Langkah setelah checklist ini:
 
 ```txt
-1. Publikasikan privacy policy.
-2. Ambil screenshot store listing.
-3. Pilih TWA atau Capacitor.
-4. Buat build Android internal.
-5. Jalankan internal test.
-6. Baru masuk closed testing Play Store.
+1. Deploy privacy policy publik di /privacy.
+2. Uji SOP account deletion di support flow dan database non-production.
+3. Buat test account reviewer.
+4. Ambil screenshot store listing sesuai STORE_SCREENSHOT_GUIDE.md.
+5. Pilih TWA atau Capacitor.
+6. Buat build Android internal.
+7. Jalankan internal test.
+8. Baru masuk closed testing Play Store.
 ```

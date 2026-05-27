@@ -12,6 +12,7 @@ Target Phase 4:
 - Menyiapkan checklist sebelum masuk Play Store.
 - Menyiapkan materi store listing yang konsisten dengan identitas Sakuin.
 - Menyiapkan privacy policy draft yang sesuai dengan data yang dipakai Sakuin.
+- Menyiapkan Data Safety dan reviewer notes agar Play Console tidak menjadi blocker.
 - Menyiapkan QA checklist agar pengalaman user tetap nyaman saat dibuka sebagai app.
 
 ## Keputusan Teknis
@@ -179,8 +180,19 @@ Mitigasi:
 Mitigasi:
 
 - Gunakan draft privacy policy di `docs/PRIVACY_POLICY_DRAFT.md`.
+- Gunakan draft Data Safety di `docs/PLAY_CONSOLE_DATA_SAFETY.md`.
+- Siapkan reviewer notes dari `docs/PLAY_CONSOLE_REVIEW_NOTES.md`.
 - Review ulang sebelum dipublikasikan.
 - Pastikan policy sesuai data nyata yang diproses Sakuin.
+
+### Risiko 3A: Account deletion belum memenuhi requirement store
+
+Mitigasi:
+
+- Tambahkan halaman publik untuk request hapus akun.
+- Tambahkan link dari Profile.
+- Siapkan proses operasional manual sebelum self-service delete penuh.
+- Jelaskan data retention dengan bahasa yang mudah dipahami user.
 
 ### Risiko 4: Push notification tidak konsisten lintas device
 
@@ -201,6 +213,12 @@ Sakuin dianggap siap masuk build Android jika semua item ini terpenuhi:
 [ ] AI Assistant mobile full room chat stabil
 [ ] Reminder test notification berhasil
 [ ] Privacy policy siap publik
+[x] Account deletion request flow awal tersedia
+[x] SOP account deletion terdokumentasi
+[x] Rencana teknis account deletion terdokumentasi
+[ ] Proses teknis deletion sudah diuji di database non-production
+[ ] Data Safety draft sudah direview
+[ ] Reviewer notes dan test account siap
 [ ] Store listing siap
 [ ] Screenshot mobile siap
 [ ] Icon 512 dan maskable icon siap
@@ -215,12 +233,26 @@ Sakuin dianggap siap masuk build Android jika semua item ini terpenuhi:
 Urutan yang paling aman:
 
 1. Finalisasi privacy policy publik.
-2. Siapkan screenshot store listing.
-3. Pilih package name Android.
-4. Pilih TWA atau Capacitor.
-5. Buat internal test Android.
-6. Uji login, dashboard, transaksi, AI Assistant, reminder, dan export.
-7. Baru submit ke closed testing Play Store.
+2. Uji SOP account deletion di support flow dan database non-production.
+3. Finalisasi Data Safety dan reviewer notes.
+4. Siapkan screenshot store listing.
+5. Pilih package name Android.
+6. Pilih TWA atau Capacitor.
+7. Buat internal test Android.
+8. Uji login, dashboard, transaksi, AI Assistant, reminder, dan export.
+9. Baru submit ke closed testing Play Store.
+
+Dokumen teknis lanjutan:
+
+```txt
+docs/ANDROID_WRAPPER_READINESS.md
+docs/ANDROID_INTERNAL_TEST_PLAN.md
+docs/DIGITAL_ASSET_LINKS_TEMPLATE.json
+docs/PLAY_CONSOLE_DATA_SAFETY.md
+docs/PLAY_CONSOLE_REVIEW_NOTES.md
+docs/ACCOUNT_DELETION_SOP.md
+docs/ACCOUNT_DELETION_TECHNICAL_PLAN.md
+```
 
 ## Keputusan Saat Ini
 

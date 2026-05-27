@@ -73,7 +73,7 @@ function resolveModel(model?: string) {
 }
 
 function resolveMaxOutputTokens(value?: number) {
-  return value ?? 900;
+  return value ?? 1200;
 }
 
 function resolveTemperature(value?: number) {

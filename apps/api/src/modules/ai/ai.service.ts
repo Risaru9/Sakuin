@@ -37,10 +37,14 @@ const OUT_OF_SCOPE_REPLY =
   "Maaf, Asisten Sakuin hanya bisa membantu pertanyaan seputar keuangan pribadi di Sakuin, seperti transaksi, pemasukan, pengeluaran, goals, budget, dan ringkasan keuangan.";
 
 const DEFAULT_SUGGESTIONS = [
-  "Pengeluaran saya bulan ini gimana?",
-  "Saya boros di mana?",
-  "Bandingkan pengeluaran bulan ini dengan bulan lalu",
-  "Target tabungan saya realistis?"
+  "Buat ringkasan kondisi keuangan saya",
+  "Pengeluaran bulan ini gimana?",
+  "Saya boros di kategori apa?",
+  "Apakah saya masih aman jajan hari ini?",
+  "Bagaimana cara menghemat minggu ini?",
+  "Target tabungan saya masih realistis?",
+  "Apa tindakan keuangan terbaik hari ini?",
+  "Bantu saya memahami pola pengeluaran saya"
 ];
 
 const TRANSACTION_DRAFT_SUGGESTIONS = [
@@ -56,6 +60,7 @@ const AI_MATERIAL_EXPENSE_THRESHOLD = 100_000;
 const AI_MATERIAL_EXPENSE_RATIO_THRESHOLD = 20;
 const AI_REPEATED_CATEGORY_TRANSACTION_THRESHOLD = 8;
 const AI_MIN_TRANSACTIONS_FOR_CATEGORY_RISK = 5;
+const MAX_AI_REPLY_CHARS = 6000;
 
 const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
   "kalau",
@@ -2373,16 +2378,17 @@ function buildFinancialSystemInstruction() {
     "Jangan memberi nasihat investasi, pinjaman, pajak, hukum, atau keputusan finansial profesional.",
     "Jangan menghakimi user. Hindari kalimat seperti gaji kamu kecil.",
     "Jika data belum cukup, katakan data belum cukup dan sebutkan data apa yang perlu ditambahkan.",
-    "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, ringkas, dan praktis.",
-    "Gaya jawaban wajib mengikuti pola: PRIORITAS - ALASAN - AKSI.",
+    "Jawaban harus dalam Bahasa Indonesia yang natural, jelas, dan praktis.",
+    "Panjang jawaban harus adaptif: pertanyaan sederhana dijawab singkat, evaluasi dijawab medium, analisis lengkap/perbandingan/goal boleh lebih panjang dan detail.",
+    "Gaya jawaban default mengikuti pola: PRIORITAS - ALASAN - AKSI, tetapi jangan dipaksakan kaku jika user hanya bertanya singkat atau sedang follow-up.",
     "Mulai jawaban dengan keputusan utama atau prioritas tindakan, bukan pembukaan panjang.",
-    "Setelah prioritas, jelaskan alasan singkat berdasarkan data yang tersedia.",
-    "Akhiri dengan 1 sampai 3 aksi konkret yang bisa dilakukan user.",
+    "Setelah prioritas, jelaskan alasan berdasarkan data yang tersedia dengan panjang yang sesuai pertanyaan user.",
+    "Akhiri dengan 1 sampai 3 aksi konkret yang bisa dilakukan user hari ini.",
     "Hindari jawaban generik seperti 'kurangi pengeluaran' tanpa menyebut kategori, batas, atau langkah praktis jika data tersedia.",
     "Jangan memberi terlalu banyak opsi sekaligus. Pilih tindakan paling berdampak dan paling realistis.",
-    "Format jawaban maksimal 3 paragraf pendek.",
+    "Jangan selalu memaksa jawaban pendek. Untuk pertanyaan kompleks, boleh memakai 4 sampai 7 paragraf pendek atau bullet ringkas jika itu membuat jawaban lebih jelas.",
     "Pastikan jawaban selesai dengan utuh dan tidak menggantung di tengah kalimat.",
-    "Untuk pertanyaan analisis kompleks, boleh memakai bullet pendek maksimal 4 poin.",
+    "Untuk pertanyaan analisis kompleks, boleh memakai bullet pendek jika membantu, tetapi tetap pilih poin yang paling relevan.",
     "Jangan gunakan format markdown seperti **bold**, heading markdown, atau tabel markdown. Gunakan teks biasa yang rapi.",
     "Jangan membuat tabel markdown."
   ].join("\n");
@@ -2447,7 +2453,7 @@ function buildFinancialPrompt(input: {
     "",
     "ANSWER QUALITY RULES:",
     "- Jawab pertanyaan user secara langsung, natural, dan sesuai konteks pertanyaannya.",
-    "- Hindari jawaban terlalu panjang; prioritaskan jawaban ringkas, jelas, dan langsung bisa dipakai user.",
+    "- Sesuaikan panjang jawaban dengan pertanyaan user: singkat untuk pertanyaan cepat, medium untuk evaluasi, dan lebih detail untuk analisis lengkap/perbandingan/goal.",
     "- Hindari saran generik; jika data tersedia, sebutkan kategori, batas, nominal, status, atau langkah praktis yang relevan.",
     "- Gunakan struktur jawaban: PRIORITAS - ALASAN - AKSI sebagai default, tetapi jangan terlalu kaku jika user hanya bertanya singkat, meminta klarifikasi, atau sedang follow-up.",
     "- Untuk pertanyaan 'boros di mana', sebutkan kategori prioritas jika memang material. Jika kategori terbesar belum material, jelaskan bahwa kategori itu terbesar sementara tetapi belum menjadi risiko besar.",
@@ -2471,7 +2477,7 @@ function buildFinancialPrompt(input: {
     "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, financial checkup snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, purchase decision impact, dan deterministic backend summary.",
     "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",
-    "Jangan terlalu panjang.",
+    "Jangan terlalu panjang untuk pertanyaan sederhana, tetapi jangan memotong analisis yang memang perlu penjelasan.",
     "Berikan insight dan saran yang langsung bisa dilakukan user.",
     "Pastikan jawaban akhir terasa seperti konsultan keuangan pribadi yang praktis: mulai dari prioritas, jelaskan alasan, lalu beri aksi."
   ].join("\n");
@@ -2481,7 +2487,7 @@ function normalizeAiReply(text: string) {
   return text
     .trim()
     .replace(/\n{3,}/g, "\n\n")
-    .slice(0, 2400);
+    .slice(0, MAX_AI_REPLY_CHARS);
 }
 
 async function enhanceFinancialResponseWithAi(input: {

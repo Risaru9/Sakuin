@@ -40,11 +40,14 @@ const SAVED_DRAFT_STORAGE_PREFIX = "sakuin_ai_saved_draft_ids_v1";
 const CANCELLED_DRAFT_STORAGE_PREFIX = "sakuin_ai_cancelled_draft_ids_v1";
 
 const SUGGESTED_PROMPTS = [
-  "Catat makan ayam geprek 15000",
+  "Buat ringkasan kondisi keuangan saya",
   "Pengeluaran bulan ini gimana?",
-  "Saya boros di mana?",
-  "Bandingkan pengeluaran bulan ini dan bulan lalu",
-  "Target tabungan saya realistis?"
+  "Saya boros di kategori apa?",
+  "Apakah saya masih aman jajan hari ini?",
+  "Bagaimana cara menghemat minggu ini?",
+  "Target tabungan saya masih realistis?",
+  "Apa tindakan keuangan terbaik hari ini?",
+  "Bantu saya memahami pola pengeluaran saya"
 ];
 
 const MAX_VISIBLE_MESSAGE_SUGGESTIONS = 3;

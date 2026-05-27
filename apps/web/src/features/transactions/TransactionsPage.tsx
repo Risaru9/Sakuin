@@ -6,10 +6,12 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpCircle,
+  ChevronDown,
   Edit3,
   Loader2,
   RefreshCcw,
   Search,
+  SlidersHorizontal,
   Trash2
 } from "lucide-react";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
@@ -246,6 +248,7 @@ export function TransactionsPage() {
   const [sort, setSort] = useState<TransactionSort>("date_desc");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
@@ -324,6 +327,14 @@ const transactionsQuery = useQuery({
     sort !== "date_desc" ||
     limit !== 10;
 
+  const advancedFilterCount = [
+    filter !== "ALL",
+    categoryId.length > 0,
+    startDate.length > 0 || endDate.length > 0,
+    sort !== "date_desc",
+    limit !== 10
+  ].filter(Boolean).length;
+
   const deleteMutation = useMutation({
     mutationFn: async (transaction: Transaction) => {
       return deleteTransaction(transaction.id);
@@ -392,6 +403,7 @@ const transactionsQuery = useQuery({
     setEndDate("");
     setSort("date_desc");
     setLimit(10);
+    setIsFilterExpanded(false);
     setPage(1);
   }
 
@@ -440,6 +452,12 @@ const transactionsQuery = useQuery({
   }, [search]);
 
   useEffect(() => {
+    if (advancedFilterCount > 0) {
+      setIsFilterExpanded(true);
+    }
+  }, [advancedFilterCount]);
+
+  useEffect(() => {
     if (!categoryId) {
       return;
     }
@@ -484,170 +502,203 @@ const transactionsQuery = useQuery({
         </header>
 
         <section className="mb-4 rounded-3xl border border-black/10 bg-white p-3.5 shadow-sm sm:mb-5 sm:p-4">
-          <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
-            <label className="block">
-              <span className="text-xs font-black uppercase text-zinc-500">
-                Cari transaksi
-              </span>
+          <label className="block">
+            <span className="text-xs font-black uppercase text-zinc-500">
+              Cari transaksi
+            </span>
 
-              <div className="relative mt-1">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                <input
-                  className="min-h-11 w-full rounded-xl border border-black/10 bg-white pl-11 pr-4 text-sm font-medium text-black outline-none transition placeholder:text-zinc-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                  placeholder="Cari catatan transaksi..."
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-black uppercase text-zinc-500">
-                Kategori
-              </span>
-
-              <select
-                className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                value={categoryId}
-                onChange={(event) => {
-                  setCategoryId(event.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">
-                  {isLoadingCategories
-                    ? "Mengambil kategori..."
-                    : "Semua kategori"}
-                </option>
-
-                {categoryOptions.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name} ·{" "}
-                    {category.type === "INCOME" ? "Income" : "Expense"}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-black uppercase text-zinc-500">
-                Tanggal mulai
-              </span>
-
+            <div className="relative mt-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
-                aria-label="Tanggal mulai transaksi"
-                className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                type="date"
-                value={startDate}
-                onChange={(event) => {
-                  setStartDate(event.target.value);
-                  setPage(1);
-                }}
+                className="min-h-11 w-full rounded-xl border border-black/10 bg-white pl-11 pr-4 text-sm font-medium text-black outline-none transition placeholder:text-zinc-400 focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                placeholder="Cari catatan transaksi..."
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
               />
-
-              <p className="mt-1 hidden text-xs font-medium text-zinc-500 sm:block">
-                Mulai dari tanggal ini.
-              </p>
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-black uppercase text-zinc-500">
-                Tanggal akhir
-              </span>
-
-              <input
-                aria-label="Tanggal akhir transaksi"
-                className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                type="date"
-                value={endDate}
-                onChange={(event) => {
-                  setEndDate(event.target.value);
-                  setPage(1);
-                }}
-              />
-
-              <p className="mt-1 hidden text-xs font-medium text-zinc-500 sm:block">
-                Sampai tanggal ini.
-              </p>
-            </label>
-          </div>
-
-          <div className="mt-3 hidden rounded-2xl border border-black/10 bg-yellow-50 px-4 py-3 sm:block">
-            <p className="text-xs font-medium leading-relaxed text-zinc-600">
-              Filter tanggal bersifat opsional. Kosongkan tanggal mulai atau tanggal
-              akhir jika ingin menampilkan transaksi tanpa batas rentang tertentu.
-            </p>
-          </div>
-
-          <div className="mt-3 grid gap-2.5 xl:grid-cols-[1fr_220px_180px_auto] xl:items-center">
-            <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-yellow-100 p-1">
-              {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
-                <button
-                  className={
-                    filter === item
-                     ? "rounded-xl bg-black px-2.5 py-2 text-[11px] font-black text-white sm:px-3 sm:text-xs"
-                     : "rounded-xl px-2.5 py-2 text-[11px] font-black text-zinc-600 hover:bg-white sm:px-3 sm:text-xs"
-                  }
-                  key={item}
-                  onClick={() => {
-                    setFilter(item);
-                    setCategoryId("");
-                    setPage(1);
-                  }}
-                  type="button"
-                >
-                  {item === "ALL" ? "Semua" : item}
-                </button>
-              ))}
             </div>
+          </label>
 
-            <label className="block">
-              <span className="sr-only">Urutkan transaksi</span>
-              <select
-                className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                value={sort}
-                onChange={(event) => {
-                  setSort(event.target.value as TransactionSort);
-                  setPage(1);
-                }}
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <button
+            aria-expanded={isFilterExpanded}
+            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-black/10 bg-yellow-50 px-3.5 py-3 text-left transition hover:bg-yellow-100"
+            onClick={() => setIsFilterExpanded((current) => !current)}
+            type="button"
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-300 text-black ring-1 ring-black/10">
+                <SlidersHorizontal className="h-4 w-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-black text-black">
+                  Filter lanjutan
+                </span>
+                <span className="block truncate text-xs font-semibold text-zinc-600">
+                  Tanggal, kategori, income/expense, urutan, dan jumlah data.
+                </span>
+              </span>
+            </span>
 
-            <label className="block">
-              <span className="sr-only">Jumlah transaksi per halaman</span>
-              <select
-                className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
-                value={limit}
-                onChange={(event) => {
-                  setLimit(Number(event.target.value));
-                  setPage(1);
-                }}
-              >
-                {limitOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option} / halaman
-                  </option>
-                ))}
-              </select>
-            </label>
+            <span className="flex shrink-0 items-center gap-2">
+              {advancedFilterCount > 0 ? (
+                <span className="rounded-full bg-black px-2.5 py-1 text-[10px] font-black text-white">
+                  {advancedFilterCount} aktif
+                </span>
+              ) : null}
+              <ChevronDown
+                className={
+                  isFilterExpanded
+                    ? "h-4 w-4 rotate-180 transition-transform"
+                    : "h-4 w-4 transition-transform"
+                }
+              />
+            </span>
+          </button>
 
-            <Button
-              disabled={!hasActiveFilter}
-              onClick={resetFilters}
-              type="button"
-              variant="secondary"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
+          {isFilterExpanded ? (
+            <div className="mt-3 border-t border-black/10 pt-3">
+              <div className="grid gap-3 xl:grid-cols-[1fr_1fr_1fr]">
+                <label className="block">
+                  <span className="text-xs font-black uppercase text-zinc-500">
+                    Kategori
+                  </span>
+
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    value={categoryId}
+                    onChange={(event) => {
+                      setCategoryId(event.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">
+                      {isLoadingCategories
+                        ? "Mengambil kategori..."
+                        : "Semua kategori"}
+                    </option>
+
+                    {categoryOptions.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name} ·{" "}
+                        {category.type === "INCOME" ? "Income" : "Expense"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase text-zinc-500">
+                    Tanggal mulai
+                  </span>
+
+                  <input
+                    aria-label="Tanggal mulai transaksi"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    type="date"
+                    value={startDate}
+                    onChange={(event) => {
+                      setStartDate(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase text-zinc-500">
+                    Tanggal akhir
+                  </span>
+
+                  <input
+                    aria-label="Tanggal akhir transaksi"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    type="date"
+                    value={endDate}
+                    onChange={(event) => {
+                      setEndDate(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 grid gap-2.5 xl:grid-cols-[1fr_220px_180px_auto] xl:items-center">
+                <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-yellow-100 p-1">
+                  {(["ALL", "INCOME", "EXPENSE"] as const).map((item) => (
+                    <button
+                      className={
+                        filter === item
+                          ? "rounded-xl bg-black px-2.5 py-2 text-[11px] font-black text-white sm:px-3 sm:text-xs"
+                          : "rounded-xl px-2.5 py-2 text-[11px] font-black text-zinc-600 hover:bg-white sm:px-3 sm:text-xs"
+                      }
+                      key={item}
+                      onClick={() => {
+                        setFilter(item);
+                        setCategoryId("");
+                        setPage(1);
+                      }}
+                      type="button"
+                    >
+                      {item === "ALL" ? "Semua" : item}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block">
+                  <span className="sr-only">Urutkan transaksi</span>
+                  <select
+                    className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    value={sort}
+                    onChange={(event) => {
+                      setSort(event.target.value as TransactionSort);
+                      setPage(1);
+                    }}
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="sr-only">Jumlah transaksi per halaman</span>
+                  <select
+                    className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black outline-none transition focus:border-black focus:ring-4 focus:ring-yellow-300/40"
+                    value={limit}
+                    onChange={(event) => {
+                      setLimit(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {limitOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} / halaman
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <Button
+                  disabled={!hasActiveFilter}
+                  onClick={resetFilters}
+                  type="button"
+                  variant="secondary"
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  Reset
+                </Button>
+              </div>
+
+              <div className="mt-3 hidden rounded-2xl border border-black/10 bg-yellow-50 px-4 py-3 sm:block">
+                <p className="text-xs font-medium leading-relaxed text-zinc-600">
+                  Filter tanggal bersifat opsional. Kosongkan tanggal mulai atau
+                  tanggal akhir jika ingin menampilkan transaksi tanpa batas
+                  rentang tertentu.
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {categoryError ? (
             <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">

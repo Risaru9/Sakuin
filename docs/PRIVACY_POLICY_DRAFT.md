@@ -1,6 +1,6 @@
 # Sakuin Privacy Policy Draft
 
-Dokumen ini adalah draft awal privacy policy untuk kebutuhan app store readiness. Draft ini harus direview ulang sebelum dipublikasikan sebagai halaman resmi.
+Dokumen ini adalah draft awal privacy policy untuk kebutuhan app store readiness. Versi publik awal sudah disiapkan di route web `/privacy` dan akan tersedia di production setelah deploy frontend berikutnya.
 
 ## Ringkasan
 
@@ -97,7 +97,7 @@ User dapat:
 - Mematikan reminder.
 - Mengekspor data transaksi.
 
-Penghapusan akun penuh perlu dibuat sebagai fitur atau proses support sebelum rilis store production jika diwajibkan oleh policy.
+Penghapusan akun penuh dapat diajukan melalui halaman `/account-deletion` atau link dari Profile. Untuk tahap awal, request diproses melalui support agar kepemilikan akun dapat diverifikasi sebelum data dihapus.
 
 ## Anak-Anak
 
@@ -115,7 +115,12 @@ Sebelum dipublikasikan:
 [ ] Pastikan nama pemilik/pengelola aplikasi benar.
 [ ] Tambahkan kontak resmi.
 [ ] Tambahkan tanggal efektif.
-[ ] Tambahkan URL production policy.
+[ ] Pastikan URL production policy aktif: https://sakuin-web.vercel.app/privacy
 [ ] Review kesesuaian dengan Google Play Data Safety.
+[x] Siapkan halaman request hapus akun publik.
+[x] Tambahkan link request hapus akun dari Profile.
+[x] Finalisasi SOP penghapusan akun.
+[x] Dokumentasikan rencana teknis penghapusan akun.
+[ ] Uji proses teknis deletion di database non-production.
 [ ] Review kesesuaian dengan hukum yang berlaku.
 ```

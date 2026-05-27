@@ -991,6 +991,31 @@ export function ProfilePage() {
               </div>
             </section>
 
+            <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-300 text-black ring-1 ring-black/10">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-black">
+                    Penghapusan Akun
+                  </p>
+                  <p className="mt-1 text-sm font-medium leading-6 text-zinc-600">
+                    Ajukan penghapusan akun dan data Sakuin melalui halaman
+                    request. Tim Sakuin akan memverifikasi kepemilikan akun
+                    sebelum memprosesnya.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black shadow-sm transition hover:bg-yellow-50"
+                to="/account-deletion"
+              >
+                Request hapus akun
+              </Link>
+            </section>
+
             <section className="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm sm:p-5">
               <p className="text-sm font-black text-black">Keluar Akun</p>
               <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">

@@ -10,6 +10,7 @@ describe("AI model router", () => {
 
     expect(plan.route).toBe("default");
     expect(plan.reason).toBe("simple_financial_assistant");
+    expect(plan.maxOutputTokens).toBe(1200);
   });
 
   it("memakai complex route untuk analisis goal atau pembelian besar", () => {
@@ -21,6 +22,7 @@ describe("AI model router", () => {
 
     expect(plan.route).toBe("complex");
     expect(plan.reason).toBe("complex_financial_analysis");
+    expect(plan.maxOutputTokens).toBe(2200);
   });
 
   it("memakai complex route untuk follow-up yang membahas tenor dan risiko", () => {
@@ -43,5 +45,6 @@ describe("AI model router", () => {
 
     expect(plan.route).toBe("complex");
     expect(plan.reason).toBe("complex_financial_analysis");
+    expect(plan.maxOutputTokens).toBe(2200);
   });
 });

@@ -93,6 +93,35 @@ afterEach(async () => {
 });
 
 describe("AI chat service contract", () => {
+  it("tidak memotong jawaban AI yang panjang tetapi masih wajar", async () => {
+    const user = await createTestUser("long-ai-reply");
+    const longReply = Array.from(
+      { length: 35 },
+      (_, index) =>
+        `Poin ${index + 1}: catat transaksi kecil secara konsisten agar insight Sakuin makin akurat dan keputusan harian lebih mudah.`
+    ).join("\n");
+
+    const generateText = vi.fn().mockResolvedValue({
+      text: longReply,
+      model: "mock-default-model"
+    });
+
+    const response = await getAiChatResponse(
+      {
+        userId: user.id,
+        message: "buat evaluasi lengkap kondisi keuangan saya"
+      },
+      {
+        provider: {
+          generateText
+        }
+      }
+    );
+
+    expect(response.intent).toBe("FINANCIAL_SUMMARY");
+    expect(response.reply).toBe(longReply);
+    expect(response.reply).toContain("Poin 35");
+  });
 
     it("memahami permintaan lanjutan dari konteks finansial sebelumnya", async () => {
     const user = await createTestUser("financial-continuation-follow-up");
@@ -1046,7 +1075,10 @@ describe("AI chat service contract", () => {
       "1 sampai 3 aksi konkret"
     );
     expect(serializedProviderInput).toContain(
-      "Hindari jawaban terlalu panjang"
+      "Sesuaikan panjang jawaban dengan pertanyaan user"
+    );
+    expect(serializedProviderInput).toContain(
+      "Jangan selalu memaksa jawaban pendek"
     );
     expect(serializedProviderInput).toContain(
       "Hindari saran generik"

@@ -46,7 +46,7 @@ describe("AI Gemini provider", () => {
       config: {
         systemInstruction:
           "Kamu adalah Asisten Sakuin yang hanya menjawab topik finansial.",
-        maxOutputTokens: 900,
+        maxOutputTokens: 1200,
         temperature: 0.35
       }
     });
@@ -83,7 +83,7 @@ describe("AI Gemini provider", () => {
       config: {
         systemInstruction:
           "Kamu adalah Asisten Sakuin yang hanya menjawab topik finansial.",
-        maxOutputTokens: 900,
+        maxOutputTokens: 1200,
         temperature: 0.35
       }
     });

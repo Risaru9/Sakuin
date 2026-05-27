@@ -6,6 +6,7 @@ import {
   Download,
   ExternalLink,
   Loader2,
+  Mail,
   MessageSquare,
   MoreVertical,
   RefreshCcw,
@@ -25,6 +26,12 @@ const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfr2eAUDvktXBFQwBo8SkB--6AWi0K9ooIeilwLUZIVxoZLbg/viewform?usp=dialog";
 
 const FEEDBACK_QR_IMAGE_PATH = "/image/feedback-sakuin.png";
+const SUPPORT_EMAIL = "sakuinofficial@gmail.com";
+const ACCOUNT_DELETION_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+  "Request hapus akun Sakuin"
+)}&body=${encodeURIComponent(
+  "Halo Sakuin,\n\nSaya ingin mengajukan penghapusan akun Sakuin.\n\nEmail akun Sakuin:\nAlasan opsional:\n\nSaya memahami bahwa tim Sakuin perlu memverifikasi kepemilikan akun sebelum menghapus data."
+)}`;
 
 const LoginPage = lazy(() =>
   import("../features/auth/pages/LoginPage").then((module) => ({
@@ -203,6 +210,16 @@ function HomePage() {
             <SakuinIdentityLogo />
           </Link>
           <div className="flex shrink-0 items-center gap-2.5">
+            <Link
+              className={buttonClassName({
+                variant: "ghost",
+                size: "sm",
+                className: "hidden font-semibold !text-black hover:!bg-yellow-50 sm:inline-flex"
+              })}
+              to="/privacy"
+            >
+              Privasi
+            </Link>
             <Link
               className={buttonClassName({
                 variant: "ghost",
@@ -573,6 +590,20 @@ function HomePage() {
                 />
               </div>
             </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-zinc-500">
+              <Link className="hover:text-black" to="/privacy">
+                Kebijakan Privasi
+              </Link>
+              <span aria-hidden="true">.</span>
+              <Link className="hover:text-black" to="/account-deletion">
+                Hapus Akun
+              </Link>
+              <span aria-hidden="true">.</span>
+              <Link className="hover:text-black" to="/install">
+                Install Sakuin
+              </Link>
+            </div>
           </div>
         </section>
       </section>
@@ -733,6 +764,313 @@ function InstallGuidePage() {
   );
 }
 
+function PrivacyPolicyPage() {
+  const dataItems = [
+    "Nama dan email akun.",
+    "Data transaksi seperti nominal, tipe, kategori, tanggal, dan catatan.",
+    "Kategori, goals tabungan, dan safe balance limit.",
+    "Pengaturan reminder dan subscription notifikasi jika diaktifkan.",
+    "Prompt yang dikirim ke Asisten Sakuin untuk menjawab konteks finansial.",
+    "Data teknis dasar seperti request ID dan waktu request untuk keamanan."
+  ];
+
+  const userControls = [
+    "Mengubah profile dan safe balance limit.",
+    "Membuat, mengubah, dan menghapus transaksi.",
+    "Mengelola kategori dan goals.",
+    "Mematikan reminder dari Profile.",
+    "Mengekspor transaksi saat dibutuhkan.",
+    "Meminta penghapusan akun melalui halaman request hapus akun.",
+    "Logout dari perangkat yang digunakan."
+  ];
+
+  const securityPrinciples = [
+    "Password tidak disimpan dalam bentuk plain text.",
+    "Endpoint private membutuhkan autentikasi.",
+    "Data user dipisahkan berdasarkan akun.",
+    "Log tidak boleh menyimpan password, token, atau detail finansial sensitif secara mentah.",
+    "Draft transaksi dari AI harus direview user sebelum disimpan."
+  ];
+
+  return (
+    <main className="min-h-screen bg-white px-4 py-5 text-black sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">
+          <Link className="min-w-0" to="/">
+            <SakuinIdentityLogo subtitle="Kebijakan privasi" />
+          </Link>
+
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
+            to="/dashboard"
+          >
+            Buka App
+          </Link>
+        </header>
+
+        <section className="py-10 sm:py-14">
+          <div className="rounded-3xl border border-black bg-yellow-300 p-6 shadow-[8px_8px_0_#000] sm:p-8">
+            <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
+              Privacy Policy
+            </p>
+            <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-black sm:text-5xl">
+              Kebijakan Privasi Sakuin
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-7 text-black/75 sm:text-base">
+              Sakuin memproses data yang kamu masukkan untuk menjalankan fitur
+              pencatatan transaksi, dashboard, goals, reminder, export, dan
+              Asisten Sakuin. Dokumen ini menjelaskan data apa yang digunakan
+              dan untuk apa.
+            </p>
+            <p className="mt-4 text-xs font-black uppercase text-black/60">
+              Berlaku sejak 27 Mei 2026
+            </p>
+          </div>
+        </section>
+
+        <div className="grid gap-5 pb-14 lg:grid-cols-[0.85fr_1.15fr]">
+          <aside className="space-y-5">
+            <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-black text-black">Ringkasan</h2>
+              <p className="mt-2 text-sm font-medium leading-7 text-zinc-600">
+                Sakuin menggunakan data pribadi dan data keuanganmu hanya untuk
+                menjalankan fitur aplikasi. Sakuin tidak dirancang untuk menjual
+                profil finansial user.
+              </p>
+            </section>
+
+            <section className="rounded-3xl border border-black/10 bg-yellow-50 p-5 shadow-sm">
+              <h2 className="text-lg font-black text-black">Kontrol User</h2>
+              <ul className="mt-3 grid gap-2">
+                {userControls.map((item) => (
+                  <li
+                    className="flex gap-2 text-sm font-semibold leading-6 text-zinc-700"
+                    key={item}
+                  >
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-black" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+
+          <div className="space-y-5">
+            <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-xl font-black text-black">
+                Data yang Diproses
+              </h2>
+              <ul className="mt-4 grid gap-3">
+                {dataItems.map((item) => (
+                  <li className="flex gap-3" key={item}>
+                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-yellow-300 ring-1 ring-black/20" />
+                    <p className="text-sm font-medium leading-7 text-zinc-600">
+                      {item}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-xl font-black text-black">
+                Tujuan Penggunaan Data
+              </h2>
+              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+                Data digunakan untuk membuat akun, menyimpan transaksi,
+                menampilkan dashboard, mengelola goals, mengirim reminder jika
+                kamu mengaktifkannya, menjalankan export, dan membantu Asisten
+                Sakuin membaca konteks finansial pribadi.
+              </p>
+            </section>
+
+            <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-xl font-black text-black">Asisten Sakuin</h2>
+              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+                Asisten Sakuin hanya ditujukan untuk membantu membaca kondisi
+                keuangan pribadi di Sakuin. Asisten bukan pengganti nasihat
+                investasi, pajak, pinjaman, hukum, atau profesional lain.
+                Draft transaksi dari AI tidak disimpan otomatis dan harus
+                direview user terlebih dahulu.
+              </p>
+            </section>
+
+            <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-xl font-black text-black">
+                Keamanan dan Penyimpanan
+              </h2>
+              <ul className="mt-4 grid gap-3">
+                {securityPrinciples.map((item) => (
+                  <li className="flex gap-3" key={item}>
+                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-black" />
+                    <p className="text-sm font-medium leading-7 text-zinc-600">
+                      {item}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="rounded-3xl border border-black/10 bg-zinc-50 p-5 shadow-sm sm:p-6">
+              <h2 className="text-xl font-black text-black">Catatan</h2>
+              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+                Kebijakan ini dapat diperbarui ketika fitur Sakuin berubah,
+                terutama jika ada perubahan pada AI, notifikasi, integrasi pihak
+                ketiga, atau distribusi mobile app.
+              </p>
+              <Link
+                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-sm font-bold text-black shadow-sm transition hover:bg-yellow-50"
+                to="/account-deletion"
+              >
+                Ajukan penghapusan akun
+              </Link>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function AccountDeletionPage() {
+  const deletionSteps = [
+    "Buka halaman ini atau link dari Profile.",
+    "Kirim email memakai alamat akun Sakuin yang ingin dihapus.",
+    "Tim Sakuin akan memverifikasi kepemilikan akun sebelum memproses request.",
+    "Setelah valid, data akun dan data aplikasi terkait akan diproses untuk penghapusan sesuai kebijakan."
+  ];
+
+  const requestDetails = [
+    "Email akun Sakuin yang ingin dihapus.",
+    "Nama akun jika masih diingat.",
+    "Konfirmasi bahwa kamu memahami akses akun akan hilang setelah data dihapus.",
+    "Alasan penghapusan jika ingin memberi masukan, tetapi ini opsional."
+  ];
+
+  const deletedData = [
+    "Profile akun seperti nama dan email.",
+    "Transaksi, kategori custom, goals, dan safe balance limit.",
+    "Pengaturan reminder dan push subscription yang terkait akun.",
+    "Data aplikasi lain yang terkait langsung dengan akun Sakuin."
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#f7f5ef] px-4 py-5 text-black sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">
+          <Link className="min-w-0" to="/">
+            <SakuinIdentityLogo subtitle="Penghapusan akun" />
+          </Link>
+
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
+            to="/profile"
+          >
+            Buka Profile
+          </Link>
+        </header>
+
+        <section className="py-10 sm:py-14">
+          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div className="rounded-3xl border border-black bg-yellow-300 p-6 shadow-[8px_8px_0_#000] sm:p-8">
+              <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-black ring-1 ring-black/10">
+                Account Deletion
+              </p>
+              <h1 className="mt-4 text-4xl font-black tracking-tight text-black sm:text-5xl">
+                Request hapus akun Sakuin.
+              </h1>
+              <p className="mt-4 text-sm font-semibold leading-7 text-black/75 sm:text-base">
+                User dapat meminta penghapusan akun dan data aplikasi yang
+                terhubung dengan akun Sakuin. Untuk menjaga keamanan, request
+                perlu diverifikasi dari email akun yang ingin dihapus.
+              </p>
+
+              <a
+                className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-black px-5 text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto"
+                href={ACCOUNT_DELETION_MAILTO}
+              >
+                <Mail className="mr-2 h-4 w-4 text-white" />
+                Kirim request hapus akun
+              </a>
+
+              <p className="mt-4 text-xs font-bold leading-5 text-black/65">
+                Email support: {SUPPORT_EMAIL}
+              </p>
+              <p className="mt-2 text-xs font-semibold leading-5 text-black/60">
+                Estimasi awal respons: 3-7 hari kerja setelah request diterima.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+                <h2 className="text-xl font-black text-black">
+                  Cara mengajukan
+                </h2>
+                <ol className="mt-4 grid gap-3">
+                  {deletionSteps.map((step, index) => (
+                    <li className="grid grid-cols-[2rem_1fr] gap-3" key={step}>
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-yellow-300 text-sm font-black text-black ring-1 ring-black/10">
+                        {index + 1}
+                      </span>
+                      <p className="text-sm font-medium leading-7 text-zinc-700">
+                        {step}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+                <h2 className="text-xl font-black text-black">
+                  Yang perlu dicantumkan
+                </h2>
+                <ul className="mt-4 grid gap-3">
+                  {requestDetails.map((item) => (
+                    <li className="flex gap-3" key={item}>
+                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-yellow-300 ring-1 ring-black/20" />
+                      <p className="text-sm font-medium leading-7 text-zinc-700">
+                        {item}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm sm:p-6">
+                <h2 className="text-xl font-black text-black">
+                  Data yang diproses untuk dihapus
+                </h2>
+                <ul className="mt-4 grid gap-3">
+                  {deletedData.map((item) => (
+                    <li className="flex gap-3" key={item}>
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-black" />
+                      <p className="text-sm font-medium leading-7 text-zinc-700">
+                        {item}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="rounded-3xl border border-black/10 bg-zinc-50 p-5 shadow-sm sm:p-6">
+                <h2 className="text-xl font-black text-black">
+                  Catatan keamanan
+                </h2>
+                <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+                  Sakuin dapat menyimpan data terbatas untuk kebutuhan keamanan,
+                  pencegahan penyalahgunaan, audit, atau kewajiban legal jika
+                  diperlukan. Jika ada data yang tidak dapat langsung dihapus,
+                  user akan diberi penjelasan melalui proses support.
+                </p>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -741,6 +1079,14 @@ export const router = createBrowserRouter([
   {
     path: "/install",
     element: <InstallGuidePage />
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPolicyPage />
+  },
+  {
+    path: "/account-deletion",
+    element: <AccountDeletionPage />
   },
   {
     path: "/login",
