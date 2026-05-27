@@ -1535,7 +1535,7 @@ const profileQuery = useQuery({
                         </button>
 
                         <Link
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary-soft)] text-sm font-black text-[var(--sakuin-secondary)] shadow-sm ring-1 ring-white/40 transition hover:bg-white"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           to="/export"
                         >
