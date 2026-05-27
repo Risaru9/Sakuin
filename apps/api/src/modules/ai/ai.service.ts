@@ -1069,8 +1069,13 @@ function buildHabitPromptContext(context: AiFinancialContext) {
     `Status habit pencatatan: ${formatHabitStatus(habit.habitStatus)}`,
     `Hari dengan transaksi bulan ini: ${habit.currentMonthTransactionDays} dari ${habit.currentMonthDaysElapsed} hari berjalan`,
     `Kelengkapan hari pencatatan bulan ini: ${habit.currentMonthCompletenessPercent}%`,
+    `Status review harian: ${habit.completionStatus}`,
+    `Aksi habit yang disarankan: ${habit.recommendedAction}`,
     `Transaksi hari ini: ${habit.transactionsToday}`,
     `Transaksi expense hari ini: ${habit.expenseTransactionsToday}`,
+    `Transaksi income hari ini: ${habit.todayIncomeCount}`,
+    `Streak pencatatan saat ini: ${habit.currentStreakDays} hari`,
+    `Hari aktif minggu ini: ${habit.weeklyActiveDays}`,
     `Tanggal transaksi terakhir: ${
       habit.lastTransactionDate ?? "Belum ada"
     }`,
@@ -1088,7 +1093,8 @@ function buildHabitPromptContext(context: AiFinancialContext) {
           )}, ${habit.last7DaysTopExpenseCategory.transactionCount} transaksi)`
         : "Belum ada"
     }`,
-    `Pesan habit: ${habit.habitMessage}`
+    `Pesan habit: ${habit.habitMessage}`,
+    `Pesan habit harian: ${habit.habitMessageDetail.title} ${habit.habitMessageDetail.description}`
   ].join("\n");
 }
 

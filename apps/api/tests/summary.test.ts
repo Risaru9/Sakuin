@@ -68,8 +68,15 @@ type SummaryHabitData = {
   currentMonthTransactionDays: number;
   currentMonthDaysElapsed: number;
   currentMonthCompletenessPercent: number;
+  monthActiveDays: number;
+  weeklyActiveDays: number;
+  currentStreakDays: number;
+  hasTransactionToday: boolean;
   transactionsToday: number;
+  todayTransactionCount: number;
   expenseTransactionsToday: number;
+  todayExpenseCount: number;
+  todayIncomeCount: number;
   lastTransactionDate: string | null;
   daysSinceLastTransaction: number | null;
   last7DaysTransactionCount: number;
@@ -79,8 +86,19 @@ type SummaryHabitData = {
     amount: string;
     transactionCount: number;
   } | null;
+  completionStatus: "NOT_STARTED" | "STARTED" | "REVIEW_READY" | "STRONG_DAY";
+  recommendedAction:
+    | "ADD_TRANSACTION"
+    | "REVIEW_TODAY"
+    | "ASK_ASSISTANT"
+    | "CONTINUE_TRACKING";
   habitStatus: "NO_DATA" | "LIGHT" | "ACTIVE" | "STALE";
   habitMessage: string;
+  habitMessageDetail: {
+    title: string;
+    description: string;
+    tone: "NEUTRAL" | "NUDGE" | "GOOD" | "READY";
+  };
 };
 
 type SummaryData = {
@@ -370,8 +388,20 @@ describe("Summary API", () => {
     expect(body.data.habit?.currentMonthTransactionDays).toBeGreaterThanOrEqual(1);
     expect(body.data.habit?.currentMonthDaysElapsed).toBeGreaterThanOrEqual(1);
     expect(body.data.habit?.currentMonthCompletenessPercent).toBeGreaterThan(0);
+    expect(body.data.habit?.monthActiveDays).toBe(
+      body.data.habit?.currentMonthTransactionDays
+    );
+    expect(body.data.habit?.weeklyActiveDays).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.hasTransactionToday).toBe(true);
     expect(body.data.habit?.transactionsToday).toBeGreaterThanOrEqual(2);
+    expect(body.data.habit?.todayTransactionCount).toBe(
+      body.data.habit?.transactionsToday
+    );
     expect(body.data.habit?.expenseTransactionsToday).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.todayExpenseCount).toBe(
+      body.data.habit?.expenseTransactionsToday
+    );
+    expect(body.data.habit?.todayIncomeCount).toBeGreaterThanOrEqual(1);
     expect(body.data.habit?.last7DaysTransactionCount).toBeGreaterThanOrEqual(2);
     expect(body.data.habit?.last7DaysExpense).toBe("250000.00");
     expect(body.data.habit?.last7DaysTopExpenseCategory).toMatchObject({
@@ -379,8 +409,16 @@ describe("Summary API", () => {
       amount: "250000.00",
       transactionCount: 1
     });
+    expect(body.data.habit?.completionStatus).toMatch(
+      /STARTED|REVIEW_READY|STRONG_DAY/
+    );
+    expect(body.data.habit?.recommendedAction).toMatch(
+      /CONTINUE_TRACKING|REVIEW_TODAY|ASK_ASSISTANT/
+    );
     expect(body.data.habit?.habitStatus).not.toBe("NO_DATA");
     expect(body.data.habit?.habitMessage).toBeTruthy();
+    expect(body.data.habit?.habitMessageDetail.title).toBeTruthy();
+    expect(body.data.habit?.habitMessageDetail.description).toBeTruthy();
 
     expect(body.data.transactionCount).toBe(2);
     expect(body.data.recentTransactions).toHaveLength(2);

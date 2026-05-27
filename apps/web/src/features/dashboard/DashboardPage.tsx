@@ -961,20 +961,93 @@ function clampPercent(value: number | null | undefined) {
   return Math.min(Math.max(toNumber(value), 0), 100);
 }
 
-function formatHabitStatus(status: SummaryHabitData["habitStatus"]) {
-  if (status === "NO_DATA") {
-    return "Mulai";
+type DailyReviewPrimaryTarget = "quick" | "complete" | "assistant";
+
+function formatCompletionStatus(
+  status: SummaryHabitData["completionStatus"] | undefined
+) {
+  if (status === "STARTED") {
+    return "Berjalan";
   }
 
-  if (status === "LIGHT") {
-    return "Ringan";
+  if (status === "REVIEW_READY") {
+    return "Review";
   }
 
-  if (status === "STALE") {
-    return "Perbarui";
+  if (status === "STRONG_DAY") {
+    return "Kuat";
   }
 
-  return "Aktif";
+  return "Mulai";
+}
+
+function getPrimaryActionTarget(
+  action: SummaryHabitData["recommendedAction"] | undefined
+): DailyReviewPrimaryTarget {
+  if (action === "REVIEW_TODAY") {
+    return "complete";
+  }
+
+  if (action === "ASK_ASSISTANT") {
+    return "assistant";
+  }
+
+  return "quick";
+}
+
+function getDailyReviewActionLabel(
+  action: SummaryHabitData["recommendedAction"] | undefined
+) {
+  if (action === "REVIEW_TODAY") {
+    return "Review 30 detik";
+  }
+
+  if (action === "ASK_ASSISTANT") {
+    return "Bahas dengan Asisten";
+  }
+
+  if (action === "CONTINUE_TRACKING") {
+    return "Tambah lagi";
+  }
+
+  return "Catat transaksi";
+}
+
+function getFallbackHabitMessage(habit: SummaryHabitData) {
+  if (habit.transactionsToday > 0) {
+    return {
+      title: `Hari ini kamu sudah mencatat ${habit.transactionsToday} transaksi.`,
+      description:
+        habit.expenseTransactionsToday > 0
+          ? `${habit.expenseTransactionsToday} pengeluaran hari ini sudah tercatat. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat.`
+          : "Data hari ini sudah mulai terisi. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat."
+    };
+  }
+
+  if (habit.habitStatus === "STALE") {
+    return {
+      title: "Belum ada catatan hari ini.",
+      description:
+        habit.daysSinceLastTransaction === null
+          ? "Catat 1 transaksi kecil dulu agar insight hari ini mulai terbentuk."
+          : "Tidak apa-apa kalau sempat terlewat. Lanjutkan lagi hari ini dengan 1 catatan kecil."
+    };
+  }
+
+  if (habit.habitStatus === "NO_DATA") {
+    return {
+      title: "Belum ada catatan hari ini.",
+      description:
+        "Catat 1 transaksi kecil dulu agar insight hari ini mulai terbentuk."
+    };
+  }
+
+  return {
+    title: "Review harian 30 detik",
+    description:
+      habit.habitMessage ||
+      "Review sebentar agar dashboard tetap akurat dan mudah dibaca."
+  };
 }
 
 function getDailyReviewContent(habit: SummaryHabitData | null | undefined) {
@@ -984,62 +1057,31 @@ function getDailyReviewContent(habit: SummaryHabitData | null | undefined) {
       title: "Review harian 30 detik",
       message:
         "Ada transaksi hari ini yang belum masuk? Catat sekarang supaya dashboard tetap akurat.",
-      primaryAction: "Catat yang terlewat"
+      primaryAction: "Catat transaksi",
+      recommendedAction: "ADD_TRANSACTION" as const,
+      primaryTarget: "quick" as const
     };
   }
 
-  if (habit.transactionsToday > 0) {
-    return {
-      statusLabel: formatHabitStatus(habit.habitStatus),
-      title: `${habit.transactionsToday} transaksi sudah masuk hari ini`,
-      message:
-        habit.expenseTransactionsToday > 0
-          ? `${habit.expenseTransactionsToday} pengeluaran hari ini sudah tercatat. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat.`
-          : "Data hari ini sudah mulai terisi. Cek sebentar, lalu tandai lengkap kalau tidak ada yang terlewat.",
-      primaryAction: "Tambah lagi"
-    };
-  }
-
-  if (habit.habitStatus === "NO_DATA") {
-    return {
-      statusLabel: "Mulai",
-      title: "Mulai catatan hari ini",
-      message:
-        "Belum ada transaksi bulan ini. Catat satu transaksi pertama agar Sakuin mulai bisa membaca pola uangmu.",
-      primaryAction: "Catat pertama"
-    };
-  }
-
-  if (habit.habitStatus === "STALE") {
-    return {
-      statusLabel: "Perbarui",
-      title: "Data perlu diperbarui",
-      message:
-        habit.daysSinceLastTransaction === null
-          ? "Belum ada transaksi terbaru. Catat transaksi hari ini agar insight tetap akurat."
-          : `Transaksi terakhir tercatat ${habit.daysSinceLastTransaction} hari lalu. Tambahkan catatan terbaru supaya insight tidak terasa basi.`,
-      primaryAction: "Catat terbaru"
-    };
-  }
-
-  if (habit.habitStatus === "LIGHT") {
-    return {
-      statusLabel: "Ringan",
-      title: "Data bulan ini masih ringan",
-      message:
-        "Catat transaksi kecil yang sering terlewat agar Sakuin lebih mudah membaca pola bocor uang.",
-      primaryAction: "Catat cepat"
-    };
-  }
+  const message = habit.habitMessageDetail ?? getFallbackHabitMessage(habit);
+  const recommendedAction = habit.recommendedAction ?? "ADD_TRANSACTION";
 
   return {
-    statusLabel: "Aktif",
-    title: "Jaga ritme catatan hari ini",
-    message:
-      habit.habitMessage ||
-      "Pencatatan bulan ini sudah cukup rutin. Cek sebentar apakah transaksi hari ini sudah lengkap.",
-    primaryAction: "Catat yang terlewat"
+    statusLabel: formatCompletionStatus(habit.completionStatus),
+    title: message.title,
+    message: message.description,
+    primaryAction: getDailyReviewActionLabel(recommendedAction),
+    recommendedAction,
+    primaryTarget: getPrimaryActionTarget(recommendedAction)
   };
+}
+
+function formatHabitMetric(value: number, suffix = "") {
+  if (value <= 0) {
+    return "-";
+  }
+
+  return `${value}${suffix}`;
 }
 
 function DailyReviewCard({
@@ -1101,21 +1143,29 @@ function DailyReviewCard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 sm:min-w-52">
+                <div className="grid grid-cols-3 gap-2 sm:min-w-64">
                   <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
                     <p className="text-[10px] font-black uppercase text-black/60">
                       Hari ini
                     </p>
                     <p className="mt-0.5 text-sm font-black text-black">
-                      {habit.transactionsToday}
+                      {habit.todayTransactionCount ?? habit.transactionsToday}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
                     <p className="text-[10px] font-black uppercase text-black/60">
-                      7 hari
+                      Streak
                     </p>
                     <p className="mt-0.5 text-sm font-black text-black">
-                      {habit.last7DaysTransactionCount}
+                      {formatHabitMetric(habit.currentStreakDays, "h")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-black/10">
+                    <p className="text-[10px] font-black uppercase text-black/60">
+                      Minggu
+                    </p>
+                    <p className="mt-0.5 text-sm font-black text-black">
+                      {formatHabitMetric(habit.weeklyActiveDays, "h")}
                     </p>
                   </div>
                 </div>
@@ -1125,25 +1175,51 @@ function DailyReviewCard({
         </div>
 
         <div className="grid gap-2 sm:flex sm:shrink-0 sm:items-center">
-          <Button
-            className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
-            onClick={onOpenQuickTransaction}
-            size="md"
-            type="button"
-          >
-            <MessageSquare className="h-4 w-4" />
-            {content.primaryAction}
-          </Button>
+          {content.primaryTarget === "assistant" ? (
+            <Link
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
+              to="/asisten"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {content.primaryAction}
+            </Link>
+          ) : (
+            <Button
+              className="rounded-xl bg-black text-white hover:bg-zinc-800 focus-visible:ring-yellow-400"
+              onClick={
+                content.primaryTarget === "complete"
+                  ? onComplete
+                  : onOpenQuickTransaction
+              }
+              size="md"
+              type="button"
+            >
+              {content.primaryTarget === "complete" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <MessageSquare className="h-4 w-4" />
+              )}
+              {content.primaryAction}
+            </Button>
+          )}
 
           <Button
             className="rounded-xl border-black/15 bg-white text-black hover:bg-yellow-100 focus-visible:ring-yellow-400"
-            onClick={onComplete}
+            onClick={
+              content.primaryTarget === "complete"
+                ? onOpenQuickTransaction
+                : onComplete
+            }
             size="md"
             type="button"
             variant="secondary"
           >
-            <CheckCircle2 className="h-4 w-4" />
-            Sudah lengkap
+            {content.primaryTarget === "complete" ? (
+              <MessageSquare className="h-4 w-4" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            {content.primaryTarget === "complete" ? "Catat lagi" : "Sudah lengkap"}
           </Button>
         </div>
       </div>

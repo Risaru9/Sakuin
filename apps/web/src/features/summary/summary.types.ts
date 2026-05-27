@@ -94,8 +94,15 @@ export type SummaryHabitData = {
   currentMonthTransactionDays: number;
   currentMonthDaysElapsed: number;
   currentMonthCompletenessPercent: number;
+  monthActiveDays: number;
+  weeklyActiveDays: number;
+  currentStreakDays: number;
+  hasTransactionToday: boolean;
   transactionsToday: number;
+  todayTransactionCount: number;
   expenseTransactionsToday: number;
+  todayExpenseCount: number;
+  todayIncomeCount: number;
   lastTransactionDate: string | null;
   daysSinceLastTransaction: number | null;
   last7DaysTransactionCount: number;
@@ -105,8 +112,19 @@ export type SummaryHabitData = {
     amount: string;
     transactionCount: number;
   } | null;
+  completionStatus: "NOT_STARTED" | "STARTED" | "REVIEW_READY" | "STRONG_DAY";
+  recommendedAction:
+    | "ADD_TRANSACTION"
+    | "REVIEW_TODAY"
+    | "ASK_ASSISTANT"
+    | "CONTINUE_TRACKING";
   habitStatus: "NO_DATA" | "LIGHT" | "ACTIVE" | "STALE";
   habitMessage: string;
+  habitMessageDetail?: {
+    title: string;
+    description: string;
+    tone: "NEUTRAL" | "NUDGE" | "GOOD" | "READY";
+  };
 };
 
 export type SummaryData = {
