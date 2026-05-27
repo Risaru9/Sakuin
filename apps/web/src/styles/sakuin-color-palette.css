@@ -1,0 +1,30 @@
+:root {
+  /* Sakuin blue-white visual system. Change colors here for future redesigns. */
+  --sakuin-bg: #f6faff;
+  --sakuin-surface: #ffffff;
+  --sakuin-surface-soft: #eff6ff;
+  --sakuin-text: #0f172a;
+  --sakuin-muted: #64748b;
+  --sakuin-border: #dbe7fb;
+  --sakuin-ink: #0b1220;
+
+  --sakuin-primary: #2563eb;
+  --sakuin-primary-soft: #dbeafe;
+  --sakuin-secondary: #1d4ed8;
+  --sakuin-secondary-soft: #eff6ff;
+  --sakuin-focus: #3b82f6;
+
+  --sakuin-ai: #1e40af;
+  --sakuin-ai-soft: #e0ecff;
+
+  --sakuin-green: #2f855a;
+  --sakuin-green-soft: #ecfdf3;
+  --sakuin-red: #d14b4b;
+  --sakuin-red-soft: #fff1f1;
+  --sakuin-amber: #d97706;
+  --sakuin-amber-soft: #fef3c7;
+
+  --sakuin-shadow-card: 0 18px 50px rgba(37, 99, 235, 0.09);
+  --sakuin-shadow-modal: 0 30px 90px rgba(15, 23, 42, 0.28);
+  --sakuin-selection: rgba(37, 99, 235, 0.2);
+}

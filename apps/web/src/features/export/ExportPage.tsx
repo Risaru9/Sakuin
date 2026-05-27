@@ -335,7 +335,7 @@ export function ExportPage() {
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-xs font-black text-[var(--sakuin-muted)]">
+            <span className="mb-2 block text-sm font-black text-white/90">
               Tanggal mulai
             </span>
             <input
@@ -351,7 +351,7 @@ export function ExportPage() {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-black text-[var(--sakuin-muted)]">
+            <span className="mb-2 block text-sm font-black text-white/90">
               Tanggal akhir
             </span>
             <input
