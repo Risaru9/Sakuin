@@ -1,4 +1,4 @@
-const CACHE_VERSION = "sakuin-pwa-v7";
+const CACHE_VERSION = "sakuin-pwa-v8";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -6,6 +6,9 @@ const APP_SHELL_URLS = [
   "/",
   "/offline.html",
   "/manifest.webmanifest",
+  "/icons/sakuin-logo.png",
+  "/icons/favicon-16.png",
+  "/icons/favicon-32.png",
   "/icons/pwa-192.png",
   "/icons/pwa-512.png",
   "/icons/maskable-192.png",

@@ -1,3 +1,5 @@
+import { SAKUIN_LOGO_SRC } from "./sakuin-logo-assets";
+
 type SakuinLogoProps = {
   showText?: boolean;
   subtitle?: string;
@@ -11,20 +13,22 @@ export function SakuinLogo({
 }: SakuinLogoProps) {
   const iconSizeClass = size === "sm" ? "h-10 w-10" : "h-12 w-12";
   const titleSizeClass = size === "sm" ? "text-base" : "text-lg";
-  const markSizeClass = size === "sm" ? "text-xs" : "text-sm";
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div
-        aria-label="Sakuin logo"
+      <span
         className={[
-          "flex shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] font-black text-white ring-1 ring-[var(--sakuin-border)]",
-          iconSizeClass,
-          markSizeClass
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-[var(--sakuin-border)] shadow-sm",
+          iconSizeClass
         ].join(" ")}
       >
-        S
-      </div>
+        <img
+          alt={showText ? "" : "Sakuin"}
+          aria-hidden={showText ? "true" : undefined}
+          className="h-full w-full object-cover"
+          src={SAKUIN_LOGO_SRC}
+        />
+      </span>
 
       {showText ? (
         <div className="min-w-0">

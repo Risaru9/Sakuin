@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0b0b" />
+    <meta name="theme-color" content="#2563eb" />
     <title>Sakuin Offline</title>
     <style>
       :root {
@@ -26,10 +26,10 @@
 
       .card {
         width: min(100%, 460px);
-        border: 1px solid rgba(11, 11, 11, 0.14);
+        border: 1px solid rgba(37, 99, 235, 0.16);
         border-radius: 24px;
         background: #ffffff;
-        box-shadow: 8px 8px 0 #facc15;
+        box-shadow: 8px 8px 0 #dbeafe;
         padding: 28px;
         text-align: center;
       }
@@ -38,14 +38,11 @@
         width: 64px;
         height: 64px;
         border-radius: 18px;
-        display: grid;
-        place-items: center;
         margin: 0 auto 18px;
-        background: #facc15;
-        border: 1px solid #0b0b0b;
-        color: #0b0b0b;
-        font-size: 28px;
-        font-weight: 900;
+        display: block;
+        background: #ffffff;
+        border: 1px solid rgba(37, 99, 235, 0.16);
+        object-fit: cover;
       }
 
       h1 {
@@ -67,7 +64,7 @@
         min-height: 48px;
         border: 0;
         border-radius: 14px;
-        background: #0b0b0b;
+        background: #2563eb;
         color: white;
         padding: 0 22px;
         font-weight: 800;
@@ -75,13 +72,13 @@
       }
 
       button:hover {
-        background: #18181b;
+        background: #1d4ed8;
       }
     </style>
   </head>
   <body>
     <main class="card">
-      <div class="icon">S</div>
+      <img class="icon" src="/icons/sakuin-logo.png" alt="Sakuin" />
       <h1>Sakuin sedang offline</h1>
       <p>
         Koneksi internet tidak tersedia. Halaman aplikasi mungkin belum bisa

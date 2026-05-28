@@ -1,3 +1,5 @@
+import { SAKUIN_LOGO_SRC } from "./sakuin-logo-assets";
+
 type SakuinIdentityLogoProps = {
   subtitle?: string;
   size?: "sm" | "md";
@@ -12,15 +14,19 @@ export function SakuinIdentityLogo({
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div
+      <span
         className={[
-          "flex shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] font-black text-white ring-1 ring-[var(--sakuin-border)]",
-          iconSizeClass,
-          size === "sm" ? "text-xs" : "text-sm"
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-[var(--sakuin-border)] shadow-sm",
+          iconSizeClass
         ].join(" ")}
       >
-        S
-      </div>
+        <img
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover"
+          src={SAKUIN_LOGO_SRC}
+        />
+      </span>
       <div className="min-w-0">
         <p
           className={[

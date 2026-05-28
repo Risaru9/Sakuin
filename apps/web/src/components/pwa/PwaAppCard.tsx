@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { RefreshCcw, Smartphone, Wifi, WifiOff } from "lucide-react";
+import { RefreshCcw, Wifi, WifiOff } from "lucide-react";
+import { SAKUIN_LOGO_SRC } from "../brand/sakuin-logo-assets";
 import { useToast } from "../toast/ToastProvider";
 import {
   checkForServiceWorkerUpdate,
@@ -90,8 +91,13 @@ export function PwaAppCard() {
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white">
-          <Smartphone className="h-5 w-5" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-[var(--sakuin-border)] shadow-sm">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover"
+            src={SAKUIN_LOGO_SRC}
+          />
         </div>
       </div>
 
