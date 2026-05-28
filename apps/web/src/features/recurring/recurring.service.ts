@@ -1,5 +1,9 @@
 import { apiRequest } from "../../lib/api-client";
-import type { CreateRecurringRuleInput, RecurringRule } from "./recurring.types";
+import type {
+  CreateRecurringRuleInput,
+  RecurringRule,
+  UpdateRecurringRuleInput
+} from "./recurring.types";
 
 export function getRecurringRules() {
   return apiRequest<RecurringRule[]>("/api/recurring");
@@ -8,6 +12,16 @@ export function getRecurringRules() {
 export function createRecurringRule(input: CreateRecurringRuleInput) {
   return apiRequest<RecurringRule>("/api/recurring", {
     method: "POST",
+    body: input
+  });
+}
+
+export function updateRecurringRule(
+  recurringRuleId: string,
+  input: UpdateRecurringRuleInput
+) {
+  return apiRequest<RecurringRule>(`/api/recurring/${recurringRuleId}`, {
+    method: "PUT",
     body: input
   });
 }

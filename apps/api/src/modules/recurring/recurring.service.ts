@@ -91,6 +91,13 @@ function advanceOccurrenceDate(rule: {
   return normalizeStartOfDay(next);
 }
 
+function isUniqueConstraintError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
+
 async function ensureCategoryCanBeUsed(
   userId: string,
   categoryId: string,
@@ -261,39 +268,47 @@ export async function runDueRecurringRules(
         break;
       }
 
-      const run = await prisma.recurringRuleRun.findUnique({
-        where: {
-          recurringRuleId_occurrenceDate: {
-            recurringRuleId: rule.id,
-            occurrenceDate
-          }
-        }
-      });
+      try {
+        await prisma.$transaction(async (tx) => {
+          const recurringRun = await tx.recurringRuleRun.create({
+            data: {
+              userId,
+              recurringRuleId: rule.id,
+              occurrenceDate,
+              transactionId: null
+            }
+          });
 
-      if (!run) {
-        const transaction = rule.autoPost
-          ? await prisma.transaction.create({
-              data: {
-                userId,
-                categoryId: rule.categoryId,
-                type: rule.type,
-                amount: rule.amount,
-                note: rule.note,
-                date: occurrenceDate
-              }
-            })
-          : null;
-
-        await prisma.recurringRuleRun.create({
-          data: {
-            userId,
-            recurringRuleId: rule.id,
-            occurrenceDate,
-            transactionId: transaction?.id ?? null
+          if (!rule.autoPost) {
+            return;
           }
+
+          const transaction = await tx.transaction.create({
+            data: {
+              userId,
+              categoryId: rule.categoryId,
+              type: rule.type,
+              amount: rule.amount,
+              note: rule.note,
+              date: occurrenceDate
+            }
+          });
+
+          await tx.recurringRuleRun.update({
+            where: {
+              id: recurringRun.id
+            },
+            data: {
+              transactionId: transaction.id
+            }
+          });
         });
         generatedCount += 1;
-      } else {
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) {
+          throw error;
+        }
+
         skippedCount += 1;
       }
 

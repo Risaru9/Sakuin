@@ -42,3 +42,5 @@ export type CreateRecurringRuleInput = {
   autoPost?: boolean;
   isActive?: boolean;
 };
+
+export type UpdateRecurringRuleInput = Partial<CreateRecurringRuleInput>;
