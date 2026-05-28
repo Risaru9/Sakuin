@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useId, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  type ReactNode,
+  useEffect,
+  useId,
+  useState
+} from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -11,6 +19,7 @@ import {
   X
 } from "lucide-react";
 import { queryKeys } from "../../lib/query-keys";
+import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 
 type ActiveTransactionModal = "manual" | "quick" | null;
 
@@ -50,6 +59,20 @@ function useEscapeToClose(enabled: boolean, onClose: () => void) {
   }, [enabled, onClose]);
 }
 
+function PortalLayer({ children }: { children: ReactNode }) {
+  const [root, setRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setRoot(document.body);
+  }, []);
+
+  if (!root) {
+    return null;
+  }
+
+  return createPortal(children, root);
+}
+
 export function FloatingAssistantButton() {
   const location = useLocation();
 
@@ -75,17 +98,36 @@ export function MobileMainActionMenu() {
   const navigate = useNavigate();
   const dialogId = useId();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuLayerMounted, setIsMenuLayerMounted] = useState(false);
   const [activeModal, setActiveModal] = useState<ActiveTransactionModal>(null);
 
   useEscapeToClose(isMenuOpen, () => setIsMenuOpen(false));
+  useLockBodyScroll(isMenuOpen);
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      setIsMenuLayerMounted(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsMenuLayerMounted(false);
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isMenuOpen]);
 
   function openModal(type: Exclude<ActiveTransactionModal, null>) {
     setIsMenuOpen(false);
+    setIsMenuLayerMounted(false);
     setActiveModal(type);
   }
 
   function openExport() {
     setIsMenuOpen(false);
+    setIsMenuLayerMounted(false);
     navigate("/export");
   }
 
@@ -100,52 +142,84 @@ export function MobileMainActionMenu() {
 
   return (
     <>
-      {isMenuOpen ? (
-        <>
-          <button
-            aria-label="Tutup menu aksi transaksi"
-            className="fixed inset-x-0 top-0 bottom-[var(--sakuin-mobile-nav-height)] z-[45] cursor-default bg-slate-950/15 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none"
-            onClick={() => setIsMenuOpen(false)}
-            type="button"
-          />
-
-          <div
-            aria-label="Menu aksi transaksi"
-            className="pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.45rem)] left-1/2 z-[70] h-[6.25rem] w-44 -translate-x-1/2 transition duration-200 motion-reduce:transition-none"
-            id={dialogId}
-            role="dialog"
-          >
+      {isMenuLayerMounted ? (
+        <PortalLayer>
+          <>
             <button
-              aria-label="Catat Biasa"
-              className="pointer-events-auto absolute left-1/2 top-0 inline-flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
-              onClick={() => openModal("manual")}
-              title="Catat Biasa"
+              aria-label="Tutup menu aksi transaksi"
+              className={[
+                "fixed inset-x-0 top-0 bottom-[var(--sakuin-mobile-nav-height)] z-[320] cursor-default bg-slate-950/18 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none lg:hidden",
+                isMenuOpen
+                  ? "pointer-events-auto opacity-100"
+                  : "pointer-events-none opacity-0"
+              ].join(" ")}
+              onClick={() => setIsMenuOpen(false)}
               type="button"
-            >
-              <WalletCards aria-hidden="true" className="h-5 w-5" />
-            </button>
+            />
 
-            <button
-              aria-label="Catat Cepat"
-              className="pointer-events-auto absolute bottom-2 left-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_16px_34px_rgba(29,78,216,0.24)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
-              onClick={() => openModal("quick")}
-              title="Catat Cepat"
-              type="button"
+            <div
+              aria-hidden={!isMenuOpen}
+              aria-label="Menu aksi transaksi"
+              className={[
+                "pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.5rem)] left-1/2 z-[340] h-28 w-48 -translate-x-1/2 transition duration-200 motion-reduce:transition-none lg:hidden",
+                isMenuOpen ? "opacity-100" : "opacity-0"
+              ].join(" ")}
+              id={dialogId}
+              role="dialog"
             >
-              <MessageSquare aria-hidden="true" className="h-5 w-5" />
-            </button>
+              <button
+                aria-label="Catat Biasa"
+                className={[
+                  "absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  isMenuOpen
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                ].join(" ")}
+                onClick={() => openModal("manual")}
+                style={{ transitionDelay: isMenuOpen ? "40ms" : "0ms" }}
+                tabIndex={isMenuOpen ? 0 : -1}
+                title="Catat Biasa"
+                type="button"
+              >
+                <WalletCards aria-hidden="true" className="h-5 w-5" />
+              </button>
 
-            <button
-              aria-label="Export data"
-              className="pointer-events-auto absolute bottom-2 right-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_16px_34px_rgba(37,99,235,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none"
-              onClick={openExport}
-              title="Export"
-              type="button"
-            >
-              <Download aria-hidden="true" className="h-5 w-5" />
-            </button>
-          </div>
-        </>
+              <button
+                aria-label="Catat Cepat"
+                className={[
+                  "absolute bottom-2 left-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_18px_38px_rgba(29,78,216,0.26)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  isMenuOpen
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                ].join(" ")}
+                onClick={() => openModal("quick")}
+                style={{ transitionDelay: isMenuOpen ? "80ms" : "0ms" }}
+                tabIndex={isMenuOpen ? 0 : -1}
+                title="Catat Cepat"
+                type="button"
+              >
+                <MessageSquare aria-hidden="true" className="h-5 w-5" />
+              </button>
+
+              <button
+                aria-label="Export data"
+                className={[
+                  "absolute bottom-2 right-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_18px_38px_rgba(37,99,235,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  isMenuOpen
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                ].join(" ")}
+                onClick={openExport}
+                style={{ transitionDelay: isMenuOpen ? "120ms" : "0ms" }}
+                tabIndex={isMenuOpen ? 0 : -1}
+                title="Export"
+                type="button"
+              >
+                <Download aria-hidden="true" className="h-5 w-5" />
+              </button>
+            </div>
+          </>
+        </PortalLayer>
       ) : null}
 
       <button
@@ -172,23 +246,27 @@ export function MobileMainActionMenu() {
       </button>
 
       {activeModal === "manual" ? (
-        <Suspense fallback={null}>
-          <AddTransactionModal
-            open
-            onClose={() => setActiveModal(null)}
-            onSuccess={handleSuccess}
-          />
-        </Suspense>
+        <PortalLayer>
+          <Suspense fallback={null}>
+            <AddTransactionModal
+              open
+              onClose={() => setActiveModal(null)}
+              onSuccess={handleSuccess}
+            />
+          </Suspense>
+        </PortalLayer>
       ) : null}
 
       {activeModal === "quick" ? (
-        <Suspense fallback={null}>
-          <QuickTransactionModal
-            open
-            onClose={() => setActiveModal(null)}
-            onSuccess={handleSuccess}
-          />
-        </Suspense>
+        <PortalLayer>
+          <Suspense fallback={null}>
+            <QuickTransactionModal
+              open
+              onClose={() => setActiveModal(null)}
+              onSuccess={handleSuccess}
+            />
+          </Suspense>
+        </PortalLayer>
       ) : null}
     </>
   );
