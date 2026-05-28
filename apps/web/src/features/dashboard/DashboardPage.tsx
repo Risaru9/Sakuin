@@ -1234,6 +1234,9 @@ export function DashboardPage() {
 
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
+  const [activeMobileTab, setActiveMobileTab] = useState<
+    "overview" | "transactions" | "stats"
+  >("overview");
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
@@ -1422,6 +1425,7 @@ const profileQuery = useQuery({
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-5">
           <div className="space-y-4 sm:space-y-5">
+            {/* Kartu biru utama (saldo + aksi) - tidak diubah */}
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
@@ -1549,48 +1553,215 @@ const profileQuery = useQuery({
               </div>
             )}
 
-            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-              <div className="mb-4">
-              <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                Statistik 6 Bulan
-              </h2>
-              <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
-                Pergerakan arus kas bulanan.
-              </p>
-              </div>
-
-              <TrendChart items={summary?.monthlyTrend ?? []} />
+            {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
+            <div className="mt-1 flex gap-2 overflow-x-auto rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">
+              <button
+                className={[
+                  "flex-1 rounded-xl px-3 py-2 transition",
+                  activeMobileTab === "overview"
+                    ? "bg-white shadow-sm"
+                    : "bg-transparent text-zinc-600"
+                ].join(" ")}
+                onClick={() => setActiveMobileTab("overview")}
+                type="button"
+              >
+                Ringkasan
+              </button>
+              <button
+                className={[
+                  "flex-1 rounded-xl px-3 py-2 transition",
+                  activeMobileTab === "transactions"
+                    ? "bg-white shadow-sm"
+                    : "bg-transparent text-zinc-600"
+                ].join(" ")}
+                onClick={() => setActiveMobileTab("transactions")}
+                type="button"
+              >
+                Transaksi
+              </button>
+              <button
+                className={[
+                  "flex-1 rounded-xl px-3 py-2 transition",
+                  activeMobileTab === "stats"
+                    ? "bg-white shadow-sm"
+                    : "bg-transparent text-zinc-600"
+                ].join(" ")}
+                onClick={() => setActiveMobileTab("stats")}
+                type="button"
+              >
+                Statistik
+              </button>
             </div>
 
-            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-              <div className="mb-4">
-                <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                  Transaksi Terbaru
-                </h2>
-                <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
-                  Aktivitas terakhir dari akunmu.
-                </p>
+            {/* Konten untuk layar lebar: tampilkan semua seperti sebelumnya */}
+            <div className="hidden flex-col gap-4 xl:flex">
+              <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+                <div className="mb-4">
+                  <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                    Statistik 6 Bulan
+                  </h2>
+                  <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
+                    Pergerakan arus kas bulanan.
+                  </p>
+                </div>
+
+                <TrendChart items={summary?.monthlyTrend ?? []} />
               </div>
 
-              <div className="grid gap-3">
-                {(summary?.recentTransactions ?? []).length > 0 ? (
-                  summary?.recentTransactions.map((transaction) => (
-                    <TransactionItem
-                      key={transaction.id}
-                      transaction={transaction}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
-                    Belum ada transaksi terbaru.
-                  </div>
-                )}
+              <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+                <div className="mb-4">
+                  <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                    Transaksi Terbaru
+                  </h2>
+                  <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
+                    Aktivitas terakhir dari akunmu.
+                  </p>
+                </div>
+
+                <div className="grid gap-3">
+                  {(summary?.recentTransactions ?? []).length > 0 ? (
+                    summary?.recentTransactions.map((transaction) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                      />
+                    ))
+                  ) : (
+                    <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
+                      Belum ada transaksi terbaru.
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* Konten mobile per tab: fokus supaya tidak perlu scroll panjang */}
+            <div className="space-y-4 xl:hidden">
+              {activeMobileTab === "overview" ? (
+                <>
+                  {/* Ringkasan cepat: income, expense, total transaksi */}
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
+                        <ArrowUpCircle className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-zinc-500">
+                          Income Bulan Ini
+                        </p>
+                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                          {formatRupiah(summary?.incomeThisMonth)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11">
+                        <ArrowDownCircle className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-zinc-500">
+                          Expense Bulan Ini
+                        </p>
+                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                          {formatRupiah(summary?.expenseThisMonth)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-primary)]/15 sm:h-11 sm:w-11">
+                        <Activity className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-zinc-500">
+                          Total Transaksi
+                        </p>
+                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                          {summary?.transactionCount ?? 0}{" "}
+                          <span className="text-sm font-semibold text-slate-500">
+                            kali
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aman dipakai + Checkup + Goals dalam satu kolom di mobile */}
+                  <SafeToSpendCard
+                    safeToSpend={summary?.safeToSpend}
+                    isLoading={isLoadingSummary}
+                  />
+                  <FinancialCheckupCard
+                    financialCheckup={summary?.financialCheckup}
+                    isLoading={isLoadingSummary}
+                  />
+                  <DashboardGoalsCard
+                    goals={goals}
+                    isLoading={isLoadingGoals}
+                    error={goalsError}
+                    priorityGoalId={dashboardPriorityGoalId}
+                  />
+                </>
+              ) : null}
+
+              {activeMobileTab === "transactions" ? (
+                <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                        Transaksi Terbaru
+                      </h2>
+                      <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
+                        Aktivitas terakhir dari akunmu.
+                      </p>
+                    </div>
+
+                    <Link
+                      className="rounded-xl border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                      to="/transactions"
+                    >
+                      Lihat semua
+                    </Link>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {(summary?.recentTransactions ?? []).length > 0 ? (
+                      summary?.recentTransactions.slice(0, 5).map((transaction) => (
+                        <TransactionItem
+                          key={transaction.id}
+                          transaction={transaction}
+                        />
+                      ))
+                    ) : (
+                      <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
+                        Belum ada transaksi terbaru.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {activeMobileTab === "stats" ? (
+                <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+                  <div className="mb-4">
+                    <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                      Statistik 6 Bulan
+                    </h2>
+                    <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
+                      Pergerakan arus kas bulanan.
+                    </p>
+                  </div>
+
+                  <TrendChart items={summary?.monthlyTrend ?? []} />
+                </div>
+              ) : null}
             </div>
           </div>
 
           <aside className="space-y-4 sm:space-y-5">
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
+            {/* Grid highlight disembunyikan di mobile karena sudah muncul di tab Ringkasan */}
+            <div className="hidden grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid:grid-cols-1">
               <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
                   <ArrowUpCircle className="h-5 w-5" />
@@ -1637,22 +1808,29 @@ const profileQuery = useQuery({
               </div>
             </div>
 
-            <FinancialCheckupCard
-              financialCheckup={summary?.financialCheckup}
-              isLoading={isLoadingSummary}
-            />
+            {/* Kartu insight utama tetap ada di desktop, dipindah ke tab Ringkasan di mobile */}
+            <div className="hidden xl:block">
+              <FinancialCheckupCard
+                financialCheckup={summary?.financialCheckup}
+                isLoading={isLoadingSummary}
+              />
+            </div>
 
-            <SafeToSpendCard
-              safeToSpend={summary?.safeToSpend}
-              isLoading={isLoadingSummary}
-            />
+            <div className="hidden xl:block">
+              <SafeToSpendCard
+                safeToSpend={summary?.safeToSpend}
+                isLoading={isLoadingSummary}
+              />
+            </div>
 
-            <DashboardGoalsCard
-              goals={goals}
-              isLoading={isLoadingGoals}
-              error={goalsError}
-              priorityGoalId={dashboardPriorityGoalId}
-            />
+            <div className="hidden xl:block">
+              <DashboardGoalsCard
+                goals={goals}
+                isLoading={isLoadingGoals}
+                error={goalsError}
+                priorityGoalId={dashboardPriorityGoalId}
+              />
+            </div>
           </aside>
         </div>
       </AppShell>
