@@ -487,7 +487,7 @@ describe("Summary API", () => {
     expect(body.data.expenseByCategory[0].transactionCount).toBe(1);
   }, 20000);
 
-  it("GET /api/summary menghasilkan monthlyTrend 6 bulan", async () => {
+  it("GET /api/summary menghasilkan monthlyTrend 12 bulan", async () => {
     const response = await app.request("/api/summary", {
       method: "GET",
       headers: {
@@ -500,7 +500,7 @@ describe("Summary API", () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
 
-    expect(body.data.monthlyTrend).toHaveLength(6);
+    expect(body.data.monthlyTrend).toHaveLength(12);
 
     const currentMonth = new Date().toISOString().slice(0, 7);
     const currentMonthTrend = body.data.monthlyTrend.find(

@@ -57,14 +57,16 @@ function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function getLastSixMonths(currentDate: Date) {
+const SUMMARY_MONTHLY_TREND_MONTHS = 12;
+
+function getLastMonths(currentDate: Date, monthCount: number) {
   const months: {
     key: string;
     startDate: Date;
     endDate: Date;
   }[] = [];
 
-  for (let index = 5; index >= 0; index -= 1) {
+  for (let index = monthCount - 1; index >= 0; index -= 1) {
     const date = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth() - index,
@@ -169,7 +171,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   const now = new Date();
   const startOfCurrentMonth = getStartOfMonth(now);
   const endOfCurrentMonth = getEndOfMonth(now);
-  const lastSixMonths = getLastSixMonths(now);
+  const monthlyTrendMonths = getLastMonths(now, SUMMARY_MONTHLY_TREND_MONTHS);
 
   const aiFinancialContextPromise = getAiFinancialContext(userId, now);
 
@@ -270,8 +272,8 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
       where: {
         userId,
         date: {
-          gte: lastSixMonths[0].startDate,
-          lte: lastSixMonths[lastSixMonths.length - 1].endDate
+          gte: monthlyTrendMonths[0].startDate,
+          lte: monthlyTrendMonths[monthlyTrendMonths.length - 1].endDate
         }
       },
       select: {
@@ -344,7 +346,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     }
   >();
 
-  for (const month of lastSixMonths) {
+  for (const month of monthlyTrendMonths) {
     monthlyMap.set(month.key, {
       income: toDecimal(0),
       expense: toDecimal(0)
@@ -368,7 +370,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     }
   }
 
-  const monthlyTrend: MonthlyTrendItem[] = lastSixMonths.map((month) => {
+  const monthlyTrend: MonthlyTrendItem[] = monthlyTrendMonths.map((month) => {
     const value = monthlyMap.get(month.key) ?? {
       income: toDecimal(0),
       expense: toDecimal(0)

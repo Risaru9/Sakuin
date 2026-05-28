@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -574,6 +574,9 @@ function SixMonthStatsCard({
   onModeChange: (value: StatsMode) => void;
   onValueTypeChange: (value: StatsValueType) => void;
 }) {
+  const controlsId = useId();
+  const [isControlsOpen, setIsControlsOpen] = useState(false);
+
   const rangedItems = useMemo(() => {
     if (items.length === 0) {
       return [];
@@ -613,8 +616,8 @@ function SixMonthStatsCard({
 
     const recommendation =
       totalNet < 0
-        ? "Arus kas 6 bulan masih negatif. Prioritaskan memangkas kategori pengeluaran tertinggi."
-        : positiveMonths < Math.ceil(items.length * 0.7)
+        ? `Arus kas ${rangedItems.length} bulan masih negatif. Prioritaskan memangkas kategori pengeluaran tertinggi.`
+        : positiveMonths < Math.ceil(rangedItems.length * 0.7)
           ? "Arus kas total positif, tetapi belum konsisten. Fokus jaga pengeluaran agar bulan negatif berkurang."
           : "Arus kas sehat dan cukup konsisten. Pertahankan ritme, lalu alokasikan surplus ke goals.";
 
@@ -638,6 +641,11 @@ function SixMonthStatsCard({
     return Math.max(1, ...rangedItems.map((item) => Math.abs(getMonthNet(item))));
   }, [rangedItems]);
 
+  const selectedModeLabel =
+    selectedMode === "cashflow" ? "Income/Expense" : "Net";
+  const selectedValueTypeLabel =
+    selectedValueType === "nominal" ? "Nominal" : "Persen";
+
   return (
     <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
       <div className="mb-3">
@@ -654,91 +662,145 @@ function SixMonthStatsCard({
         </p>
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-2 ring-1 ring-[var(--sakuin-border)]">
-          <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
-            Periode
-          </p>
-          <div className="grid grid-cols-3 gap-1">
-            {[3, 6, 12].map((range) => (
-              <button
-                className={[
-                  "rounded-lg px-2 py-1.5 text-[11px] font-black transition",
-                  selectedRange === range
-                    ? "bg-white text-[var(--sakuin-text)] shadow-sm"
-                    : "text-zinc-500 hover:bg-white/70"
-                ].join(" ")}
-                key={range}
-                onClick={() => onRangeChange(range as StatsRange)}
-                type="button"
-              >
-                {range}M
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="mb-4 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-2">
+        <button
+          aria-controls={controlsId}
+          aria-expanded={isControlsOpen}
+          className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-white px-3 text-left shadow-sm transition hover:bg-white/90 focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+          onClick={() => setIsControlsOpen((current) => !current)}
+          type="button"
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-black text-[var(--sakuin-text)]">
+              Pengaturan statistik
+            </span>
+            <span className="block truncate text-xs font-semibold text-zinc-600">
+              {selectedRange} bulan - {selectedModeLabel} - {selectedValueTypeLabel}
+            </span>
+          </span>
 
-        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-2 ring-1 ring-[var(--sakuin-border)]">
-          <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
-            Mode
-          </p>
-          <div className="grid grid-cols-2 gap-1">
-            <button
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="hidden rounded-full bg-[var(--sakuin-secondary)] px-2.5 py-1 text-[10px] font-black uppercase text-white sm:inline-flex">
+              Filter
+            </span>
+            <ChevronDown
               className={[
-                "rounded-lg px-2 py-1.5 text-[11px] font-black transition",
-                selectedMode === "cashflow"
-                  ? "bg-white text-[var(--sakuin-text)] shadow-sm"
-                  : "text-zinc-500 hover:bg-white/70"
+                "h-4 w-4 text-[var(--sakuin-primary)] transition-transform duration-300 motion-reduce:transition-none",
+                isControlsOpen ? "rotate-180" : "rotate-0"
               ].join(" ")}
-              onClick={() => onModeChange("cashflow")}
-              type="button"
-            >
-              Income/Expense
-            </button>
-            <button
-              className={[
-                "rounded-lg px-2 py-1.5 text-[11px] font-black transition",
-                selectedMode === "net"
-                  ? "bg-white text-[var(--sakuin-text)] shadow-sm"
-                  : "text-zinc-500 hover:bg-white/70"
-              ].join(" ")}
-              onClick={() => onModeChange("net")}
-              type="button"
-            >
-              Net
-            </button>
-          </div>
-        </div>
+            />
+          </span>
+        </button>
 
-        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-2 ring-1 ring-[var(--sakuin-border)]">
-          <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
-            Tampilan nilai
-          </p>
-          <div className="grid grid-cols-2 gap-1">
-            <button
-              className={[
-                "rounded-lg px-2 py-1.5 text-[11px] font-black transition",
-                selectedValueType === "nominal"
-                  ? "bg-white text-[var(--sakuin-text)] shadow-sm"
-                  : "text-zinc-500 hover:bg-white/70"
-              ].join(" ")}
-              onClick={() => onValueTypeChange("nominal")}
-              type="button"
-            >
-              Nominal
-            </button>
-            <button
-              className={[
-                "rounded-lg px-2 py-1.5 text-[11px] font-black transition",
-                selectedValueType === "percent"
-                  ? "bg-white text-[var(--sakuin-text)] shadow-sm"
-                  : "text-zinc-500 hover:bg-white/70"
-              ].join(" ")}
-              onClick={() => onValueTypeChange("percent")}
-              type="button"
-            >
-              Persen
-            </button>
+        <div
+          aria-hidden={!isControlsOpen}
+          className={[
+            "grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-300 ease-out motion-reduce:transition-none",
+            isControlsOpen
+              ? "mt-2 grid-rows-[1fr] opacity-100"
+              : "mt-0 grid-rows-[0fr] opacity-0"
+          ].join(" ")}
+          id={controlsId}
+        >
+          <div className="min-h-0">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white p-2 ring-1 ring-[var(--sakuin-border)]">
+                <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
+                  Periode
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {[3, 6, 12].map((range) => (
+                    <button
+                      className={[
+                        "rounded-lg px-2 py-1.5 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                        selectedRange === range
+                          ? "bg-[var(--sakuin-primary)] text-white shadow-sm"
+                          : "text-zinc-500 hover:bg-[var(--sakuin-primary-soft)]"
+                      ].join(" ")}
+                      disabled={!isControlsOpen}
+                      key={range}
+                      onClick={() => onRangeChange(range as StatsRange)}
+                      type="button"
+                    >
+                      {range}M
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-2 ring-1 ring-[var(--sakuin-border)]">
+                <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
+                  Mode grafik
+                </p>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    className={[
+                      "rounded-lg px-2 py-1.5 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                      selectedMode === "cashflow"
+                        ? "bg-[var(--sakuin-primary)] text-white shadow-sm"
+                        : "text-zinc-500 hover:bg-[var(--sakuin-primary-soft)]"
+                    ].join(" ")}
+                    disabled={!isControlsOpen}
+                    onClick={() => onModeChange("cashflow")}
+                    type="button"
+                  >
+                    Income/Expense
+                  </button>
+                  <button
+                    className={[
+                      "rounded-lg px-2 py-1.5 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                      selectedMode === "net"
+                        ? "bg-[var(--sakuin-primary)] text-white shadow-sm"
+                        : "text-zinc-500 hover:bg-[var(--sakuin-primary-soft)]"
+                    ].join(" ")}
+                    disabled={!isControlsOpen}
+                    onClick={() => onModeChange("net")}
+                    type="button"
+                  >
+                    Net
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-2 ring-1 ring-[var(--sakuin-border)]">
+                <p className="mb-1 px-1 text-[10px] font-black uppercase text-zinc-500">
+                  Tampilan angka
+                </p>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    className={[
+                      "rounded-lg px-2 py-1.5 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                      selectedValueType === "nominal"
+                        ? "bg-[var(--sakuin-primary)] text-white shadow-sm"
+                        : "text-zinc-500 hover:bg-[var(--sakuin-primary-soft)]"
+                    ].join(" ")}
+                    disabled={!isControlsOpen}
+                    onClick={() => onValueTypeChange("nominal")}
+                    type="button"
+                  >
+                    Nominal
+                  </button>
+                  <button
+                    className={[
+                      "rounded-lg px-2 py-1.5 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                      selectedValueType === "percent"
+                        ? "bg-[var(--sakuin-primary)] text-white shadow-sm"
+                        : "text-zinc-500 hover:bg-[var(--sakuin-primary-soft)]"
+                    ].join(" ")}
+                    disabled={!isControlsOpen}
+                    onClick={() => onValueTypeChange("percent")}
+                    type="button"
+                  >
+                    Persen
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-2 px-1 text-xs font-semibold leading-5 text-zinc-600">
+              Gunakan 3M untuk kondisi terbaru, 6M untuk tren sedang, dan 12M
+              untuk melihat pola setahun.
+            </p>
           </div>
         </div>
       </div>
@@ -956,11 +1018,11 @@ function SixMonthStatsCard({
               <div className="h-6 animate-pulse rounded-lg bg-zinc-100" key={index} />
             ))}
           </div>
-        ) : (
+        ) : rangedItems.length === 0 ? (
           <p className="text-xs font-medium text-zinc-500">
             Belum ada data timeline cashflow.
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );
