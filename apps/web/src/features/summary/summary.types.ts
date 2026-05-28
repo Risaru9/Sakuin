@@ -96,6 +96,25 @@ export type SummaryHabitData = {
   currentMonthCompletenessPercent: number;
   monthActiveDays: number;
   weeklyActiveDays: number;
+  currentWeekActiveDays?: number;
+  currentWeekExpense?: string;
+  previousWeekExpense?: string;
+  currentWeekExpenseTrend?: "UP" | "DOWN" | "STABLE" | "NO_DATA";
+  currentWeekTopExpenseCategory?: {
+    name: string;
+    amount: string;
+    transactionCount: number;
+  } | null;
+  dayRhythm?: {
+    date: string;
+    day: "Sen" | "Sel" | "Rab" | "Kam" | "Jum" | "Sab" | "Min";
+    hasTransaction: boolean;
+    transactionCount: number;
+    income: string;
+    expense: string;
+    isToday: boolean;
+    isFuture: boolean;
+  }[];
   currentStreakDays: number;
   hasTransactionToday: boolean;
   transactionsToday: number;

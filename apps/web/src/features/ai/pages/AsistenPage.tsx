@@ -5,7 +5,7 @@ import {
   useRef,
   useState
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -1070,6 +1070,7 @@ function ClearHistoryDialog({
 export function AsistenPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const userMessageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1093,6 +1094,9 @@ export function AsistenPage() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [savedDraftIdsLoaded, setSavedDraftIdsLoaded] = useState(false);
   const [cancelledDraftIdsLoaded, setCancelledDraftIdsLoaded] = useState(false);
+  const [appliedRoutePrompt, setAppliedRoutePrompt] = useState<string | null>(
+    null
+  );
   const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
     useState(false);
 
@@ -1152,6 +1156,26 @@ export function AsistenPage() {
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
   }, [input]);
+
+  useEffect(() => {
+    const routePrompt = searchParams.get("prompt");
+
+    if (!routePrompt) {
+      setAppliedRoutePrompt(null);
+      return;
+    }
+
+    if (appliedRoutePrompt === routePrompt) {
+      return;
+    }
+
+    setInput(routePrompt.trim().slice(0, 1000));
+    setAppliedRoutePrompt(routePrompt);
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("prompt");
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [appliedRoutePrompt, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!historyLoaded) {

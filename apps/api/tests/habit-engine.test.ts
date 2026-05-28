@@ -35,6 +35,12 @@ describe("habit engine", () => {
     expect(summary.currentMonthTransactionDays).toBe(0);
     expect(summary.monthActiveDays).toBe(0);
     expect(summary.weeklyActiveDays).toBe(0);
+    expect(summary.currentWeekActiveDays).toBe(0);
+    expect(summary.currentWeekExpense).toBe("0.00");
+    expect(summary.previousWeekExpense).toBe("0.00");
+    expect(summary.currentWeekExpenseTrend).toBe("NO_DATA");
+    expect(summary.currentWeekTopExpenseCategory).toBeNull();
+    expect(summary.dayRhythm).toHaveLength(7);
     expect(summary.currentStreakDays).toBe(0);
     expect(summary.hasTransactionToday).toBe(false);
     expect(summary.todayTransactionCount).toBe(0);
@@ -77,6 +83,28 @@ describe("habit engine", () => {
     expect(summary.currentMonthTransactionDays).toBe(3);
     expect(summary.monthActiveDays).toBe(3);
     expect(summary.weeklyActiveDays).toBe(3);
+    expect(summary.currentWeekActiveDays).toBe(3);
+    expect(summary.currentWeekExpense).toBe("60000.00");
+    expect(summary.previousWeekExpense).toBe("0.00");
+    expect(summary.currentWeekExpenseTrend).toBe("NO_DATA");
+    expect(summary.currentWeekTopExpenseCategory).toMatchObject({
+      name: "Makanan",
+      amount: "60000.00",
+      transactionCount: 3
+    });
+    expect(summary.dayRhythm.map((item) => item.day)).toEqual([
+      "Sen",
+      "Sel",
+      "Rab",
+      "Kam",
+      "Jum",
+      "Sab",
+      "Min"
+    ]);
+    expect(summary.dayRhythm.slice(0, 3).every((item) => item.hasTransaction)).toBe(
+      true
+    );
+    expect(summary.dayRhythm[2].isToday).toBe(true);
     expect(summary.currentStreakDays).toBe(3);
     expect(summary.hasTransactionToday).toBe(true);
     expect(summary.transactionsToday).toBe(2);
@@ -131,6 +159,32 @@ describe("habit engine", () => {
     expect(summary.habitMessageDetail.title).toBe(
       "Catatan hari ini sudah kuat."
     );
+  });
+
+  it("membandingkan expense minggu kalender dengan minggu sebelumnya", () => {
+    const summary = buildHabitSummary({
+      transactions: [
+        createHabitTransaction({
+          date: "2026-05-11T03:00:00.000Z",
+          amount: "50000"
+        }),
+        createHabitTransaction({
+          date: "2026-05-19T03:00:00.000Z",
+          amount: "90000"
+        })
+      ],
+      referenceDate: new Date("2026-05-20T12:00:00.000Z")
+    });
+
+    expect(summary.currentWeekActiveDays).toBe(1);
+    expect(summary.currentWeekExpense).toBe("90000.00");
+    expect(summary.previousWeekExpense).toBe("50000.00");
+    expect(summary.currentWeekExpenseTrend).toBe("UP");
+    expect(summary.dayRhythm[1]).toMatchObject({
+      day: "Sel",
+      hasTransaction: true,
+      expense: "90000.00"
+    });
   });
 
   it("menghasilkan range query yang aman untuk habit snapshot Indonesia", () => {

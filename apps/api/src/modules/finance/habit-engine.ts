@@ -41,12 +41,35 @@ export type HabitMessageDetail = {
   tone: HabitMessageTone;
 };
 
+export type HabitExpenseTrend = "UP" | "DOWN" | "STABLE" | "NO_DATA";
+
+export type HabitDayRhythmItem = {
+  date: string;
+  day: "Sen" | "Sel" | "Rab" | "Kam" | "Jum" | "Sab" | "Min";
+  hasTransaction: boolean;
+  transactionCount: number;
+  income: string;
+  expense: string;
+  isToday: boolean;
+  isFuture: boolean;
+};
+
 export type HabitSummaryResult = {
   currentMonthTransactionDays: number;
   currentMonthDaysElapsed: number;
   currentMonthCompletenessPercent: number;
   monthActiveDays: number;
   weeklyActiveDays: number;
+  currentWeekActiveDays: number;
+  currentWeekExpense: string;
+  previousWeekExpense: string;
+  currentWeekExpenseTrend: HabitExpenseTrend;
+  currentWeekTopExpenseCategory: {
+    name: string;
+    amount: string;
+    transactionCount: number;
+  } | null;
+  dayRhythm: HabitDayRhythmItem[];
   currentStreakDays: number;
   hasTransactionToday: boolean;
   transactionsToday: number;
@@ -75,6 +98,16 @@ type CategoryBucket = {
   amount: Prisma.Decimal;
   transactionCount: number;
 };
+
+const DAY_LABELS_BY_UTC_DAY = [
+  "Min",
+  "Sen",
+  "Sel",
+  "Rab",
+  "Kam",
+  "Jum",
+  "Sab"
+] as const;
 
 function toDecimal(value: Prisma.Decimal.Value) {
   return new Prisma.Decimal(value);
@@ -139,6 +172,25 @@ function shiftDateKey(dateKey: string, dayOffset: number) {
   )}-${padDatePart(date.getUTCDate())}`;
 }
 
+function getDayIndex(dateKey: string) {
+  const [year = "0", month = "1", day = "1"] = dateKey.split("-");
+  return new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day))
+  ).getUTCDay();
+}
+
+function getMondayBasedDayOffset(dateKey: string) {
+  return (getDayIndex(dateKey) + 6) % 7;
+}
+
+function getWeekStartKey(dateKey: string) {
+  return shiftDateKey(dateKey, -getMondayBasedDayOffset(dateKey));
+}
+
+function getDayLabel(dateKey: string): HabitDayRhythmItem["day"] {
+  return DAY_LABELS_BY_UTC_DAY[getDayIndex(dateKey)];
+}
+
 function getDaysBetweenDateKeys(startDateKey: string, endDateKey: string) {
   return dateKeyToUtcDayIndex(endDateKey) - dateKeyToUtcDayIndex(startDateKey);
 }
@@ -175,8 +227,13 @@ export function getHabitTransactionRange(referenceDate = new Date()) {
     referenceParts.month
   )}-01`;
   const last7DaysStartKey = shiftDateKey(todayKey, -6);
-  const startKey =
-    last7DaysStartKey < monthStartKey ? last7DaysStartKey : monthStartKey;
+  const currentWeekStartKey = getWeekStartKey(todayKey);
+  const previousWeekStartKey = shiftDateKey(currentWeekStartKey, -7);
+  const startKey = [
+    last7DaysStartKey,
+    monthStartKey,
+    previousWeekStartKey
+  ].sort()[0];
 
   return {
     startDate: dateKeyToJakartaStartUtc(startKey),
@@ -184,7 +241,7 @@ export function getHabitTransactionRange(referenceDate = new Date()) {
   };
 }
 
-function summarizeLast7DaysTopCategory(transactions: HabitTransactionInput[]) {
+function summarizeTopExpenseCategory(transactions: HabitTransactionInput[]) {
   const buckets = new Map<string, CategoryBucket>();
 
   for (const transaction of transactions) {
@@ -219,6 +276,96 @@ function summarizeLast7DaysTopCategory(transactions: HabitTransactionInput[]) {
         transactionCount: category.transactionCount
       }))[0] ?? null
   );
+}
+
+function summarizeExpense(transactions: HabitTransactionInput[]) {
+  return transactions.reduce(
+    (total, transaction) =>
+      transaction.type === TransactionType.EXPENSE
+        ? total.plus(transaction.amount)
+        : total,
+    toDecimal(0)
+  );
+}
+
+function buildExpenseTrend(input: {
+  currentExpense: Prisma.Decimal;
+  previousExpense: Prisma.Decimal;
+}): HabitExpenseTrend {
+  if (input.previousExpense.lessThanOrEqualTo(0)) {
+    return "NO_DATA";
+  }
+
+  const deltaPercent = input.currentExpense
+    .minus(input.previousExpense)
+    .dividedBy(input.previousExpense)
+    .times(100)
+    .toNumber();
+
+  if (deltaPercent >= 10) {
+    return "UP";
+  }
+
+  if (deltaPercent <= -10) {
+    return "DOWN";
+  }
+
+  return "STABLE";
+}
+
+function buildDayRhythm(input: {
+  transactions: HabitTransactionInput[];
+  weekStartKey: string;
+  todayKey: string;
+}): HabitDayRhythmItem[] {
+  const buckets = new Map<
+    string,
+    {
+      income: Prisma.Decimal;
+      expense: Prisma.Decimal;
+      transactionCount: number;
+    }
+  >();
+
+  for (const transaction of input.transactions) {
+    const transactionDateKey = getZonedDateKey(transaction.date);
+    const current = buckets.get(transactionDateKey) ?? {
+      income: toDecimal(0),
+      expense: toDecimal(0),
+      transactionCount: 0
+    };
+
+    if (transaction.type === TransactionType.INCOME) {
+      current.income = current.income.plus(transaction.amount);
+    }
+
+    if (transaction.type === TransactionType.EXPENSE) {
+      current.expense = current.expense.plus(transaction.amount);
+    }
+
+    current.transactionCount += 1;
+    buckets.set(transactionDateKey, current);
+  }
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const dateKey = shiftDateKey(input.weekStartKey, index);
+    const bucket = buckets.get(dateKey) ?? {
+      income: toDecimal(0),
+      expense: toDecimal(0),
+      transactionCount: 0
+    };
+
+    return {
+      date: dateKey,
+      day: getDayLabel(dateKey),
+      hasTransaction: bucket.transactionCount > 0,
+      transactionCount: bucket.transactionCount,
+      income: decimalToString(bucket.income),
+      expense: decimalToString(bucket.expense),
+      isToday: dateKey === input.todayKey,
+      isFuture: dateKey > input.todayKey
+    };
+  });
 }
 
 function calculateCurrentStreak(input: {
@@ -413,6 +560,10 @@ export function buildHabitSummary(input: {
   const currentMonthKey = getMonthKeyFromDateKey(todayKey);
   const currentMonthDaysElapsed = Math.max(referenceParts.day, 1);
   const last7DaysStartKey = shiftDateKey(todayKey, -6);
+  const currentWeekStartKey = getWeekStartKey(todayKey);
+  const currentWeekEndKey = shiftDateKey(currentWeekStartKey, 6);
+  const previousWeekStartKey = shiftDateKey(currentWeekStartKey, -7);
+  const previousWeekEndKey = shiftDateKey(currentWeekStartKey, -1);
 
   const observedTransactions = transactions.filter((transaction) => {
     return getZonedDateKey(transaction.date) <= todayKey;
@@ -440,8 +591,30 @@ export function buildHabitSummary(input: {
     return transactionDateKey >= last7DaysStartKey && transactionDateKey <= todayKey;
   });
 
+  const currentWeekTransactions = observedTransactions.filter((transaction) => {
+    const transactionDateKey = getZonedDateKey(transaction.date);
+
+    return (
+      transactionDateKey >= currentWeekStartKey &&
+      transactionDateKey <= currentWeekEndKey
+    );
+  });
+
+  const previousWeekTransactions = observedTransactions.filter((transaction) => {
+    const transactionDateKey = getZonedDateKey(transaction.date);
+
+    return (
+      transactionDateKey >= previousWeekStartKey &&
+      transactionDateKey <= previousWeekEndKey
+    );
+  });
+
   const last7DaysActiveKeys = new Set(
     last7DaysTransactions.map((transaction) => getZonedDateKey(transaction.date))
+  );
+
+  const currentWeekActiveKeys = new Set(
+    currentWeekTransactions.map((transaction) => getZonedDateKey(transaction.date))
   );
 
   const latestTransaction = [...observedTransactions].sort((firstItem, secondItem) => {
@@ -462,13 +635,9 @@ export function buildHabitSummary(input: {
       )
     : null;
 
-  const last7DaysExpense = last7DaysTransactions.reduce(
-    (total, transaction) =>
-      transaction.type === TransactionType.EXPENSE
-        ? total.plus(transaction.amount)
-        : total,
-    toDecimal(0)
-  );
+  const last7DaysExpense = summarizeExpense(last7DaysTransactions);
+  const currentWeekExpense = summarizeExpense(currentWeekTransactions);
+  const previousWeekExpense = summarizeExpense(previousWeekTransactions);
 
   const monthActiveDays = activeDateKeys.size;
   const currentMonthCompletenessPercent = Number(
@@ -485,6 +654,7 @@ export function buildHabitSummary(input: {
     todayKey
   });
   const weeklyActiveDays = last7DaysActiveKeys.size;
+  const currentWeekActiveDays = currentWeekActiveKeys.size;
   const completionStatus = buildCompletionStatus({
     transactionsToday: todayTransactions.length,
     weeklyActiveDays
@@ -512,6 +682,20 @@ export function buildHabitSummary(input: {
     currentMonthCompletenessPercent,
     monthActiveDays,
     weeklyActiveDays,
+    currentWeekActiveDays,
+    currentWeekExpense: decimalToString(currentWeekExpense),
+    previousWeekExpense: decimalToString(previousWeekExpense),
+    currentWeekExpenseTrend: buildExpenseTrend({
+      currentExpense: currentWeekExpense,
+      previousExpense: previousWeekExpense
+    }),
+    currentWeekTopExpenseCategory:
+      summarizeTopExpenseCategory(currentWeekTransactions),
+    dayRhythm: buildDayRhythm({
+      transactions: currentWeekTransactions,
+      weekStartKey: currentWeekStartKey,
+      todayKey
+    }),
     currentStreakDays,
     hasTransactionToday: todayTransactions.length > 0,
     transactionsToday: todayTransactions.length,
@@ -526,7 +710,7 @@ export function buildHabitSummary(input: {
     last7DaysTransactionCount: last7DaysTransactions.length,
     last7DaysExpense: decimalToString(last7DaysExpense),
     last7DaysTopExpenseCategory:
-      summarizeLast7DaysTopCategory(last7DaysTransactions),
+      summarizeTopExpenseCategory(last7DaysTransactions),
     completionStatus,
     recommendedAction,
     habitStatus,

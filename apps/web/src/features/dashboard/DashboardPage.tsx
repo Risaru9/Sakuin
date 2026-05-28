@@ -1,10 +1,11 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
   ArrowDownCircle,
+  ArrowRight,
   ArrowUpCircle,
   CalendarCheck2,
   CalendarDays,
@@ -12,11 +13,14 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  ListChecks,
   Loader2,
   MessageSquare,
   PiggyBank,
   Plus,
-  Settings
+  Settings,
+  WalletCards,
+  X
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/ui/button";
@@ -36,10 +40,18 @@ import {
   getDashboardPriorityGoalId
 } from "../goals/dashboard-goal-priority";
 import { getSummary } from "../summary/summary.service";
+import {
+  buildFinancialRhythm,
+  type FinancialRhythmActionKind,
+  type FinancialRhythmFinanceStatus,
+  type FinancialRhythmPeriod,
+  type FinancialRhythmViewModel
+} from "../summary/financial-rhythm";
 import type {
   FinancialCheckupData,
   MonthlyTrendItem,
   SafeToSpendData,
+  SummaryData,
   SummaryCategoryItem,
   SummaryHabitData,
   SummaryTransaction
@@ -48,6 +60,7 @@ import { AddTransactionModal } from "../transactions/AddTransactionModal";
 import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
 import { completeRemoteDailyReview } from "../reminders/reminder.service";
+import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -1026,6 +1039,577 @@ function SixMonthStatsCard({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function getRhythmFinanceStatusStyle(status: FinancialRhythmFinanceStatus) {
+  if (status === "SAFE") {
+    return {
+      card: "border-emerald-100 bg-emerald-50/60",
+      badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+      icon: "bg-emerald-600 text-white",
+      bar: "bg-[var(--sakuin-green)]"
+    };
+  }
+
+  if (status === "WATCH") {
+    return {
+      card: "border-amber-100 bg-amber-50/70",
+      badge: "bg-amber-100 text-amber-800 ring-amber-200",
+      icon: "bg-[var(--sakuin-amber)] text-white",
+      bar: "bg-[var(--sakuin-amber)]"
+    };
+  }
+
+  if (status === "REDUCE") {
+    return {
+      card: "border-rose-100 bg-rose-50/70",
+      badge: "bg-rose-100 text-rose-700 ring-rose-200",
+      icon: "bg-rose-600 text-white",
+      bar: "bg-[var(--sakuin-red)]"
+    };
+  }
+
+  return {
+    card: "border-slate-100 bg-slate-50",
+    badge: "bg-slate-100 text-slate-700 ring-slate-200",
+    icon: "bg-slate-700 text-white",
+    bar: "bg-slate-400"
+  };
+}
+
+function getRhythmTrendText(rhythm: FinancialRhythmViewModel) {
+  if (rhythm.previousWeeklyExpense === null || rhythm.weeklyExpenseTrend === "NO_DATA") {
+    return "Perbandingan belum cukup";
+  }
+
+  if (rhythm.weeklyExpenseTrend === "UP") {
+    return "Naik dari periode lalu";
+  }
+
+  if (rhythm.weeklyExpenseTrend === "DOWN") {
+    return "Turun dari periode lalu";
+  }
+
+  return "Stabil dari periode lalu";
+}
+
+function getRhythmActionLabel(kind: FinancialRhythmActionKind) {
+  if (kind === "ASSISTANT") {
+    return "Tanya Asisten";
+  }
+
+  if (kind === "GOALS") {
+    return "Buka Goals";
+  }
+
+  if (kind === "ADD_TRANSACTION") {
+    return "Catat sekarang";
+  }
+
+  return "Catat Cepat";
+}
+
+function RhythmActionButton({
+  kind,
+  label,
+  assistantPrompt,
+  className,
+  onOpenAddTransaction,
+  onOpenQuickTransaction
+}: {
+  kind: FinancialRhythmActionKind;
+  label?: string;
+  assistantPrompt: string;
+  className?: string;
+  onOpenAddTransaction: () => void;
+  onOpenQuickTransaction: () => void;
+}) {
+  const buttonLabel = label ?? getRhythmActionLabel(kind);
+  const baseClassName =
+    className ??
+    "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25";
+
+  if (kind === "ASSISTANT") {
+    return (
+      <Link
+        className={baseClassName}
+        to={`/asisten?prompt=${encodeURIComponent(assistantPrompt)}`}
+      >
+        <MessageSquare className="h-4 w-4" />
+        <span>{buttonLabel}</span>
+      </Link>
+    );
+  }
+
+  if (kind === "GOALS") {
+    return (
+      <Link className={baseClassName} to="/goals">
+        <PiggyBank className="h-4 w-4" />
+        <span>{buttonLabel}</span>
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      className={baseClassName}
+      onClick={kind === "ADD_TRANSACTION" ? onOpenAddTransaction : onOpenQuickTransaction}
+      type="button"
+    >
+      {kind === "ADD_TRANSACTION" ? (
+        <Plus className="h-4 w-4" />
+      ) : (
+        <MessageSquare className="h-4 w-4" />
+      )}
+      <span>{buttonLabel}</span>
+    </button>
+  );
+}
+
+function FinancialRhythmSkeleton() {
+  return (
+    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="h-5 w-40 animate-pulse rounded-lg bg-zinc-100" />
+          <div className="mt-2 h-4 w-full max-w-md animate-pulse rounded-lg bg-zinc-100" />
+        </div>
+        <div className="h-9 w-28 animate-pulse rounded-xl bg-zinc-100" />
+      </div>
+      <div className="grid gap-3 2xl:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            className="h-44 animate-pulse rounded-2xl bg-zinc-100"
+            key={index}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatsDetailModal({
+  open,
+  onClose,
+  children
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useLockBodyScroll(open);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
+      <button
+        aria-label="Tutup statistik lengkap"
+        className="absolute inset-0 bg-[var(--sakuin-secondary)]/40 backdrop-blur-md"
+        onClick={onClose}
+        type="button"
+      />
+
+      <div
+        aria-modal="true"
+        className="relative z-[211] max-h-[88dvh] w-full overflow-y-auto rounded-t-[2rem] border border-white/70 bg-white p-3.5 shadow-[0_-24px_70px_rgba(15,23,42,0.22)] sm:max-w-4xl sm:rounded-[2rem] sm:p-5"
+        role="dialog"
+      >
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <div className="min-w-0">
+            <p className="text-base font-black text-[var(--sakuin-text)]">
+              Statistik Lengkap
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-zinc-600">
+              Detail analitik tetap tersedia saat kamu membutuhkannya.
+            </p>
+          </div>
+          <button
+            aria-label="Tutup"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FinancialRhythmCard({
+  summary,
+  goals,
+  isLoading,
+  selectedRange,
+  selectedMode,
+  selectedValueType,
+  onRangeChange,
+  onModeChange,
+  onValueTypeChange,
+  onOpenAddTransaction,
+  onOpenQuickTransaction
+}: {
+  summary: SummaryData | null;
+  goals: Goal[];
+  isLoading: boolean;
+  selectedRange: StatsRange;
+  selectedMode: StatsMode;
+  selectedValueType: StatsValueType;
+  onRangeChange: (value: StatsRange) => void;
+  onModeChange: (value: StatsMode) => void;
+  onValueTypeChange: (value: StatsValueType) => void;
+  onOpenAddTransaction: () => void;
+  onOpenQuickTransaction: () => void;
+}) {
+  const [selectedPeriod, setSelectedPeriod] =
+    useState<FinancialRhythmPeriod>("week");
+  const [isStatsDetailOpen, setIsStatsDetailOpen] = useState(false);
+  const hasActiveGoals = goals.length > 0;
+  const rhythm = useMemo(
+    () =>
+      buildFinancialRhythm(summary, {
+        period: selectedPeriod,
+        hasActiveGoals
+      }),
+    [hasActiveGoals, selectedPeriod, summary]
+  );
+  const statusStyle = getRhythmFinanceStatusStyle(rhythm.financeStatus);
+  const progressPercent = Math.min(
+    100,
+    Math.round((rhythm.activeDays / Math.max(rhythm.targetDays, 1)) * 100)
+  );
+  const focusPercent = Math.min(
+    100,
+    Math.round((rhythm.activeDays / Math.max(rhythm.focusTargetDays, 1)) * 100)
+  );
+
+  if (isLoading) {
+    return <FinancialRhythmSkeleton />;
+  }
+
+  return (
+    <>
+      <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                  Ritme Keuangan
+                </h2>
+                <p className="mt-0.5 text-xs font-semibold leading-5 text-zinc-600 sm:text-sm">
+                  Pantau kebiasaan catat uangmu tanpa perlu membaca laporan panjang.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[var(--sakuin-primary-soft)] p-1 text-xs font-black text-[var(--sakuin-text)] sm:w-56">
+            <button
+              className={[
+                "min-h-9 rounded-xl px-3 transition",
+                selectedPeriod === "week"
+                  ? "bg-white shadow-sm"
+                  : "text-zinc-600 hover:bg-white/60"
+              ].join(" ")}
+              onClick={() => setSelectedPeriod("week")}
+              type="button"
+            >
+              Minggu ini
+            </button>
+            <button
+              className={[
+                "min-h-9 rounded-xl px-3 transition",
+                selectedPeriod === "month"
+                  ? "bg-white shadow-sm"
+                  : "text-zinc-600 hover:bg-white/60"
+              ].join(" ")}
+              onClick={() => setSelectedPeriod("month")}
+              type="button"
+            >
+              Bulan ini
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 2xl:grid-cols-3">
+          <div className="rounded-2xl bg-[var(--sakuin-primary)] p-4 text-white shadow-[0_18px_40px_rgba(37,99,235,0.16)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-black uppercase text-white/75">
+                  Check-in Hari Ini
+                </p>
+                <p className="mt-2 text-base font-black leading-6 text-white">
+                  {rhythm.todayHasTransaction
+                    ? "Bagus, kamu sudah mencatat hari ini."
+                    : "Belum ada catatan hari ini. Yuk catat 1 transaksi kecil dulu."}
+                </p>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                {rhythm.todayHasTransaction ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  <Clock3 className="h-5 w-5" />
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-white/80">
+                <span>
+                  {rhythm.activeDays} dari {rhythm.targetDays} hari aktif
+                </span>
+                <span>Streak {rhythm.streakDays} hari</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-white"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-3 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50"
+                onClick={onOpenAddTransaction}
+                type="button"
+              >
+                <Plus className="h-4 w-4" />
+                Catat Sekarang
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white/12 px-3 text-xs font-black text-white ring-1 ring-white/25 transition hover:bg-white/18"
+                onClick={onOpenQuickTransaction}
+                type="button"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Catat Cepat
+              </button>
+            </div>
+          </div>
+
+          <div className={["rounded-2xl border p-4", statusStyle.card].join(" ")}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-zinc-500">
+                  Kondisi {selectedPeriod === "week" ? "Minggu Ini" : "Bulan Ini"}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-black text-[var(--sakuin-text)]">
+                    {rhythm.conditionTitle}
+                  </p>
+                  <span
+                    className={[
+                      "rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1",
+                      statusStyle.badge
+                    ].join(" ")}
+                  >
+                    {getRhythmTrendText(rhythm)}
+                  </span>
+                </div>
+              </div>
+              <div
+                className={[
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+                  statusStyle.icon
+                ].join(" ")}
+              >
+                <WalletCards className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
+              <p className="text-[10px] font-black uppercase text-zinc-500">
+                Pengeluaran
+              </p>
+              <p className="mt-1 text-xl font-black tracking-tight text-[var(--sakuin-text)]">
+                {formatCompactRupiah(rhythm.weeklyExpense)}
+              </p>
+            </div>
+
+            <p className="mt-3 text-xs font-semibold leading-5 text-zinc-700">
+              {rhythm.conditionInsight}
+            </p>
+            <p className="mt-2 text-xs font-black leading-5 text-[var(--sakuin-text)]">
+              {rhythm.conditionAction}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-zinc-500">
+                  Fokus Kecil Minggu Ini
+                </p>
+                <p className="mt-2 text-base font-black leading-6 text-[var(--sakuin-text)]">
+                  {rhythm.recommendedAction}
+                </p>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)]">
+                <ListChecks className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold text-zinc-500">
+                <span>{rhythm.focusProgressLabel}</span>
+                <span>{focusPercent}%</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className={["h-full rounded-full", statusStyle.bar].join(" ")}
+                  style={{ width: `${focusPercent}%` }}
+                />
+              </div>
+            </div>
+
+            <RhythmActionButton
+              assistantPrompt={rhythm.assistantPrompt}
+              className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+              kind={rhythm.recommendedActionKind}
+              label={
+                rhythm.recommendedActionKind === "QUICK_TRANSACTION"
+                  ? "Catat sekarang"
+                  : undefined
+              }
+              onOpenAddTransaction={onOpenAddTransaction}
+              onOpenQuickTransaction={onOpenQuickTransaction}
+            />
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-[var(--sakuin-border)] bg-zinc-50 p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-black text-[var(--sakuin-text)]">
+                Pola Terlihat
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-zinc-600">
+                Feedback ringan dari 7 hari kalender.
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-zinc-500 ring-1 ring-[var(--sakuin-border)]">
+              {rhythm.activeDaysThisWeek}/7 aktif
+            </span>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5">
+            {rhythm.dayRhythm.map((day) => (
+              <div
+                className={[
+                  "flex min-h-14 min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center ring-1",
+                  day.hasTransaction
+                    ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                    : day.isFuture
+                      ? "bg-white text-zinc-400 ring-[var(--sakuin-border)]"
+                      : "bg-white text-zinc-500 ring-[var(--sakuin-border)]",
+                  day.isToday ? "outline outline-2 outline-[var(--sakuin-primary)]/25" : ""
+                ].join(" ")}
+                key={`${day.day}-${day.date}`}
+              >
+                <span className="text-[10px] font-black">{day.day}</span>
+                <span
+                  className={[
+                    "mt-1 h-2.5 w-2.5 rounded-full",
+                    day.hasTransaction ? "bg-emerald-500" : "bg-zinc-200"
+                  ].join(" ")}
+                />
+                <span className="mt-1 text-[9px] font-black">
+                  {day.transactionCount > 0 ? day.transactionCount : "-"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-3 text-xs font-semibold leading-5 text-zinc-700">
+            {rhythm.patternSummary}
+          </p>
+        </div>
+
+        {rhythm.insights.length > 0 ? (
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+            {rhythm.insights.map((insight) => (
+              <div
+                className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm"
+                key={`${insight.text}-${insight.action}`}
+              >
+                <p className="text-[10px] font-black uppercase text-zinc-500">
+                  Insight Singkat
+                </p>
+                <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
+                  {insight.text}
+                </p>
+                <RhythmActionButton
+                  assistantPrompt={rhythm.assistantPrompt}
+                  className="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                  kind={insight.actionKind}
+                  label={insight.action}
+                  onOpenAddTransaction={onOpenAddTransaction}
+                  onOpenQuickTransaction={onOpenQuickTransaction}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <button
+          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+          onClick={() => setIsStatsDetailOpen(true)}
+          type="button"
+        >
+          <ListChecks className="h-4 w-4" />
+          Lihat Statistik Lengkap
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </section>
+
+      <StatsDetailModal
+        onClose={() => setIsStatsDetailOpen(false)}
+        open={isStatsDetailOpen}
+      >
+        <SixMonthStatsCard
+          expenseByCategory={summary?.expenseByCategory ?? []}
+          incomeByCategory={summary?.incomeByCategory ?? []}
+          isLoading={false}
+          items={summary?.monthlyTrend ?? []}
+          onModeChange={onModeChange}
+          onRangeChange={onRangeChange}
+          onValueTypeChange={onValueTypeChange}
+          selectedMode={selectedMode}
+          selectedRange={selectedRange}
+          selectedValueType={selectedValueType}
+        />
+      </StatsDetailModal>
+    </>
   );
 }
 
@@ -2282,18 +2866,18 @@ const profileQuery = useQuery({
                 onClick={() => setActiveMobileTab("stats")}
                 type="button"
               >
-                Statistik
+                Ritme
               </button>
             </div>
 
-            {/* Konten untuk layar lebar: tampilkan semua seperti sebelumnya */}
+            {/* Konten untuk layar lebar: ritme utama tetap ringkas, detail dibuka saat perlu */}
             <div className="hidden flex-col gap-4 xl:flex">
-              <SixMonthStatsCard
-                expenseByCategory={summary?.expenseByCategory ?? []}
-                incomeByCategory={summary?.incomeByCategory ?? []}
+              <FinancialRhythmCard
+                goals={goals}
                 isLoading={isLoadingSummary}
-                items={summary?.monthlyTrend ?? []}
                 onModeChange={(value) => updateStatsSearchParams({ mode: value })}
+                onOpenAddTransaction={() => setIsAddTransactionOpen(true)}
+                onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
                 onRangeChange={(value) => updateStatsSearchParams({ range: value })}
                 onValueTypeChange={(value) =>
                   updateStatsSearchParams({ valueType: value })
@@ -2301,6 +2885,7 @@ const profileQuery = useQuery({
                 selectedMode={selectedStatsMode}
                 selectedRange={selectedStatsRange}
                 selectedValueType={selectedStatsValueType}
+                summary={summary}
               />
 
               <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
@@ -2438,12 +3023,12 @@ const profileQuery = useQuery({
               ) : null}
 
               {activeMobileTab === "stats" ? (
-                <SixMonthStatsCard
-                  expenseByCategory={summary?.expenseByCategory ?? []}
-                  incomeByCategory={summary?.incomeByCategory ?? []}
+                <FinancialRhythmCard
+                  goals={goals}
                   isLoading={isLoadingSummary}
-                  items={summary?.monthlyTrend ?? []}
                   onModeChange={(value) => updateStatsSearchParams({ mode: value })}
+                  onOpenAddTransaction={() => setIsAddTransactionOpen(true)}
+                  onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
                   onRangeChange={(value) => updateStatsSearchParams({ range: value })}
                   onValueTypeChange={(value) =>
                     updateStatsSearchParams({ valueType: value })
@@ -2451,6 +3036,7 @@ const profileQuery = useQuery({
                   selectedMode={selectedStatsMode}
                   selectedRange={selectedStatsRange}
                   selectedValueType={selectedStatsValueType}
+                  summary={summary}
                 />
               ) : null}
             </div>

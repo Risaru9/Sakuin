@@ -70,6 +70,25 @@ type SummaryHabitData = {
   currentMonthCompletenessPercent: number;
   monthActiveDays: number;
   weeklyActiveDays: number;
+  currentWeekActiveDays: number;
+  currentWeekExpense: string;
+  previousWeekExpense: string;
+  currentWeekExpenseTrend: "UP" | "DOWN" | "STABLE" | "NO_DATA";
+  currentWeekTopExpenseCategory: {
+    name: string;
+    amount: string;
+    transactionCount: number;
+  } | null;
+  dayRhythm: {
+    date: string;
+    day: "Sen" | "Sel" | "Rab" | "Kam" | "Jum" | "Sab" | "Min";
+    hasTransaction: boolean;
+    transactionCount: number;
+    income: string;
+    expense: string;
+    isToday: boolean;
+    isFuture: boolean;
+  }[];
   currentStreakDays: number;
   hasTransactionToday: boolean;
   transactionsToday: number;
@@ -392,6 +411,9 @@ describe("Summary API", () => {
       body.data.habit?.currentMonthTransactionDays
     );
     expect(body.data.habit?.weeklyActiveDays).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.currentWeekActiveDays).toBeGreaterThanOrEqual(1);
+    expect(body.data.habit?.currentWeekExpense).toBe("250000.00");
+    expect(body.data.habit?.dayRhythm).toHaveLength(7);
     expect(body.data.habit?.hasTransactionToday).toBe(true);
     expect(body.data.habit?.transactionsToday).toBeGreaterThanOrEqual(2);
     expect(body.data.habit?.todayTransactionCount).toBe(
