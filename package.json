@@ -5,7 +5,7 @@
   "description": "Sakuin adalah webapp pengelola keuangan pribadi berbasis monorepo.",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @sakuin/api dev",
+    "dev": "pnpm --parallel --filter @sakuin/api --filter @sakuin/web dev",
     "dev:api": "pnpm --filter @sakuin/api dev",
     "dev:web": "pnpm --filter @sakuin/web dev",
     "build": "pnpm -r build",

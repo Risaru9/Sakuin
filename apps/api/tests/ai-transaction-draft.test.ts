@@ -159,28 +159,11 @@ describe("AI rule-based transaction draft", () => {
       type: "EXPENSE"
     });
 
-    await prisma.category.upsert({
-  where: {
-    id: "cat_expense_fuel"
-  },
-  update: {
-    name: "Bensin",
-    type: "EXPENSE",
-    icon: "fuel",
-    color: "#ef4444",
-    isDefault: true,
-    userId: null
-  },
-  create: {
-    id: "cat_expense_fuel",
-    userId: null,
-    name: "Bensin",
-    type: "EXPENSE",
-    icon: "fuel",
-    color: "#ef4444",
-    isDefault: true
-  }
-});
+    await createCategory({
+      userId: user.id,
+      name: "Bensin",
+      type: "EXPENSE"
+    });
 
     const smallDraft = await buildRuleBasedTransactionDraft({
       userId: user.id,

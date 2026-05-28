@@ -59,6 +59,7 @@ model Transaction {
   date        DateTime
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    Category        @relation(fields: [categoryId], references: [id])
+  recurringRuns RecurringRuleRun[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -193,7 +194,9 @@ model RecurringRuleRun {
 
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   recurringRule  RecurringRule @relation(fields: [recurringRuleId], references: [id], onDelete: Cascade)
+  transaction    Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
 
   @@unique([recurringRuleId, occurrenceDate])
   @@index([userId, occurrenceDate])
+  @@index([transactionId])
 }

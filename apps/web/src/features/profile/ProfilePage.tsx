@@ -11,12 +11,18 @@ import {
   Bell,
   BellOff,
   CheckCircle2,
+  ChevronRight,
   Clock3,
+  Home,
   Loader2,
   LogOut,
   RefreshCcw,
+  Repeat2,
   Save,
-  UserCircle
+  ShieldCheck,
+  Smartphone,
+  UserCircle,
+  WalletCards
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
 import { PwaAppCard } from "../../components/pwa/PwaAppCard";
@@ -41,6 +47,15 @@ import {
   getRemoteReminderSettings,
   updateRemoteReminderSettings
 } from "../reminders/reminder.service";
+import { getCategories } from "../categories/category.service";
+import {
+  createRecurringRule,
+  deleteRecurringRule,
+  getRecurringRules,
+  updateRecurringRule
+} from "../recurring/recurring.service";
+import { RecurringRuleManager } from "../recurring/RecurringRuleManager";
+import type { RecurringRule } from "../recurring/recurring.types";
 import { getUserProfile, updateUserProfile } from "./profile.service";
 import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
 
@@ -51,6 +66,8 @@ type ProfileFormState = {
   name: string;
   safeBalanceLimit: string;
 };
+
+type ProfileSection = "profile" | "automation" | "notifications" | "account";
 
 const reminderFrequencyOptions: Array<{
   value: TransactionReminderFrequency;
@@ -195,14 +212,32 @@ export function ProfilePage() {
   const [notificationPermission, setNotificationPermission] = useState(() =>
     getBrowserNotificationPermission()
   );
+  const [activeSection, setActiveSection] =
+    useState<ProfileSection>("profile");
+  const [pendingRecurringRuleId, setPendingRecurringRuleId] = useState<
+    string | null
+  >(null);
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
     queryFn: getUserProfile
   });
 
+  const recurringQuery = useQuery({
+    queryKey: queryKeys.recurring,
+    queryFn: getRecurringRules
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories()
+  });
+
   const profile = profileQuery.data ?? null;
+  const recurringRules = recurringQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
   const isLoadingProfile = profileQuery.isLoading && !profileQuery.data;
+  const isLoadingRecurring = recurringQuery.isLoading && !recurringQuery.data;
   const isBackgroundFetching =
     profileQuery.isFetching && Boolean(profileQuery.data);
 
@@ -511,6 +546,95 @@ export function ProfilePage() {
     });
   }
 
+  async function handleCreateRecurringRule(payload: {
+    categoryId: string;
+    type: "INCOME" | "EXPENSE";
+    amount: string;
+    frequency: "WEEKLY" | "MONTHLY";
+    dayOfWeek?: number | null;
+    dayOfMonth?: number | null;
+    note?: string | null;
+  }) {
+    try {
+      await createRecurringRule({
+        ...payload,
+        interval: 1,
+        startDate: new Date().toISOString(),
+        autoPost: true,
+        isActive: true
+      });
+
+      void queryClient.invalidateQueries({ queryKey: queryKeys.recurring });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
+
+      addToast({
+        variant: "success",
+        title: "Recurring rule tersimpan",
+        description: "Transaksi rutin akan diproses saat jatuh tempo."
+      });
+    } catch (caughtError) {
+      addToast({
+        variant: "error",
+        title: "Recurring rule gagal dibuat",
+        description: getErrorMessage(caughtError)
+      });
+
+      throw caughtError;
+    }
+  }
+
+  async function handleDeleteRecurringRule(ruleId: string) {
+    setPendingRecurringRuleId(ruleId);
+
+    try {
+      await deleteRecurringRule(ruleId);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.recurring });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
+
+      addToast({
+        variant: "info",
+        title: "Recurring rule dihapus",
+        description: "Rule tidak akan membuat transaksi baru lagi."
+      });
+    } catch (caughtError) {
+      addToast({
+        variant: "error",
+        title: "Recurring rule gagal dihapus",
+        description: getErrorMessage(caughtError)
+      });
+    } finally {
+      setPendingRecurringRuleId(null);
+    }
+  }
+
+  async function handleToggleRecurringRule(rule: RecurringRule) {
+    setPendingRecurringRuleId(rule.id);
+
+    try {
+      await updateRecurringRule(rule.id, {
+        isActive: !rule.isActive
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.recurring });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
+
+      addToast({
+        variant: "success",
+        title: !rule.isActive ? "Recurring rule aktif" : "Recurring rule pause",
+        description: !rule.isActive
+          ? "Rule akan diproses saat jatuh tempo."
+          : "Rule berhenti sementara dan bisa diaktifkan lagi."
+      });
+    } catch (caughtError) {
+      addToast({
+        variant: "error",
+        title: "Recurring rule gagal diubah",
+        description: getErrorMessage(caughtError)
+      });
+    } finally {
+      setPendingRecurringRuleId(null);
+    }
+  }
+
   useEffect(() => {
     if (!profile) {
       return;
@@ -568,41 +692,114 @@ export function ProfilePage() {
   const displayedSafeLimit =
     profile?.safeBalanceLimit ?? user?.safeBalanceLimit ?? "0";
   const hourOptions = getHourOptions();
+  const recurringActiveCount = recurringRules.filter((rule) => rule.isActive).length;
+  const profileSections: Array<{
+    id: ProfileSection;
+    label: string;
+    description: string;
+    icon: typeof UserCircle;
+  }> = [
+    {
+      id: "profile",
+      label: "Data diri",
+      description: "Nama dan saldo aman",
+      icon: UserCircle
+    },
+    {
+      id: "automation",
+      label: "Auto Recurring",
+      description:
+        recurringRules.length > 0
+          ? `${recurringActiveCount}/${recurringRules.length} rule aktif`
+          : "Belum ada rule",
+      icon: Repeat2
+    },
+    {
+      id: "notifications",
+      label: "Pengingat",
+      description: reminderSettings.enabled ? "Aktif" : "Nonaktif",
+      icon: Bell
+    },
+    {
+      id: "account",
+      label: "Akun & App",
+      description: "PWA, hapus akun, logout",
+      icon: ShieldCheck
+    }
+  ];
 
   return (
     <AppShell profileName={displayedName} profileEmail={displayedEmail}>
-      <div className="mx-auto w-full max-w-7xl space-y-5 pb-6">
-        <section className="rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-4 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto w-full max-w-6xl space-y-5 pb-6">
+        <section className="overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
+          <div className="flex min-h-32 items-start justify-between gap-4 bg-gradient-to-br from-[var(--sakuin-primary)] via-[var(--sakuin-secondary)] to-emerald-500 p-4 text-white sm:p-6">
             <div className="min-w-0">
-              <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
-                Sakuin Profile
+              <p className="text-xs font-black uppercase tracking-wide text-white/75">
+                Akun
               </p>
-
-              <h1 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-4xl">
-                Pengaturan Akun
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-4xl">
+                Profile Sakuin
               </h1>
-
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/85">
-                Kelola info penting saja: profil, batas saldo aman, dan
-                pengingat transaksi.
-              </p>
             </div>
 
-            <Button
-              className="w-full rounded-xl border-[var(--sakuin-border)] bg-white text-[var(--sakuin-text)] shadow-sm hover:bg-[var(--sakuin-primary-soft)] sm:w-auto"
+            <button
+              aria-label="Refresh profile"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 transition hover:bg-white/25 disabled:opacity-60"
               disabled={profileQuery.isFetching}
               onClick={refreshProfile}
               type="button"
-              variant="secondary"
             >
               {profileQuery.isFetching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <RefreshCcw className="h-4 w-4" />
+                <RefreshCcw className="h-5 w-5" />
               )}
-              Refresh
-            </Button>
+            </button>
+          </div>
+
+          <div className="-mt-12 px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:p-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-white ring-4 ring-white">
+                  <UserCircle className="h-9 w-9" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h2 className="truncate text-lg font-black tracking-tight text-[var(--sakuin-text)] sm:text-2xl">
+                      {displayedName}
+                    </h2>
+                    {isBackgroundFetching ? (
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--sakuin-primary)]" />
+                    ) : null}
+                  </div>
+                  <p className="mt-1 truncate text-sm font-semibold text-zinc-500">
+                    {displayedEmail}
+                  </p>
+                </div>
+
+                <CheckCircle2 className="hidden h-6 w-6 shrink-0 text-emerald-600 sm:block" />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
+                  onClick={() => setActiveSection("profile")}
+                  type="button"
+                >
+                  <UserCircle className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Lihat Profile</span>
+                </button>
+
+                <Link
+                  className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
+                  to="/dashboard"
+                >
+                  <Home className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Dashboard</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -630,159 +827,169 @@ export function ProfilePage() {
           </div>
         ) : null}
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="min-w-0 overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
-            <div className="border-b border-[var(--sakuin-border)] p-4 sm:p-6">
-              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white sm:h-14 sm:w-14">
-                  <UserCircle className="h-6 w-6 sm:h-7 sm:w-7" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-black text-zinc-500">
-                      Profile
+        <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+            <section className="overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
+              <div className="bg-gradient-to-br from-emerald-400 via-cyan-500 to-[var(--sakuin-primary)] p-4 text-white sm:p-5">
+                <div className="flex items-start gap-3">
+                  <WalletCards className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase text-white/80">
+                      Safe balance limit
                     </p>
-
-                    {isBackgroundFetching ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sakuin-primary-soft)] px-2 py-1 text-[10px] font-black text-[var(--sakuin-text)]">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Sync
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-2xl">
-                    {displayedName}
-                  </h2>
-
-                  <p className="mt-1 truncate text-sm font-medium text-zinc-500">
-                    {displayedEmail}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              {isLoadingProfile ? (
-                <div className="flex min-h-52 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)]">
-                  <div className="flex items-center gap-3 text-zinc-600">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <p className="text-sm font-bold">Mengambil profile...</p>
-                  </div>
-                </div>
-              ) : (
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                  <Input
-                    label="Nama"
-                    name="name"
-                    type="text"
-                    className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
-                    placeholder="Masukkan nama"
-                    value={form.name}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        name: event.target.value
-                      }))
-                    }
-                  />
-
-                  <div className="space-y-2">
-                    <Input
-                      label="Safe balance limit"
-                      name="safeBalanceLimit"
-                      type="text"
-                      className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="Contoh: 500000"
-                      value={form.safeBalanceLimit}
-                      onKeyDown={preventInvalidSafeBalanceKey}
-                      onChange={(event) =>
-                        handleSafeBalanceChange(event.target.value)
-                      }
-                    />
-
-                    <p className="text-xs font-semibold leading-5 text-zinc-600">
-                      Hanya angka. Minimal Rp 0 dan maksimal{" "}
-                      {MAX_SAFE_BALANCE_LIMIT_LABEL}.
+                    <p className="mt-2 break-words text-2xl font-black tracking-tight text-white">
+                      {formatRupiah(displayedSafeLimit)}
                     </p>
                   </div>
-
-                  <div className="rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-4">
-                    <p className="text-xs font-black uppercase text-zinc-500">
-                      Fungsi safe balance limit
-                    </p>
-                    <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
-                      Jika saldo berada di bawah batas ini, dashboard akan
-                      menampilkan status <strong>Waspada</strong>. Jika saldo
-                      berada di atas batas ini, dashboard akan menampilkan status{" "}
-                      <strong>Aman</strong>.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 pt-2 sm:grid-cols-2">
-                    <Button
-                      className="min-h-12 rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
-                      disabled={isSubmitting}
-                      isLoading={isSubmitting}
-                      type="submit"
-                    >
-                      <Save className="h-4 w-4" />
-                      Simpan Profile
-                    </Button>
-
-                    <Link
-                      className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-5 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-                      to="/dashboard"
-                    >
-                      Kembali ke Dashboard
-                    </Link>
-                  </div>
-                </form>
-              )}
-            </div>
-          </section>
-
-          <aside className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-1">
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
-              <p className="text-sm font-black text-[var(--sakuin-text)]">Ringkasan</p>
-
-              <div className="mt-4 grid gap-3">
-                <div className="min-w-0 rounded-2xl bg-zinc-50 p-4">
-                  <p className="text-xs font-bold text-zinc-500">
-                    Email akun
-                  </p>
-                  <p className="mt-1 truncate text-sm font-black text-[var(--sakuin-text)]">
-                    {displayedEmail}
-                  </p>
                 </div>
-
-                <div className="min-w-0 rounded-2xl bg-[var(--sakuin-primary-soft)] p-4">
-                  <p className="text-xs font-bold text-[var(--sakuin-text)]">
-                    Safe balance limit
-                  </p>
-                  <p className="mt-1 break-words text-xl font-black text-[var(--sakuin-text)]">
-                    {formatRupiah(displayedSafeLimit)}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-zinc-50 p-4">
-                  <p className="text-xs font-bold text-zinc-500">
-                    Status akun
-                  </p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-black text-[var(--sakuin-text)]">
-                    <CheckCircle2 className="h-5 w-5" />
-                    Aktif
-                  </p>
-                </div>
+                <button
+                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                  onClick={() => setActiveSection("profile")}
+                  type="button"
+                >
+                  Atur Limit
+                </button>
               </div>
             </section>
 
-            <PwaAppCard />
+            <nav className="overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
+              {profileSections.map((section) => {
+                const SectionIcon = section.icon;
+                const isActive = activeSection === section.id;
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
+                return (
+                  <button
+                    className={[
+                      "flex w-full items-center gap-3 border-b border-[var(--sakuin-border)] px-4 py-4 text-left transition last:border-b-0",
+                      isActive
+                        ? "bg-[var(--sakuin-primary-soft)]"
+                        : "bg-white hover:bg-zinc-50"
+                    ].join(" ")}
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    type="button"
+                  >
+                    <span
+                      className={[
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+                        isActive
+                          ? "bg-[var(--sakuin-primary)] text-white"
+                          : "bg-zinc-100 text-zinc-600"
+                      ].join(" ")}
+                    >
+                      <SectionIcon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-black text-[var(--sakuin-text)]">
+                        {section.label}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs font-semibold text-zinc-500">
+                        {section.description}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" />
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          <main className="min-w-0 space-y-5">
+            {activeSection === "profile" ? (
+              <section className="min-w-0 overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-sm">
+                <div className="border-b border-[var(--sakuin-border)] p-4 sm:p-6">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+                      <UserCircle className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-[var(--sakuin-text)]">
+                        Data Diri
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-500">
+                        {displayedEmail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  {isLoadingProfile ? (
+                    <div className="flex min-h-52 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)]">
+                      <div className="flex items-center gap-3 text-zinc-600">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <p className="text-sm font-bold">Mengambil profile...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                      <Input
+                        label="Nama"
+                        name="name"
+                        type="text"
+                        className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
+                        placeholder="Masukkan nama"
+                        value={form.name}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            name: event.target.value
+                          }))
+                        }
+                      />
+
+                      <div className="space-y-2">
+                        <Input
+                          label="Safe balance limit"
+                          name="safeBalanceLimit"
+                          type="text"
+                          className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Contoh: 500000"
+                          value={form.safeBalanceLimit}
+                          onKeyDown={preventInvalidSafeBalanceKey}
+                          onChange={(event) =>
+                            handleSafeBalanceChange(event.target.value)
+                          }
+                        />
+
+                        <p className="text-xs font-semibold leading-5 text-zinc-600">
+                          Minimal Rp 0 dan maksimal{" "}
+                          {MAX_SAFE_BALANCE_LIMIT_LABEL}.
+                        </p>
+                      </div>
+
+                      <Button
+                        className="min-h-12 w-full rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
+                        disabled={isSubmitting}
+                        isLoading={isSubmitting}
+                        type="submit"
+                      >
+                        <Save className="h-4 w-4" />
+                        Simpan Profile
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              </section>
+            ) : null}
+
+            {activeSection === "automation" ? (
+              <RecurringRuleManager
+                categories={categories}
+                isLoading={isLoadingRecurring || categoriesQuery.isLoading}
+                onCreateRule={handleCreateRecurringRule}
+                onDeleteRule={handleDeleteRecurringRule}
+                onToggleRule={handleToggleRecurringRule}
+                pendingRuleId={pendingRecurringRuleId}
+                recurringRules={recurringRules}
+                title="Auto Recurring + Review Ringan"
+              />
+            ) : null}
+
+            {activeSection === "notifications" ? (
+              <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-black text-[var(--sakuin-text)]">
@@ -990,49 +1197,72 @@ export function ProfilePage() {
                 </p>
               </div>
             </section>
+            ) : null}
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <div>
+            {activeSection === "account" ? (
+              <div className="grid gap-5 xl:grid-cols-2">
+                <PwaAppCard />
+
+                <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
+                      <Smartphone className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-[var(--sakuin-text)]">
+                        Status Akun
+                      </p>
+                      <p className="mt-1 inline-flex items-center gap-2 text-sm font-black text-emerald-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Aktif
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
+                      <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-[var(--sakuin-text)]">
+                        Penghapusan Akun
+                      </p>
+                      <p className="mt-1 text-sm font-medium leading-6 text-zinc-600">
+                        Request penghapusan akun dan data Sakuin.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                    to="/account-deletion"
+                  >
+                    Request hapus akun
+                  </Link>
+                </section>
+
+                <section className="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm sm:p-5">
                   <p className="text-sm font-black text-[var(--sakuin-text)]">
-                    Penghapusan Akun
+                    Keluar Akun
                   </p>
-                  <p className="mt-1 text-sm font-medium leading-6 text-zinc-600">
-                    Ajukan penghapusan akun dan data Sakuin melalui halaman
-                    request. Tim Sakuin akan memverifikasi kepemilikan akun
-                    sebelum memprosesnya.
+                  <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
+                    Logout dari browser ini.
                   </p>
-                </div>
+
+                  <Button
+                    className="mt-4 min-h-12 w-full rounded-xl bg-rose-600 text-white hover:bg-rose-700"
+                    onClick={handleLogout}
+                    variant="danger"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
+                </section>
               </div>
-
-              <Link
-                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-                to="/account-deletion"
-              >
-                Request hapus akun
-              </Link>
-            </section>
-
-            <section className="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm sm:p-5">
-              <p className="text-sm font-black text-[var(--sakuin-text)]">Keluar Akun</p>
-              <p className="mt-2 text-sm font-medium leading-6 text-zinc-600">
-                Logout hanya menghapus sesi login dari browser ini. Data akun
-                tetap tersimpan di backend.
-              </p>
-
-              <Button
-                className="mt-4 min-h-12 w-full rounded-xl bg-rose-600 text-white hover:bg-rose-700"
-                onClick={handleLogout}
-                variant="danger"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            </section>
-          </aside>
+            ) : null}
+          </main>
         </div>
       </div>
     </AppShell>
