@@ -112,6 +112,51 @@ function getTodayProgressText(
   return ` Hari ini kamu sudah mencatat ${nextTodayCount} transaksi.`;
 }
 
+function getRecommendedNextStepText(
+  transactions: Transaction[],
+  previousSummary: SummaryData | undefined,
+  referenceDate: Date
+) {
+  const todayTransactions = transactions.filter((transaction) =>
+    isTransactionInReferenceDay(transaction, referenceDate)
+  );
+  const todayExpenseTotal = todayTransactions
+    .filter((transaction) => transaction.type === "EXPENSE")
+    .reduce((total, transaction) => total + toNumber(transaction.amount), 0);
+  const suggestedDailyLimit = previousSummary?.safeToSpend?.suggestedDailyLimit;
+  const safeToSpendStatus = previousSummary?.safeToSpend?.status;
+  const habit = previousSummary?.habit;
+
+  if (todayTransactions.length === 0) {
+    return " Buka dashboard nanti untuk melihat ringkasan terbaru.";
+  }
+
+  if (
+    todayExpenseTotal > 0 &&
+    typeof suggestedDailyLimit === "number" &&
+    suggestedDailyLimit > 0 &&
+    todayExpenseTotal >= suggestedDailyLimit
+  ) {
+    return ` Pengeluaran yang baru dicatat sudah menyentuh batas harian saran ${formatRupiah(
+      suggestedDailyLimit
+    )}, jadi cek Aman Dipakai sebelum belanja lagi.`;
+  }
+
+  if (safeToSpendStatus === "WATCH" || safeToSpendStatus === "HOLD") {
+    return " Status Aman Dipakai perlu dipantau, jadi review 30 detik setelah ini akan membantu.";
+  }
+
+  if (habit?.currentStreakDays && habit.currentStreakDays >= 3) {
+    return ` Streak ${habit.currentStreakDays} hari kamu tetap terjaga, lanjutkan dengan catatan kecil berikutnya.`;
+  }
+
+  if (habit?.weeklyActiveDays !== undefined && habit.weeklyActiveDays < 3) {
+    return " Kalau ada transaksi kecil lain hari ini, catat juga agar pola minggu ini lebih jelas.";
+  }
+
+  return " Lihat dashboard sebentar untuk mengecek dampaknya ke ringkasan harian.";
+}
+
 export function buildTransactionSuccessInsight({
   transactions,
   previousSummary,
@@ -120,6 +165,11 @@ export function buildTransactionSuccessInsight({
 }: BuildTransactionSuccessInsightInput) {
   const savedCount = transactions.length;
   const todayProgressText = getTodayProgressText(
+    transactions,
+    previousSummary,
+    referenceDate
+  );
+  const recommendedNextStepText = getRecommendedNextStepText(
     transactions,
     previousSummary,
     referenceDate
@@ -163,7 +213,7 @@ export function buildTransactionSuccessInsight({
       return appendCategoryText(
         `${transaction.category.name} bulan ini jadi ${formatRupiah(
           nextCategoryAmount
-        )} dari ${nextCategoryCount} transaksi. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
+        )} dari ${nextCategoryCount} transaksi. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}${recommendedNextStepText}`,
         createdCategoryCount
       );
     }
@@ -178,13 +228,13 @@ export function buildTransactionSuccessInsight({
       return appendCategoryText(
         `Pemasukan bulan ini jadi ${formatRupiah(
           nextIncomeThisMonth
-        )}. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
+        )}. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}${recommendedNextStepText}`,
         createdCategoryCount
       );
     }
 
     return appendCategoryText(
-      `Transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
+      `Transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}${recommendedNextStepText}`,
       createdCategoryCount
     );
   }
@@ -202,7 +252,7 @@ export function buildTransactionSuccessInsight({
     return appendCategoryText(
       `${savedCount} transaksi tersimpan. Expense yang baru dicatat ${formatRupiah(
         expenseTotal
-      )}; data bulan ini makin lengkap untuk membaca pola pengeluaran.${todayProgressText}`,
+      )}; data bulan ini makin lengkap untuk membaca pola pengeluaran.${todayProgressText}${recommendedNextStepText}`,
       createdCategoryCount
     );
   }
@@ -211,13 +261,13 @@ export function buildTransactionSuccessInsight({
     return appendCategoryText(
       `${savedCount} transaksi tersimpan. Pemasukan yang baru dicatat ${formatRupiah(
         incomeTotal
-      )}; cashflow bulan ini jadi lebih utuh.${todayProgressText}`,
+      )}; cashflow bulan ini jadi lebih utuh.${todayProgressText}${recommendedNextStepText}`,
       createdCategoryCount
     );
   }
 
   return appendCategoryText(
-    `${savedCount} transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
+    `${savedCount} transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}${recommendedNextStepText}`,
     createdCategoryCount
   );
 }

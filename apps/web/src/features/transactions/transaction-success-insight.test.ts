@@ -112,6 +112,7 @@ describe("buildTransactionSuccessInsight", () => {
     expect(insight).toContain("dari 5 transaksi");
     expect(insight).toContain("Total catatanmu sekarang 8");
     expect(insight).toContain("insight hari ini mulai terbentuk");
+    expect(insight).toContain("Lihat dashboard sebentar");
   });
 
   it("memberi insight ringkas untuk transaksi cepat banyak item", () => {
@@ -129,5 +130,20 @@ describe("buildTransactionSuccessInsight", () => {
     expect(insight).toMatch(/Expense yang baru dicatat Rp\s?40\.000/);
     expect(insight).toContain("Hari ini kamu sudah mencatat 2 transaksi");
     expect(insight).toContain("1 kategori baru juga siap dipakai lagi");
+  });
+
+  it("memberi arahan ringan saat transaksi menyentuh batas harian saran", () => {
+    const summary = createSummary();
+
+    summary.safeToSpend.suggestedDailyLimit = 20000;
+
+    const insight = buildTransactionSuccessInsight({
+      transactions: [createTransaction({ amount: "25000" })],
+      previousSummary: summary,
+      referenceDate
+    });
+
+    expect(insight).toMatch(/batas harian saran Rp\s?20\.000/);
+    expect(insight).toContain("cek Aman Dipakai");
   });
 });

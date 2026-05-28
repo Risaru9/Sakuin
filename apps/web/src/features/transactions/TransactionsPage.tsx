@@ -121,6 +121,18 @@ function getPaginationLabel(pagination: TransactionPagination) {
   return `Halaman ${pagination.page} dari ${safeTotalPages}`;
 }
 
+function getTypeFilterLabel(filter: TransactionFilter) {
+  if (filter === "INCOME") {
+    return "Income";
+  }
+
+  if (filter === "EXPENSE") {
+    return "Expense";
+  }
+
+  return "Semua";
+}
+
 function getTransactionListPagination(
   data: TransactionListResponse | undefined,
   fallback: TransactionPagination
@@ -167,7 +179,7 @@ function TransactionRow({
               {transaction.note || transaction.category.name}
             </p>
             <p className="mt-0.5 truncate text-xs font-medium text-zinc-500 sm:mt-1">
-              {transaction.category.name} � {formatDate(transaction.date)}
+              {transaction.category.name} - {formatDate(transaction.date)}
             </p>
           </div>
         </div>
@@ -334,6 +346,49 @@ const transactionsQuery = useQuery({
     sort !== "date_desc",
     limit !== 10
   ].filter(Boolean).length;
+
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    const selectedCategory = categories.find(
+      (category) => category.id === categoryId
+    );
+    const selectedSort = sortOptions.find((option) => option.value === sort);
+
+    if (debouncedSearch) {
+      labels.push(`Cari: ${debouncedSearch}`);
+    }
+
+    if (filter !== "ALL") {
+      labels.push(`Tipe: ${getTypeFilterLabel(filter)}`);
+    }
+
+    if (selectedCategory) {
+      labels.push(`Kategori: ${selectedCategory.name}`);
+    }
+
+    if (startDate || endDate) {
+      labels.push(`Tanggal: ${startDate || "Awal"} - ${endDate || "Sekarang"}`);
+    }
+
+    if (sort !== "date_desc" && selectedSort) {
+      labels.push(`Urutan: ${selectedSort.label}`);
+    }
+
+    if (limit !== 10) {
+      labels.push(`${limit} / halaman`);
+    }
+
+    return labels;
+  }, [
+    categories,
+    categoryId,
+    debouncedSearch,
+    endDate,
+    filter,
+    limit,
+    sort,
+    startDate
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: async (transaction: Transaction) => {
@@ -520,8 +575,9 @@ const transactionsQuery = useQuery({
           </label>
 
           <button
+            aria-controls="transaction-advanced-filter"
             aria-expanded={isFilterExpanded}
-            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left transition hover:bg-[var(--sakuin-primary-soft)]"
+            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left transition hover:border-[var(--sakuin-primary)]/30 hover:bg-[var(--sakuin-secondary-soft)]"
             onClick={() => setIsFilterExpanded((current) => !current)}
             type="button"
           >
@@ -534,7 +590,7 @@ const transactionsQuery = useQuery({
                   Filter lanjutan
                 </span>
                 <span className="block truncate text-xs font-semibold text-zinc-600">
-                  Tanggal, kategori, income/expense, urutan, dan jumlah data.
+                  Buka saat perlu tanggal, kategori, tipe, urutan, atau limit.
                 </span>
               </span>
             </span>
@@ -555,8 +611,36 @@ const transactionsQuery = useQuery({
             </span>
           </button>
 
-          {isFilterExpanded ? (
-            <div className="mt-3 border-t border-[var(--sakuin-border)] pt-3">
+          {activeFilterLabels.length > 0 ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {activeFilterLabels.map((label) => (
+                <span
+                  className="shrink-0 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm"
+                  key={label}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 px-1 text-xs font-semibold text-zinc-500">
+              Ketik nama transaksi untuk mencari cepat, buka filter hanya kalau
+              perlu.
+            </p>
+          )}
+
+          <div
+            aria-hidden={!isFilterExpanded}
+            className={[
+              "grid transition-[grid-template-rows,opacity] duration-200 motion-reduce:transition-none",
+              isFilterExpanded
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            ].join(" ")}
+            id="transaction-advanced-filter"
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="mt-3 border-t border-[var(--sakuin-border)] pt-3">
               <div className="grid gap-3 xl:grid-cols-[1fr_1fr_1fr]">
                 <label className="block">
                   <span className="text-xs font-black uppercase text-zinc-500">
@@ -565,6 +649,7 @@ const transactionsQuery = useQuery({
 
                   <select
                     className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                    disabled={!isFilterExpanded}
                     value={categoryId}
                     onChange={(event) => {
                       setCategoryId(event.target.value);
@@ -579,7 +664,7 @@ const transactionsQuery = useQuery({
 
                     {categoryOptions.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.name} �{" "}
+                        {category.name} -{" "}
                         {category.type === "INCOME" ? "Income" : "Expense"}
                       </option>
                     ))}
@@ -594,6 +679,7 @@ const transactionsQuery = useQuery({
                   <input
                     aria-label="Tanggal mulai transaksi"
                     className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                    disabled={!isFilterExpanded}
                     type="date"
                     value={startDate}
                     onChange={(event) => {
@@ -611,6 +697,7 @@ const transactionsQuery = useQuery({
                   <input
                     aria-label="Tanggal akhir transaksi"
                     className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                    disabled={!isFilterExpanded}
                     type="date"
                     value={endDate}
                     onChange={(event) => {
@@ -631,6 +718,7 @@ const transactionsQuery = useQuery({
                           : "rounded-xl px-2.5 py-2 text-[11px] font-black text-zinc-600 hover:bg-white sm:px-3 sm:text-xs"
                       }
                       key={item}
+                      disabled={!isFilterExpanded}
                       onClick={() => {
                         setFilter(item);
                         setCategoryId("");
@@ -638,7 +726,7 @@ const transactionsQuery = useQuery({
                       }}
                       type="button"
                     >
-                      {item === "ALL" ? "Semua" : item}
+                      {getTypeFilterLabel(item)}
                     </button>
                   ))}
                 </div>
@@ -647,6 +735,7 @@ const transactionsQuery = useQuery({
                   <span className="sr-only">Urutkan transaksi</span>
                   <select
                     className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                    disabled={!isFilterExpanded}
                     value={sort}
                     onChange={(event) => {
                       setSort(event.target.value as TransactionSort);
@@ -665,6 +754,7 @@ const transactionsQuery = useQuery({
                   <span className="sr-only">Jumlah transaksi per halaman</span>
                   <select
                     className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                    disabled={!isFilterExpanded}
                     value={limit}
                     onChange={(event) => {
                       setLimit(Number(event.target.value));
@@ -680,7 +770,7 @@ const transactionsQuery = useQuery({
                 </label>
 
                 <Button
-                  disabled={!hasActiveFilter}
+                  disabled={!isFilterExpanded || !hasActiveFilter}
                   onClick={resetFilters}
                   type="button"
                   variant="secondary"
@@ -698,7 +788,8 @@ const transactionsQuery = useQuery({
                 </p>
               </div>
             </div>
-          ) : null}
+            </div>
+          </div>
 
           {categoryError ? (
             <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
@@ -714,24 +805,6 @@ const transactionsQuery = useQuery({
               </span>{" "}
               transaksi
             </p>
-
-            {debouncedSearch ? (
-              <p>
-                Search aktif:{" "}
-                <span className="font-black text-[var(--sakuin-text)]">
-                  {debouncedSearch}
-                </span>
-              </p>
-            ) : null}
-
-            {startDate || endDate ? (
-              <p>
-                Rentang tanggal:{" "}
-                <span className="font-black text-[var(--sakuin-text)]">
-                  {startDate || "Awal"} - {endDate || "Sekarang"}
-                </span>
-              </p>
-            ) : null}
 
             {isBackgroundFetching ? (
               <p className="inline-flex items-center gap-1.5 font-black text-[var(--sakuin-text)]">
@@ -779,8 +852,8 @@ const transactionsQuery = useQuery({
                 Belum ada transaksi
               </p>
               <p className="mt-2 text-sm text-zinc-600">
-                Gunakan tombol Catat di pojok kanan bawah untuk menambahkan
-                transaksi pertama, atau ubah filter pencarian.
+                Tekan tombol + di tengah menu bawah untuk mencatat transaksi,
+                atau ubah filter pencarian.
               </p>
             </div>
           ) : null}
