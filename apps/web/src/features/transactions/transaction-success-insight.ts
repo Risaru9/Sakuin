@@ -30,6 +30,13 @@ function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function getDayKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function isTransactionInReferenceMonth(
   transaction: Transaction,
   referenceDate: Date
@@ -41,6 +48,19 @@ function isTransactionInReferenceMonth(
   }
 
   return getMonthKey(transactionDate) === getMonthKey(referenceDate);
+}
+
+function isTransactionInReferenceDay(
+  transaction: Transaction,
+  referenceDate: Date
+) {
+  const transactionDate = new Date(transaction.date);
+
+  if (Number.isNaN(transactionDate.getTime())) {
+    return false;
+  }
+
+  return getDayKey(transactionDate) === getDayKey(referenceDate);
 }
 
 function getCategorySummaryItem(
@@ -62,6 +82,36 @@ function appendCategoryText(description: string, createdCategoryCount: number) {
   return `${description} ${createdCategoryCount} kategori baru juga siap dipakai lagi.`;
 }
 
+function getTodayProgressText(
+  transactions: Transaction[],
+  previousSummary: SummaryData | undefined,
+  referenceDate: Date
+) {
+  const savedTodayCount = transactions.filter((transaction) =>
+    isTransactionInReferenceDay(transaction, referenceDate)
+  ).length;
+
+  if (savedTodayCount === 0) {
+    return "";
+  }
+
+  const previousTodayCount =
+    previousSummary?.habit?.todayTransactionCount ??
+    previousSummary?.habit?.transactionsToday ??
+    0;
+  const nextTodayCount = previousTodayCount + savedTodayCount;
+
+  if (nextTodayCount <= 1) {
+    return " Hari ini kamu sudah mulai mencatat; insight hari ini mulai terbentuk.";
+  }
+
+  if (nextTodayCount >= 4) {
+    return ` Hari ini sudah ${nextTodayCount} transaksi; cukup bagus untuk review singkat.`;
+  }
+
+  return ` Hari ini kamu sudah mencatat ${nextTodayCount} transaksi.`;
+}
+
 export function buildTransactionSuccessInsight({
   transactions,
   previousSummary,
@@ -69,6 +119,11 @@ export function buildTransactionSuccessInsight({
   referenceDate = new Date()
 }: BuildTransactionSuccessInsightInput) {
   const savedCount = transactions.length;
+  const todayProgressText = getTodayProgressText(
+    transactions,
+    previousSummary,
+    referenceDate
+  );
 
   if (savedCount === 0) {
     return appendCategoryText(
@@ -108,7 +163,7 @@ export function buildTransactionSuccessInsight({
       return appendCategoryText(
         `${transaction.category.name} bulan ini jadi ${formatRupiah(
           nextCategoryAmount
-        )} dari ${nextCategoryCount} transaksi. Total catatanmu sekarang ${totalTransactionCount}.`,
+        )} dari ${nextCategoryCount} transaksi. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
         createdCategoryCount
       );
     }
@@ -123,13 +178,13 @@ export function buildTransactionSuccessInsight({
       return appendCategoryText(
         `Pemasukan bulan ini jadi ${formatRupiah(
           nextIncomeThisMonth
-        )}. Total catatanmu sekarang ${totalTransactionCount}.`,
+        )}. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
         createdCategoryCount
       );
     }
 
     return appendCategoryText(
-      `Transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.`,
+      `Transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
       createdCategoryCount
     );
   }
@@ -147,7 +202,7 @@ export function buildTransactionSuccessInsight({
     return appendCategoryText(
       `${savedCount} transaksi tersimpan. Expense yang baru dicatat ${formatRupiah(
         expenseTotal
-      )}; data bulan ini makin lengkap untuk membaca pola pengeluaran.`,
+      )}; data bulan ini makin lengkap untuk membaca pola pengeluaran.${todayProgressText}`,
       createdCategoryCount
     );
   }
@@ -156,13 +211,13 @@ export function buildTransactionSuccessInsight({
     return appendCategoryText(
       `${savedCount} transaksi tersimpan. Pemasukan yang baru dicatat ${formatRupiah(
         incomeTotal
-      )}; cashflow bulan ini jadi lebih utuh.`,
+      )}; cashflow bulan ini jadi lebih utuh.${todayProgressText}`,
       createdCategoryCount
     );
   }
 
   return appendCategoryText(
-    `${savedCount} transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.`,
+    `${savedCount} transaksi tersimpan. Total catatanmu sekarang ${totalTransactionCount}.${todayProgressText}`,
     createdCategoryCount
   );
 }

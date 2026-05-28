@@ -111,6 +111,7 @@ describe("buildTransactionSuccessInsight", () => {
     expect(insight).toMatch(/Makanan bulan ini jadi Rp\s?325\.000/);
     expect(insight).toContain("dari 5 transaksi");
     expect(insight).toContain("Total catatanmu sekarang 8");
+    expect(insight).toContain("insight hari ini mulai terbentuk");
   });
 
   it("memberi insight ringkas untuk transaksi cepat banyak item", () => {
@@ -126,6 +127,7 @@ describe("buildTransactionSuccessInsight", () => {
 
     expect(insight).toContain("2 transaksi tersimpan");
     expect(insight).toMatch(/Expense yang baru dicatat Rp\s?40\.000/);
+    expect(insight).toContain("Hari ini kamu sudah mencatat 2 transaksi");
     expect(insight).toContain("1 kategori baru juga siap dipakai lagi");
   });
 });

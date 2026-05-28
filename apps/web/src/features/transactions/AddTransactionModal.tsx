@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent
@@ -17,6 +18,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { ApiClientError } from "../../lib/api-client";
+import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 import { queryKeys } from "../../lib/query-keys";
 import {
   createCategory,
@@ -220,6 +222,7 @@ export function AddTransactionModal({
   onClose,
   onSuccess
 }: AddTransactionModalProps) {
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState<TransactionFormState>(getInitialForm);
   const [error, setError] = useState<string | null>(null);
 
@@ -359,7 +362,7 @@ export function AddTransactionModal({
 
       addToast({
         variant: "success",
-        title: "Transaksi berhasil ditambahkan",
+        title: "Transaksi tercatat, insight bertambah",
         description: buildTransactionSuccessInsight({
           transactions: [transaction],
           previousSummary: context?.previousSummary,
@@ -387,6 +390,8 @@ export function AddTransactionModal({
   });
 
   const isSubmitting = createTransactionMutation.isPending;
+
+  useLockBodyScroll(open);
 
   function resetForm() {
     setForm(getInitialForm());
@@ -499,6 +504,10 @@ export function AddTransactionModal({
     }
 
     setError(null);
+
+    window.setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 80);
   }, [open]);
 
   useEffect(() => {
@@ -550,8 +559,8 @@ export function AddTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
-     <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden overscroll-none bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+     <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
           <div className="min-w-0">
             <p className="text-xs font-bold text-[var(--sakuin-ink)] sm:text-sm">
@@ -634,6 +643,7 @@ export function AddTransactionModal({
           </div>
 
           <Input
+            ref={amountInputRef}
             label="Nominal"
             name="amount"
             type="number"
@@ -783,7 +793,7 @@ export function AddTransactionModal({
             />
           </label>
 
-          <div className="grid gap-2 pt-2 sm:grid-cols-2">
+          <div className="sticky bottom-0 -mx-4 -mb-4 grid gap-2 border-t border-[var(--sakuin-border)] bg-white/95 p-4 backdrop-blur sm:static sm:mx-0 sm:mb-0 sm:grid-cols-2 sm:border-t-0 sm:bg-transparent sm:p-0 sm:pt-2 sm:backdrop-blur-0">
             <Button
               disabled={isSubmitting}
               onClick={handleClose}

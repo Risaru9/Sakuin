@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
+import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 import { queryKeys } from "../../lib/query-keys";
 import {
   createCategory,
@@ -47,6 +48,12 @@ import { buildTransactionSuccessInsight } from "./transaction-success-insight";
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
 const MAX_CATEGORY_NAME_LENGTH = 50;
+const QUICK_TRANSACTION_EXAMPLES = [
+  "makan siang 15000",
+  "bensin 30000",
+  "kopi 18000",
+  "uang dari kakak 100000"
+];
 
 type QuickTransactionModalProps = {
   open: boolean;
@@ -353,6 +360,7 @@ export function QuickTransactionModal({
   onClose,
   onSuccess
 }: QuickTransactionModalProps) {
+  const rawInputRef = useRef<HTMLTextAreaElement | null>(null);
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -517,7 +525,7 @@ export function QuickTransactionModal({
 
         addToast({
           variant: "success",
-          title: "Transaksi cepat berhasil disimpan",
+          title: "Catatan cepat tersimpan",
           description: buildTransactionSuccessInsight({
             transactions: savedTransactions,
             previousSummary: context?.previousSummary,
@@ -551,6 +559,8 @@ export function QuickTransactionModal({
     });
 
   const isSaving = saveDraftsMutation.isPending;
+
+  useLockBodyScroll(open);
 
   function resetModal() {
     setRawInput("");
@@ -602,6 +612,22 @@ export function QuickTransactionModal({
     }
 
     setError(null);
+  }
+
+  function applyExample(example: string) {
+    setRawInput((currentInput) => {
+      const trimmedInput = currentInput.trim();
+
+      if (!trimmedInput) {
+        return example;
+      }
+
+      return `${trimmedInput}\n${example}`;
+    });
+    setError(null);
+    window.setTimeout(() => {
+      rawInputRef.current?.focus();
+    }, 0);
   }
 
   function updateDraft(
@@ -691,13 +717,23 @@ export function QuickTransactionModal({
     saveDraftsMutation.mutate(submittedDrafts);
   }
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      rawInputRef.current?.focus();
+    }, 80);
+  }, [open]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
-      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white p-3.5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:rounded-[2rem] sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden overscroll-none bg-[var(--sakuin-secondary)]/35 px-3 py-3 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-[1.5rem] border border-white/70 bg-white p-3.5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:rounded-[2rem] sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
           <div className="min-w-0">
             <p className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:gap-2 sm:text-sm">
@@ -765,6 +801,7 @@ export function QuickTransactionModal({
             </span>
 
               <textarea
+                ref={rawInputRef}
                 className="min-h-32 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 disabled:cursor-not-allowed disabled:bg-slate-100 sm:min-h-56 sm:rounded-[1.5rem] sm:px-4 sm:py-3"
                 disabled={isSaving}
                 placeholder={`Contoh:
@@ -773,9 +810,26 @@ export function QuickTransactionModal({
                 dikasih uang kakak 100000
                 gaji 3000000`}
                 value={rawInput}
-                onChange={(event) => setRawInput(event.target.value)}
+                onChange={(event) => {
+                  setRawInput(event.target.value);
+                  setError(null);
+                }}
               />
             </label>
+
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {QUICK_TRANSACTION_EXAMPLES.map((example) => (
+                <button
+                  className="shrink-0 rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-2 text-xs font-black text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-secondary-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSaving}
+                  key={example}
+                  onClick={() => applyExample(example)}
+                  type="button"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
 
             <div className="hidden rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500 sm:block">
               <p className="font-black text-slate-700">Format cepat:</p>
