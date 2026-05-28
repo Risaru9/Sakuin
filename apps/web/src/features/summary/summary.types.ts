@@ -146,4 +146,14 @@ export type SummaryData = {
   expenseByCategory: SummaryCategoryItem[];
   incomeByCategory: SummaryCategoryItem[];
   monthlyTrend: MonthlyTrendItem[];
+  weeklyCheckin?: {
+    expenseDeltaPercent: number | null;
+    status: "UP" | "DOWN" | "STABLE" | "NO_DATA";
+    summary: string;
+    action: string;
+  };
+  recurringStatus?: {
+    generatedCount: number;
+    processedRuleCount: number;
+  };
 };

@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
+  CalendarCheck2,
   CalendarDays,
   ChevronDown,
   CheckCircle2,
@@ -15,6 +16,8 @@ import {
   MessageSquare,
   PiggyBank,
   Plus,
+  Repeat2,
+  Trash2,
   Settings
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
@@ -28,6 +31,8 @@ import {
 } from "../../lib/daily-review";
 import { queryKeys } from "../../lib/query-keys";
 import { useAuth } from "../auth/auth-context";
+import { getCategories } from "../categories/category.service";
+import type { Category } from "../categories/category.types";
 import { getGoals } from "../goals/goal.service";
 import type { Goal } from "../goals/goal.types";
 import {
@@ -47,6 +52,12 @@ import { AddTransactionModal } from "../transactions/AddTransactionModal";
 import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
 import { completeRemoteDailyReview } from "../reminders/reminder.service";
+import {
+  createRecurringRule,
+  deleteRecurringRule,
+  getRecurringRules
+} from "../recurring/recurring.service";
+import type { RecurringRule } from "../recurring/recurring.types";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -1787,6 +1798,308 @@ function DailyReviewCard({
   );
 }
 
+function WeeklyCheckinCard({
+  data
+}: {
+  data:
+    | {
+        expenseDeltaPercent: number | null;
+        status: "UP" | "DOWN" | "STABLE" | "NO_DATA";
+        summary: string;
+        action: string;
+      }
+    | undefined;
+}) {
+  if (!data) {
+    return null;
+  }
+
+  const statusLabel =
+    data.status === "UP"
+      ? "Lebih boros"
+      : data.status === "DOWN"
+        ? "Lebih hemat"
+        : data.status === "STABLE"
+          ? "Stabil"
+          : "Data minim";
+
+  return (
+    <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:mb-5 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-text)]">
+              <CalendarCheck2 className="h-4.5 w-4.5" />
+            </div>
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Weekly Check-in 30 Detik
+            </p>
+          </div>
+          <p className="mt-2 text-xs font-semibold text-zinc-600">
+            {data.summary}
+          </p>
+        </div>
+        <span className="rounded-full bg-[var(--sakuin-primary-soft)] px-2.5 py-1 text-[10px] font-black uppercase text-[var(--sakuin-text)]">
+          {statusLabel}
+        </span>
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
+        <p className="text-[10px] font-black uppercase text-zinc-500">Aksi minggu ini</p>
+        <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
+          {data.action}
+        </p>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Button
+          className="rounded-xl bg-[var(--sakuin-primary)] text-white hover:bg-[var(--sakuin-secondary)]"
+          onClick={() => {
+            // CTA ringan: biarkan user lanjut review harian tanpa berpindah halaman.
+          }}
+          size="md"
+          type="button"
+        >
+          Lanjutkan
+        </Button>
+        <Link
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-semibold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+          to="/categories"
+        >
+          Atur budget
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function RecurringCard({
+  recurringRules,
+  categories,
+  isLoading,
+  onCreateRule,
+  onDeleteRule
+}: {
+  recurringRules: RecurringRule[];
+  categories: Category[];
+  isLoading: boolean;
+  onCreateRule: (payload: {
+    categoryId: string;
+    type: "INCOME" | "EXPENSE";
+    amount: string;
+    frequency: "WEEKLY" | "MONTHLY";
+    dayOfWeek?: number | null;
+    dayOfMonth?: number | null;
+    note?: string | null;
+  }) => Promise<void>;
+  onDeleteRule: (ruleId: string) => Promise<void>;
+}) {
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
+  const [categoryId, setCategoryId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [frequency, setFrequency] = useState<"WEEKLY" | "MONTHLY">("MONTHLY");
+  const [dayOfWeek, setDayOfWeek] = useState("1");
+  const [dayOfMonth, setDayOfMonth] = useState("1");
+  const [note, setNote] = useState("");
+
+  const filteredCategories = categories.filter((category) => category.type === type);
+
+  useEffect(() => {
+    if (filteredCategories.length === 0) {
+      setCategoryId("");
+      return;
+    }
+    if (!filteredCategories.some((category) => category.id === categoryId)) {
+      setCategoryId(filteredCategories[0].id);
+    }
+  }, [categoryId, filteredCategories]);
+
+  function handleSubmit() {
+    if (!categoryId || !amount.trim()) {
+      return;
+    }
+
+    void onCreateRule({
+      categoryId,
+      type,
+      amount: amount.trim(),
+      frequency,
+      dayOfMonth: frequency === "MONTHLY" ? Number(dayOfMonth) : null,
+      dayOfWeek: frequency === "WEEKLY" ? Number(dayOfWeek) : null,
+      note: note.trim() || null
+    });
+
+    setAmount("");
+    setNote("");
+    setIsComposerOpen(false);
+  }
+
+  return (
+    <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:mb-5 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-text)]">
+              <Repeat2 className="h-4.5 w-4.5" />
+            </div>
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Auto Recurring + Review Ringan
+            </p>
+          </div>
+          <p className="mt-2 text-xs font-semibold text-zinc-600">
+            Set sekali untuk transaksi rutin (gaji, sewa, cicilan), biar pencatatan
+            harian jadi ringan.
+          </p>
+        </div>
+
+        <Button
+          className="rounded-xl bg-[var(--sakuin-primary)] text-white hover:bg-[var(--sakuin-secondary)]"
+          onClick={() => setIsComposerOpen((current) => !current)}
+          size="sm"
+          type="button"
+        >
+          <Plus className="h-4 w-4" />
+          Tambah
+        </Button>
+      </div>
+
+      {isComposerOpen ? (
+        <div className="mt-3 grid gap-2 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              onChange={(event) => setType(event.target.value as "INCOME" | "EXPENSE")}
+              value={type}
+            >
+              <option value="EXPENSE">Pengeluaran</option>
+              <option value="INCOME">Pemasukan</option>
+            </select>
+            <select
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              onChange={(event) => setCategoryId(event.target.value)}
+              value={categoryId}
+            >
+              {filteredCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              onChange={(event) => setAmount(event.target.value)}
+              placeholder="Nominal"
+              value={amount}
+            />
+            <select
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              onChange={(event) =>
+                setFrequency(event.target.value as "WEEKLY" | "MONTHLY")
+              }
+              value={frequency}
+            >
+              <option value="MONTHLY">Bulanan</option>
+              <option value="WEEKLY">Mingguan</option>
+            </select>
+          </div>
+          {frequency === "MONTHLY" ? (
+            <input
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              max={28}
+              min={1}
+              onChange={(event) => setDayOfMonth(event.target.value)}
+              placeholder="Tanggal (1-28)"
+              type="number"
+              value={dayOfMonth}
+            />
+          ) : (
+            <select
+              className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+              onChange={(event) => setDayOfWeek(event.target.value)}
+              value={dayOfWeek}
+            >
+              <option value="1">Senin</option>
+              <option value="2">Selasa</option>
+              <option value="3">Rabu</option>
+              <option value="4">Kamis</option>
+              <option value="5">Jumat</option>
+              <option value="6">Sabtu</option>
+              <option value="0">Minggu</option>
+            </select>
+          )}
+          <input
+            className="min-h-10 rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)]"
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Catatan (opsional)"
+            value={note}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              className="rounded-xl bg-[var(--sakuin-primary)] text-white hover:bg-[var(--sakuin-secondary)]"
+              onClick={handleSubmit}
+              size="md"
+              type="button"
+            >
+              Simpan Rule
+            </Button>
+            <Button
+              className="rounded-xl"
+              onClick={() => setIsComposerOpen(false)}
+              size="md"
+              type="button"
+              variant="secondary"
+            >
+              Batal
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-3 space-y-2">
+        {isLoading ? (
+          <div className="rounded-2xl bg-zinc-50 p-3 text-xs font-semibold text-zinc-500">
+            Memuat recurring rules...
+          </div>
+        ) : recurringRules.length === 0 ? (
+          <div className="rounded-2xl bg-zinc-50 p-3 text-xs font-semibold text-zinc-500">
+            Belum ada recurring rule. Tambahkan satu rule untuk mengurangi input manual.
+          </div>
+        ) : (
+          recurringRules.slice(0, 3).map((rule) => (
+            <div
+              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3"
+              key={rule.id}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
+                  {rule.category.name} - {formatCompactRupiah(rule.amount)}
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-zinc-600">
+                  {rule.frequency === "MONTHLY"
+                    ? `Tiap tanggal ${rule.dayOfMonth ?? "-"}`
+                    : `Tiap minggu (${rule.dayOfWeek ?? "-"})`}
+                </p>
+              </div>
+              <button
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white text-zinc-500 transition hover:bg-red-50 hover:text-red-600"
+                onClick={() => {
+                  void onDeleteRule(rule.id);
+                }}
+                type="button"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -1880,12 +2193,29 @@ const profileQuery = useQuery({
   refetchOnWindowFocus: false
 });
 
+const recurringQuery = useQuery({
+  queryKey: queryKeys.recurring,
+  queryFn: getRecurringRules,
+  staleTime: DASHBOARD_SUMMARY_STALE_TIME,
+  refetchOnWindowFocus: false
+});
+
+const categoriesQuery = useQuery({
+  queryKey: queryKeys.categories,
+  queryFn: () => getCategories(),
+  staleTime: DASHBOARD_SUMMARY_STALE_TIME,
+  refetchOnWindowFocus: false
+});
+
   const summary = summaryQuery.data ?? null;
   const goals = goalsQuery.data ?? [];
   const profile = profileQuery.data ?? null;
+  const recurringRules = recurringQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
 
   const isLoadingSummary = summaryQuery.isLoading && !summaryQuery.data;
   const isLoadingGoals = goalsQuery.isLoading && !goalsQuery.data;
+  const isLoadingRecurring = recurringQuery.isLoading && !recurringQuery.data;
 
   const summaryError =
     summaryQuery.error && !summaryQuery.data
@@ -1952,6 +2282,32 @@ const profileQuery = useQuery({
     });
   }
 
+  async function handleCreateRecurringRule(payload: {
+    categoryId: string;
+    type: "INCOME" | "EXPENSE";
+    amount: string;
+    frequency: "WEEKLY" | "MONTHLY";
+    dayOfWeek?: number | null;
+    dayOfMonth?: number | null;
+    note?: string | null;
+  }) {
+    await createRecurringRule({
+      ...payload,
+      interval: 1,
+      startDate: new Date().toISOString(),
+      autoPost: true,
+      isActive: true
+    });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.recurring });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
+  }
+
+  async function handleDeleteRecurringRule(ruleId: string) {
+    await deleteRecurringRule(ruleId);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.recurring });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
+  }
+
   const displayedName = profile?.name ?? user?.name ?? "User";
   const displayedEmail = profile?.email ?? user?.email ?? "-";
 
@@ -2015,6 +2371,15 @@ const profileQuery = useQuery({
           habit={summary?.habit}
           onComplete={completeDailyReview}
           onOpenQuickTransaction={openDailyQuickTransaction}
+        />
+
+        <WeeklyCheckinCard data={summary?.weeklyCheckin} />
+        <RecurringCard
+          categories={categories}
+          isLoading={isLoadingRecurring}
+          onCreateRule={handleCreateRecurringRule}
+          onDeleteRule={handleDeleteRecurringRule}
+          recurringRules={recurringRules}
         />
 
         {summaryError ? (

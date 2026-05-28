@@ -10,6 +10,7 @@ import { exportRoutes } from "./export/export.route.js";
 import { categoryRoutes } from "./categories/category.route.js";
 import { aiRoutes } from "./ai/ai.routes.js";
 import { reminderRoutes } from "./reminders/reminder.route.js";
+import { recurringRoutes } from "./recurring/recurring.route.js";
 
 export const apiRoutes = new Hono<AppEnv>();
 
@@ -36,3 +37,4 @@ apiRoutes.route("/export", exportRoutes);
 apiRoutes.route("/categories", categoryRoutes);
 apiRoutes.route("/ai", aiRoutes);
 apiRoutes.route("/reminders", reminderRoutes);
+apiRoutes.route("/recurring", recurringRoutes);

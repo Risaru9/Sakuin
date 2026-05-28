@@ -5,6 +5,7 @@ export const queryKeys = {
   goals: ["goals"] as const,
   profile: ["profile"] as const,
   categories: ["categories"] as const,
+  recurring: ["recurring"] as const,
   transactions: {
     all: ["transactions"] as const,
     list: (params: GetTransactionsParams) =>

@@ -28,6 +28,8 @@ model User {
   oauthAccounts        OauthAccount[]
   pushSubscriptions    PushSubscription[]
   reminderPreference   ReminderPreference?
+  recurringRules       RecurringRule[]
+  recurringRuns        RecurringRuleRun[]
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 }
@@ -89,6 +91,7 @@ model Category {
   isDefault    Boolean         @default(false)
   user         User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
+  recurringRules RecurringRule[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -150,4 +153,47 @@ model ReminderPreference {
   updatedAt                DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecurringRule {
+  id             String          @id @default(cuid())
+  userId         String
+  categoryId     String
+  type           TransactionType
+  amount         Decimal         @db.Decimal(18, 2)
+  note           String?
+  frequency      String
+  interval       Int             @default(1)
+  dayOfMonth     Int?
+  dayOfWeek      Int?
+  startDate      DateTime
+  endDate        DateTime?
+  nextRunAt      DateTime
+  autoPost       Boolean         @default(true)
+  isActive       Boolean         @default(true)
+  lastRunAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  runs           RecurringRuleRun[]
+
+  @@index([userId, isActive, nextRunAt])
+  @@index([categoryId])
+}
+
+model RecurringRuleRun {
+  id             String   @id @default(cuid())
+  userId         String
+  recurringRuleId String
+  occurrenceDate DateTime
+  transactionId  String?
+  createdAt      DateTime @default(now())
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringRule  RecurringRule @relation(fields: [recurringRuleId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringRuleId, occurrenceDate])
+  @@index([userId, occurrenceDate])
 }

@@ -56,4 +56,14 @@ export type SummaryResponse = {
   expenseByCategory: CategorySummaryItem[];
   incomeByCategory: CategorySummaryItem[];
   monthlyTrend: MonthlyTrendItem[];
+  weeklyCheckin: {
+    expenseDeltaPercent: number | null;
+    status: "UP" | "DOWN" | "STABLE" | "NO_DATA";
+    summary: string;
+    action: string;
+  };
+  recurringStatus: {
+    generatedCount: number;
+    processedRuleCount: number;
+  };
 };

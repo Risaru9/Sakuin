@@ -2,6 +2,7 @@ import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { getAiFinancialContext } from "../ai/ai-financial-context.js";
 import { buildFinancialCheckup } from "../finance/financial-checkup.js";
+import { runDueRecurringRules } from "../recurring/recurring.service.js";
 import type {
   CategorySummaryItem,
   MonthlyTrendItem,
@@ -169,6 +170,7 @@ function buildCategorySummaryItems(input: {
 
 export async function getSummary(userId: string): Promise<SummaryResponse> {
   const now = new Date();
+  const recurringRunResult = await runDueRecurringRules(userId, now);
   const startOfCurrentMonth = getStartOfMonth(now);
   const endOfCurrentMonth = getEndOfMonth(now);
   const monthlyTrendMonths = getLastMonths(now, SUMMARY_MONTHLY_TREND_MONTHS);
@@ -386,6 +388,43 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
 
   const aiFinancialContext = await aiFinancialContextPromise;
   const financialCheckup = buildFinancialCheckup(aiFinancialContext);
+  const latestMonth = monthlyTrend[monthlyTrend.length - 1];
+  const previousMonth = monthlyTrend[monthlyTrend.length - 2];
+  const latestExpense = latestMonth ? Number(latestMonth.expense) : 0;
+  const previousExpense = previousMonth ? Number(previousMonth.expense) : 0;
+  const expenseDeltaPercent =
+    previousExpense > 0
+      ? Number((((latestExpense - previousExpense) / previousExpense) * 100).toFixed(1))
+      : null;
+
+  let weeklyStatus: "UP" | "DOWN" | "STABLE" | "NO_DATA" = "NO_DATA";
+  if (expenseDeltaPercent !== null) {
+    if (expenseDeltaPercent >= 5) {
+      weeklyStatus = "UP";
+    } else if (expenseDeltaPercent <= -5) {
+      weeklyStatus = "DOWN";
+    } else {
+      weeklyStatus = "STABLE";
+    }
+  }
+
+  const weeklySummary =
+    weeklyStatus === "NO_DATA"
+      ? "Data bulan sebelumnya belum cukup untuk membandingkan ritme pengeluaran."
+      : weeklyStatus === "UP"
+        ? `Pengeluaran naik ${expenseDeltaPercent}% dibanding periode sebelumnya.`
+        : weeklyStatus === "DOWN"
+          ? `Pengeluaran turun ${Math.abs(expenseDeltaPercent ?? 0)}% dibanding periode sebelumnya.`
+          : "Ritme pengeluaran relatif stabil dibanding periode sebelumnya.";
+
+  const weeklyAction =
+    weeklyStatus === "UP"
+      ? "Pilih satu kategori dengan kenaikan tertinggi, lalu tetapkan batas mingguan kecil."
+      : weeklyStatus === "DOWN"
+        ? "Pertahankan ritme saat ini dan alokasikan selisih ke goal prioritas."
+        : weeklyStatus === "STABLE"
+          ? "Lanjutkan kebiasaan saat ini, lalu review ulang di akhir minggu."
+          : "Catat transaksi lebih rutin minggu ini agar insight makin akurat.";
 
   return {
     totalIncome: decimalToString(totalIncome),
@@ -406,6 +445,16 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
 
     expenseByCategory,
     incomeByCategory,
-    monthlyTrend
+    monthlyTrend,
+    weeklyCheckin: {
+      expenseDeltaPercent,
+      status: weeklyStatus,
+      summary: weeklySummary,
+      action: weeklyAction
+    },
+    recurringStatus: {
+      generatedCount: recurringRunResult.generatedCount,
+      processedRuleCount: recurringRunResult.processedRuleCount
+    }
   };
 }
