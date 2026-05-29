@@ -126,21 +126,12 @@ function toDateKey(parts: HabitDateParts) {
 }
 
 function getZonedDateParts(date: Date): HabitDateParts {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: HABIT_TIME_ZONE,
-    year: "numeric"
-  }).formatToParts(date);
-
-  const valueByType = new Map(
-    parts.map((part) => [part.type, Number(part.value)])
-  );
+  const jakartaTime = new Date(date.getTime() + JAKARTA_UTC_OFFSET_HOURS * 60 * 60 * 1000);
 
   return {
-    year: valueByType.get("year") ?? date.getUTCFullYear(),
-    month: valueByType.get("month") ?? date.getUTCMonth() + 1,
-    day: valueByType.get("day") ?? date.getUTCDate()
+    year: jakartaTime.getUTCFullYear(),
+    month: jakartaTime.getUTCMonth() + 1,
+    day: jakartaTime.getUTCDate()
   };
 }
 

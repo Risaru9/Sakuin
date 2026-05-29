@@ -77,5 +77,23 @@
         }
       ]
     }
+  ],
+  "widgets": [
+    {
+      "name": "Sakuin Ringkasan",
+      "description": "Widget Ringkasan Keuangan Sakuin",
+      "tag": "sakuin_summary",
+      "template": "sakuin_summary_template",
+      "ms_ac_template": "/widgets/sakuin-summary-template.json",
+      "data": "/widgets/sakuin-summary-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/icons/pwa-512.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

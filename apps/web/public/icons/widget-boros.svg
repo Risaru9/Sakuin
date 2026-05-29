@@ -1,0 +1,8 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="45" fill="#fef2f2" stroke="#ef4444" stroke-width="5"/>
+  <circle cx="35" cy="40" r="5" fill="#b91c1c"/>
+  <circle cx="65" cy="40" r="5" fill="#b91c1c"/>
+  <path d="M 32 68 Q 50 55 68 68" fill="none" stroke="#b91c1c" stroke-width="5" stroke-linecap="round"/>
+  <!-- Sweat drop -->
+  <path d="M 75 35 C 75 39 72 42 68 42 C 64 42 64 39 68 35 C 72 31 75 31 75 35 Z" fill="#3b82f6"/>
+</svg>

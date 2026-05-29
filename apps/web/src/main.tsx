@@ -1,10 +1,11 @@
-﻿import React from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./app/App";
 import {
   registerServiceWorker,
   setupInstallPromptCapture
 } from "./lib/pwa";
+import { syncTokenToServiceWorker } from "./lib/auth-storage";
 import "./index.css";
 
 setupInstallPromptCapture();
@@ -24,3 +25,6 @@ registerServiceWorker({
     );
   }
 });
+
+// Sync token to Service Worker on load
+syncTokenToServiceWorker();

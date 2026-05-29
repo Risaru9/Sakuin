@@ -1,0 +1,112 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "auto",
+          "verticalContentAlignment": "Center",
+          "items": [
+            {
+              "type": "Image",
+              "url": "https://sakuin-web.vercel.app/icons/pwa-192.png",
+              "size": "Small"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "verticalContentAlignment": "Center",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "Sakuin",
+              "weight": "Bolder",
+              "size": "Medium",
+              "color": "Accent"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ColumnSet",
+      "spacing": "Medium",
+      "separator": true,
+      "columns": [
+        {
+          "type": "Column",
+          "width": "auto",
+          "verticalContentAlignment": "Center",
+          "items": [
+            {
+              "type": "Image",
+              "url": "${statusIconUrl}",
+              "size": "Medium"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "Pemasukan",
+              "size": "Small",
+              "color": "Good",
+              "weight": "Bolder"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${incomeThisMonth}",
+              "spacing": "None",
+              "size": "Medium",
+              "weight": "Bolder"
+            },
+            {
+              "type": "TextBlock",
+              "text": "Pengeluaran",
+              "size": "Small",
+              "color": "Attention",
+              "weight": "Bolder",
+              "spacing": "Small"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${expenseThisMonth}",
+              "spacing": "None",
+              "size": "Medium",
+              "weight": "Bolder"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "${statusMessage}",
+      "wrap": true,
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "size": "Small"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "title": "Buka Sakuin",
+      "verb": "open-app"
+    },
+    {
+      "type": "Action.Execute",
+      "title": "Refresh",
+      "verb": "refresh"
+    }
+  ]
+}

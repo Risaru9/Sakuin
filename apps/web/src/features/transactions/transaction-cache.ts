@@ -697,8 +697,7 @@ export function markTransactionDerivedDataStale(
   });
 
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.summary,
-    refetchType: "inactive"
+    queryKey: queryKeys.summary
   });
 
   if (options.includeCategories) {
@@ -706,5 +705,10 @@ export function markTransactionDerivedDataStale(
       queryKey: queryKeys.categories,
       refetchType: "inactive"
     });
+  }
+
+  // Trigger update widget di Service Worker
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: "UPDATE_WIDGET" });
   }
 }

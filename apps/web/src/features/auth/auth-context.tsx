@@ -8,7 +8,8 @@ import {
 import {
   getStoredToken,
   removeStoredToken,
-  setStoredToken
+  setStoredToken,
+  syncTokenToServiceWorker
 } from "../../lib/auth-storage";
 import {
   getCurrentUser,
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    syncTokenToServiceWorker(result.token);
   }
 
   async function register(input: RegisterInput) {
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    syncTokenToServiceWorker(result.token);
   }
 
   async function loginWithGoogle(input: GoogleLoginInput) {
@@ -78,11 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    syncTokenToServiceWorker(result.token);
   }
 
   function logout() {
     removeStoredToken();
     setUser(null);
+    syncTokenToServiceWorker(null);
   }
 
   useEffect(() => {

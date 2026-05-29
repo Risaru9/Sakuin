@@ -15,3 +15,18 @@ export function removeStoredToken() {
 export function hasStoredToken() {
   return Boolean(getStoredToken());
 }
+
+export function syncTokenToServiceWorker(token?: string | null) {
+  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+    const finalToken = token !== undefined ? token : getStoredToken();
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "SET_TOKEN",
+        token: finalToken,
+        apiBaseUrl
+      });
+    }
+  }
+}
