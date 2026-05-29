@@ -77,7 +77,9 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: "node",
       setupFiles: ["./tests/setup.ts"],
-      testTimeout: 20000
+      testTimeout: 20000,
+      hookTimeout: 30000,
+      fileParallelism: false
     }
   };
 });
