@@ -36,6 +36,7 @@ type CategoryMetadata = {
   name: string;
   icon: string | null;
   color: string | null;
+  limit: Prisma.Decimal | null;
 };
 
 function toDecimal(value: Prisma.Decimal.Value) {
@@ -159,7 +160,8 @@ function buildCategorySummaryItems(input: {
       categoryColor: category.color,
       type: aggregate.type,
       totalAmount: decimalToString(toDecimal(aggregate._sum?.amount ?? 0)),
-      transactionCount: getGroupByCount(aggregate._count)
+      transactionCount: getGroupByCount(aggregate._count),
+      limit: category.limit ? decimalToString(category.limit) : null
     });
   }
 
@@ -302,7 +304,8 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
             id: true,
             name: true,
             icon: true,
-            color: true
+            color: true,
+            limit: true
           }
         })
       : [];

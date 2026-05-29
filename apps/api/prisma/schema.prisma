@@ -90,6 +90,7 @@ model Category {
   icon         String?
   color        String?
   isDefault    Boolean         @default(false)
+  limit        Decimal?        @db.Decimal(18, 2)
   user         User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   recurringRules RecurringRule[]

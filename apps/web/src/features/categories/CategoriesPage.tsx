@@ -24,6 +24,7 @@ import {
   getCategories,
   updateCategory
 } from "./category.service";
+import { getSummary } from "../summary/summary.service";
 import type {
   Category,
   CategoryType,
@@ -38,6 +39,7 @@ type FormState = {
   type: CategoryType;
   icon: string;
   color: string;
+  limit: string;
 };
 
 type CategoryMutationInput =
@@ -56,7 +58,8 @@ const initialForm: FormState = {
   name: "",
   type: "EXPENSE",
   icon: "",
-  color: ""
+  color: "",
+  limit: ""
 };
 
 function getErrorMessage(error: unknown) {
@@ -118,6 +121,22 @@ export function CategoriesPage() {
     queryFn: () => getCategories(),
     staleTime: 5 * 60_000
   });
+
+  const summaryQuery = useQuery({
+    queryKey: queryKeys.summary,
+    queryFn: () => getSummary(),
+    staleTime: 60_000
+  });
+
+  const summaryExpensesMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (summaryQuery.data?.expenseByCategory) {
+      for (const item of summaryQuery.data.expenseByCategory) {
+        map.set(item.categoryId, Number(item.totalAmount));
+      }
+    }
+    return map;
+  }, [summaryQuery.data]);
 
   const categories = categoriesQuery.data ?? [];
   const isLoading = categoriesQuery.isLoading && !categoriesQuery.data;
@@ -366,7 +385,8 @@ export function CategoriesPage() {
       name: category.name,
       type: category.type,
       icon: category.icon ?? "",
-      color: category.color ?? ""
+      color: category.color ?? "",
+      limit: category.limit ? String(category.limit) : ""
     });
     setError(null);
 
@@ -382,6 +402,7 @@ export function CategoriesPage() {
     const categoryName = form.name.trim();
     const normalizedIcon = normalizeOptionalValue(form.icon);
     const normalizedColor = normalizeOptionalValue(form.color);
+    const parsedLimit = form.type === "EXPENSE" && form.limit ? Number(form.limit) : null;
 
     if (!categoryName) {
       setError("Nama kategori wajib diisi.");
@@ -400,7 +421,8 @@ export function CategoriesPage() {
         name: categoryName,
         type: form.type,
         icon: normalizedIcon,
-        color: normalizedColor
+        color: normalizedColor,
+        limit: parsedLimit
       };
 
       const optimisticCategory: Category = {
@@ -408,7 +430,8 @@ export function CategoriesPage() {
         name: categoryName,
         type: form.type,
         icon: normalizedIcon,
-        color: normalizedColor
+        color: normalizedColor,
+        limit: parsedLimit
       };
 
       categoryMutation.mutate({
@@ -425,7 +448,8 @@ export function CategoriesPage() {
       name: categoryName,
       type: form.type,
       icon: normalizedIcon,
-      color: normalizedColor
+      color: normalizedColor,
+      limit: parsedLimit
     };
 
     categoryMutation.mutate({
@@ -642,6 +666,22 @@ export function CategoriesPage() {
               }
             />
 
+            {form.type === "EXPENSE" ? (
+              <Input
+                label="Batas Anggaran Bulanan (Opsional)"
+                name="limit"
+                type="number"
+                placeholder="Contoh: 1000000"
+                value={form.limit}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    limit: event.target.value
+                  }))
+                }
+              />
+            ) : null}
+
             <div className="grid gap-2 pt-2 sm:grid-cols-2">
               <Button
                 disabled={isSubmitting}
@@ -811,6 +851,27 @@ export function CategoriesPage() {
                             </button>
                           </div>
                         </div>
+
+                        {category.type === "EXPENSE" && category.limit ? (() => {
+                          const limitNum = Number(category.limit);
+                          const spentNum = summaryExpensesMap.get(category.id) ?? 0;
+                          const percent = Math.min(100, Math.round((spentNum / limitNum) * 100));
+                          const colorClass = percent >= 100 ? "bg-rose-500" : percent >= 80 ? "bg-amber-500" : "bg-emerald-500";
+                          const formattedSpent = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(spentNum);
+                          const formattedLimit = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(limitNum);
+
+                          return (
+                            <div className="mt-4 border-t border-slate-100 pt-3">
+                              <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-500">
+                                <span>{formattedSpent} / {formattedLimit}</span>
+                                <span>{percent}%</span>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${percent}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })() : null}
                       </div>
                     ))}
                   </div>
@@ -859,6 +920,27 @@ export function CategoriesPage() {
                           </span>
                         </div>
                       </div>
+
+                      {category.type === "EXPENSE" && category.limit ? (() => {
+                        const limitNum = Number(category.limit);
+                        const spentNum = summaryExpensesMap.get(category.id) ?? 0;
+                        const percent = Math.min(100, Math.round((spentNum / limitNum) * 100));
+                        const colorClass = percent >= 100 ? "bg-rose-500" : percent >= 80 ? "bg-amber-500" : "bg-emerald-500";
+                        const formattedSpent = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(spentNum);
+                        const formattedLimit = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(limitNum);
+
+                        return (
+                          <div className="mt-4 border-t border-slate-200 pt-3">
+                            <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-500">
+                              <span>{formattedSpent} / {formattedLimit}</span>
+                              <span>{percent}%</span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                              <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${percent}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })() : null}
                     </div>
                   ))}
                 </div>

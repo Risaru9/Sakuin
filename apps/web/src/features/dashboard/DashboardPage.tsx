@@ -2447,6 +2447,168 @@ function WeeklyCheckinCard({
   );
 }
 
+function TodayViewCard({
+  summary,
+  isLoading,
+  onOpenQuickTransaction
+}: {
+  summary: SummaryData | null;
+  isLoading: boolean;
+  onOpenQuickTransaction: () => void;
+}) {
+  const todayStr = getLocalDateKey();
+
+  const todayTransactions = useMemo(() => {
+    if (!summary?.recentTransactions) return [];
+    return summary.recentTransactions.filter((tx) => tx.date.split("T")[0] === todayStr);
+  }, [summary?.recentTransactions, todayStr]);
+
+  const todayExpenseSum = useMemo(() => {
+    return todayTransactions
+      .filter((tx) => tx.type === "EXPENSE")
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  }, [todayTransactions]);
+
+  const todayIncomeSum = useMemo(() => {
+    return todayTransactions
+      .filter((tx) => tx.type === "INCOME")
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  }, [todayTransactions]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white p-6">
+        <div className="flex items-center gap-2 text-zinc-500">
+          <Loader2 className="h-4 w-4 animate-spin animate-spin text-[var(--sakuin-text)]" />
+          <p className="text-xs font-bold">Memuat info hari ini...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const suggestedDailyLimit = summary?.safeToSpend?.suggestedDailyLimit ?? null;
+  const safeToSpendStatus = summary?.safeToSpend?.status ?? "UNKNOWN";
+  
+  const remainingBudget = suggestedDailyLimit !== null ? suggestedDailyLimit - todayExpenseSum : null;
+  const isOverBudget = remainingBudget !== null && remainingBudget < 0;
+
+  const todayExpensePercent = suggestedDailyLimit && suggestedDailyLimit > 0 
+    ? Math.min(100, Math.round((todayExpenseSum / suggestedDailyLimit) * 100))
+    : 0;
+
+  const gaugeColor = todayExpensePercent >= 100 
+    ? "bg-rose-500" 
+    : todayExpensePercent >= 80 
+      ? "bg-amber-500" 
+      : "bg-emerald-500";
+
+  const categorySummaryMap = new Map<string, { name: string; amount: number; color?: string }>();
+  for (const tx of todayTransactions) {
+    if (tx.type === "EXPENSE") {
+      const existing = categorySummaryMap.get(tx.category.id) ?? { name: tx.category.name, amount: 0, color: tx.category.color ?? undefined };
+      existing.amount += Number(tx.amount);
+      categorySummaryMap.set(tx.category.id, existing);
+    }
+  }
+  const categoryExpenses = Array.from(categorySummaryMap.values()).sort((a, b) => b.amount - a.amount);
+  const maxCategoryAmount = categoryExpenses.length > 0 ? Math.max(...categoryExpenses.map(c => c.amount)) : 1;
+
+  return (
+    <div className="space-y-4">
+      {/* Widget Sisa Jatah Belanja */}
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-black text-[var(--sakuin-text)]">Jatah Belanja Hari Ini</p>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1 ${
+            safeToSpendStatus === "SAFE" ? "bg-emerald-100 text-emerald-700 ring-emerald-200" :
+            safeToSpendStatus === "WATCH" ? "bg-amber-100 text-amber-800 ring-amber-200" :
+            safeToSpendStatus === "HOLD" ? "bg-rose-100 text-rose-700 ring-rose-200" : "bg-slate-100 text-slate-700 ring-slate-200"
+          }`}>
+            {safeToSpendStatus === "SAFE" ? "Aman" : safeToSpendStatus === "WATCH" ? "Waspada" : safeToSpendStatus === "HOLD" ? "Tahan" : "Belum Dinilai"}
+          </span>
+        </div>
+
+        <div className="mt-4">
+          {suggestedDailyLimit !== null ? (
+            <>
+              <p className={`text-3xl font-black tracking-tight ${isOverBudget ? "text-[var(--sakuin-red)]" : "text-[var(--sakuin-text)]"}`}>
+                {formatRupiah(remainingBudget)}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">
+                {isOverBudget 
+                  ? `Melebihi jatah harian sebesar ${formatRupiah(Math.abs(remainingBudget ?? 0))}` 
+                  : `Tersisa dari batas harian ${formatRupiah(suggestedDailyLimit)}`}
+              </p>
+
+              {/* Progress Bar Harian */}
+              <div className="mt-4">
+                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full rounded-full transition-[width] duration-300 ${gaugeColor}`} style={{ width: `${todayExpensePercent}%` }} />
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] font-black uppercase text-zinc-500">
+                  <span>Terpakai: {formatRupiah(todayExpenseSum)}</span>
+                  <span>{todayExpensePercent}%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-black text-[var(--sakuin-text)]">
+                {formatRupiah(summary?.safeToSpend?.availableToSpend)}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">
+                Jatah harian belum disetel. Menampilkan total Safe-to-Spend bulan ini.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Ringkasan Kategori Hari Ini */}
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Pengeluaran Terbesar Hari Ini</p>
+        {categoryExpenses.length > 0 ? (
+          <div className="mt-4 space-y-3.5">
+            {categoryExpenses.map((cat) => {
+              const widthPercent = Math.max(8, Math.round((cat.amount / maxCategoryAmount) * 100));
+              return (
+                <div key={cat.name}>
+                  <div className="mb-1 flex items-center justify-between text-xs font-bold text-[var(--sakuin-text)]">
+                    <span>{cat.name}</span>
+                    <span>{formatRupiah(cat.amount)}</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[var(--sakuin-primary)]" style={{ width: `${widthPercent}%`, backgroundColor: cat.color ?? undefined }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-3 text-xs font-semibold text-zinc-500 font-medium">Belum ada pengeluaran hari ini. Pengeluaran yang dicatat hari ini akan terkelompok di sini.</p>
+        )}
+      </div>
+
+      {/* Transaksi Hari Ini */}
+      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Transaksi Hari Ini ({todayTransactions.length})</p>
+        
+        <div className="mt-4 grid gap-3">
+          {todayTransactions.length > 0 ? (
+            todayTransactions.map((tx) => (
+              <TransactionItem key={tx.id} transaction={tx} />
+            ))
+          ) : (
+            <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-5 text-center text-xs font-semibold text-zinc-600">
+              Belum ada transaksi khusus hari ini.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -2455,7 +2617,7 @@ export function DashboardPage() {
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [activeMobileTab, setActiveMobileTab] = useState<
-    "overview" | "transactions" | "stats"
+    "overview" | "today" | "transactions" | "stats"
   >("overview");
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
@@ -2908,6 +3070,18 @@ const profileQuery = useQuery({
               <button
                 className={[
                   "flex-1 rounded-xl px-3 py-2 transition",
+                  activeMobileTab === "today"
+                    ? "bg-white shadow-sm"
+                    : "bg-transparent text-zinc-600"
+                ].join(" ")}
+                onClick={() => setActiveMobileTab("today")}
+                type="button"
+              >
+                Hari Ini
+              </button>
+              <button
+                className={[
+                  "flex-1 rounded-xl px-3 py-2 transition",
                   activeMobileTab === "transactions"
                     ? "bg-white shadow-sm"
                     : "bg-transparent text-zinc-600"
@@ -3044,6 +3218,14 @@ const profileQuery = useQuery({
                     priorityGoalId={dashboardPriorityGoalId}
                   />
                 </>
+              ) : null}
+
+              {activeMobileTab === "today" ? (
+                <TodayViewCard
+                  summary={summary}
+                  isLoading={isLoadingSummary}
+                  onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
+                />
               ) : null}
 
               {activeMobileTab === "transactions" ? (

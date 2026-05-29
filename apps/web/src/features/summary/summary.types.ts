@@ -24,6 +24,7 @@ export type SummaryCategoryItem = {
   type: "INCOME" | "EXPENSE";
   totalAmount: string;
   transactionCount: number;
+  limit: string | null;
 };
 
 export type MonthlyTrendItem = {

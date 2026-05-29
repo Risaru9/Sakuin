@@ -7,6 +7,7 @@ export type Category = {
   icon: string | null;
   color: string | null;
   isDefault: boolean;
+  limit: number | null;
 };
 
 export type CreateCategoryInput = {
@@ -14,6 +15,7 @@ export type CreateCategoryInput = {
   type: CategoryType;
   icon?: string | null;
   color?: string | null;
+  limit?: number | null;
 };
 
 export type UpdateCategoryInput = Partial<CreateCategoryInput>;

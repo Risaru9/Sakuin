@@ -20,6 +20,7 @@ type CreateCategoryInput = {
   type: TransactionType;
   icon?: string | null;
   color?: string | null;
+  limit?: number | null;
 };
 
 type UpdateCategoryInput = {
@@ -27,6 +28,7 @@ type UpdateCategoryInput = {
   type?: TransactionType;
   icon?: string | null;
   color?: string | null;
+  limit?: number | null;
 };
 
 type CategoryIdParam = {

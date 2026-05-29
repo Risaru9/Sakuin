@@ -12,6 +12,7 @@ type CreateCategoryInput = {
   type: TransactionType;
   icon?: string | null;
   color?: string | null;
+  limit?: number | null;
 };
 
 type UpdateCategoryInput = {
@@ -19,9 +20,10 @@ type UpdateCategoryInput = {
   type?: TransactionType;
   icon?: string | null;
   color?: string | null;
+  limit?: number | null;
 };
 
-type CategoryRecord = Prisma.CategoryGetPayload<object>;
+type CategoryRecord = Prisma.CategoryGetPayload<object> & { limit?: Prisma.Decimal | null | number };
 
 function normalizeOptionalValue(value: string | null | undefined) {
   const normalizedValue = value?.trim();
@@ -40,7 +42,8 @@ function mapCategory(category: CategoryRecord) {
     type: category.type,
     icon: category.icon,
     color: category.color,
-    isDefault: category.isDefault
+    isDefault: category.isDefault,
+    limit: category.limit ? Number(category.limit) : null
   };
 }
 
@@ -162,6 +165,7 @@ export async function createCategoryService(
       type: input.type,
       icon: normalizeOptionalValue(input.icon),
       color: normalizeOptionalValue(input.color),
+      limit: input.limit !== undefined ? input.limit : null,
       isDefault: false
     }
   });
@@ -219,7 +223,11 @@ export async function updateCategoryService(
       color:
         input.color !== undefined
           ? normalizeOptionalValue(input.color)
-          : existingCategory.color
+          : existingCategory.color,
+      limit:
+        input.limit !== undefined
+          ? input.limit
+          : existingCategory.limit
     }
   });
 

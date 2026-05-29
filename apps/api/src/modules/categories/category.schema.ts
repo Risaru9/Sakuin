@@ -14,6 +14,17 @@ const optionalStringFieldSchema = (maxLength: number, message: string) =>
     z.string().trim().max(maxLength, message).nullable().optional()
   );
 
+const limitSchema = z.preprocess(
+  (val) => {
+    if (val === "" || val === null || val === undefined) {
+      return null;
+    }
+    const parsed = Number(val);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  },
+  z.number().nonnegative("Batas anggaran harus berupa angka positif").nullable().optional()
+);
+
 export const getCategoriesQuerySchema = z.object({
   type: categoryTypeSchema.optional()
 });
@@ -26,7 +37,8 @@ export const createCategorySchema = z.object({
     .max(50, "Nama kategori maksimal 50 karakter"),
   type: categoryTypeSchema,
   icon: optionalStringFieldSchema(50, "Icon maksimal 50 karakter"),
-  color: optionalStringFieldSchema(30, "Color maksimal 30 karakter")
+  color: optionalStringFieldSchema(30, "Color maksimal 30 karakter"),
+  limit: limitSchema
 });
 
 export const updateCategorySchema = z
@@ -39,7 +51,8 @@ export const updateCategorySchema = z
       .optional(),
     type: categoryTypeSchema.optional(),
     icon: optionalStringFieldSchema(50, "Icon maksimal 50 karakter"),
-    color: optionalStringFieldSchema(30, "Color maksimal 30 karakter")
+    color: optionalStringFieldSchema(30, "Color maksimal 30 karakter"),
+    limit: limitSchema
   })
   .refine(
     (data) => Object.values(data).some((value) => value !== undefined),

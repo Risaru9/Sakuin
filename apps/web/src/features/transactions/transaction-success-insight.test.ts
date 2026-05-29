@@ -68,7 +68,8 @@ function createSummary(): SummaryData {
         categoryColor: null,
         type: "EXPENSE",
         totalAmount: "300000.00",
-        transactionCount: 4
+        transactionCount: 4,
+        limit: null
       }
     ],
     incomeByCategory: [],
