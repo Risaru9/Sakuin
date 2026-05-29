@@ -29,7 +29,10 @@ import { queryKeys } from "../../../lib/query-keys";
 import { useAuth } from "../../auth/auth-context";
 import { getUserProfile } from "../../profile/profile.service";
 import { createTransaction } from "../../transactions/transaction.service";
-import { sendAiChatMessage } from "../ai.service";
+import { useMutation } from "@tanstack/react-query";
+import { sendAiChatMessage, getAiChatHistory, clearAiChatHistory } from "../ai.service";
+import { getCategories } from "../../categories/category.service";
+import type { Category } from "../../categories/category.types";
 import type {
   AiChatHistoryMessage,
   AiChatMessage,
@@ -178,9 +181,9 @@ function getErrorMessage(error: unknown) {
   return "Terjadi kesalahan saat menghubungi Asisten Sakuin.";
 }
 
-function createAssistantMessage(response: AiChatResponse): AiChatMessage {
+function createAssistantMessage(response: AiChatResponse & { id?: string }): AiChatMessage {
   return {
-    id: createMessageId(),
+    id: response.id ?? createMessageId(),
     role: "assistant",
     content: response.reply,
     intent: response.intent,
@@ -586,7 +589,9 @@ function TransactionDraftPanel({
   isSaved,
   isCancelled,
   onSave,
-  onCancel
+  onCancel,
+  categories = [],
+  onChangeCategory
 }: {
   draft: AiTransactionDraft;
   title?: string;
@@ -595,6 +600,8 @@ function TransactionDraftPanel({
   isCancelled: boolean;
   onSave: () => void;
   onCancel: () => void;
+  categories?: Category[];
+  onChangeCategory?: (categoryId: string, categoryName: string) => void;
 }) {
   const isReadyToSave = isTransactionDraftReadyToSave(draft);
   const canSave = isReadyToSave && !isSaving && !isSaved && !isCancelled;
@@ -656,12 +663,36 @@ function TransactionDraftPanel({
         </div>
 
         <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
-          <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
+          <label htmlFor={`draft-category-${title}`} className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px] block mb-0.5">
             Kategori
-          </p>
-          <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
-            {draft.categoryName ?? "Perlu dipilih"}
-          </p>
+          </label>
+          {isSaved || isCancelled || isSaving || !onChangeCategory ? (
+            <p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">
+              {draft.categoryName ?? "Perlu dipilih"}
+            </p>
+          ) : (
+            <select
+              id={`draft-category-${title}`}
+              value={draft.categoryId ?? ""}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                const cat = categories.find((c) => c.id === selectedId);
+                if (cat) {
+                  onChangeCategory(cat.id, cat.name);
+                }
+              }}
+              className="mt-1 w-full bg-transparent text-xs font-black text-slate-950 focus:outline-none cursor-pointer border-b border-dashed border-slate-300 pb-0.5"
+            >
+              <option value="" disabled>Pilih Kategori</option>
+              {categories
+                .filter((c) => c.type === draft.type)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          )}
         </div>
 
         <div className="rounded-2xl border border-white/80 bg-white/80 px-3 py-2.5">
@@ -795,7 +826,9 @@ function ChatBubble({
   savedDraftMessageIds,
   cancelledDraftMessageIds,
   shouldAnimateContent,
-  messageRef
+  messageRef,
+  categories = [],
+  onChangeDraftCategory
 }: {
   message: AiChatMessage;
   onSuggestionClick: (suggestion: string) => void;
@@ -818,6 +851,13 @@ function ChatBubble({
   cancelledDraftMessageIds: Set<string>;
   shouldAnimateContent: boolean;
   messageRef?: (element: HTMLDivElement | null) => void;
+  categories?: Category[];
+  onChangeDraftCategory?: (
+    messageId: string,
+    draftIndex: number,
+    categoryId: string,
+    categoryName: string
+  ) => void;
 }) {
   const isUser = message.role === "user";
   const visibleSuggestions =
@@ -956,6 +996,10 @@ function ChatBubble({
                     }
                     onSave={() =>
                       onSaveDraft(message, draft, draftKey, draftIndex)
+                    }
+                    categories={categories}
+                    onChangeCategory={(catId, catName) =>
+                      onChangeDraftCategory?.(message.id, draftIndex, catId, catName)
                     }
                     title={
                       transactionDrafts.length > 1
@@ -1105,6 +1149,25 @@ export function AsistenPage() {
     queryFn: getUserProfile
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => getCategories()
+  });
+  const categories = categoriesQuery.data ?? [];
+
+  const chatHistoryQuery = useQuery({
+    queryKey: ["ai", "chat"],
+    queryFn: getAiChatHistory,
+    enabled: !!user?.id
+  });
+
+  const clearChatMutation = useMutation({
+    mutationFn: clearAiChatHistory,
+    onSuccess: () => {
+      queryClient.setQueriesData({ queryKey: ["ai", "chat"] }, []);
+    }
+  });
+
   const displayedName = profileQuery.data?.name ?? user?.name ?? "User";
   const displayedEmail = profileQuery.data?.email ?? user?.email ?? "-";
   const latestAssistantMessageId =
@@ -1186,36 +1249,21 @@ export function AsistenPage() {
   }, [historyLoaded, isSubmitting, messages.length]);
 
   useEffect(() => {
-    const storageKey = getChatHistoryStorageKey(user?.id);
-
-    if (!storageKey) {
-      setMessages([createWelcomeMessage()]);
-      setHistoryLoaded(true);
-      return;
-    }
-
-    try {
-      const storedHistory = localStorage.getItem(storageKey);
-
-      if (!storedHistory) {
-        setMessages([createWelcomeMessage()]);
-        setHistoryLoaded(true);
-        return;
-      }
-
-      const parsedHistory = JSON.parse(storedHistory) as unknown;
-
-      if (isValidStoredMessages(parsedHistory) && parsedHistory.length > 0) {
-        setMessages(parsedHistory.slice(-MAX_STORED_MESSAGES));
+    if (chatHistoryQuery.isSuccess) {
+      const dbHistory = chatHistoryQuery.data;
+      if (dbHistory.length > 0) {
+        setMessages(dbHistory);
       } else {
         setMessages([createWelcomeMessage()]);
       }
-    } catch {
-      setMessages([createWelcomeMessage()]);
-    } finally {
       setHistoryLoaded(true);
+
+      const storageKey = getChatHistoryStorageKey(user?.id);
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
     }
-  }, [user?.id]);
+  }, [chatHistoryQuery.isSuccess, chatHistoryQuery.data, user?.id]);
 
   useEffect(() => {
     const storageKey = getSavedDraftStorageKey(user?.id);
@@ -1283,22 +1331,7 @@ export function AsistenPage() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    const storageKey = getChatHistoryStorageKey(user?.id);
 
-    if (!historyLoaded || !storageKey) {
-      return;
-    }
-
-    try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(messages.slice(-MAX_STORED_MESSAGES))
-      );
-    } catch {
-      // Local storage can fail in private mode or if quota is full.
-    }
-  }, [historyLoaded, messages, user?.id]);
 
   useEffect(() => {
     const storageKey = getSavedDraftStorageKey(user?.id);
@@ -1523,6 +1556,47 @@ export function AsistenPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleUpdateDraftCategory(
+    messageId: string,
+    draftIndex: number,
+    categoryId: string,
+    categoryName: string
+  ) {
+    setMessages((currentMessages) =>
+      currentMessages.map((msg) => {
+        if (msg.id !== messageId) {
+          return msg;
+        }
+
+        if (msg.transactionDraft && draftIndex === 0) {
+          return {
+            ...msg,
+            transactionDraft: {
+              ...msg.transactionDraft,
+              categoryId,
+              categoryName
+            }
+          };
+        }
+
+        if (msg.transactionDrafts && msg.transactionDrafts[draftIndex]) {
+          const nextDrafts = [...msg.transactionDrafts];
+          nextDrafts[draftIndex] = {
+            ...nextDrafts[draftIndex],
+            categoryId,
+            categoryName
+          };
+          return {
+            ...msg,
+            transactionDrafts: nextDrafts
+          };
+        }
+
+        return msg;
+      })
+    );
   }
 
   async function handleSaveDraft(
@@ -1838,6 +1912,8 @@ export function AsistenPage() {
   }
 
   function handleConfirmClearHistory() {
+    clearChatMutation.mutate();
+
     const chatHistoryStorageKey = getChatHistoryStorageKey(user?.id);
     const savedDraftStorageKey = getSavedDraftStorageKey(user?.id);
     const cancelledDraftStorageKey = getCancelledDraftStorageKey(user?.id);
@@ -1938,6 +2014,8 @@ export function AsistenPage() {
                   message.role === "assistant" &&
                   message.id === latestAssistantMessageId
                 }
+                categories={categories}
+                onChangeDraftCategory={handleUpdateDraftCategory}
               />
             ))}
 

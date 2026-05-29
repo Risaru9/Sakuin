@@ -568,3 +568,51 @@ export async function runReminderCron(): Promise<RunReminderCronResult> {
     deactivatedCount
   };
 }
+
+export async function sendGenericPushNotification(
+  userId: string,
+  payload: { title: string; body: string; url?: string; tag?: string }
+): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { pushSubscriptions: true }
+  });
+
+  if (!user || user.pushSubscriptions.length === 0) {
+    return false;
+  }
+
+  ensureVapidConfigured();
+
+  const notificationPayload = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    icon: "/icons/pwa-192.png",
+    badge: "/icons/maskable-192.png",
+    tag: payload.tag ?? "sakuin-notification",
+    url: payload.url ?? "/dashboard"
+  });
+
+  let sent = false;
+  for (const subscription of user.pushSubscriptions) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth
+          }
+        },
+        notificationPayload
+      );
+      sent = true;
+    } catch (error) {
+      if (isSubscriptionGone(error)) {
+        await deactivateSubscription(subscription.endpoint);
+      }
+    }
+  }
+
+  return sent;
+}

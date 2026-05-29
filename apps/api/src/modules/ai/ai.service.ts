@@ -1,4 +1,6 @@
 import { env } from "../../config/env.js";
+import { prisma } from "../../db/prisma.js";
+import { sendGenericPushNotification } from "../reminders/reminder.service.js";
 import {
   createGeminiTextProvider,
   type AiTextProvider
@@ -2672,19 +2674,74 @@ async function enhanceFinancialResponseWithAi(input: {
   }
 }
 
+async function saveAssistantResponse(
+  userId: string,
+  response: AiChatResponse
+): Promise<AiChatResponse & { id: string }> {
+  const assistantMsg = await prisma.chatMessage.create({
+    data: {
+      userId,
+      role: "assistant",
+      content: response.reply,
+      intent: response.intent,
+      cards: response.cards ? (response.cards as any) : undefined,
+      suggestions: response.suggestions ? (response.suggestions as any) : undefined,
+      transactionDraft: response.transactionDraft ? (response.transactionDraft as any) : undefined,
+      transactionDrafts: response.transactionDrafts ? (response.transactionDrafts as any) : undefined
+    }
+  });
+
+  return {
+    ...response,
+    id: assistantMsg.id
+  };
+}
+
 export async function getAiChatResponse(
   input: AiChatServiceInput,
   options: AiChatServiceOptions = {}
-): Promise<AiChatResponse> {
+): Promise<AiChatResponse & { id?: string }> {
   const normalizedMessage = input.message.trim();
+
+  if (normalizedMessage.length === 0) {
+    throw new Error("Pesan tidak boleh kosong");
+  }
+
+  // 1. Simpan pesan user ke database
+  await prisma.chatMessage.create({
+    data: {
+      userId: input.userId,
+      role: "user",
+      content: normalizedMessage
+    }
+  });
+
+  // 2. Ambil riwayat chat terbaru untuk context Gemini (max 12)
+  const dbHistory = await prisma.chatMessage.findMany({
+    where: { userId: input.userId },
+    orderBy: { createdAt: "desc" },
+    take: 12
+  });
+
+  // Urutkan kembali berdasarkan waktu menaik (asc) agar runtut
+  const sortedDbHistory = dbHistory.reverse();
+
+  // Konversi ke format context history Gemini
+  const contextHistory: AiChatHistoryMessage[] = sortedDbHistory
+    .filter((msg) => msg.role === "user" || msg.role === "assistant")
+    .map((msg) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
 
   const classification = classifyAiChatMessage(
     normalizedMessage,
-    input.history ?? []
+    contextHistory
   );
 
   if (classification.intent === "OUT_OF_SCOPE") {
-    return buildOutOfScopeResponse();
+    const response = buildOutOfScopeResponse();
+    return saveAssistantResponse(input.userId, response);
   }
 
   if (classification.intent === "TRANSACTION_DRAFT") {
@@ -2693,18 +2750,19 @@ export async function getAiChatResponse(
       message: input.message
     });
 
-    return buildTransactionDraftResponse(drafts);
+    const response = buildTransactionDraftResponse(drafts);
+    return saveAssistantResponse(input.userId, response);
   }
 
   const financialContext = await getAiFinancialContext(input.userId);
   const scenario = analyzeFinancialScenario(
     normalizedMessage,
-    input.history ?? []
+    contextHistory
   );
   const purchaseDecision = analyzePurchaseDecision(
     normalizedMessage,
     financialContext,
-    input.history ?? []
+    contextHistory
   );
 
   const baseResponse = enrichResponseWithPurchaseDecision(
@@ -2715,14 +2773,196 @@ export async function getAiChatResponse(
     purchaseDecision
   );
 
-  return enhanceFinancialResponseWithAi({
+  const finalResponse = await enhanceFinancialResponseWithAi({
     provider: options.provider,
     userMessage: normalizedMessage,
     intent: classification.intent,
     context: financialContext,
     baseResponse,
-    history: input.history,
+    history: contextHistory,
     scenario,
     purchaseDecision
   });
+
+  return saveAssistantResponse(input.userId, finalResponse);
+}
+
+export async function getAiChatHistory(userId: string) {
+  const messages = await prisma.chatMessage.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+    take: 80
+  });
+
+  return messages.map((msg) => ({
+    id: msg.id,
+    role: msg.role as "user" | "assistant",
+    content: msg.content,
+    intent: msg.intent ?? undefined,
+    cards: msg.cards ? (msg.cards as any) : undefined,
+    suggestions: msg.suggestions ? (msg.suggestions as any) : undefined,
+    transactionDraft: msg.transactionDraft ? (msg.transactionDraft as any) : undefined,
+    transactionDrafts: msg.transactionDrafts ? (msg.transactionDrafts as any) : undefined,
+    createdAt: msg.createdAt.toISOString()
+  }));
+}
+
+export async function clearAiChatHistory(userId: string): Promise<void> {
+  await prisma.chatMessage.deleteMany({
+    where: { userId }
+  });
+}
+
+function buildWeeklyInsightPrompt(
+  userName: string,
+  transactions: any[],
+  context: AiFinancialContext
+) {
+  const expenseSum = transactions
+    .filter(t => t.type === "EXPENSE")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  const incomeSum = transactions
+    .filter(t => t.type === "INCOME")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const categoryExpenses = transactions
+    .filter(t => t.type === "EXPENSE")
+    .reduce((acc: Record<string, number>, t) => {
+      const catName = t.category?.name || "Lainnya";
+      acc[catName] = (acc[catName] || 0) + Number(t.amount);
+      return acc;
+    }, {});
+
+  const sortedCategories = Object.entries(categoryExpenses)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, amount]) => `- ${name}: Rp ${amount.toLocaleString("id-ID")}`)
+    .join("\n");
+
+  return `
+Halo Gemini,
+Berikan saran keuangan mingguan (Weekly Financial Insight) untuk pengguna bernama ${userName}.
+Berikut adalah rangkuman keuangannya dalam 7 hari terakhir:
+- Total Pengeluaran: Rp ${expenseSum.toLocaleString("id-ID")}
+- Total Pemasukan: Rp ${incomeSum.toLocaleString("id-ID")}
+- Pengeluaran per Kategori:
+${sortedCategories || "Tidak ada transaksi pengeluaran."}
+
+Context Keuangan Saat Ini:
+- Safe Balance Limit: Rp ${Number(context.safeBalanceLimit).toLocaleString("id-ID")}
+- Sisa Safe-to-Spend: Rp ${Number(context.safeToSpend.availableToSpend).toLocaleString("id-ID")}
+- Progress Budget Kategori Bulanan: ${JSON.stringify(context.currentMonth.topExpenseCategories)}
+
+Tugasmu:
+1. Berikan evaluasi singkat (maks 3-4 kalimat) mengenai pengeluaran minggu ini (misalnya jika ada kategori yang terlalu dominan atau jika pengeluaran melebihi pemasukan).
+2. Berikan 2 tips/tindakan hemat yang konkrit, spesifik, dan praktis untuk minggu depan berdasarkan kategori pengeluaran terbesarnya.
+3. Gunakan nada bicara yang bersahabat, mendukung (tidak menghakimi), dan profesional dalam Bahasa Indonesia.
+
+Format respons kamu harus berupa string teks markdown yang rapi yang siap ditampilkan ke pengguna.
+`;
+}
+
+export async function generateWeeklyProactiveInsight(): Promise<{ processedUsers: number; insightsGenerated: number }> {
+  const users = await prisma.user.findMany({
+    include: {
+      pushSubscriptions: true
+    }
+  });
+
+  let processedUsers = 0;
+  let insightsGenerated = 0;
+
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  for (const user of users) {
+    processedUsers++;
+
+    try {
+      const weeklyTransactions = await prisma.transaction.findMany({
+        where: {
+          userId: user.id,
+          date: { gte: oneWeekAgo }
+        },
+        include: {
+          category: true
+        }
+      });
+
+      if (weeklyTransactions.length === 0) {
+        continue;
+      }
+
+      const context = await getAiFinancialContext(user.id);
+      const provider = createGeminiTextProvider();
+      const prompt = buildWeeklyInsightPrompt(user.name, weeklyTransactions, context);
+      
+      const result = await provider.generateText({
+        systemInstruction: "Kamu adalah Asisten Finansial Sakuin yang proaktif dan memberikan saran mingguan yang bersahabat dan praktis.",
+        prompt,
+        model: "gemini-1.5-flash",
+        maxOutputTokens: 2000,
+        temperature: 0.5
+      });
+
+      const aiReply = normalizeAiReply(result.text) || "Tetap pantau pengeluaranmu minggu depan agar selalu sesuai anggaran ya!";
+
+      const totalExpense = weeklyTransactions
+        .filter(t => t.type === "EXPENSE")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const topCategory = weeklyTransactions
+        .filter(t => t.type === "EXPENSE")
+        .reduce((acc: { name: string; amount: number }[], t) => {
+          const catName = t.category?.name || "Lainnya";
+          const match = acc.find(item => item.name === catName);
+          if (match) {
+            match.amount += Number(t.amount);
+          } else {
+            acc.push({ name: catName, amount: Number(t.amount) });
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => b.amount - a.amount)[0]?.name || "N/A";
+
+      const cards = [
+        { label: "Pengeluaran Minggu Ini", value: `Rp ${totalExpense.toLocaleString("id-ID")}` },
+        { label: "Kategori Terbesar", value: topCategory },
+        { label: "Safe-to-Spend", value: `Rp ${Number(context.safeToSpend.availableToSpend).toLocaleString("id-ID")}` }
+      ];
+
+      await prisma.chatMessage.create({
+        data: {
+          userId: user.id,
+          role: "assistant",
+          content: aiReply,
+          intent: "SPENDING_ANALYSIS",
+          cards: cards as any,
+          suggestions: [
+            "Bagaimana cara menghemat minggu ini?",
+            "Lihat pengeluaran bulan ini",
+            "Target tabungan saya masih realistis?"
+          ] as any
+        }
+      });
+
+      insightsGenerated++;
+
+      if (user.pushSubscriptions.length > 0) {
+        await sendGenericPushNotification(user.id, {
+          title: "Saran Finansial Mingguan",
+          body: `Halo ${user.name}, saran keuangan barumu sudah siap! Intip tips hemat khusus untukmu minggu ini.`,
+          url: "/asisten",
+          tag: "sakuin-weekly-insight"
+        });
+      }
+    } catch (error) {
+      console.error(`Gagal membuat proactive insight untuk user ${user.id}:`, error);
+    }
+  }
+
+  return {
+    processedUsers,
+    insightsGenerated
+  };
 }
