@@ -43,6 +43,7 @@ import {
   restoreTransactionListCacheSnapshot
 } from "./transaction-cache";
 import { buildTransactionSuccessInsight } from "./transaction-success-insight";
+import { toIsoDate, getTodayInputValue } from "./transaction-date";
 
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
@@ -70,10 +71,6 @@ type CreateTransactionMutationInput = {
   customCategoryName?: string;
 };
 
-function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function getInitialForm(): TransactionFormState {
   return {
     type: "EXPENSE",
@@ -100,10 +97,6 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Gagal membuat transaksi. Silakan coba lagi.";
-}
-
-function toIsoDate(dateInput: string) {
-  return new Date(`${dateInput}T00:00:00.000`).toISOString();
 }
 
 function preventInvalidAmountKey(event: ReactKeyboardEvent<HTMLInputElement>) {

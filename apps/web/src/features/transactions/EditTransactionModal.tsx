@@ -74,18 +74,17 @@ function getErrorMessage(error: unknown) {
   return "Gagal mengupdate transaksi.";
 }
 
+import { toIsoDate, getTodayInputValue } from "./transaction-date";
+import { getLocalDateKey } from "../../lib/daily-review";
+
 function toDateInputValue(value: string) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString().slice(0, 10);
+    return getTodayInputValue();
   }
 
-  return date.toISOString().slice(0, 10);
-}
-
-function toIsoDate(dateInput: string) {
-  return new Date(`${dateInput}T00:00:00.000`).toISOString();
+  return getLocalDateKey(date);
 }
 
 function preventInvalidAmountKey(event: ReactKeyboardEvent<HTMLInputElement>) {
@@ -230,7 +229,7 @@ export function EditTransactionModal({
     type: "EXPENSE",
     amount: "",
     categoryId: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: getTodayInputValue(),
     note: "",
     saveAsNewCategory: false,
     customCategoryName: ""

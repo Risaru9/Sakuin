@@ -16,17 +16,33 @@ export function hasStoredToken() {
   return Boolean(getStoredToken());
 }
 
-export function syncTokenToServiceWorker(token?: string | null) {
-  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-    const finalToken = token !== undefined ? token : getStoredToken();
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+declare global {
+  interface Window {
+    AndroidWidgetBridge?: {
+      saveConfig: (token: string | null, apiUrl: string) => void;
+    };
+  }
+}
 
+export function syncTokenToServiceWorker(token?: string | null) {
+  const finalToken = token !== undefined ? token : getStoredToken();
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+
+  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
     if (navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
         type: "SET_TOKEN",
         token: finalToken,
         apiBaseUrl
       });
+    }
+  }
+
+  if (typeof window !== "undefined" && window.AndroidWidgetBridge) {
+    try {
+      window.AndroidWidgetBridge.saveConfig(finalToken, apiBaseUrl);
+    } catch (error) {
+      console.error("Gagal menyinkronkan token ke widget Android", error);
     }
   }
 }

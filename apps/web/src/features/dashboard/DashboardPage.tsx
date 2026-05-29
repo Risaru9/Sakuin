@@ -1379,6 +1379,24 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
+        {isAndroid && (
+          <div className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+            <p className="text-sm font-black text-blue-800 flex items-center gap-1.5">
+              <span>📱</span> Aplikasi Android (APK)
+            </p>
+            <p className="mt-1 text-xs font-semibold text-blue-700 leading-relaxed">
+              Unduh APK Sakuin untuk mendapatkan fitur native home-screen widget yang lebih responsif dan bisa di-resize di layar utama Android.
+            </p>
+            <a
+              href="/downloads/sakuin.apk"
+              download="sakuin.apk"
+              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-md transition hover:bg-blue-700 active:scale-98"
+            >
+              Unduh APK Sakuin
+            </a>
+          </div>
+        )}
+
         {/* Action Button & Status */}
         {isStandalone ? (
           <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -2533,7 +2551,7 @@ function TodayViewCard({
 
   const todayTransactions = useMemo(() => {
     if (!summary?.recentTransactions) return [];
-    return summary.recentTransactions.filter((tx) => tx.date.split("T")[0] === todayStr);
+    return summary.recentTransactions.filter((tx) => getLocalDateKey(new Date(tx.date)) === todayStr);
   }, [summary?.recentTransactions, todayStr]);
 
   const todayExpenseSum = useMemo(() => {

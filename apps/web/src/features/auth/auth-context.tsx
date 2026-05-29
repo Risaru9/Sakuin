@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = getStoredToken();
+    syncTokenToServiceWorker(token);
 
     if (!token) {
       setIsInitializing(false);

@@ -209,6 +209,22 @@ function patchHabitForAdd(
 
   const previouslyHadTransactionToday = habit.hasTransactionToday;
 
+  const nextWeeklyActiveDays = !previouslyHadTransactionToday
+    ? (habit.weeklyActiveDays ?? 0) + 1
+    : (habit.weeklyActiveDays ?? 0);
+
+  const nextCurrentWeekActiveDays = !previouslyHadTransactionToday
+    ? (habit.currentWeekActiveDays ?? 0) + 1
+    : (habit.currentWeekActiveDays ?? 0);
+
+  const nextMonthActiveDays = !previouslyHadTransactionToday
+    ? (habit.monthActiveDays ?? 0) + 1
+    : (habit.monthActiveDays ?? 0);
+
+  const nextCurrentMonthCompletenessPercent = habit.currentMonthDaysElapsed > 0
+    ? Number(((nextMonthActiveDays / habit.currentMonthDaysElapsed) * 100).toFixed(1))
+    : habit.currentMonthCompletenessPercent;
+
   const updatedHabit = {
     ...habit,
     hasTransactionToday: true,
@@ -225,7 +241,12 @@ function patchHabitForAdd(
       : (habit.todayExpenseCount ?? 0),
     todayIncomeCount: isIncome
       ? (habit.todayIncomeCount ?? 0) + 1
-      : (habit.todayIncomeCount ?? 0)
+      : (habit.todayIncomeCount ?? 0),
+    weeklyActiveDays: nextWeeklyActiveDays,
+    currentWeekActiveDays: nextCurrentWeekActiveDays,
+    monthActiveDays: nextMonthActiveDays,
+    currentMonthTransactionDays: nextMonthActiveDays,
+    currentMonthCompletenessPercent: nextCurrentMonthCompletenessPercent
   };
 
   // Update dayRhythm entry untuk hari ini
@@ -282,10 +303,28 @@ function patchHabitForDelete(
   const newTodayTransactionCount = Math.max((habit.todayTransactionCount ?? 0) - 1, 0);
   const previouslyHadTransactionToday = habit.hasTransactionToday;
 
+  const noMoreTransactionsToday = newTodayTransactionCount === 0;
+
+  const nextWeeklyActiveDays = (previouslyHadTransactionToday && noMoreTransactionsToday)
+    ? Math.max((habit.weeklyActiveDays ?? 0) - 1, 0)
+    : (habit.weeklyActiveDays ?? 0);
+
+  const nextCurrentWeekActiveDays = (previouslyHadTransactionToday && noMoreTransactionsToday)
+    ? Math.max((habit.currentWeekActiveDays ?? 0) - 1, 0)
+    : (habit.currentWeekActiveDays ?? 0);
+
+  const nextMonthActiveDays = (previouslyHadTransactionToday && noMoreTransactionsToday)
+    ? Math.max((habit.monthActiveDays ?? 0) - 1, 0)
+    : (habit.monthActiveDays ?? 0);
+
+  const nextCurrentMonthCompletenessPercent = habit.currentMonthDaysElapsed > 0
+    ? Number(((nextMonthActiveDays / habit.currentMonthDaysElapsed) * 100).toFixed(1))
+    : habit.currentMonthCompletenessPercent;
+
   const updatedHabit = {
     ...habit,
-    hasTransactionToday: newTodayTransactionCount > 0,
-    currentStreakDays: (previouslyHadTransactionToday && newTodayTransactionCount === 0)
+    hasTransactionToday: !noMoreTransactionsToday,
+    currentStreakDays: (previouslyHadTransactionToday && noMoreTransactionsToday)
       ? Math.max((habit.currentStreakDays ?? 0) - 1, 0)
       : (habit.currentStreakDays ?? 0),
     transactionsToday: newTransactionsToday,
@@ -298,7 +337,12 @@ function patchHabitForDelete(
       : (habit.todayExpenseCount ?? 0),
     todayIncomeCount: isIncome
       ? Math.max((habit.todayIncomeCount ?? 0) - 1, 0)
-      : (habit.todayIncomeCount ?? 0)
+      : (habit.todayIncomeCount ?? 0),
+    weeklyActiveDays: nextWeeklyActiveDays,
+    currentWeekActiveDays: nextCurrentWeekActiveDays,
+    monthActiveDays: nextMonthActiveDays,
+    currentMonthTransactionDays: nextMonthActiveDays,
+    currentMonthCompletenessPercent: nextCurrentMonthCompletenessPercent
   };
 
   // Update dayRhythm entry untuk hari ini

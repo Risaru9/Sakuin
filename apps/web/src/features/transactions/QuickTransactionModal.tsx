@@ -44,6 +44,7 @@ import type {
 } from "./transaction.types";
 import { useToast } from "../../components/toast/ToastProvider";
 import { buildTransactionSuccessInsight } from "./transaction-success-insight";
+import { getTodayInputValue, toIsoDate } from "./transaction-date";
 
 const MIN_TRANSACTION_AMOUNT = 1;
 const MAX_TRANSACTION_AMOUNT = 1_000_000_000_000;
@@ -61,14 +62,6 @@ type QuickTransactionModalProps = {
   onSuccess: () => void | Promise<void>;
   initialText?: string;
 };
-
-function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function toIsoDate(dateInput: string) {
-  return new Date(`${dateInput}T00:00:00.000`).toISOString();
-}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
