@@ -2676,8 +2676,13 @@ async function enhanceFinancialResponseWithAi(input: {
 
 async function saveAssistantResponse(
   userId: string,
-  response: AiChatResponse
-): Promise<AiChatResponse & { id: string }> {
+  response: AiChatResponse,
+  shouldSaveToDb: boolean
+): Promise<AiChatResponse & { id?: string }> {
+  if (!shouldSaveToDb) {
+    return response;
+  }
+
   const assistantMsg = await prisma.chatMessage.create({
     data: {
       userId,
@@ -2707,32 +2712,49 @@ export async function getAiChatResponse(
     throw new Error("Pesan tidak boleh kosong");
   }
 
-  // 1. Simpan pesan user ke database
-  await prisma.chatMessage.create({
-    data: {
-      userId: input.userId,
-      role: "user",
-      content: normalizedMessage
-    }
+  // Cek apakah user ada di database
+  const userRecord = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true }
   });
 
-  // 2. Ambil riwayat chat terbaru untuk context Gemini (max 12)
-  const dbHistory = await prisma.chatMessage.findMany({
-    where: { userId: input.userId },
-    orderBy: { createdAt: "desc" },
-    take: 12
-  });
+  const shouldSaveToDb = !!userRecord;
 
-  // Urutkan kembali berdasarkan waktu menaik (asc) agar runtut
-  const sortedDbHistory = dbHistory.reverse();
+  if (shouldSaveToDb) {
+    // 1. Simpan pesan user ke database
+    await prisma.chatMessage.create({
+      data: {
+        userId: input.userId,
+        role: "user",
+        content: normalizedMessage
+      }
+    });
+  }
 
-  // Konversi ke format context history Gemini
-  const contextHistory: AiChatHistoryMessage[] = sortedDbHistory
-    .filter((msg) => msg.role === "user" || msg.role === "assistant")
-    .map((msg) => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content
-    }));
+  let contextHistory: AiChatHistoryMessage[] = [];
+
+  if (shouldSaveToDb) {
+    // 2. Ambil riwayat chat terbaru untuk context Gemini (max 12)
+    const dbHistory = await prisma.chatMessage.findMany({
+      where: { userId: input.userId },
+      orderBy: { createdAt: "desc" },
+      take: 12
+    });
+
+    const sortedDbHistory = dbHistory.reverse();
+
+    contextHistory = sortedDbHistory
+      .filter((msg) => msg.role === "user" || msg.role === "assistant")
+      .map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content
+      }));
+  }
+
+  // Jika riwayat dari DB kosong, gunakan input.history (jika dikirim oleh caller)
+  if (contextHistory.length === 0 && input.history && input.history.length > 0) {
+    contextHistory = input.history;
+  }
 
   const classification = classifyAiChatMessage(
     normalizedMessage,
@@ -2741,7 +2763,7 @@ export async function getAiChatResponse(
 
   if (classification.intent === "OUT_OF_SCOPE") {
     const response = buildOutOfScopeResponse();
-    return saveAssistantResponse(input.userId, response);
+    return saveAssistantResponse(input.userId, response, shouldSaveToDb);
   }
 
   if (classification.intent === "TRANSACTION_DRAFT") {
@@ -2751,7 +2773,7 @@ export async function getAiChatResponse(
     });
 
     const response = buildTransactionDraftResponse(drafts);
-    return saveAssistantResponse(input.userId, response);
+    return saveAssistantResponse(input.userId, response, shouldSaveToDb);
   }
 
   const financialContext = await getAiFinancialContext(input.userId);
@@ -2784,7 +2806,7 @@ export async function getAiChatResponse(
     purchaseDecision
   });
 
-  return saveAssistantResponse(input.userId, finalResponse);
+  return saveAssistantResponse(input.userId, finalResponse, shouldSaveToDb);
 }
 
 export async function getAiChatHistory(userId: string) {

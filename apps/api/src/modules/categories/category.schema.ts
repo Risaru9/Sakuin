@@ -16,7 +16,10 @@ const optionalStringFieldSchema = (maxLength: number, message: string) =>
 
 const limitSchema = z.preprocess(
   (val) => {
-    if (val === "" || val === null || val === undefined) {
+    if (val === undefined) {
+      return undefined;
+    }
+    if (val === "" || val === null) {
       return null;
     }
     const parsed = Number(val);
