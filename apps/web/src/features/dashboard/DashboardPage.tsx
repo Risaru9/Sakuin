@@ -2460,6 +2460,8 @@ export function DashboardPage() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
+  const [inlineText, setInlineText] = useState("");
+  const [quickTransactionInitialText, setQuickTransactionInitialText] = useState("");
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
     string | null
   >(null);
@@ -2593,6 +2595,13 @@ const profileQuery = useQuery({
   }
 
   function openDailyQuickTransaction() {
+    setQuickTransactionInitialText("");
+    setIsQuickTransactionOpen(true);
+  }
+
+  function openQuickTransactionWithText(text: string) {
+    setQuickTransactionInitialText(text);
+    setInlineText("");
     setIsQuickTransactionOpen(true);
   }
 
@@ -2829,6 +2838,34 @@ const profileQuery = useQuery({
                 </div>
               </div>
             )}
+
+            {/* Bar Catat Cepat inline di bawah kartu saldo */}
+            <form
+              className="flex items-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 shadow-sm transition-shadow focus-within:border-[var(--sakuin-primary)] focus-within:ring-2 focus-within:ring-[var(--sakuin-focus)]/20 sm:px-4 sm:py-2.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (inlineText.trim()) {
+                  openQuickTransactionWithText(inlineText.trim());
+                }
+              }}
+            >
+              <MessageSquare className="h-4 w-4 shrink-0 text-zinc-400" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[var(--sakuin-text)] outline-none placeholder:text-zinc-400"
+                placeholder="Catat cepat… contoh: makan siang 25000 atau gaji 3000000"
+                type="text"
+                value={inlineText}
+                onChange={(e) => setInlineText(e.target.value)}
+              />
+              {inlineText.trim() ? (
+                <button
+                  className="shrink-0 rounded-lg bg-[var(--sakuin-primary)] px-3 py-1.5 text-xs font-black text-white transition hover:opacity-90 active:scale-95"
+                  type="submit"
+                >
+                  Catat
+                </button>
+              ) : null}
+            </form>
 
             {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
             <div className="mt-1 flex gap-2 overflow-x-auto rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">
@@ -3122,6 +3159,7 @@ const profileQuery = useQuery({
         open={isQuickTransactionOpen}
         onClose={() => setIsQuickTransactionOpen(false)}
         onSuccess={handleTransactionSuccess}
+        initialText={quickTransactionInitialText}
       />
 
       <AddTransactionModal

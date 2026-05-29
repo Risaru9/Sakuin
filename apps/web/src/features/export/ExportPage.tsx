@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Database,
   Download,
-  FileJson,
   FileSpreadsheet,
   FileText,
   Filter,
@@ -29,13 +28,6 @@ import {
 const MAX_CUSTOM_FILE_NAME_LENGTH = 80;
 
 const exportOptions = [
-  {
-    format: "json" as const,
-    title: "Export JSON",
-    description:
-      "Cocok untuk backup data, integrasi teknis, atau kebutuhan arsip mentah.",
-    icon: FileJson
-  },
   {
     format: "csv" as const,
     title: "Export CSV",
@@ -275,7 +267,7 @@ export function ExportPage() {
             Export Data
           </h1>
           <p className="mt-1 text-sm font-medium text-zinc-600">
-            Unduh data transaksi dalam format JSON, CSV, atau Excel.
+            Unduh data transaksi dalam format CSV atau Excel.
           </p>
         </div>
 
@@ -456,7 +448,7 @@ export function ExportPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         {exportOptions.map((option) => {
           const Icon = option.icon;
           const isDownloading = downloadingFormat === option.format;
@@ -517,12 +509,7 @@ export function ExportPage() {
       <div className="mt-5 rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
         <h2 className="text-lg font-black text-[var(--sakuin-text)]">Catatan Export</h2>
 
-        <div className="mt-3 grid gap-3 text-sm leading-6 text-zinc-600 sm:grid-cols-3">
-          <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-4">
-            <p className="font-black text-[var(--sakuin-text)]">JSON</p>
-            <p className="mt-1">Cocok untuk backup dan kebutuhan teknis.</p>
-          </div>
-
+        <div className="mt-3 grid gap-3 text-sm leading-6 text-zinc-600 sm:grid-cols-2">
           <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-4">
             <p className="font-black text-[var(--sakuin-text)]">CSV</p>
             <p className="mt-1">

@@ -1,5 +1,5 @@
 import type { ApiRequestOptions, ApiResponse } from "../types/api";
-import { getStoredToken } from "./auth-storage";
+import { getStoredToken, removeStoredToken } from "./auth-storage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -26,6 +26,14 @@ function buildUrl(path: string) {
   }
 
   return `${API_BASE_URL}${normalizedPath}`;
+}
+
+function handleUnauthorized() {
+  removeStoredToken();
+  const currentPath = window.location.pathname;
+  if (currentPath !== "/login") {
+    window.location.replace("/login?expired=true");
+  }
 }
 
 export async function apiRequest<T>(
@@ -56,6 +64,11 @@ export async function apiRequest<T>(
   const isJson = contentType?.includes("application/json");
 
   if (!isJson) {
+    if (response.status === 401) {
+      handleUnauthorized();
+      throw new ApiClientError("Sesi telah berakhir, silakan login kembali", 401);
+    }
+
     if (!response.ok) {
       throw new ApiClientError(
         `Request gagal dengan status ${response.status}`,
@@ -67,6 +80,13 @@ export async function apiRequest<T>(
   }
 
   const result = (await response.json()) as ApiResponse<T>;
+
+  if (response.status === 401) {
+    handleUnauthorized();
+    const errMessage = result.success === false ? result.message : undefined;
+    const errErrors = result.success === false ? result.errors : undefined;
+    throw new ApiClientError(errMessage || "Sesi telah berakhir, silakan login kembali", 401, errErrors);
+  }
 
   if (result.success === false) {
     throw new ApiClientError(result.message, response.status, result.errors);
@@ -97,6 +117,11 @@ export async function apiDownload(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+      throw new ApiClientError("Sesi telah berakhir, silakan login kembali", 401);
+    }
+
     const contentType = response.headers.get("content-type");
 
     if (contentType?.includes("application/json")) {

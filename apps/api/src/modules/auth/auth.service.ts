@@ -25,7 +25,7 @@ import type {
 } from "./auth.types.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
-const TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
+const TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24; // 24 jam
 const RESET_PASSWORD_TOKEN_BYTES = 32;
 const RESET_PASSWORD_EXPIRES_IN_MINUTES = 30;
 const GOOGLE_PROVIDER = "google";

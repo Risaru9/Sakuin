@@ -32,8 +32,14 @@ export function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
 
   const locationState = location.state as { resetPasswordSuccess?: boolean } | null;
+  const searchParams = new URLSearchParams(location.search);
+  const isExpired = searchParams.get("expired") === "true";
+
   const successMessage = locationState?.resetPasswordSuccess
     ? "Password berhasil direset. Silakan login dengan password baru."
+    : null;
+  const expiredMessage = isExpired
+    ? "Sesi Anda telah berakhir. Silakan login kembali."
     : null;
 
   const [form, setForm] = useState({
@@ -178,7 +184,13 @@ export function LoginPage() {
               </p>
             </div>
 
-            {successMessage && !error ? (
+            {expiredMessage && !error ? (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm font-bold text-amber-700">
+                {expiredMessage}
+              </div>
+            ) : null}
+
+            {successMessage && !error && !expiredMessage ? (
               <div className="mb-6 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-4 py-3.5 text-sm font-bold text-[var(--sakuin-text)]">
                 {successMessage}
               </div>

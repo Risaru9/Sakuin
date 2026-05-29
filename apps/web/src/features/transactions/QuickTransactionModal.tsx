@@ -59,6 +59,7 @@ type QuickTransactionModalProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void | Promise<void>;
+  initialText?: string;
 };
 
 function getTodayInputValue() {
@@ -358,7 +359,8 @@ function validateDrafts(drafts: QuickTransactionDraft[]) {
 export function QuickTransactionModal({
   open,
   onClose,
-  onSuccess
+  onSuccess,
+  initialText
 }: QuickTransactionModalProps) {
   const rawInputRef = useRef<HTMLTextAreaElement | null>(null);
   const { addToast } = useToast();
@@ -722,10 +724,14 @@ export function QuickTransactionModal({
       return;
     }
 
+    if (initialText) {
+      setRawInput(initialText);
+    }
+
     window.setTimeout(() => {
       rawInputRef.current?.focus();
     }, 80);
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) {
     return null;
