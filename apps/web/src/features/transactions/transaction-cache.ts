@@ -207,9 +207,14 @@ function patchHabitForAdd(
   const isExpense = transaction.type === "EXPENSE";
   const isIncome = transaction.type === "INCOME";
 
+  const previouslyHadTransactionToday = habit.hasTransactionToday;
+
   const updatedHabit = {
     ...habit,
     hasTransactionToday: true,
+    currentStreakDays: !previouslyHadTransactionToday
+      ? (habit.currentStreakDays ?? 0) + 1
+      : (habit.currentStreakDays ?? 0),
     transactionsToday: (habit.transactionsToday ?? 0) + 1,
     todayTransactionCount: (habit.todayTransactionCount ?? 0) + 1,
     expenseTransactionsToday: isExpense
@@ -275,10 +280,14 @@ function patchHabitForDelete(
 
   const newTransactionsToday = Math.max((habit.transactionsToday ?? 0) - 1, 0);
   const newTodayTransactionCount = Math.max((habit.todayTransactionCount ?? 0) - 1, 0);
+  const previouslyHadTransactionToday = habit.hasTransactionToday;
 
   const updatedHabit = {
     ...habit,
     hasTransactionToday: newTodayTransactionCount > 0,
+    currentStreakDays: (previouslyHadTransactionToday && newTodayTransactionCount === 0)
+      ? Math.max((habit.currentStreakDays ?? 0) - 1, 0)
+      : (habit.currentStreakDays ?? 0),
     transactionsToday: newTransactionsToday,
     todayTransactionCount: newTodayTransactionCount,
     expenseTransactionsToday: isExpense

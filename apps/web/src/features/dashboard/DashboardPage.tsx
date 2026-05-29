@@ -60,6 +60,11 @@ import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
 import { getUserProfile } from "../profile/profile.service";
 import { completeRemoteDailyReview } from "../reminders/reminder.service";
 import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
+import {
+  subscribeToInstallPrompt,
+  isStandaloneMode,
+  type BeforeInstallPromptEvent
+} from "../../lib/pwa";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -1263,7 +1268,17 @@ function StatsDetailModal({
 function WidgetInfoModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll(true);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
   useEffect(() => {
+    // Berlangganan ke event beforeinstallprompt
+    const unsubscribe = subscribeToInstallPrompt((prompt) => {
+      setDeferredPrompt(prompt);
+    });
+
+    setIsStandalone(isStandaloneMode());
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -1273,6 +1288,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      unsubscribe();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
@@ -1284,10 +1300,18 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
   const isAndroid =
     typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 
-  const isStandalone =
-    typeof window !== "undefined" &&
-    (window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator && (navigator as any).standalone === true));
+  async function handleInstallClick() {
+    if (!deferredPrompt) {
+      return;
+    }
+
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === "accepted") {
+      onClose();
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
@@ -1355,7 +1379,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        {/* Status */}
+        {/* Action Button & Status */}
         {isStandalone ? (
           <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="text-sm font-black text-emerald-800">
@@ -1365,83 +1389,127 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               Kamu sudah menggunakan Sakuin sebagai app. Widget shortcut tersedia di layar utamamu.
             </p>
           </div>
-        ) : null}
-
-        {/* Panduan iOS */}
-        {isIos && !isStandalone ? (
-          <div className="space-y-3">
-            <p className="text-sm font-black text-[var(--sakuin-text)]">
-              Cara pasang di iPhone / iPad:
+        ) : deferredPrompt ? (
+          <div className="mb-4">
+            <button
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-primary)] text-sm font-black text-white shadow-lg transition hover:bg-[var(--sakuin-secondary)] active:scale-98"
+              onClick={handleInstallClick}
+              type="button"
+            >
+              Pasang Widget Sekarang
+            </button>
+            <p className="mt-2 text-center text-[10px] font-semibold text-zinc-400">
+              Browser akan memunculkan dialog konfirmasi pemasangan native.
             </p>
-            <div className="space-y-2">
-              {[
-                { step: "1", text: "Buka Sakuin di Safari (browser default Apple)" },
-                { step: "2", text: "Ketuk ikon Share (kotak dengan panah ke atas) di toolbar Safari" },
-                { step: "3", text: "Scroll ke bawah dan pilih \"Add to Home Screen\"" },
-                { step: "4", text: "Ketuk \"Add\" di pojok kanan atas" },
-                { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
-              ].map((item) => (
-                <div className="flex gap-3" key={item.step}>
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                    {item.step}
-                  </div>
-                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
-                </div>
-              ))}
-            </div>
           </div>
         ) : null}
 
-        {/* Panduan Android */}
-        {isAndroid && !isStandalone ? (
-          <div className="space-y-3">
-            <p className="text-sm font-black text-[var(--sakuin-text)]">
-              Cara pasang di Android:
+        {/* Panduan Mengatur Widget (Muncul jika sudah standalone atau siap pasang) */}
+        {(isStandalone || deferredPrompt) && (
+          <div className="mb-4 space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+            <p className="text-xs font-black text-[var(--sakuin-text)]">
+              Cara Mengeluarkan & Mengatur Ukuran Widget:
             </p>
             <div className="space-y-2">
-              {[
-                { step: "1", text: "Buka Sakuin di Chrome" },
-                { step: "2", text: "Ketuk ikon titik tiga (⋮) di pojok kanan atas" },
-                { step: "3", text: "Pilih \"Add to Home Screen\" atau \"Install App\"" },
-                { step: "4", text: "Konfirmasi dengan ketuk \"Add\"" },
-                { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
-              ].map((item) => (
-                <div className="flex gap-3" key={item.step}>
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                    {item.step}
-                  </div>
-                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
-                </div>
-              ))}
+              <div className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">1</span>
+                <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
+                  <strong>Buka Galeri Widget:</strong> Tekan lama area kosong di layar utama HP kamu, lalu ketuk menu <strong>Widget</strong>.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">2</span>
+                <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
+                  <strong>Cari Sakuin:</strong> Ketik atau cari <strong>Sakuin</strong> (atau browser Chrome/Safari kamu jika menggunakan shortcut), lalu pilih widget Sakuin dan tambahkan ke layar utama.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">3</span>
+                <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
+                  <strong>Atur Besar/Kecil Widget:</strong> Tekan lama widget yang ada di layar utama, lalu tarik ujung/tepi kotak untuk menyesuaikan ukuran sesukamu.
+                </p>
+              </div>
             </div>
           </div>
-        ) : null}
+        )}
 
-        {/* Panduan Desktop / umum */}
-        {!isIos && !isAndroid && !isStandalone ? (
-          <div className="space-y-3">
-            <p className="text-sm font-black text-[var(--sakuin-text)]">
-              Cara pasang Sakuin:
-            </p>
-            <div className="space-y-2">
-              {[
-                { step: "1", text: "Di Chrome/Edge: cari ikon Install (🖥️) di address bar" },
-                { step: "2", text: "Di mobile: buka menu browser → \"Add to Home Screen\"" },
-                { step: "3", text: "Konfirmasi pemasangan" },
-                { step: "4", text: "Sakuin akan muncul di layar utama atau desktop kamu" }
-              ].map((item) => (
-                <div className="flex gap-3" key={item.step}>
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                    {item.step}
-                  </div>
-                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+        {/* Panduan Manual Fallback (Hanya jika belum standalone DAN prompt native tidak didukung browser) */}
+        {!isStandalone && !deferredPrompt && (
+          <div className="space-y-4">
+            {isIos && (
+              <div className="space-y-3">
+                <p className="text-sm font-black text-[var(--sakuin-text)]">
+                  Cara pasang di iPhone / iPad:
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { step: "1", text: "Buka Sakuin di Safari (browser default Apple)" },
+                    { step: "2", text: "Ketuk ikon Share (kotak dengan panah ke atas) di toolbar Safari" },
+                    { step: "3", text: "Scroll ke bawah dan pilih \"Add to Home Screen\"" },
+                    { step: "4", text: "Ketuk \"Add\" di pojok kanan atas" },
+                    { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
+                  ].map((item) => (
+                    <div className="flex gap-3" key={item.step}>
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                        {item.step}
+                      </div>
+                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+              </div>
+            )}
 
-        <div className="mt-5 rounded-2xl bg-slate-50 p-3">
+            {isAndroid && (
+              <div className="space-y-3">
+                <p className="text-sm font-black text-[var(--sakuin-text)]">
+                  Cara pasang di Android:
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { step: "1", text: "Buka Sakuin di Chrome" },
+                    { step: "2", text: "Ketuk ikon titik tiga (⋮) di pojok kanan atas" },
+                    { step: "3", text: "Pilih \"Add to Home Screen\" atau \"Install App\"" },
+                    { step: "4", text: "Konfirmasi dengan ketuk \"Add\"" },
+                    { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
+                  ].map((item) => (
+                    <div className="flex gap-3" key={item.step}>
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                        {item.step}
+                      </div>
+                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isIos && !isAndroid && (
+              <div className="space-y-3">
+                <p className="text-sm font-black text-[var(--sakuin-text)]">
+                  Cara pasang Sakuin:
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { step: "1", text: "Di Chrome/Edge: cari ikon Install (🖥️) di address bar" },
+                    { step: "2", text: "Di mobile: buka menu browser → \"Add to Home Screen\"" },
+                    { step: "3", text: "Konfirmasi pemasangan" },
+                    { step: "4", text: "Sakuin akan muncul di layar utama atau desktop kamu" }
+                  ].map((item) => (
+                    <div className="flex gap-3" key={item.step}>
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                        {item.step}
+                      </div>
+                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 rounded-2xl bg-slate-50 p-3">
           <p className="text-[11px] font-semibold leading-5 text-zinc-500">
             💡 Setelah terpasang, buka Sakuin dari layar utama untuk mendapatkan pengalaman penuh seperti aplikasi native, termasuk notifikasi pengingat dan akses cepat ke pencatatan transaksi.
           </p>
@@ -2799,11 +2867,12 @@ const profileQuery = useQuery({
 
   function handleTransactionSuccess() {
     completeDailyReview();
-    refreshDashboardData();
-    setShowCelebration(true);
-    window.setTimeout(() => {
-      setShowCelebration(false);
-    }, 2000);
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.summary
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.transactions.all
+    });
   }
 
   function retrySummaryData() {
@@ -3363,18 +3432,7 @@ const profileQuery = useQuery({
         onSuccess={handleTransactionSuccess}
       />
 
-      {/* Pop-up Perayaan Umpan Balik Mikro */}
-      {showCelebration ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition-opacity duration-300">
-          <div className="scale-95 animate-pop-check flex flex-col items-center justify-center rounded-[var(--sakuin-radius-card)] bg-white p-6 shadow-2xl ring-1 ring-emerald-100">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-[sakuinSoftPulse_1.5s_ease-in-out_infinite]">
-              <CheckCircle2 className="h-10 w-10" />
-            </div>
-            <p className="mt-4 text-base font-black text-[var(--sakuin-text)]">Transaksi Berhasil Dicatat!</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">Streak dan ritme keuangan diperbarui.</p>
-          </div>
-        </div>
-      ) : null}
+      {/* Modal perayaan tengah layar telah dihapus untuk kenyamanan input transaksi ulang secara langsung */}
 
       {/* Modal Streak Milestone */}
       {milestoneToShow ? (

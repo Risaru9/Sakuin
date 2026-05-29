@@ -568,7 +568,7 @@ export function buildHabitSummary(input: {
 
   const activeDateKeys = new Set<string>();
 
-  for (const transaction of monthTransactions) {
+  for (const transaction of observedTransactions) {
     activeDateKeys.add(getZonedDateKey(transaction.date));
   }
 
