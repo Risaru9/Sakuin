@@ -5,7 +5,7 @@ import {
   useRef,
   useState
 } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -1114,6 +1114,7 @@ function ClearHistoryDialog({
 export function AsistenPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const userMessageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -1943,13 +1944,20 @@ export function AsistenPage() {
       <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white text-slate-950 lg:static lg:z-auto lg:mx-auto lg:h-[calc(100vh-4rem)] lg:max-w-7xl lg:rounded-[1.75rem] lg:border lg:border-[var(--sakuin-border)] lg:shadow-xl lg:shadow-black/5">
         <header className="shrink-0 border-b border-[var(--sakuin-border)] bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5 sm:py-4 lg:px-6 lg:pt-4">
           <div className="flex items-start gap-3">
-            <Link
-              aria-label="Kembali ke dashboard"
+            <button
+              aria-label="Kembali ke halaman sebelumnya"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
-              to="/dashboard"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate("/dashboard", { replace: true });
+                }
+              }}
+              type="button"
             >
               <ArrowLeft className="h-4 w-4" />
-            </Link>
+            </button>
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

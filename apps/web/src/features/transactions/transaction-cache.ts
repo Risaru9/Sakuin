@@ -63,6 +63,29 @@ function isTransactionInCurrentMonth(transaction: Transaction) {
   return transactionDate >= startDate && transactionDate < endDate;
 }
 
+function isTransactionToday(transaction: Transaction) {
+  const transactionDate = new Date(transaction.date);
+
+  if (Number.isNaN(transactionDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  return transactionDate >= todayStart && transactionDate <= todayEnd;
+}
+
+function getLocalTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function getSignedIncomeDelta(transaction: Transaction) {
   return transaction.type === "INCOME" ? toNumber(transaction.amount) : 0;
 }
@@ -166,6 +189,142 @@ function removeRecentTransaction(
   return recentTransactions.filter((item) => item.id !== transactionId);
 }
 
+function patchHabitForAdd(
+  habit: SummaryData["habit"],
+  transaction: Transaction
+): SummaryData["habit"] {
+  if (!habit) {
+    return habit;
+  }
+
+  const transactionIsToday = isTransactionToday(transaction);
+  const todayDateString = getLocalTodayDateString();
+
+  if (!transactionIsToday) {
+    return habit;
+  }
+
+  const isExpense = transaction.type === "EXPENSE";
+  const isIncome = transaction.type === "INCOME";
+
+  const updatedHabit = {
+    ...habit,
+    hasTransactionToday: true,
+    transactionsToday: (habit.transactionsToday ?? 0) + 1,
+    todayTransactionCount: (habit.todayTransactionCount ?? 0) + 1,
+    expenseTransactionsToday: isExpense
+      ? (habit.expenseTransactionsToday ?? 0) + 1
+      : (habit.expenseTransactionsToday ?? 0),
+    todayExpenseCount: isExpense
+      ? (habit.todayExpenseCount ?? 0) + 1
+      : (habit.todayExpenseCount ?? 0),
+    todayIncomeCount: isIncome
+      ? (habit.todayIncomeCount ?? 0) + 1
+      : (habit.todayIncomeCount ?? 0)
+  };
+
+  // Update dayRhythm entry untuk hari ini
+  if (habit.dayRhythm && habit.dayRhythm.length === 7) {
+    const updatedDayRhythm = habit.dayRhythm.map((day) => {
+      if (day.date === todayDateString || day.isToday) {
+        const newExpense = isExpense
+          ? formatSummaryAmount(toNumber(day.expense) + toNumber(transaction.amount))
+          : day.expense;
+        const newIncome = isIncome
+          ? formatSummaryAmount(toNumber(day.income) + toNumber(transaction.amount))
+          : day.income;
+
+        return {
+          ...day,
+          hasTransaction: true,
+          transactionCount: day.transactionCount + 1,
+          income: newIncome,
+          expense: newExpense
+        };
+      }
+
+      return day;
+    });
+
+    return {
+      ...updatedHabit,
+      dayRhythm: updatedDayRhythm
+    };
+  }
+
+  return updatedHabit;
+}
+
+function patchHabitForDelete(
+  habit: SummaryData["habit"],
+  transaction: Transaction
+): SummaryData["habit"] {
+  if (!habit) {
+    return habit;
+  }
+
+  const transactionIsToday = isTransactionToday(transaction);
+  const todayDateString = getLocalTodayDateString();
+
+  if (!transactionIsToday) {
+    return habit;
+  }
+
+  const isExpense = transaction.type === "EXPENSE";
+  const isIncome = transaction.type === "INCOME";
+
+  const newTransactionsToday = Math.max((habit.transactionsToday ?? 0) - 1, 0);
+  const newTodayTransactionCount = Math.max((habit.todayTransactionCount ?? 0) - 1, 0);
+
+  const updatedHabit = {
+    ...habit,
+    hasTransactionToday: newTodayTransactionCount > 0,
+    transactionsToday: newTransactionsToday,
+    todayTransactionCount: newTodayTransactionCount,
+    expenseTransactionsToday: isExpense
+      ? Math.max((habit.expenseTransactionsToday ?? 0) - 1, 0)
+      : (habit.expenseTransactionsToday ?? 0),
+    todayExpenseCount: isExpense
+      ? Math.max((habit.todayExpenseCount ?? 0) - 1, 0)
+      : (habit.todayExpenseCount ?? 0),
+    todayIncomeCount: isIncome
+      ? Math.max((habit.todayIncomeCount ?? 0) - 1, 0)
+      : (habit.todayIncomeCount ?? 0)
+  };
+
+  // Update dayRhythm entry untuk hari ini
+  if (habit.dayRhythm && habit.dayRhythm.length === 7) {
+    const updatedDayRhythm = habit.dayRhythm.map((day) => {
+      if (day.date === todayDateString || day.isToday) {
+        const newExpense = isExpense
+          ? formatSummaryAmount(Math.max(toNumber(day.expense) - toNumber(transaction.amount), 0))
+          : day.expense;
+        const newIncome = isIncome
+          ? formatSummaryAmount(Math.max(toNumber(day.income) - toNumber(transaction.amount), 0))
+          : day.income;
+        const newCount = Math.max(day.transactionCount - 1, 0);
+
+        return {
+          ...day,
+          hasTransaction: newCount > 0,
+          transactionCount: newCount,
+          income: newIncome,
+          expense: newExpense
+        };
+      }
+
+      return day;
+    });
+
+    return {
+      ...updatedHabit,
+      dayRhythm: updatedDayRhythm
+    };
+  }
+
+  return updatedHabit;
+}
+
 function patchSummaryAmountsForAdd(
   summary: SummaryData,
   transaction: Transaction
@@ -204,7 +363,8 @@ function patchSummaryAmountsForAdd(
     recentTransactions: addRecentTransaction(
       summary.recentTransactions,
       transaction
-    )
+    ),
+    habit: patchHabitForAdd(summary.habit, transaction)
   };
 }
 
@@ -246,7 +406,8 @@ function patchSummaryAmountsForDelete(
     recentTransactions: removeRecentTransaction(
       summary.recentTransactions,
       transaction.id
-    )
+    ),
+    habit: patchHabitForDelete(summary.habit, transaction)
   };
 }
 

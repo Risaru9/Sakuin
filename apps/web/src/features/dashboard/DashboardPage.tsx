@@ -5,7 +5,6 @@ import {
   Activity,
   AlertTriangle,
   ArrowDownCircle,
-  ArrowRight,
   ArrowUpCircle,
   CalendarCheck2,
   CalendarDays,
@@ -13,12 +12,12 @@ import {
   CheckCircle2,
   Clock3,
   Download,
-  ListChecks,
   Loader2,
   MessageSquare,
   PiggyBank,
   Plus,
   Settings,
+  Smartphone,
   WalletCards,
   X
 } from "lucide-react";
@@ -1261,32 +1260,219 @@ function StatsDetailModal({
   );
 }
 
+function WidgetInfoModal({ onClose }: { onClose: () => void }) {
+  useLockBodyScroll(true);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  const isIos =
+    typeof navigator !== "undefined" &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  const isAndroid =
+    typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
+  const isStandalone =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(display-mode: standalone)").matches ||
+      ("standalone" in navigator && (navigator as any).standalone === true));
+
+  return (
+    <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
+      <button
+        aria-label="Tutup"
+        className="absolute inset-0 bg-[var(--sakuin-secondary)]/40 backdrop-blur-md"
+        onClick={onClose}
+        type="button"
+      />
+
+      <div
+        aria-modal="true"
+        className="relative z-[211] max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border border-white/70 bg-white p-4 shadow-[0_-24px_70px_rgba(15,23,42,0.22)] sm:max-w-lg sm:rounded-[2rem] sm:p-6"
+        role="dialog"
+      >
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-base font-black text-[var(--sakuin-text)]">
+              Tambah ke Layar Utama
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-zinc-500">
+              Pantau keuanganmu langsung dari home screen.
+            </p>
+          </div>
+          <button
+            aria-label="Tutup"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Widget preview */}
+        <div className="mb-5 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-bg)] p-4">
+          <p className="mb-3 text-xs font-black uppercase tracking-wide text-zinc-500">
+            Tampilan Widget
+          </p>
+          <div className="flex gap-3">
+            {/* Widget hemat */}
+            <div className="flex-1 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-3 text-white shadow-lg">
+              <p className="text-[10px] font-black uppercase tracking-wide opacity-80">
+                Sakuin
+              </p>
+              <p className="mt-1 text-xs font-black">Kondisi Keuangan</p>
+              <p className="mt-2 text-xl font-black">😊</p>
+              <p className="mt-1 text-[10px] font-black opacity-90">Hemat</p>
+              <p className="text-[9px] opacity-70">Hari ini sudah tercatat</p>
+            </div>
+            {/* Widget boros */}
+            <div className="flex-1 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-3 text-white shadow-lg">
+              <p className="text-[10px] font-black uppercase tracking-wide opacity-80">
+                Sakuin
+              </p>
+              <p className="mt-1 text-xs font-black">Kondisi Keuangan</p>
+              <p className="mt-2 text-xl font-black">😅</p>
+              <p className="mt-1 text-[10px] font-black opacity-90">Boros</p>
+              <p className="text-[9px] opacity-70">Belum catat hari ini</p>
+            </div>
+          </div>
+          <p className="mt-2 text-center text-[10px] font-semibold text-zinc-400">
+            Ikon berubah otomatis sesuai kondisi keuanganmu
+          </p>
+        </div>
+
+        {/* Status */}
+        {isStandalone ? (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-black text-emerald-800">
+              ✅ Sakuin sudah terpasang!
+            </p>
+            <p className="mt-1 text-xs font-medium text-emerald-700">
+              Kamu sudah menggunakan Sakuin sebagai app. Widget shortcut tersedia di layar utamamu.
+            </p>
+          </div>
+        ) : null}
+
+        {/* Panduan iOS */}
+        {isIos && !isStandalone ? (
+          <div className="space-y-3">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Cara pasang di iPhone / iPad:
+            </p>
+            <div className="space-y-2">
+              {[
+                { step: "1", text: "Buka Sakuin di Safari (browser default Apple)" },
+                { step: "2", text: "Ketuk ikon Share (kotak dengan panah ke atas) di toolbar Safari" },
+                { step: "3", text: "Scroll ke bawah dan pilih \"Add to Home Screen\"" },
+                { step: "4", text: "Ketuk \"Add\" di pojok kanan atas" },
+                { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
+              ].map((item) => (
+                <div className="flex gap-3" key={item.step}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                    {item.step}
+                  </div>
+                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Panduan Android */}
+        {isAndroid && !isStandalone ? (
+          <div className="space-y-3">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Cara pasang di Android:
+            </p>
+            <div className="space-y-2">
+              {[
+                { step: "1", text: "Buka Sakuin di Chrome" },
+                { step: "2", text: "Ketuk ikon titik tiga (⋮) di pojok kanan atas" },
+                { step: "3", text: "Pilih \"Add to Home Screen\" atau \"Install App\"" },
+                { step: "4", text: "Konfirmasi dengan ketuk \"Add\"" },
+                { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
+              ].map((item) => (
+                <div className="flex gap-3" key={item.step}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                    {item.step}
+                  </div>
+                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Panduan Desktop / umum */}
+        {!isIos && !isAndroid && !isStandalone ? (
+          <div className="space-y-3">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Cara pasang Sakuin:
+            </p>
+            <div className="space-y-2">
+              {[
+                { step: "1", text: "Di Chrome/Edge: cari ikon Install (🖥️) di address bar" },
+                { step: "2", text: "Di mobile: buka menu browser → \"Add to Home Screen\"" },
+                { step: "3", text: "Konfirmasi pemasangan" },
+                { step: "4", text: "Sakuin akan muncul di layar utama atau desktop kamu" }
+              ].map((item) => (
+                <div className="flex gap-3" key={item.step}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                    {item.step}
+                  </div>
+                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-5 rounded-2xl bg-slate-50 p-3">
+          <p className="text-[11px] font-semibold leading-5 text-zinc-500">
+            💡 Setelah terpasang, buka Sakuin dari layar utama untuk mendapatkan pengalaman penuh seperti aplikasi native, termasuk notifikasi pengingat dan akses cepat ke pencatatan transaksi.
+          </p>
+        </div>
+
+        <button
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-primary)] text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
+          onClick={onClose}
+          type="button"
+        >
+          Mengerti, tutup
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FinancialRhythmCard({
   summary,
   goals,
   isLoading,
-  selectedRange,
-  selectedMode,
-  selectedValueType,
-  onRangeChange,
-  onModeChange,
-  onValueTypeChange,
   onOpenAddTransaction,
   onOpenQuickTransaction
 }: {
   summary: SummaryData | null;
   goals: Goal[];
   isLoading: boolean;
-  selectedRange: StatsRange;
-  selectedMode: StatsMode;
-  selectedValueType: StatsValueType;
-  onRangeChange: (value: StatsRange) => void;
-  onModeChange: (value: StatsMode) => void;
-  onValueTypeChange: (value: StatsValueType) => void;
   onOpenAddTransaction: () => void;
   onOpenQuickTransaction: () => void;
 }) {
-  const [isStatsDetailOpen, setIsStatsDetailOpen] = useState(false);
+  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const hasActiveGoals = goals.length > 0;
   const rhythm = useMemo(
     () =>
@@ -1413,35 +1599,21 @@ function FinancialRhythmCard({
           </div>
         </div>
 
-        {/* Action button to open detailed statistics */}
+        {/* Tombol Tambah Widget */}
         <button
           className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-          onClick={() => setIsStatsDetailOpen(true)}
+          onClick={() => setIsWidgetModalOpen(true)}
           type="button"
         >
-          <ListChecks className="h-3.5 w-3.5" />
-          Lihat Analisis Pengeluaran
-          <ArrowRight className="h-3.5 w-3.5" />
+          <Smartphone className="h-3.5 w-3.5" />
+          Tambah ke Layar Utama
         </button>
       </section>
 
-      <StatsDetailModal
-        onClose={() => setIsStatsDetailOpen(false)}
-        open={isStatsDetailOpen}
-      >
-        <SixMonthStatsCard
-          expenseByCategory={summary?.expenseByCategory ?? []}
-          incomeByCategory={summary?.incomeByCategory ?? []}
-          isLoading={false}
-          items={summary?.monthlyTrend ?? []}
-          onModeChange={onModeChange}
-          onRangeChange={onRangeChange}
-          onValueTypeChange={onValueTypeChange}
-          selectedMode={selectedMode}
-          selectedRange={selectedRange}
-          selectedValueType={selectedValueType}
-        />
-      </StatsDetailModal>
+      {/* Widget Info Modal */}
+      {isWidgetModalOpen && (
+        <WidgetInfoModal onClose={() => setIsWidgetModalOpen(false)} />
+      )}
     </>
   );
 }
@@ -2943,16 +3115,8 @@ const profileQuery = useQuery({
               <FinancialRhythmCard
                 goals={goals}
                 isLoading={isLoadingSummary}
-                onModeChange={(value) => updateStatsSearchParams({ mode: value })}
                 onOpenAddTransaction={() => setIsAddTransactionOpen(true)}
                 onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
-                onRangeChange={(value) => updateStatsSearchParams({ range: value })}
-                onValueTypeChange={(value) =>
-                  updateStatsSearchParams({ valueType: value })
-                }
-                selectedMode={selectedStatsMode}
-                selectedRange={selectedStatsRange}
-                selectedValueType={selectedStatsValueType}
                 summary={summary}
               />
 
@@ -3102,16 +3266,8 @@ const profileQuery = useQuery({
                 <FinancialRhythmCard
                   goals={goals}
                   isLoading={isLoadingSummary}
-                  onModeChange={(value) => updateStatsSearchParams({ mode: value })}
                   onOpenAddTransaction={() => setIsAddTransactionOpen(true)}
                   onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
-                  onRangeChange={(value) => updateStatsSearchParams({ range: value })}
-                  onValueTypeChange={(value) =>
-                    updateStatsSearchParams({ valueType: value })
-                  }
-                  selectedMode={selectedStatsMode}
-                  selectedRange={selectedStatsRange}
-                  selectedValueType={selectedStatsValueType}
                   summary={summary}
                 />
               ) : null}

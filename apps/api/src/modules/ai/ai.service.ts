@@ -2720,21 +2720,11 @@ export async function getAiChatResponse(
 
   const shouldSaveToDb = !!userRecord;
 
-  if (shouldSaveToDb) {
-    // 1. Simpan pesan user ke database
-    await prisma.chatMessage.create({
-      data: {
-        userId: input.userId,
-        role: "user",
-        content: normalizedMessage
-      }
-    });
-  }
-
   let contextHistory: AiChatHistoryMessage[] = [];
 
   if (shouldSaveToDb) {
-    // 2. Ambil riwayat chat terbaru untuk context Gemini (max 12)
+    // 1. Ambil riwayat chat SEBELUM menyimpan pesan user saat ini
+    // agar konteks tidak terkontaminasi oleh pesan yang sedang diproses
     const dbHistory = await prisma.chatMessage.findMany({
       where: { userId: input.userId },
       orderBy: { createdAt: "desc" },
@@ -2752,8 +2742,28 @@ export async function getAiChatResponse(
   }
 
   // Jika riwayat dari DB kosong, gunakan input.history (jika dikirim oleh caller)
+  // Ini memastikan test dan integrasi frontend yang mengirim history eksplisit tetap bekerja
   if (contextHistory.length === 0 && input.history && input.history.length > 0) {
     contextHistory = input.history;
+  } else if (contextHistory.length > 0 && input.history && input.history.length > 0) {
+    // Jika DB history ada tapi lebih pendek dari input.history, coba merge
+    // Prioritaskan input.history jika lebih banyak konteks (misal: dari frontend dengan full chat)
+    const dbHistoryLength = contextHistory.length;
+    const inputHistoryLength = input.history.length;
+    if (inputHistoryLength > dbHistoryLength) {
+      contextHistory = input.history;
+    }
+  }
+
+  if (shouldSaveToDb) {
+    // 2. Simpan pesan user ke database setelah ambil history
+    await prisma.chatMessage.create({
+      data: {
+        userId: input.userId,
+        role: "user",
+        content: normalizedMessage
+      }
+    });
   }
 
   const classification = classifyAiChatMessage(
