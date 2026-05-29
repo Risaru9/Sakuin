@@ -356,6 +356,40 @@ describe("Export API", () => {
     expect(csv).not.toContain("Makan rahasia user B");
   }, 20000);
 
+  it("GET /api/export/transactions?format=csv menetralkan formula spreadsheet dari data user", async () => {
+    const formulaCategory = await prisma.category.create({
+      data: {
+        userId: userAId,
+        name: "=Formula Category",
+        type: TransactionType.EXPENSE,
+        icon: "alert-triangle",
+        color: "#ef4444"
+      }
+    });
+
+    await createTransaction(tokenA, {
+      type: "EXPENSE",
+      amount: "5000",
+      categoryId: formulaCategory.id,
+      note: "=2+3"
+    });
+
+    const response = await app.request("/api/export/transactions?format=csv", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${tokenA}`
+      }
+    });
+
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(csv).toContain(",'=Formula Category,");
+    expect(csv).toContain(",'=2+3,");
+    expect(csv).not.toContain(",=Formula Category,");
+    expect(csv).not.toContain(",=2+3,");
+  }, 20000);
+
   it("GET /api/export/transactions?format=xlsx berhasil export XLSX", async () => {
     const response = await app.request("/api/export/transactions?format=xlsx", {
       method: "GET",

@@ -141,6 +141,14 @@ export async function getTransactionsExportData(
   };
 }
 
+function escapeSpreadsheetText(value: string) {
+  if (/^[=+\-@\t\r]/.test(value)) {
+    return `'${value}`;
+  }
+
+  return value;
+}
+
 function escapeCsvValue(value: string | number | null) {
   if (value === null) {
     return "";
@@ -188,9 +196,9 @@ export function buildTransactionsCsv(data: ExportTransactionsData) {
       transaction.date,
       transaction.type,
       transaction.category.id,
-      transaction.category.name,
+      escapeSpreadsheetText(transaction.category.name),
       transaction.amount,
-      transaction.note,
+      transaction.note ? escapeSpreadsheetText(transaction.note) : null,
       transaction.createdAt,
       transaction.updatedAt
     ]);
@@ -312,9 +320,9 @@ export async function buildTransactionsXlsx(
       date: transaction.date,
       type: transaction.type,
       categoryId: transaction.category.id,
-      categoryName: transaction.category.name,
+      categoryName: escapeSpreadsheetText(transaction.category.name),
       amount: Number(transaction.amount),
-      note: transaction.note ?? "",
+      note: transaction.note ? escapeSpreadsheetText(transaction.note) : "",
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt
     });
