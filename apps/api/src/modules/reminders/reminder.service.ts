@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
+import { getAiFinancialContext } from "../ai/ai-financial-context.js";
 import type {
   CompleteDailyReviewInput,
   DeletePushSubscriptionInput,
@@ -364,10 +365,58 @@ function shouldSendReminder(input: {
   return hasReachedReminderDelay(input);
 }
 
-function buildNotificationPayload() {
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+async function buildDynamicNotificationPayload(
+  userId: string,
+  timezoneOffsetMinutes: number,
+  now: Date
+) {
+  const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000;
+  const localNow = new Date(now.getTime() - timezoneOffsetMs);
+  const startOfLocalToday = new Date(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(), 0, 0, 0));
+  const endOfLocalToday = new Date(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(), 23, 59, 59, 999));
+
+  const startOfUtcToday = new Date(startOfLocalToday.getTime() + timezoneOffsetMs);
+  const endOfUtcToday = new Date(endOfLocalToday.getTime() + timezoneOffsetMs);
+
+  const todayTransactions = await prisma.transaction.findMany({
+    where: {
+      userId,
+      date: {
+        gte: startOfUtcToday,
+        lte: endOfUtcToday
+      }
+    }
+  });
+
+  const todayExpenseSum = todayTransactions
+    .filter((transaction) => transaction.type === "EXPENSE")
+    .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+  let availableToSpend = 0;
+  try {
+    const finContext = await getAiFinancialContext(userId, now);
+    availableToSpend = finContext.safeToSpend.availableToSpend;
+  } catch (error) {
+    console.error(`Failed to fetch safe-to-spend for user ${userId}:`, error);
+  }
+
+  const formattedExpense = formatRupiah(todayExpenseSum);
+  const formattedSafeToSpend = formatRupiah(availableToSpend);
+
   return JSON.stringify({
     title: "Review transaksi hari ini",
-    body: "Ada transaksi yang belum dicatat? Cek 30 detik supaya dashboard tetap akurat.",
+    body:
+      todayExpenseSum > 0
+        ? `Hari ini kamu belanja ${formattedExpense}, sisa Safe-to-Spend ${formattedSafeToSpend}. Catat transaksi lainnya malam ini?`
+        : `Sisa Safe-to-Spend kamu ${formattedSafeToSpend}. Ada pengeluaran yang belum dicatat hari ini?`,
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",
     tag: "sakuin-transaction-reminder",
@@ -470,7 +519,11 @@ export async function runReminderCron(): Promise<RunReminderCronResult> {
       continue;
     }
 
-    const payload = buildNotificationPayload();
+    const payload = await buildDynamicNotificationPayload(
+      preference.userId,
+      preference.timezoneOffsetMinutes,
+      now
+    );
     let userSentCount = 0;
 
     for (const subscription of preference.user.pushSubscriptions) {

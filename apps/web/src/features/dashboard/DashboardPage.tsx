@@ -2586,6 +2586,26 @@ const profileQuery = useQuery({
     setDailyReviewCompletedDate(getStoredDailyReviewDate(dailyReviewStorageKey));
   }, [dailyReviewStorageKey]);
 
+  const [milestoneToShow, setMilestoneToShow] = useState<number | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    if (summary?.habit?.currentStreakDays) {
+      const currentStreak = summary.habit.currentStreakDays;
+      const milestones = [3, 7, 30];
+      const matchingMilestone = milestones.find((m) => currentStreak === m);
+
+      if (matchingMilestone) {
+        const storageKey = `sakuin_streak_milestone_${user?.id ?? "default"}_${matchingMilestone}`;
+        const hasShown = localStorage.getItem(storageKey);
+        if (!hasShown) {
+          setMilestoneToShow(matchingMilestone);
+          localStorage.setItem(storageKey, "true");
+        }
+      }
+    }
+  }, [summary?.habit?.currentStreakDays, user?.id]);
+
   function completeDailyReview() {
     setStoredDailyReviewDate(dailyReviewStorageKey, todayReviewDate);
     setDailyReviewCompletedDate(todayReviewDate);
@@ -2613,6 +2633,10 @@ const profileQuery = useQuery({
   function handleTransactionSuccess() {
     completeDailyReview();
     refreshDashboardData();
+    setShowCelebration(true);
+    window.setTimeout(() => {
+      setShowCelebration(false);
+    }, 2000);
   }
 
   function retrySummaryData() {
@@ -3167,6 +3191,59 @@ const profileQuery = useQuery({
         onClose={() => setIsAddTransactionOpen(false)}
         onSuccess={handleTransactionSuccess}
       />
+
+      {/* Pop-up Perayaan Umpan Balik Mikro */}
+      {showCelebration ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition-opacity duration-300">
+          <div className="scale-95 animate-pop-check flex flex-col items-center justify-center rounded-[var(--sakuin-radius-card)] bg-white p-6 shadow-2xl ring-1 ring-emerald-100">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-[sakuinSoftPulse_1.5s_ease-in-out_infinite]">
+              <CheckCircle2 className="h-10 w-10" />
+            </div>
+            <p className="mt-4 text-base font-black text-[var(--sakuin-text)]">Transaksi Berhasil Dicatat!</p>
+            <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">Streak dan ritme keuangan diperbarui.</p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Modal Streak Milestone */}
+      {milestoneToShow ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="relative w-full max-w-sm scale-95 animate-in fade-in zoom-in-95 duration-300 rounded-[var(--sakuin-radius-card)] border border-[var(--sakuin-border)] bg-white p-6 shadow-2xl text-center overflow-hidden">
+            {/* Confetti Particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="confetti-particle red"></div>
+              <div className="confetti-particle blue"></div>
+              <div className="confetti-particle yellow"></div>
+              <div className="confetti-particle green"></div>
+              <div className="confetti-particle orange"></div>
+            </div>
+            
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600 ring-4 ring-amber-50">
+              <PiggyBank className="h-9 w-9 animate-[sakuinFloat_3s_ease-in-out_infinite]" />
+            </div>
+            
+            <h3 className="mt-5 text-xl font-black text-[var(--sakuin-text)]">
+              Habit Streak {milestoneToShow} Hari! 🎉
+            </h3>
+            
+            <p className="mt-2.5 text-xs font-semibold leading-5 text-zinc-600">
+              {milestoneToShow === 3 && "Hebat! Kamu mulai konsisten mencatat keuangan selama 3 hari berturut-turut. Kebiasaan kecil membawa dampak besar!"}
+              {milestoneToShow === 7 && "Luar biasa! 1 minggu penuh tanpa terlewat. Kamu selangkah lebih dekat dengan stabilitas keuangan jangka panjang!"}
+              {milestoneToShow === 30 && "Super sekali! Streak 30 hari adalah pencapaian luar biasa. Kebiasaan mencatat uang kini sudah melekat padamu!"}
+            </p>
+            
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                className="w-full rounded-[var(--sakuin-radius-control)] bg-[var(--sakuin-primary)] py-3 text-sm font-black text-white transition hover:opacity-95 active:scale-95 cursor-pointer"
+                onClick={() => setMilestoneToShow(null)}
+                type="button"
+              >
+                Keren, Lanjutkan!
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
