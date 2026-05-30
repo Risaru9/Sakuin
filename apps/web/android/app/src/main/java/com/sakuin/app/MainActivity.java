@@ -57,7 +57,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // Refresh widget data every time the app comes to foreground
         triggerWidgetUpdate();
