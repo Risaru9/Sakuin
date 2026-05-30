@@ -34,12 +34,13 @@ import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import {
   DEFAULT_TRANSACTION_REMINDER_SETTINGS,
-  getBrowserNotificationPermission,
+  getNotificationPermission,
   getTransactionReminderSettings,
   setTransactionReminderSettings,
   sendTestTransactionReminder,
   subscribeBrowserToPushReminder,
   unsubscribeBrowserFromPushReminder,
+  isNativePlatform,
   type TransactionReminderFrequency,
   type TransactionReminderSettings
 } from "../../lib/transaction-reminder";
@@ -211,9 +212,7 @@ export function ProfilePage() {
     useState<TransactionReminderSettings>(
       DEFAULT_TRANSACTION_REMINDER_SETTINGS
     );
-  const [notificationPermission, setNotificationPermission] = useState(() =>
-    getBrowserNotificationPermission()
-  );
+  const [notificationPermission, setNotificationPermission] = useState("default");
 
   // Support deep link: /profile?section=notifications
   const initialSection = ((): ProfileSection => {
@@ -462,7 +461,7 @@ export function ProfilePage() {
     try {
       if (enabled) {
         await subscribeBrowserToPushReminder();
-        setNotificationPermission(getBrowserNotificationPermission());
+        getNotificationPermission().then(setNotificationPermission);
       } else {
         await unsubscribeBrowserFromPushReminder();
       }
@@ -482,7 +481,7 @@ export function ProfilePage() {
           : "Sakuin tidak akan mengirim pengingat transaksi dari browser ini."
       });
     } catch (caughtError) {
-      const nextPermission = getBrowserNotificationPermission();
+      const nextPermission = await getNotificationPermission();
       const message =
         caughtError instanceof Error
           ? caughtError.message
@@ -529,7 +528,7 @@ export function ProfilePage() {
   async function handleTestNotification() {
     try {
       await sendTestTransactionReminder();
-      setNotificationPermission(getBrowserNotificationPermission());
+      getNotificationPermission().then(setNotificationPermission);
 
       addToast({
         variant: "success",
@@ -538,7 +537,7 @@ export function ProfilePage() {
           "Jika izin browser aktif, notifikasi Sakuin akan muncul beberapa detik lagi."
       });
     } catch (caughtError) {
-      setNotificationPermission(getBrowserNotificationPermission());
+      getNotificationPermission().then(setNotificationPermission);
 
       addToast({
         variant: "error",
@@ -660,7 +659,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     setReminderSettingsState(getTransactionReminderSettings(user?.id));
-    setNotificationPermission(getBrowserNotificationPermission());
+    getNotificationPermission().then(setNotificationPermission);
 
     getRemoteReminderSettings()
       .then((settings) => {
@@ -683,7 +682,7 @@ export function ProfilePage() {
 
     function handleReminderSettingsChange() {
       setReminderSettingsState(getTransactionReminderSettings(user?.id));
-      setNotificationPermission(getBrowserNotificationPermission());
+      getNotificationPermission().then(setNotificationPermission);
     }
 
     window.addEventListener(
@@ -1039,7 +1038,17 @@ export function ProfilePage() {
                     </p>
                   </div>
 
-                  <div className="grid shrink-0 gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
+                    {reminderSettings.enabled && (
+                      <button
+                        className="inline-flex min-h-8 items-center justify-center rounded-lg px-3 text-[11px] font-bold text-zinc-400 underline decoration-zinc-300 underline-offset-2 transition hover:text-zinc-600"
+                        onClick={() => void handleTestNotification()}
+                        type="button"
+                      >
+                        Tes Notifikasi
+                      </button>
+                    )}
+
                     <button
                       className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
                       onClick={() =>
@@ -1049,16 +1058,14 @@ export function ProfilePage() {
                     >
                       {reminderSettings.enabled ? "Matikan" : "Aktifkan"}
                     </button>
-
-                    <button
-                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
-                      onClick={() => void handleTestNotification()}
-                      type="button"
-                    >
-                      Tes
-                    </button>
                   </div>
                 </div>
+
+                {notificationPermission === "denied" && (
+                  <div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs font-medium leading-5 text-amber-800 border border-amber-200">
+                    Notifikasi diblokir oleh perangkat/browser Anda. Aktifkan ulang izin notifikasi dari pengaturan OS/Aplikasi agar reminder Sakuin bisa berjalan.
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 grid gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3">

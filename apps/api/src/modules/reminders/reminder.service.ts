@@ -396,6 +396,11 @@ async function buildDynamicNotificationPayload(
     }
   });
 
+  // Jika user sudah mencatat minimal 1 transaksi hari ini, BATALKAN notifikasi
+  if (todayTransactions.length > 0) {
+    return null;
+  }
+
   const todayExpenseSum = todayTransactions
     .filter((transaction) => transaction.type === "EXPENSE")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -524,6 +529,12 @@ export async function runReminderCron(): Promise<RunReminderCronResult> {
       preference.timezoneOffsetMinutes,
       now
     );
+
+    if (!payload) {
+      skippedCount += 1;
+      continue;
+    }
+
     let userSentCount = 0;
 
     for (const subscription of preference.user.pushSubscriptions) {

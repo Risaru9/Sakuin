@@ -56,18 +56,26 @@ export function getTransactions(params: GetTransactionsParams = {}) {
   );
 }
 
-export function createTransaction(input: CreateTransactionInput) {
-  return apiRequest<Transaction>("/api/transactions", {
+export async function createTransaction(input: CreateTransactionInput) {
+  const result = await apiRequest<Transaction>("/api/transactions", {
     method: "POST",
     body: input
   });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("sakuin:transaction-added"));
+  }
+  return result;
 }
 
-export function createTransactionsBulk(input: CreateTransactionsBulkInput) {
-  return apiRequest<Transaction[]>("/api/transactions/bulk", {
+export async function createTransactionsBulk(input: CreateTransactionsBulkInput) {
+  const result = await apiRequest<Transaction[]>("/api/transactions/bulk", {
     method: "POST",
     body: input
   });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("sakuin:transaction-added"));
+  }
+  return result;
 }
 
 export function updateTransaction(

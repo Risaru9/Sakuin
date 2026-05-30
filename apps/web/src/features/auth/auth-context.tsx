@@ -15,6 +15,12 @@ import {
   setCachedUser,
   removeCachedUser
 } from "../../lib/auth-storage";
+import { getTransactions } from "../transactions/transaction.service";
+import { 
+  getTransactionReminderSettings, 
+  syncLocalHabitReminder, 
+  isNativePlatform 
+} from "../../lib/transaction-reminder";
 import {
   getCurrentUser,
   googleLoginUser,
@@ -129,6 +135,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsInitializing(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!user || !isNativePlatform()) return;
+
+    async function evaluateHabitReminder() {
+      try {
+        const settings = getTransactionReminderSettings(user!.id);
+        if (!settings.enabled) {
+          await syncLocalHabitReminder(false, settings);
+          return;
+        }
+
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+        
+        const response = await getTransactions({ startDate: startOfDay, endDate: endOfDay, limit: 1 });
+        const hasTransactionsToday = response.items.length > 0;
+        
+        await syncLocalHabitReminder(hasTransactionsToday, settings);
+      } catch (error) {
+        console.error("Failed to evaluate habit reminder", error);
+      }
+    }
+
+    evaluateHabitReminder();
+
+    const handleTransactionAdded = () => {
+      evaluateHabitReminder();
+    };
+
+    window.addEventListener("sakuin:transaction-added", handleTransactionAdded);
+    window.addEventListener("sakuin:transaction-reminder-settings", handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener("sakuin:transaction-added", handleTransactionAdded);
+      window.removeEventListener("sakuin:transaction-reminder-settings", handleTransactionAdded);
+    };
+  }, [user]);
 
   return (
     <AuthContext.Provider

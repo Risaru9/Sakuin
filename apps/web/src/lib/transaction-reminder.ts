@@ -4,6 +4,8 @@ import {
   getVapidPublicKey,
   savePushSubscription
 } from "../features/reminders/reminder.service";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 export type TransactionReminderFrequency =
   | "EVENING"
@@ -258,11 +260,24 @@ export function setTransactionReminderSettings(
   window.dispatchEvent(new Event("sakuin:transaction-reminder-settings"));
 }
 
+export function isNativePlatform() {
+  return typeof window !== "undefined" && Capacitor.isNativePlatform();
+}
+
 export function canUseBrowserNotifications() {
   return typeof window !== "undefined" && "Notification" in window;
 }
 
-export function getBrowserNotificationPermission() {
+export async function getNotificationPermission() {
+  if (isNativePlatform()) {
+    try {
+      const status = await LocalNotifications.checkPermissions();
+      return status.display === "granted" ? "granted" : (status.display === "denied" ? "denied" : "default");
+    } catch {
+      return "unsupported";
+    }
+  }
+
   if (!canUseBrowserNotifications()) {
     return "unsupported" as const;
   }
@@ -270,7 +285,16 @@ export function getBrowserNotificationPermission() {
   return Notification.permission;
 }
 
-export async function requestBrowserNotificationPermission() {
+export async function requestNotificationPermission() {
+  if (isNativePlatform()) {
+    try {
+      const status = await LocalNotifications.requestPermissions();
+      return status.display === "granted" ? "granted" : (status.display === "denied" ? "denied" : "default");
+    } catch {
+      return "unsupported";
+    }
+  }
+
   if (!canUseBrowserNotifications()) {
     return "unsupported" as const;
   }
@@ -329,11 +353,19 @@ async function getReadyServiceWorkerRegistration() {
 }
 
 export async function subscribeBrowserToPushReminder() {
+  if (isNativePlatform()) {
+    const permission = await requestNotificationPermission();
+    if (permission !== "granted") {
+      throw new Error("Izin notifikasi belum diberikan.");
+    }
+    return; // Fallback ke Local Notifications, tak butuh langganan VAPID
+  }
+
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Browser belum mendukung Web Push.");
   }
 
-  const permission = await requestBrowserNotificationPermission();
+  const permission = await requestNotificationPermission();
 
   if (permission !== "granted") {
     throw new Error("Izin notifikasi belum diberikan.");
@@ -355,6 +387,11 @@ export async function subscribeBrowserToPushReminder() {
 }
 
 export async function unsubscribeBrowserFromPushReminder() {
+  if (isNativePlatform()) {
+    await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+    return;
+  }
+
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     return;
   }
@@ -368,6 +405,50 @@ export async function unsubscribeBrowserFromPushReminder() {
 
   await deletePushSubscription(subscription.endpoint);
   await subscription.unsubscribe();
+}
+
+export async function syncLocalHabitReminder(hasTransactionsToday: boolean, settings: TransactionReminderSettings) {
+  if (!isNativePlatform()) {
+    return; // Backend Cron akan menangani Web Push
+  }
+
+  try {
+    if (!settings.enabled) {
+      await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+      return;
+    }
+
+    const status = await LocalNotifications.checkPermissions();
+    if (status.display !== "granted") return;
+
+    const now = new Date();
+    const targetHour = settings.eveningHour;
+
+    let scheduleDate = new Date();
+    scheduleDate.setHours(targetHour, 0, 0, 0);
+
+    // Geser ke besok jika hari ini sudah lewat jamnya ATAU jika sudah ada transaksi hari ini
+    if (hasTransactionsToday || scheduleDate.getTime() <= now.getTime()) {
+      scheduleDate.setDate(scheduleDate.getDate() + 1);
+    }
+
+    await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title: "Sakuin",
+          body: "Jangan lupa catat transaksi hari ini agar ritme keuanganmu tetap terjaga.",
+          id: 1,
+          schedule: { at: scheduleDate },
+          smallIcon: "ic_stat_icon_config_sample", 
+          iconColor: "#10b981"
+        }
+      ]
+    });
+  } catch (error) {
+    console.error("Gagal sinkronisasi Local Notification", error);
+  }
 }
 
 function buildTransactionReminderOptions(): ReminderNotificationOptions {
@@ -391,10 +472,6 @@ export function shouldSendTransactionReminder(input: {
   const now = input.now ?? new Date();
 
   if (!input.settings.enabled) {
-    return false;
-  }
-
-  if (getBrowserNotificationPermission() !== "granted") {
     return false;
   }
 
@@ -441,18 +518,36 @@ export async function sendTransactionReminder(
 
 export async function sendTestTransactionReminder() {
   const title = "Tes notifikasi Sakuin";
+  const body = "Notifikasi aktif. Sakuin siap mengingatkan review transaksi sesuai pengaturanmu.";
   const options = {
     ...buildTransactionReminderOptions(),
-    body: "Notifikasi aktif. Sakuin siap mengingatkan review transaksi sesuai pengaturanmu.",
+    body,
     tag: "sakuin-transaction-reminder-test"
   };
 
-  if (getBrowserNotificationPermission() !== "granted") {
-    const permission = await requestBrowserNotificationPermission();
+  const permission = await getNotificationPermission();
+  if (permission !== "granted") {
+    const requested = await requestNotificationPermission();
 
-    if (permission !== "granted") {
+    if (requested !== "granted") {
       throw new Error("Izin notifikasi belum diberikan.");
     }
+  }
+
+  if (isNativePlatform()) {
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title,
+          body,
+          id: 999,
+          schedule: { at: new Date(Date.now() + 1000) },
+          smallIcon: "ic_stat_icon_config_sample",
+          iconColor: "#10b981"
+        }
+      ]
+    });
+    return;
   }
 
   if ("serviceWorker" in navigator) {
