@@ -1,4 +1,7 @@
+import type { AuthUser } from "../features/auth/auth.types";
+
 const AUTH_TOKEN_KEY = "sakuin_auth_token";
+const AUTH_CACHED_USER_KEY = "sakuin_cached_user";
 
 export function getStoredToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -14,6 +17,25 @@ export function removeStoredToken() {
 
 export function hasStoredToken() {
   return Boolean(getStoredToken());
+}
+
+export function getCachedUser(): AuthUser | null {
+  try {
+    const data = localStorage.getItem(AUTH_CACHED_USER_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedUser(user: AuthUser) {
+  try {
+    localStorage.setItem(AUTH_CACHED_USER_KEY, JSON.stringify(user));
+  } catch {}
+}
+
+export function removeCachedUser() {
+  localStorage.removeItem(AUTH_CACHED_USER_KEY);
 }
 
 declare global {

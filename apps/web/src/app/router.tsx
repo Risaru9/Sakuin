@@ -1080,7 +1080,11 @@ function AccountDeletionPage() {
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />
+    element: (
+      <GuestRoute>
+        <HomePage />
+      </GuestRoute>
+    )
   },
   {
     path: "/install",

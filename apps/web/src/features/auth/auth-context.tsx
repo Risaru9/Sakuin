@@ -7,9 +7,13 @@ import {
 } from "react";
 import {
   getStoredToken,
+  hasStoredToken,
   removeStoredToken,
   setStoredToken,
-  syncTokenToServiceWorker
+  syncTokenToServiceWorker,
+  getCachedUser,
+  setCachedUser,
+  removeCachedUser
 } from "../../lib/auth-storage";
 import {
   getCurrentUser,
@@ -65,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    setCachedUser(result.user);
     syncTokenToServiceWorker(result.token);
   }
 
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    setCachedUser(result.user);
     syncTokenToServiceWorker(result.token);
   }
 
@@ -81,11 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setStoredToken(result.token);
     setUser(result.user);
+    setCachedUser(result.user);
     syncTokenToServiceWorker(result.token);
   }
 
   function logout() {
     removeStoredToken();
+    removeCachedUser();
     setUser(null);
     syncTokenToServiceWorker(null);
   }
@@ -99,13 +107,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const cachedUser = getCachedUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+      setIsInitializing(false);
+    }
+
     getCurrentUser()
       .then((currentUser) => {
         setUser(currentUser);
+        setCachedUser(currentUser);
       })
-      .catch(() => {
-        removeStoredToken();
-        setUser(null);
+      .catch((error) => {
+        // Jangan hapus token jika terjadi error koneksi.
+        // Penghapusan token saat kadaluwarsa (401) sudah ditangani di api-client.
+        if (!cachedUser) {
+          setUser(null);
+        }
       })
       .finally(() => {
         setIsInitializing(false);
