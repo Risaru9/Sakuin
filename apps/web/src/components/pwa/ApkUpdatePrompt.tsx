@@ -28,26 +28,26 @@ export function ApkUpdatePrompt() {
       return;
     }
 
-    // 2. Baca versi yang sedang terpasang di HP (fallback ke v1.1/versionCode 2 jika method belum ada)
-    let installedCode = 2;
-    let installedName = "1.1";
-
-    if (isAndroidWidgetBridge && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
-      try {
-        installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
-        installedName = (window as any).AndroidWidgetBridge.getAppVersionName 
-          ? (window as any).AndroidWidgetBridge.getAppVersionName() 
-          : "1.2+";
-      } catch (e) {
-        console.error("Gagal mendapatkan info versi dari native AndroidWidgetBridge", e);
-      }
-    }
-
-    setCurrentVersion({ code: installedCode, name: installedName });
-
-    // 3. Ambil data versi terbaru dari server API (dengan fallback ke static file)
+    // 2. Ambil data versi terbaru dari server API (dengan pembacaan bridge versi terbaru)
     async function checkApkVersion() {
       try {
+        const isAndroidWidgetBridgeNow = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
+        let installedCode = 2;
+        let installedName = "1.1";
+
+        if (isAndroidWidgetBridgeNow && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
+          try {
+            installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
+            installedName = (window as any).AndroidWidgetBridge.getAppVersionName 
+              ? (window as any).AndroidWidgetBridge.getAppVersionName() 
+              : "1.2+";
+          } catch (e) {
+            console.error("Gagal mendapatkan info versi dari native AndroidWidgetBridge", e);
+          }
+        }
+
+        setCurrentVersion({ code: installedCode, name: installedName });
+
         let data: ApkVersionInfo;
         try {
           data = await apiRequest<ApkVersionInfo>("/app-version");
@@ -90,14 +90,20 @@ export function ApkUpdatePrompt() {
     setShowPrompt(false);
   }
 
-  async function handleUpdate() {
+  function handleUpdate() {
     if (updateInfo && updateInfo.apkDownloadUrl) {
-      try {
-        await Browser.open({ url: updateInfo.apkDownloadUrl });
-      } catch (e) {
-        console.error("Gagal membuka browser untuk download", e);
-        // Fallback jika browser native gagal dimuat
-        window.location.href = updateInfo.apkDownloadUrl;
+      const url = updateInfo.apkDownloadUrl;
+      const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
+
+      if (isCapacitor) {
+        // Non-blocking Capacitor Browser open dengan fallback window.open(_system)
+        Browser.open({ url }).catch((e) => {
+          console.error("Gagal membuka Browser.open, menggunakan fallback _system", e);
+          window.open(url, "_system");
+        });
+      } else {
+        // Peramban web/PWA standar
+        window.open(url, "_blank");
       }
     }
   }
