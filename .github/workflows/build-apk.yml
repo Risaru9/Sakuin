@@ -87,4 +87,5 @@ jobs:
           
           # Hanya lakukan commit jika file berubah agar tidak error
           git diff --quiet && git diff --staged --quiet || git commit -m "chore(android): auto-update APK in public/downloads [skip actions]"
+          git pull --rebase origin main || echo "No rebase needed or failed"
           git push
