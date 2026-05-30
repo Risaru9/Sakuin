@@ -4,15 +4,5 @@
       "source": "/(.*)",
       "destination": "/api/index.ts"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/reminders/run",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/ai/proactive-insight",
-      "schedule": "0 9 * * 0"
-    }
   ]
 }
