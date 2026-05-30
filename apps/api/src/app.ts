@@ -196,8 +196,14 @@ app.notFound((c) => {
 });
 
 app.onError((error, c) => {
+  console.error('GLOBAL ERROR:', error);
   const status = getErrorStatus(error);
-  const message = getErrorMessage(error, status);
+  
+  let message = getErrorMessage(error, status);
+  if (status >= 500 && env.NODE_ENV === "production" && c.req.query("debug") === "true") {
+    message = error instanceof Error ? `${error.message}\n${error.stack}` : String(error);
+  }
+  
   const errors = getErrorDetails(error, status);
 
   return jsonError(
