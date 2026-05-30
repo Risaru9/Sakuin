@@ -170,6 +170,13 @@ app.use("/api/auth/login", authLoginRateLimitMiddleware);
 app.use("/api/auth/register", authRegisterRateLimitMiddleware);
 app.use("/api/*", apiGeneralRateLimitMiddleware);
 
+app.get("/", (c) => {
+  return successResponse(c, "Sakuin API berjalan dengan normal", {
+    status: "running",
+    version: "0.1.0"
+  });
+});
+
 app.get("/health", (c) => {
   return successResponse(c, "Server sehat", {
     status: "ok",
