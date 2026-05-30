@@ -1268,17 +1268,7 @@ function StatsDetailModal({
 function WidgetInfoModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll(true);
 
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isStandalone, setIsStandalone] = useState(false);
-
   useEffect(() => {
-    // Berlangganan ke event beforeinstallprompt
-    const unsubscribe = subscribeToInstallPrompt((prompt) => {
-      setDeferredPrompt(prompt);
-    });
-
-    setIsStandalone(isStandaloneMode());
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -1288,7 +1278,6 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      unsubscribe();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
@@ -1299,19 +1288,6 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
 
   const isAndroid =
     typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-
-  async function handleInstallClick() {
-    if (!deferredPrompt) {
-      return;
-    }
-
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === "accepted") {
-      onClose();
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
@@ -1379,51 +1355,8 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        {isAndroid && (
-          <div className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-            <p className="text-sm font-black text-blue-800 flex items-center gap-1.5">
-              <span>📱</span> Aplikasi Android (APK)
-            </p>
-            <p className="mt-1 text-xs font-semibold text-blue-700 leading-relaxed">
-              Unduh APK Sakuin untuk mendapatkan fitur native home-screen widget yang lebih responsif dan bisa di-resize di layar utama Android.
-            </p>
-            <a
-              href="/downloads/sakuin.apk"
-              download="sakuin.apk"
-              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-md transition hover:bg-blue-700 active:scale-98"
-            >
-              Unduh APK Sakuin
-            </a>
-          </div>
-        )}
-
-        {/* Action Button & Status */}
-        {isStandalone ? (
-          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-sm font-black text-emerald-800">
-              ✅ Sakuin sudah terpasang!
-            </p>
-            <p className="mt-1 text-xs font-medium text-emerald-700">
-              Kamu sudah menggunakan Sakuin sebagai app. Widget shortcut tersedia di layar utamamu.
-            </p>
-          </div>
-        ) : deferredPrompt ? (
-          <div className="mb-4">
-            <button
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-primary)] text-sm font-black text-white shadow-lg transition hover:bg-[var(--sakuin-secondary)] active:scale-98"
-              onClick={handleInstallClick}
-              type="button"
-            >
-              Pasang Widget Sekarang
-            </button>
-            <p className="mt-2 text-center text-[10px] font-semibold text-zinc-400">
-              Browser akan memunculkan dialog konfirmasi pemasangan native.
-            </p>
-          </div>
-        ) : null}
-
-        {/* Panduan Mengatur Widget (Muncul jika sudah standalone atau siap pasang) */}
-        {(isStandalone || deferredPrompt) && (
+        {/* Panduan Mengatur Widget untuk Android (dari APK) */}
+        {isAndroid ? (
           <div className="mb-4 space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
             <p className="text-xs font-black text-[var(--sakuin-text)]">
               Cara Mengeluarkan & Mengatur Ukuran Widget:
@@ -1438,7 +1371,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">2</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Cari Sakuin:</strong> Ketik atau cari <strong>Sakuin</strong> (atau browser Chrome/Safari kamu jika menggunakan shortcut), lalu pilih widget Sakuin dan tambahkan ke layar utama.
+                  <strong>Cari Sakuin:</strong> Ketik atau cari <strong>Sakuin</strong>, lalu pilih widget Sakuin dan tambahkan ke layar utama.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -1449,87 +1382,53 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Panduan Manual Fallback (Hanya jika belum standalone DAN prompt native tidak didukung browser) */}
-        {!isStandalone && !deferredPrompt && (
-          <div className="space-y-4">
-            {isIos && (
-              <div className="space-y-3">
-                <p className="text-sm font-black text-[var(--sakuin-text)]">
-                  Cara pasang di iPhone / iPad:
-                </p>
-                <div className="space-y-2">
-                  {[
-                    { step: "1", text: "Buka Sakuin di Safari (browser default Apple)" },
-                    { step: "2", text: "Ketuk ikon Share (kotak dengan panah ke atas) di toolbar Safari" },
-                    { step: "3", text: "Scroll ke bawah dan pilih \"Add to Home Screen\"" },
-                    { step: "4", text: "Ketuk \"Add\" di pojok kanan atas" },
-                    { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
-                  ].map((item) => (
-                    <div className="flex gap-3" key={item.step}>
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                        {item.step}
-                      </div>
-                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
-                    </div>
-                  ))}
+        ) : isIos ? (
+          <div className="space-y-3 mb-4">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Cara pasang di iPhone / iPad:
+            </p>
+            <div className="space-y-2">
+              {[
+                { step: "1", text: "Buka Sakuin di Safari (browser default Apple)" },
+                { step: "2", text: "Ketuk ikon Share (kotak dengan panah ke atas) di toolbar Safari" },
+                { step: "3", text: "Scroll ke bawah dan pilih \"Add to Home Screen\"" },
+                { step: "4", text: "Ketuk \"Add\" di pojok kanan atas" },
+                { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
+              ].map((item) => (
+                <div className="flex gap-3" key={item.step}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                    {item.step}
+                  </div>
+                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
                 </div>
-              </div>
-            )}
-
-            {isAndroid && (
-              <div className="space-y-3">
-                <p className="text-sm font-black text-[var(--sakuin-text)]">
-                  Cara pasang di Android:
-                </p>
-                <div className="space-y-2">
-                  {[
-                    { step: "1", text: "Buka Sakuin di Chrome" },
-                    { step: "2", text: "Ketuk ikon titik tiga (⋮) di pojok kanan atas" },
-                    { step: "3", text: "Pilih \"Add to Home Screen\" atau \"Install App\"" },
-                    { step: "4", text: "Konfirmasi dengan ketuk \"Add\"" },
-                    { step: "5", text: "Ikon Sakuin akan muncul di layar utama kamu" }
-                  ].map((item) => (
-                    <div className="flex gap-3" key={item.step}>
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                        {item.step}
-                      </div>
-                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
-                    </div>
-                  ))}
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-4">
+            <p className="text-sm font-black text-[var(--sakuin-text)]">
+              Cara pasang Sakuin di PC/Laptop:
+            </p>
+            <div className="space-y-2">
+              {[
+                { step: "1", text: "Di Chrome/Edge: cari ikon Install (🖥️) di address bar" },
+                { step: "2", text: "Di browser lain: buka menu browser → \"Add to Home Screen\"" },
+                { step: "3", text: "Konfirmasi pemasangan" }
+              ].map((item) => (
+                <div className="flex gap-3" key={item.step}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
+                    {item.step}
+                  </div>
+                  <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
                 </div>
-              </div>
-            )}
-
-            {!isIos && !isAndroid && (
-              <div className="space-y-3">
-                <p className="text-sm font-black text-[var(--sakuin-text)]">
-                  Cara pasang Sakuin:
-                </p>
-                <div className="space-y-2">
-                  {[
-                    { step: "1", text: "Di Chrome/Edge: cari ikon Install (🖥️) di address bar" },
-                    { step: "2", text: "Di mobile: buka menu browser → \"Add to Home Screen\"" },
-                    { step: "3", text: "Konfirmasi pemasangan" },
-                    { step: "4", text: "Sakuin akan muncul di layar utama atau desktop kamu" }
-                  ].map((item) => (
-                    <div className="flex gap-3" key={item.step}>
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[10px] font-black text-white">
-                        {item.step}
-                      </div>
-                      <p className="flex-1 text-xs font-medium leading-5 text-zinc-600">{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
 
         <div className="mt-3 rounded-2xl bg-slate-50 p-3">
           <p className="text-[11px] font-semibold leading-5 text-zinc-500">
-            💡 Setelah terpasang, buka Sakuin dari layar utama untuk mendapatkan pengalaman penuh seperti aplikasi native, termasuk notifikasi pengingat dan akses cepat ke pencatatan transaksi.
+            💡 Untuk Android, pastikan Anda telah memasang **Aplikasi Resmi (APK)** Sakuin agar dapat menggunakan fitur widget home-screen native ini.
           </p>
         </div>
 
@@ -2705,6 +2604,11 @@ export function DashboardPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const isAndroid =
+    typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  const isCapacitor =
+    typeof window !== "undefined" && !!(window as any).Capacitor;
+
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [activeMobileTab, setActiveMobileTab] = useState<
@@ -2965,6 +2869,34 @@ const profileQuery = useQuery({
         />
 
         <WeeklyCheckinCard data={summary?.weeklyCheckin} />
+
+        {isAndroid && !isCapacitor && (
+          <div className="mb-5 rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
+                <Smartphone className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-black text-blue-900 flex items-center gap-1.5">
+                  Aplikasi Android (APK) Resmi Sakuin
+                </h3>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-blue-700">
+                  Dapatkan pengalaman yang lebih lancar dan fitur <strong>Native Home-screen Widget</strong> untuk memantau saldo harian (Hemat/Boros) secara real-time langsung dari layar utama HP Anda.
+                </p>
+                <div className="mt-3.5 flex flex-wrap gap-2.5">
+                  <a
+                    href="/downloads/sakuin.apk"
+                    download="sakuin.apk"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-xs font-black text-white shadow-md transition hover:bg-blue-700 active:scale-98"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Pasang Aplikasi (APK)
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {summaryError ? (
           <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">

@@ -1,7 +1,7 @@
 import type { ApiRequestOptions, ApiResponse } from "../types/api";
 import { getStoredToken, removeStoredToken } from "./auth-storage";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
 
 export class ApiClientError extends Error {
   status: number;

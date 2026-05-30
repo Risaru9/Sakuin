@@ -59,6 +59,16 @@ export function GoogleAuthButton({
     };
   }, []);
 
+  const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
+
+  if (isCapacitor) {
+    return (
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3.5 text-center text-xs font-semibold text-zinc-500 leading-normal">
+        🔒 Login Google hanya didukung di versi Web. Silakan masuk menggunakan Email & Password Anda di aplikasi.
+      </div>
+    );
+  }
+
   if (!googleClientId) {
     return (
       <button
