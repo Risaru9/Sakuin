@@ -172,12 +172,26 @@ function buildCategorySummaryItems(input: {
 
 export async function getSummary(userId: string): Promise<SummaryResponse> {
   const now = new Date();
-  const recurringRunResult = await runDueRecurringRules(userId, now);
+  
+  // Run recurring rules with error handling - don't let it break summary
+  let recurringRunResult = { generatedCount: 0, processedRuleCount: 0 };
+  try {
+    recurringRunResult = await runDueRecurringRules(userId, now);
+  } catch (error) {
+    console.error("[Summary] Error running recurring rules:", error);
+    // Continue with default values - recurring rules failure shouldn't break summary
+  }
+  
   const startOfCurrentMonth = getStartOfMonth(now);
   const endOfCurrentMonth = getEndOfMonth(now);
   const monthlyTrendMonths = getLastMonths(now, SUMMARY_MONTHLY_TREND_MONTHS);
 
-  const aiFinancialContextPromise = getAiFinancialContext(userId, now);
+  // Get AI financial context with error handling
+  const aiFinancialContextPromise = getAiFinancialContext(userId, now).catch((error) => {
+    console.error("[Summary] Error getting AI financial context:", error);
+    // Re-throw to handle it later with fallback
+    throw error;
+  });
 
   const [
     user,
@@ -389,8 +403,70 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     };
   });
 
-  const aiFinancialContext = await aiFinancialContextPromise;
-  const financialCheckup = buildFinancialCheckup(aiFinancialContext);
+  // Get AI financial context with fallback if it fails
+  let aiFinancialContext;
+  let financialCheckup;
+  let safeToSpend;
+  let habit = null;
+  
+  try {
+    aiFinancialContext = await aiFinancialContextPromise;
+    financialCheckup = buildFinancialCheckup(aiFinancialContext);
+    safeToSpend = aiFinancialContext.safeToSpend;
+    habit = aiFinancialContext.habit ?? null;
+  } catch (error) {
+    console.error("[Summary] Error building financial checkup, using fallback:", error);
+    
+    // Provide safe fallback values
+    const totalIncome = totalAmountByType[TransactionType.INCOME];
+    const totalExpense = totalAmountByType[TransactionType.EXPENSE];
+    const netCashflow = totalIncome.minus(totalExpense);
+    
+    safeToSpend = {
+      status: "UNKNOWN" as const,
+      spendingPaceStatus: "UNKNOWN" as const,
+      netCashflow: Number(decimalToString(netCashflow)),
+      safeBalanceLimit: Number(decimalToString(safeBalanceLimit)),
+      availableToSpend: Math.max(0, Number(decimalToString(balance.minus(safeBalanceLimit)))),
+      remainingDays: Math.max(1, Math.ceil((endOfCurrentMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))),
+      suggestedDailyLimit: null,
+      expenseToIncomeRatio: null,
+      monthProgressPercent: 0,
+      expensePacePercent: null,
+      projectedMonthEndExpense: Number(decimalToString(expenseThisMonth)),
+      projectedNetCashflow: Number(decimalToString(netCashflow)),
+      topRiskCategoryName: null,
+      topRiskCategoryAmount: 0,
+      reason: "Data belum lengkap untuk analisis mendalam.",
+      action: "Catat transaksi rutin agar insight lebih akurat.",
+      warnings: []
+    };
+    
+    financialCheckup = {
+      status: "UNKNOWN" as const,
+      priority: "COLLECT_DATA" as const,
+      title: "Checkup Keuangan Belum Lengkap",
+      headline: "Belum cukup data untuk membuat checkup keuangan yang akurat.",
+      focusCategoryName: null,
+      focusCategoryAmount: 0,
+      reason: "Sistem sedang mengalami kendala dalam menganalisis data keuangan.",
+      action: "Catat transaksi utama beberapa hari ke depan agar checkup berikutnya lebih akurat.",
+      warnings: [],
+      metrics: {
+        totalIncome: Number(decimalToString(incomeThisMonth)),
+        totalExpense: Number(decimalToString(expenseThisMonth)),
+        netCashflow: Number(decimalToString(balanceThisMonth)),
+        expenseToIncomeRatio: null,
+        expenseChangePercent: null,
+        safeToSpendStatus: "UNKNOWN" as const,
+        spendingPaceStatus: "UNKNOWN" as const,
+        availableToSpend: Math.max(0, Number(decimalToString(balance.minus(safeBalanceLimit)))),
+        suggestedDailyLimit: null,
+        projectedNetCashflow: Number(decimalToString(balanceThisMonth))
+      }
+    };
+  }
+  
   const latestMonth = monthlyTrend[monthlyTrend.length - 1];
   const previousMonth = monthlyTrend[monthlyTrend.length - 2];
   const latestExpense = latestMonth ? Number(latestMonth.expense) : 0;
@@ -435,9 +511,9 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     balance: decimalToString(balance),
     safeBalanceLimit: decimalToString(safeBalanceLimit),
     isBelowSafeLimit,
-    safeToSpend: aiFinancialContext.safeToSpend,
+    safeToSpend,
     financialCheckup,
-    habit: aiFinancialContext.habit ?? null,
+    habit,
 
     incomeThisMonth: decimalToString(incomeThisMonth),
     expenseThisMonth: decimalToString(expenseThisMonth),
