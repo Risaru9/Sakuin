@@ -32,7 +32,11 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:3000",
   "http://localhost:3000",
   env.FRONTEND_URL,
-  "https://sakuin-web.vercel.app"
+  "https://sakuin-web.vercel.app",
+  // Capacitor Android WebView origins
+  "https://localhost",
+  "capacitor://localhost",
+  "http://localhost"
 ]);
 
 function getAllowedOrigin(origin: string) {

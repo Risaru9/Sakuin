@@ -278,11 +278,14 @@ function HomePage() {
                 Masuk akun
               </Link>
               <div className="w-full sm:w-auto">
-                <InstallAppButton
-                  label="Install Sakuin"
-                  variant="hero"
+                <a
+                  href="/downloads/sakuin.apk"
+                  download="sakuin.apk"
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50 sm:w-auto"
-                />
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Download Aplikasi</span>
+                </a>
               </div>
             </div>
 
@@ -583,11 +586,14 @@ function HomePage() {
               </Link>
 
               <div className="w-full sm:w-auto">
-                <InstallAppButton
-                  label="Install Sakuin"
-                  variant="hero"
+                <a
+                  href="/downloads/sakuin.apk"
+                  download="sakuin.apk"
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50 sm:w-auto"
-                />
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Download Aplikasi</span>
+                </a>
               </div>
             </div>
 
