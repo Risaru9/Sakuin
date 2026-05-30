@@ -36,7 +36,6 @@ type CategoryMetadata = {
   name: string;
   icon: string | null;
   color: string | null;
-  limit: Prisma.Decimal | null;
 };
 
 function toDecimal(value: Prisma.Decimal.Value) {
@@ -91,7 +90,15 @@ function getLastMonths(currentDate: Date, monthCount: number) {
 function mapRecentTransaction(
   transaction: Prisma.TransactionGetPayload<{
     include: {
-      category: true;
+      category: {
+        select: {
+          id: true;
+          name: true;
+          type: true;
+          icon: true;
+          color: true;
+        };
+      };
     };
   }>
 ): RecentTransaction {
@@ -161,7 +168,7 @@ function buildCategorySummaryItems(input: {
       type: aggregate.type,
       totalAmount: decimalToString(toDecimal(aggregate._sum?.amount ?? 0)),
       transactionCount: getGroupByCount(aggregate._count),
-      limit: category.limit ? decimalToString(category.limit) : null
+      limit: null
     });
   }
 
@@ -256,7 +263,15 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
         userId
       },
       include: {
-        category: true
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            icon: true,
+            color: true
+          }
+        }
       },
       orderBy: [
         {
@@ -322,8 +337,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
             id: true,
             name: true,
             icon: true,
-            color: true,
-            limit: true
+            color: true
           }
         })
       : [];

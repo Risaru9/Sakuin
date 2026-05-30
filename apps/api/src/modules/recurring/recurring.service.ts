@@ -9,8 +9,30 @@ import type {
 } from "./recurring.types.js";
 
 type RecurringRuleWithCategory = Prisma.RecurringRuleGetPayload<{
-  include: { category: true };
+  include: {
+    category: {
+      select: {
+        id: true;
+        name: true;
+        type: true;
+        icon: true;
+        color: true;
+      };
+    };
+  };
 }>;
+
+const recurringCategoryInclude = {
+  category: {
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      icon: true,
+      color: true
+    }
+  }
+} satisfies Prisma.RecurringRuleInclude;
 
 function normalizeStartOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
@@ -108,6 +130,10 @@ async function ensureCategoryCanBeUsed(
       id: categoryId,
       type,
       OR: [{ userId }, { userId: null, isDefault: true }]
+    },
+    select: {
+      id: true,
+      type: true
     }
   });
 
@@ -121,7 +147,7 @@ async function ensureCategoryCanBeUsed(
 async function getOwnedRuleOrThrow(userId: string, recurringRuleId: string) {
   const rule = await prisma.recurringRule.findFirst({
     where: { id: recurringRuleId, userId },
-    include: { category: true }
+    include: recurringCategoryInclude
   });
 
   if (!rule) {
@@ -162,7 +188,7 @@ export async function createRecurringRule(
       autoPost: input.autoPost ?? true,
       isActive: input.isActive ?? true
     },
-    include: { category: true }
+    include: recurringCategoryInclude
   });
 
   return toRecurringRuleResponse(recurringRule);
@@ -171,7 +197,7 @@ export async function createRecurringRule(
 export async function getRecurringRules(userId: string) {
   const recurringRules = await prisma.recurringRule.findMany({
     where: { userId },
-    include: { category: true },
+    include: recurringCategoryInclude,
     orderBy: [{ isActive: "desc" }, { nextRunAt: "asc" }]
   });
 
@@ -225,7 +251,7 @@ export async function updateRecurringRule(
           })
         : existingRule.nextRunAt
     },
-    include: { category: true }
+    include: recurringCategoryInclude
   });
 
   return toRecurringRuleResponse(recurringRule);
@@ -235,7 +261,7 @@ export async function deleteRecurringRule(userId: string, recurringRuleId: strin
   const existingRule = await getOwnedRuleOrThrow(userId, recurringRuleId);
   const deletedRule = await prisma.recurringRule.delete({
     where: { id: existingRule.id },
-    include: { category: true }
+    include: recurringCategoryInclude
   });
   return toRecurringRuleResponse(deletedRule);
 }

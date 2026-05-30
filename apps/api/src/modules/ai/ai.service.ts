@@ -2917,7 +2917,15 @@ export async function generateWeeklyProactiveInsight(): Promise<{ processedUsers
           date: { gte: oneWeekAgo }
         },
         include: {
-          category: true
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              icon: true,
+              color: true
+            }
+          }
         }
       });
 

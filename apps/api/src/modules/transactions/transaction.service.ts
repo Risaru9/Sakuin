@@ -12,9 +12,31 @@ import type {
 
 type TransactionWithCategory = Prisma.TransactionGetPayload<{
   include: {
-    category: true;
+    category: {
+      select: {
+        id: true;
+        name: true;
+        type: true;
+        icon: true;
+        color: true;
+        isDefault: true;
+      };
+    };
   };
 }>;
+
+const transactionCategoryInclude = {
+  category: {
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      icon: true,
+      color: true,
+      isDefault: true
+    }
+  }
+} satisfies Prisma.TransactionInclude;
 
 function startOfDay(date: Date) {
   const result = new Date(date);
@@ -68,6 +90,10 @@ async function ensureCategoryCanBeUsed(
           userId
         }
       ]
+    },
+    select: {
+      id: true,
+      type: true
     }
   });
 
@@ -105,6 +131,10 @@ async function getUsableCategoriesForBulk(
           userId
         }
       ]
+    },
+    select: {
+      id: true,
+      type: true
     }
   });
 
@@ -137,9 +167,7 @@ async function getOwnedTransactionOrThrow(userId: string, transactionId: string)
       id: transactionId,
       userId
     },
-    include: {
-      category: true
-    }
+    include: transactionCategoryInclude
   });
 
   if (!transaction) {
@@ -168,9 +196,7 @@ export async function createTransaction(
       note: input.note?.trim() || null,
       date: input.date
     },
-    include: {
-      category: true
-    }
+    include: transactionCategoryInclude
   });
 
   return toTransactionResponse(transaction);
@@ -193,9 +219,7 @@ export async function createTransactionsBulk(
           note: transactionInput.note?.trim() || null,
           date: transactionInput.date
         },
-        include: {
-          category: true
-        }
+        include: transactionCategoryInclude
       })
     )
   );
@@ -277,9 +301,7 @@ export async function getTransactions(
   const [transactions, total] = await prisma.$transaction([
     prisma.transaction.findMany({
       where,
-      include: {
-        category: true
-      },
+      include: transactionCategoryInclude,
       orderBy: orderByMap[query.sort],
       skip,
       take: query.limit
@@ -338,9 +360,7 @@ export async function updateTransaction(
           ? input.note?.trim() || null
           : existingTransaction.note
     },
-    include: {
-      category: true
-    }
+    include: transactionCategoryInclude
   });
 
   return toTransactionResponse(transaction);
@@ -359,9 +379,7 @@ export async function deleteTransaction(
     where: {
       id: existingTransaction.id
     },
-    include: {
-      category: true
-    }
+    include: transactionCategoryInclude
   });
 
   return toTransactionResponse(deletedTransaction);

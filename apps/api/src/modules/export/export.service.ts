@@ -10,9 +10,29 @@ import type {
 
 type TransactionWithCategory = Prisma.TransactionGetPayload<{
   include: {
-    category: true;
+    category: {
+      select: {
+        id: true;
+        name: true;
+        type: true;
+        icon: true;
+        color: true;
+      };
+    };
   };
 }>;
+
+const exportCategoryInclude = {
+  category: {
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      icon: true,
+      color: true
+    }
+  }
+} satisfies Prisma.TransactionInclude;
 
 function toDecimal(value: Prisma.Decimal.Value) {
   return new Prisma.Decimal(value);
@@ -120,9 +140,7 @@ export async function getTransactionsExportData(
 ): Promise<ExportTransactionsData> {
   const transactions = await prisma.transaction.findMany({
     where: buildWhereInput(userId, query),
-    include: {
-      category: true
-    },
+    include: exportCategoryInclude,
     orderBy: {
       date: "desc"
     }

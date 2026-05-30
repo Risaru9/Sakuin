@@ -1,4 +1,4 @@
-import type { Prisma, TransactionType } from "@prisma/client";
+import { Prisma, type TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
 
@@ -23,7 +23,37 @@ type UpdateCategoryInput = {
   limit?: number | null;
 };
 
-type CategoryRecord = Prisma.CategoryGetPayload<object> & { limit?: Prisma.Decimal | null | number };
+type CategoryRecord = {
+  id: string;
+  name: string;
+  type: TransactionType;
+  icon: string | null;
+  color: string | null;
+  isDefault: boolean;
+  limit?: Prisma.Decimal | null | number;
+};
+
+const categoryBaseSelect = {
+  id: true,
+  name: true,
+  type: true,
+  icon: true,
+  color: true,
+  isDefault: true
+} satisfies Prisma.CategorySelect;
+
+const categorySelectWithLimit = {
+  ...categoryBaseSelect,
+  limit: true
+} satisfies Prisma.CategorySelect;
+
+function isMissingCategoryLimitColumnError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2022" &&
+    String(error.meta?.column ?? "").includes("limit")
+  );
+}
 
 function normalizeOptionalValue(value: string | null | undefined) {
   const normalizedValue = value?.trim();
@@ -97,6 +127,9 @@ async function ensureVisibleCategoryNameIsUnique({
           userId
         }
       ]
+    },
+    select: {
+      id: true
     }
   });
 
@@ -114,7 +147,8 @@ async function getCustomCategoryOrThrow(userId: string, categoryId: string) {
       id: categoryId,
       userId,
       isDefault: false
-    }
+    },
+    select: categoryBaseSelect
   });
 
   if (!category) {
@@ -128,20 +162,36 @@ async function getCustomCategoryOrThrow(userId: string, categoryId: string) {
 }
 
 export async function getCategoriesService(input: GetCategoriesInput) {
-  const categories = await prisma.category.findMany({
+  const query = {
     where: getVisibleCategoryWhere(input.userId, input.type),
     orderBy: [
       {
-        isDefault: "desc"
+        isDefault: "desc" as const
       },
       {
-        type: "asc"
+        type: "asc" as const
       },
       {
-        name: "asc"
+        name: "asc" as const
       }
     ]
-  });
+  };
+
+  const categories = await prisma.category
+    .findMany({
+      ...query,
+      select: categorySelectWithLimit
+    })
+    .catch((error) => {
+      if (!isMissingCategoryLimitColumnError(error)) {
+        throw error;
+      }
+
+      return prisma.category.findMany({
+        ...query,
+        select: categoryBaseSelect
+      });
+    });
 
   return categories.map(mapCategory);
 }
@@ -158,16 +208,46 @@ export async function createCategoryService(
     type: input.type
   });
 
+  const data: Prisma.CategoryCreateInput = {
+    user: {
+      connect: {
+        id: userId
+      }
+    },
+    name,
+    type: input.type,
+    icon: normalizeOptionalValue(input.icon),
+    color: normalizeOptionalValue(input.color),
+    ...(input.limit !== undefined ? { limit: input.limit } : {}),
+    isDefault: false
+  };
+
   const category = await prisma.category.create({
-    data: {
-      userId,
-      name,
-      type: input.type,
-      icon: normalizeOptionalValue(input.icon),
-      color: normalizeOptionalValue(input.color),
-      limit: input.limit !== undefined ? input.limit : null,
-      isDefault: false
+    data,
+    select: categorySelectWithLimit
+  }).catch((error) => {
+    if (
+      !isMissingCategoryLimitColumnError(error) ||
+      input.limit !== undefined
+    ) {
+      throw error;
     }
+
+    return prisma.category.create({
+      data: {
+        user: {
+          connect: {
+            id: userId
+          }
+        },
+        name,
+        type: input.type,
+        icon: normalizeOptionalValue(input.icon),
+        color: normalizeOptionalValue(input.color),
+        isDefault: false
+      },
+      select: categoryBaseSelect
+    });
   });
 
   return mapCategory(category);
@@ -209,26 +289,52 @@ export async function updateCategoryService(
     ignoredCategoryId: existingCategory.id
   });
 
+  const data: Prisma.CategoryUpdateInput = {
+    name: nextName,
+    type: nextType,
+    icon:
+      input.icon !== undefined
+        ? normalizeOptionalValue(input.icon)
+        : existingCategory.icon,
+    color:
+      input.color !== undefined
+        ? normalizeOptionalValue(input.color)
+        : existingCategory.color,
+    ...(input.limit !== undefined ? { limit: input.limit } : {})
+  };
+
   const category = await prisma.category.update({
     where: {
       id: existingCategory.id
     },
-    data: {
-      name: nextName,
-      type: nextType,
-      icon:
-        input.icon !== undefined
-          ? normalizeOptionalValue(input.icon)
-          : existingCategory.icon,
-      color:
-        input.color !== undefined
-          ? normalizeOptionalValue(input.color)
-          : existingCategory.color,
-      limit:
-        input.limit !== undefined
-          ? input.limit
-          : existingCategory.limit
+    data,
+    select: categorySelectWithLimit
+  }).catch((error) => {
+    if (
+      !isMissingCategoryLimitColumnError(error) ||
+      input.limit !== undefined
+    ) {
+      throw error;
     }
+
+    return prisma.category.update({
+      where: {
+        id: existingCategory.id
+      },
+      data: {
+        name: nextName,
+        type: nextType,
+        icon:
+          input.icon !== undefined
+            ? normalizeOptionalValue(input.icon)
+            : existingCategory.icon,
+        color:
+          input.color !== undefined
+            ? normalizeOptionalValue(input.color)
+            : existingCategory.color
+      },
+      select: categoryBaseSelect
+    });
   });
 
   return mapCategory(category);
@@ -257,7 +363,19 @@ export async function deleteCategoryService(
   const deletedCategory = await prisma.category.delete({
     where: {
       id: existingCategory.id
+    },
+    select: categorySelectWithLimit
+  }).catch((error) => {
+    if (!isMissingCategoryLimitColumnError(error)) {
+      throw error;
     }
+
+    return prisma.category.delete({
+      where: {
+        id: existingCategory.id
+      },
+      select: categoryBaseSelect
+    });
   });
 
   return mapCategory(deletedCategory);
