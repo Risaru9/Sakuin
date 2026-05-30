@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Smartphone, X } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
+import { Browser } from "@capacitor/browser";
 
 type ApkVersionInfo = {
   latestVersionName: string;
@@ -59,7 +60,7 @@ export function ApkUpdatePrompt() {
           data = await response.json();
         }
 
-        if (data && data.latestVersionCode > installedCode) {
+        if (data && data.latestVersionCode > installedCode && data.apkDownloadUrl) {
           // Cek jika update ini sudah pernah di-dismiss oleh user sebelumnya
           const dismissedCode = localStorage.getItem("sakuin_dismissed_apk_version");
           const hasBeenDismissed = dismissedCode === String(data.latestVersionCode);
@@ -89,9 +90,15 @@ export function ApkUpdatePrompt() {
     setShowPrompt(false);
   }
 
-  function handleUpdate() {
-    if (updateInfo) {
-      window.open(updateInfo.apkDownloadUrl, "_blank");
+  async function handleUpdate() {
+    if (updateInfo && updateInfo.apkDownloadUrl) {
+      try {
+        await Browser.open({ url: updateInfo.apkDownloadUrl });
+      } catch (e) {
+        console.error("Gagal membuka browser untuk download", e);
+        // Fallback jika browser native gagal dimuat
+        window.location.href = updateInfo.apkDownloadUrl;
+      }
     }
   }
 
