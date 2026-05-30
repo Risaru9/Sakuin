@@ -139,7 +139,7 @@ export function ApkAppCard() {
     }
   }
 
-  const downloadUrl = latestVersion?.apkDownloadUrl ?? "/downloads/sakuin.apk";
+  const downloadUrl = latestVersion?.apkDownloadUrl || null;
 
   return (
     <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">
@@ -204,15 +204,21 @@ export function ApkAppCard() {
         </div>
 
         <div className="grid gap-2">
-          <a
-            href={downloadUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90"
-          >
-            <Download className="h-4 w-4 text-white" />
-            {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
-          </a>
+          {downloadUrl ? (
+            <a
+              href={downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90"
+            >
+              <Download className="h-4 w-4 text-white" />
+              {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
+            </a>
+          ) : (
+            <div className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-sm font-black text-zinc-400 border border-zinc-200">
+              Unduhan belum tersedia saat ini
+            </div>
+          )}
 
           <button
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] disabled:cursor-not-allowed disabled:opacity-60"

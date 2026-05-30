@@ -69,6 +69,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd apps/web/android
+          chmod +x gradlew
           ./gradlew assembleRelease
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}

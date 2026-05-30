@@ -32,7 +32,7 @@ apiRoutes.get("/app-version", (c) => {
   return successResponse(c, "Metadata versi aplikasi Android Sakuin", {
     latestVersionName: "1.2",
     latestVersionCode: 3,
-    apkDownloadUrl: "https://github.com/Risaru9/Sakuin/releases/latest/download/sakuin.apk",
+    apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
     releaseNotes: [
       "Pembaruan sistem update APK otomatis langsung dari dalam aplikasi.",
       "Perbaikan performa widget home-screen.",

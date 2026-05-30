@@ -133,14 +133,20 @@ export function ApkUpdatePrompt() {
               </ul>
             </div>
 
-            <button
-              onClick={handleUpdate}
-              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98"
-              type="button"
-            >
-              <Download className="h-4 w-4 text-white" />
-              Perbarui Sekarang
-            </button>
+            {updateInfo.apkDownloadUrl ? (
+              <button
+                onClick={handleUpdate}
+                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98"
+                type="button"
+              >
+                <Download className="h-4 w-4 text-white" />
+                Perbarui Sekarang
+              </button>
+            ) : (
+              <div className="mt-5 p-3 text-center text-xs font-semibold leading-relaxed text-rose-700 bg-rose-50 rounded-2xl border border-rose-100">
+                Pembaruan terdeteksi, tetapi tautan unduhan belum tersedia saat ini.
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -193,23 +199,38 @@ export function ApkUpdatePrompt() {
             </ul>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
-            <button
-              onClick={handleUpdate}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90"
-              type="button"
-            >
-              <Download className="h-3.5 w-3.5 text-white" />
-              Perbarui
-            </button>
-            <button
-              onClick={handleDismiss}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
-              type="button"
-            >
-              Nanti
-            </button>
-          </div>
+          {updateInfo.apkDownloadUrl ? (
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <button
+                onClick={handleUpdate}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90"
+                type="button"
+              >
+                <Download className="h-3.5 w-3.5 text-white" />
+                Perbarui
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
+                type="button"
+              >
+                Nanti
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="p-3 text-center text-xs font-semibold text-zinc-500 bg-zinc-50 rounded-xl">
+                Unduhan belum tersedia untuk versi ini.
+              </div>
+              <button
+                onClick={handleDismiss}
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
+                type="button"
+              >
+                Tutup
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </div>

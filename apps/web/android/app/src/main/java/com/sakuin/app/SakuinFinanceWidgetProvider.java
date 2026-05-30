@@ -23,27 +23,41 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
+        if (appWidgetIds == null || appWidgetIds.length == 0) return;
+        final PendingResult pendingResult = goAsync();
+        new Thread(() -> {
+            try {
+                for (int appWidgetId : appWidgetIds) {
+                    updateAppWidgetSync(context, appWidgetManager, appWidgetId);
+                }
+            } finally {
+                if (pendingResult != null) {
+                    pendingResult.finish();
+                }
+            }
+        }).start();
     }
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        super.onReceive(context, intent);
+        super.onReceive(context, intent); // This already routes APPWIDGET_UPDATE to onUpdate
+        
         String action = intent.getAction();
         if (ACTION_REFRESH.equals(action)
                 || Intent.ACTION_USER_PRESENT.equals(action)
-                || Intent.ACTION_BOOT_COMPLETED.equals(action)
-                || AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action)) {
+                || Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
             ComponentName thisAppWidget = new ComponentName(context.getPackageName(), SakuinFinanceWidgetProvider.class.getName());
             int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget);
+            
+            // Only manually call our new async update logic for these custom/system actions
+            // APPWIDGET_UPDATE is handled by super.onReceive -> onUpdate
             onUpdate(context, appWidgetManager, appWidgetIds);
         }
     }
 
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidgetSync(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sakuin_finance_widget);
 
         // Setup click to open main app
@@ -73,80 +87,74 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             return;
         }
 
-        // Show loading state
+        // Show loading state temporarily (since this is sync now, it might update quickly)
         views.setTextViewText(R.id.widget_status, "Memuat...");
         appWidgetManager.updateAppWidget(appWidgetId, views);
 
-        // Fetch data in background thread
-        new Thread(() -> {
-            try {
-                URL url = new URL(apiUrl + "/api/summary");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Authorization", "Bearer " + token);
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(8000);
+        try {
+            URL url = new URL(apiUrl + "/api/summary");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setConnectTimeout(10000); // slightly longer timeout for robustness
+            conn.setReadTimeout(10000);
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String inputLine;
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
+            int responseCode = conn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
 
-                    JSONObject root = new JSONObject(response.toString());
-                    // API returns { success: true, data: { ... } }
-                    JSONObject data = root.has("data") ? root.getJSONObject("data") : root;
+                JSONObject root = new JSONObject(response.toString());
+                JSONObject data = root.has("data") ? root.getJSONObject("data") : root;
 
-                    double income = data.optDouble("incomeThisMonth", 0.0);
-                    double expense = data.optDouble("expenseThisMonth", 0.0);
+                double income = data.optDouble("incomeThisMonth", 0.0);
+                double expense = data.optDouble("expenseThisMonth", 0.0);
 
-                    JSONObject safeToSpend = data.optJSONObject("safeToSpend");
-                    String status = safeToSpend != null ? safeToSpend.optString("status", "SAFE") : "SAFE";
+                JSONObject safeToSpend = data.optJSONObject("safeToSpend");
+                String status = safeToSpend != null ? safeToSpend.optString("status", "SAFE") : "SAFE";
 
-                    // Format amounts to IDR format
-                    NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
-                    formatter.setMaximumFractionDigits(0);
-                    String formattedIncome = formatter.format(income);
-                    String formattedExpense = formatter.format(expense);
+                NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+                formatter.setMaximumFractionDigits(0);
+                String formattedIncome = formatter.format(income);
+                String formattedExpense = formatter.format(expense);
 
-                    // Update UI elements
-                    views.setTextViewText(R.id.widget_income, formattedIncome);
-                    views.setTextViewText(R.id.widget_expense, formattedExpense);
+                views.setTextViewText(R.id.widget_income, formattedIncome);
+                views.setTextViewText(R.id.widget_expense, formattedExpense);
 
-                    if ("SAFE".equals(status)) {
-                        views.setTextViewText(R.id.widget_status, "Aman");
-                        views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#10B981"));
-                        views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_safe);
-                    } else if ("WATCH".equals(status)) {
-                        views.setTextViewText(R.id.widget_status, "Waspada");
-                        views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#F59E0B"));
-                        views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
-                    } else {
-                        views.setTextViewText(R.id.widget_status, "Boros");
-                        views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#EF4444"));
-                        views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
-                    }
-                } else if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                    views.setTextViewText(R.id.widget_income, "Sesi habis");
-                    views.setTextViewText(R.id.widget_expense, "Login ulang");
-                    views.setTextViewText(R.id.widget_status, "Offline");
+                if ("SAFE".equals(status)) {
+                    views.setTextViewText(R.id.widget_status, "Aman");
+                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#10B981"));
+                    views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_safe);
+                } else if ("WATCH".equals(status)) {
+                    views.setTextViewText(R.id.widget_status, "Waspada");
+                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#F59E0B"));
                     views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
                 } else {
-                    views.setTextViewText(R.id.widget_status, "Error " + responseCode);
+                    views.setTextViewText(R.id.widget_status, "Boros");
+                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#EF4444"));
+                    views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                views.setTextViewText(R.id.widget_status, "Cek koneksi");
-                views.setTextViewText(R.id.widget_income, "Rp -");
-                views.setTextViewText(R.id.widget_expense, "Rp -");
-            } finally {
-                appWidgetManager.updateAppWidget(appWidgetId, views);
+            } else if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                views.setTextViewText(R.id.widget_income, "Sesi habis");
+                views.setTextViewText(R.id.widget_expense, "Login ulang");
+                views.setTextViewText(R.id.widget_status, "Offline");
+                views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
+            } else {
+                views.setTextViewText(R.id.widget_status, "Error " + responseCode);
             }
-        }).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+            views.setTextViewText(R.id.widget_status, "Cek koneksi");
+            views.setTextViewText(R.id.widget_income, "Rp -");
+            views.setTextViewText(R.id.widget_expense, "Rp -");
+        } finally {
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+        }
     }
 }
