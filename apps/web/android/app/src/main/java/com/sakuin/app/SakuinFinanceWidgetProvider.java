@@ -65,7 +65,11 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         // Fetch data in background thread
         new Thread(() -> {
             try {
-                URL url = new URL(apiUrl + "/api/summary");
+                String cleanApiUrl = apiUrl;
+                if (cleanApiUrl.endsWith("/")) {
+                    cleanApiUrl = cleanApiUrl.substring(0, cleanApiUrl.length() - 1);
+                }
+                URL url = new URL(cleanApiUrl + "/api/summary");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "Bearer " + token);
@@ -83,7 +87,11 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                     }
                     in.close();
 
-                    JSONObject data = new JSONObject(response.toString());
+                    JSONObject responseJson = new JSONObject(response.toString());
+                    JSONObject data = responseJson.optJSONObject("data");
+                    if (data == null) {
+                        data = responseJson; // fallback
+                    }
                     double income = data.optDouble("incomeThisMonth", 0.0);
                     double expense = data.optDouble("expenseThisMonth", 0.0);
                     
