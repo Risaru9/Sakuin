@@ -34,6 +34,24 @@ public class MainActivity extends BridgeActivity {
                     // Trigger widget update immediately after token/config saved
                     triggerWidgetUpdate();
                 }
+
+                @JavascriptInterface
+                public int getAppVersionCode() {
+                    try {
+                        return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                    } catch (Exception e) {
+                        return -1;
+                    }
+                }
+
+                @JavascriptInterface
+                public String getAppVersionName() {
+                    try {
+                        return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                    } catch (Exception e) {
+                        return "unknown";
+                    }
+                }
             }, "AndroidWidgetBridge");
         }
     }

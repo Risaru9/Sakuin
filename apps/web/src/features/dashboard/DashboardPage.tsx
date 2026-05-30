@@ -2870,34 +2870,6 @@ const profileQuery = useQuery({
 
         <WeeklyCheckinCard data={summary?.weeklyCheckin} />
 
-        {isAndroid && !isCapacitor && (
-          <div className="mb-5 rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-                <Smartphone className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base font-black text-blue-900 flex items-center gap-1.5">
-                  Aplikasi Android (APK) Resmi Sakuin
-                </h3>
-                <p className="mt-1 text-xs font-semibold leading-relaxed text-blue-700">
-                  Dapatkan pengalaman yang lebih lancar dan fitur <strong>Native Home-screen Widget</strong> untuk memantau saldo harian (Hemat/Boros) secara real-time langsung dari layar utama HP Anda.
-                </p>
-                <div className="mt-3.5 flex flex-wrap gap-2.5">
-                  <a
-                    href="/downloads/sakuin.apk"
-                    download="sakuin.apk"
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-xs font-black text-white shadow-md transition hover:bg-blue-700 active:scale-98"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Pasang Aplikasi (APK)
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {summaryError ? (
           <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
             <div className="flex items-start gap-3">
