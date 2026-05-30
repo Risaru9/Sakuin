@@ -1,28 +1,11 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp"
-    android:height="64dp"
-    android:viewportWidth="64"
-    android:viewportHeight="64">
-    <!-- Face Circle -->
-    <path
-        android:pathData="M32,32m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0"
-        android:fillColor="#ECFDF5"/>
-    <path
-        android:pathData="M32,32m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0"
-        android:strokeColor="#10B981"
-        android:strokeWidth="2"/>
-    <!-- Left Eye -->
-    <path
-        android:pathData="M22,26m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"
-        android:fillColor="#065F46"/>
-    <!-- Right Eye -->
-    <path
-        android:pathData="M42,26m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"
-        android:fillColor="#065F46"/>
-    <!-- Smile -->
-    <path
-        android:pathData="M20,40 Q32,50 44,40"
-        android:strokeColor="#065F46"
-        android:strokeWidth="3"
-        android:strokeLineCap="round"/>
-</vector>
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#ECFDF5" />
+    <stroke
+        android:width="2dp"
+        android:color="#10B981" />
+    <size
+        android:width="48dp"
+        android:height="48dp" />
+</shape>
