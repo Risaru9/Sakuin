@@ -236,8 +236,8 @@ async function getGoalSummary(userId: string, referenceDate: Date) {
   let overdueGoals = 0;
 
   for (const goal of goals) {
-    const isCompleted = toDecimal(goal.currentAmount).greaterThanOrEqualTo(
-      goal.targetAmount
+    const isCompleted = toDecimal(goal.currentAmount ?? 0).greaterThanOrEqualTo(
+      goal.targetAmount ?? 0
     );
 
     if (isCompleted) {
@@ -315,7 +315,7 @@ export async function getAiFinancialContext(
   const baseContext: AiFinancialBaseContext = {
     currency: "IDR",
     generatedAt: referenceDate.toISOString(),
-    safeBalanceLimit: decimalToString(toDecimal(user.safeBalanceLimit)),
+    safeBalanceLimit: decimalToString(toDecimal(user.safeBalanceLimit ?? 0)),
     currentMonth,
     previousMonth,
     monthComparison: {
