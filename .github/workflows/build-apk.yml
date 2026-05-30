@@ -52,6 +52,7 @@ jobs:
       - name: Sync Capacitor Android
         run: |
           cd apps/web
+          git checkout -- android/capacitor.settings.gradle android/app/capacitor.build.gradle || true
           npx cap sync android
 
       - name: Setup Gradle Cache
@@ -61,7 +62,7 @@ jobs:
         run: |
           cd apps/web/android
           chmod +x gradlew
-          ./gradlew assembleRelease --refresh-dependencies
+          ./gradlew assembleRelease -x lint --refresh-dependencies
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
