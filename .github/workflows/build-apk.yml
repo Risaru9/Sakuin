@@ -57,26 +57,11 @@ jobs:
       - name: Setup Gradle Cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Tulis keystore jika secrets tersedia
-      - name: Decode Android Keystore
-        run: |
-          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > apps/web/android/app/release.keystore
-            echo "Keystore successfully decoded and placed."
-          else
-            echo "No ANDROID_KEYSTORE_BASE64 secret found. Will build unsigned APK."
-          fi
-        shell: bash
-
       - name: Build Release APK
         run: |
           cd apps/web/android
           chmod +x gradlew
           ./gradlew assembleRelease
-        env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
