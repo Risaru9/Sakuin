@@ -3,10 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
-  Download,
   LockKeyhole,
   ShieldCheck,
-  Smartphone,
   WalletCards
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -295,30 +293,6 @@ export function LoginPage() {
                   Kembali ke Beranda
                 </Link>
               </p>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
-                  <Smartphone className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black text-blue-900">
-                    Download Aplikasi Android
-                  </p>
-                  <p className="mt-0.5 text-xs font-medium leading-relaxed text-blue-700">
-                    Dapatkan pengalaman lebih lancar dengan aplikasi native Sakuin.
-                  </p>
-                  <a
-                    href="/downloads/sakuin.apk"
-                    download="sakuin.apk"
-                    className="mt-2.5 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Download APK
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
         </div>

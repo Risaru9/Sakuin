@@ -4,7 +4,7 @@ import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent
 } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -195,6 +195,7 @@ function getReminderFrequencySummary(settings: TransactionReminderSettings) {
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user, logout, updateAuthUser } = useAuth();
   const { addToast } = useToast();
@@ -212,8 +213,18 @@ export function ProfilePage() {
   const [notificationPermission, setNotificationPermission] = useState(() =>
     getBrowserNotificationPermission()
   );
+
+  // Support deep link: /profile?section=notifications
+  const initialSection = ((): ProfileSection => {
+    const param = searchParams.get("section");
+    if (param === "notifications" || param === "automation" || param === "account") {
+      return param as ProfileSection;
+    }
+    return "profile";
+  })();
+
   const [activeSection, setActiveSection] =
-    useState<ProfileSection>("profile");
+    useState<ProfileSection>(initialSection);
   const [pendingRecurringRuleId, setPendingRecurringRuleId] = useState<
     string | null
   >(null);
