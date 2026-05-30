@@ -5,7 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Sakuin',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    // Load from production Vercel URL so the WebView origin matches the
+    // whitelisted CORS origin and Google OAuth works without restrictions.
+    url: 'https://sakuin-web.vercel.app',
+    cleartext: false
   }
 };
 
