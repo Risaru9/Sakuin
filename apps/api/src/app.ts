@@ -180,7 +180,8 @@ app.get("/", (c) => {
 app.get("/health", (c) => {
   return successResponse(c, "Server sehat", {
     status: "ok",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    debug_tag: "antigravity-debug-v1"
   });
 });
 
