@@ -18,6 +18,8 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -84,3 +86,20 @@ jobs:
             apps/web/android/app/build/outputs/apk/release/app-release.apk
             apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: warn
+
+      - name: Deploy APK to webapp
+        run: |
+          mkdir -p apps/web/public/downloads
+          if [ -f "apps/web/android/app/build/outputs/apk/release/app-release.apk" ]; then
+            cp apps/web/android/app/build/outputs/apk/release/app-release.apk apps/web/public/downloads/sakuin.apk
+          elif [ -f "apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            cp apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk apps/web/public/downloads/sakuin.apk
+          fi
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/public/downloads/sakuin.apk
+          
+          # Hanya lakukan commit jika file berubah agar tidak error
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore(android): auto-update APK in public/downloads [skip ci]"
+          git push
