@@ -1,3 +1,10 @@
+export type GoalHistory = {
+  id: string;
+  amount: string;
+  currentAmount: string;
+  createdAt: string;
+};
+
 export type Goal = {
   id: string;
   name: string;
@@ -5,6 +12,7 @@ export type Goal = {
   currentAmount: string;
   deadline: string | null;
   description: string | null;
+  history?: GoalHistory[];
   createdAt: string;
   updatedAt: string;
 };

@@ -7,7 +7,9 @@ import type {
   UpdateGoalInput
 } from "./goal.types.js";
 
-type GoalEntity = Prisma.GoalGetPayload<object>;
+type GoalEntity = Prisma.GoalGetPayload<object> & {
+  history?: Prisma.GoalHistoryGetPayload<object>[];
+};
 
 function toDecimal(value: Prisma.Decimal.Value) {
   return new Prisma.Decimal(value);
@@ -51,6 +53,13 @@ function mapGoalToResponse(goal: GoalEntity): GoalResponse {
     goal.deadline && goal.deadline < now && !isCompleted
   );
 
+  const history = goal.history?.map((h) => ({
+    id: h.id,
+    amount: decimalToString(toDecimal(h.amount)),
+    currentAmount: decimalToString(toDecimal(h.currentAmount)),
+    createdAt: h.createdAt.toISOString()
+  }));
+
   return {
     id: goal.id,
     name: goal.name,
@@ -61,6 +70,7 @@ function mapGoalToResponse(goal: GoalEntity): GoalResponse {
     isCompleted,
     deadline: goal.deadline ? goal.deadline.toISOString() : null,
     isOverdue,
+    history,
     createdAt: goal.createdAt.toISOString(),
     updatedAt: goal.updatedAt.toISOString()
   };
@@ -105,6 +115,16 @@ export async function createGoal(
     }
   });
 
+  if (currentAmount.greaterThan(0)) {
+    await prisma.goalHistory.create({
+      data: {
+        goalId: goal.id,
+        amount: currentAmount,
+        currentAmount
+      }
+    });
+  }
+
   return mapGoalToResponse(goal);
 }
 
@@ -125,7 +145,23 @@ export async function getGoalById(
   userId: string,
   goalId: string
 ): Promise<GoalResponse> {
-  const goal = await getOwnedGoalOrThrow(userId, goalId);
+  const goal = await prisma.goal.findFirst({
+    where: {
+      id: goalId,
+      userId
+    },
+    include: {
+      history: {
+        orderBy: {
+          createdAt: "desc"
+        }
+      }
+    }
+  });
+
+  if (!goal) {
+    throw new HttpError("Goal tidak ditemukan", 404);
+  }
 
   return mapGoalToResponse(goal);
 }
@@ -153,6 +189,9 @@ export async function updateGoal(
     );
   }
 
+  const oldCurrentAmount = toDecimal(existingGoal.currentAmount);
+  const diff = currentAmount.minus(oldCurrentAmount);
+
   const goal = await prisma.goal.update({
     where: {
       id: existingGoal.id
@@ -165,6 +204,16 @@ export async function updateGoal(
         input.deadline !== undefined ? input.deadline : existingGoal.deadline
     }
   });
+
+  if (!diff.equals(0)) {
+    await prisma.goalHistory.create({
+      data: {
+        goalId: goal.id,
+        amount: diff,
+        currentAmount
+      }
+    });
+  }
 
   return mapGoalToResponse(goal);
 }

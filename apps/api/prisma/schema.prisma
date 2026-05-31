@@ -70,17 +70,30 @@ model Transaction {
 }
 
 model Goal {
-  id            String    @id @default(cuid())
+  id            String        @id @default(cuid())
   userId        String
   name          String
-  targetAmount  Decimal   @db.Decimal(18, 2)
-  currentAmount Decimal   @default(0) @db.Decimal(18, 2)
+  targetAmount  Decimal       @db.Decimal(18, 2)
+  currentAmount Decimal       @default(0) @db.Decimal(18, 2)
   deadline      DateTime?
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history       GoalHistory[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([userId])
+}
+
+model GoalHistory {
+  id            String   @id @default(cuid())
+  goalId        String
+  amount        Decimal  @db.Decimal(18, 2)
+  currentAmount Decimal  @db.Decimal(18, 2)
+  createdAt     DateTime @default(now())
+
+  goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
 }
 
 model Category {

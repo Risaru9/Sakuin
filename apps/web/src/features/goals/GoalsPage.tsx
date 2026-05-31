@@ -18,6 +18,7 @@ import { Button } from "../../components/ui/button";
 import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { AddGoalProgressModal } from "./AddGoalProgressModal";
+import { GoalDetailModal } from "./GoalDetailModal";
 import {
   clearDashboardPriorityGoalId,
   getDashboardPriorityGoalId,
@@ -88,6 +89,7 @@ function getGoalProgress(goal: Goal) {
 
 function GoalCard({
   goal,
+  onOpenDetail,
   onAddProgress,
   onSetDashboardPriority,
   onEdit,
@@ -96,6 +98,7 @@ function GoalCard({
   isDeleting
 }: {
   goal: Goal;
+  onOpenDetail: (goal: Goal) => void;
   onAddProgress: (goal: Goal) => void;
   onSetDashboardPriority: (goal: Goal) => void;
   onEdit: (goal: Goal) => void;
@@ -109,9 +112,16 @@ function GoalCard({
     <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-lg font-black text-[var(--sakuin-text)]">
-            {goal.name}
-          </p>
+          <button
+            onClick={() => onOpenDetail(goal)}
+            className="group block text-left"
+            title="Lihat riwayat tabungan"
+            type="button"
+          >
+            <p className="truncate text-lg font-black text-[var(--sakuin-text)] group-hover:text-[var(--sakuin-secondary)] group-hover:underline">
+              {goal.name}
+            </p>
+          </button>
 
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
             <CalendarDays className="h-3.5 w-3.5" />
@@ -152,6 +162,16 @@ function GoalCard({
             }}
           />
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
+        <button
+          onClick={() => onOpenDetail(goal)}
+          className="text-xs font-bold text-[var(--sakuin-secondary)] hover:underline"
+          type="button"
+        >
+          Lihat Riwayat Tabungan →
+        </button>
       </div>
 
       <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_90px_90px]">
@@ -216,6 +236,7 @@ export function GoalsPage() {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
   const [progressGoal, setProgressGoal] = useState<Goal | null>(null);
+  const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
 
@@ -522,6 +543,7 @@ export function GoalsPage() {
             <GoalCard
               key={goal.id}
               goal={goal}
+              onOpenDetail={(g) => setDetailGoalId(g.id)}
               onAddProgress={handleAddProgress}
               onSetDashboardPriority={handleSetDashboardPriority}
               onEdit={handleEdit}
@@ -564,6 +586,12 @@ export function GoalsPage() {
         variant="danger"
         onClose={closeDeleteDialog}
         onConfirm={handleConfirmDelete}
+      />
+
+      <GoalDetailModal
+        open={Boolean(detailGoalId)}
+        goalId={detailGoalId}
+        onClose={() => setDetailGoalId(null)}
       />
     </AppShell>
   );

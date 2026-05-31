@@ -19,6 +19,10 @@ export function updateGoal(goalId: string, input: UpdateGoalInput) {
   });
 }
 
+export function getGoal(goalId: string) {
+  return apiRequest<Goal>(`/api/goals/${goalId}`);
+}
+
 export function deleteGoal(goalId: string) {
   return apiRequest<Goal>(`/api/goals/${goalId}`, {
     method: "DELETE"

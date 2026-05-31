@@ -11,6 +11,13 @@ export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
 
 export type GoalIdParam = z.infer<typeof goalIdParamSchema>;
 
+export type GoalHistoryResponse = {
+  id: string;
+  amount: string;
+  currentAmount: string;
+  createdAt: string;
+};
+
 export type GoalResponse = {
   id: string;
   name: string;
@@ -21,6 +28,7 @@ export type GoalResponse = {
   isCompleted: boolean;
   deadline: string | null;
   isOverdue: boolean;
+  history?: GoalHistoryResponse[];
   createdAt: string;
   updatedAt: string;
 };
