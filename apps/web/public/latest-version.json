@@ -1,12 +1,11 @@
 {
-  "latestVersionName": "1.2",
-  "latestVersionCode": 3,
+  "latestVersionName": "1.3",
+  "latestVersionCode": 4,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Pembaruan sistem update APK otomatis langsung dari dalam aplikasi.",
-    "Perbaikan performa widget home-screen.",
-    "Pembersihan dashboard dari tombol unduh yang mengganggu."
+    "Pembaruan metode Login Google menggunakan Native Sign-In agar lebih mulus.",
+    "Perbaikan isu redirect ke Play Store."
   ],
-  "forceUpdate": false,
-  "publishedAt": "2026-05-30T15:00:00.000Z"
+  "forceUpdate": true,
+  "publishedAt": "2026-05-31T15:00:00.000Z"
 }
