@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -88,6 +88,24 @@ export function LoginPage() {
       setIsGoogleSubmitting(false);
     }
   }
+
+  useEffect(() => {
+    if (window.location.hash) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const idToken = params.get("id_token");
+
+      if (idToken) {
+        // Clear secure random values
+        localStorage.removeItem("google_oauth_state");
+        localStorage.removeItem("google_oauth_nonce");
+
+        // Clear hash from address bar immediately to prevent re-submitting on refresh
+        window.history.replaceState(null, "", window.location.pathname);
+
+        void handleGoogleCredential(idToken);
+      }
+    }
+  }, []);
 
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-white text-[var(--sakuin-text)] selection:bg-[var(--sakuin-primary-soft)]">
