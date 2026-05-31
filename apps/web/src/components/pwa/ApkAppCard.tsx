@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, RefreshCcw, Smartphone, Wifi, WifiOff } from "lucide-react";
+import { Download, RefreshCcw, Smartphone, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useToast } from "../toast/ToastProvider";
 import { apiRequest } from "../../lib/api-client";
 
@@ -18,6 +18,7 @@ export function ApkAppCard() {
     typeof navigator === "undefined" ? true : navigator.onLine
   );
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isApk, setIsApk] = useState(false);
   const [installedVersion, setInstalledVersion] = useState({ code: 0, name: "Bukan APK / Browser" });
   const [latestVersion, setLatestVersion] = useState<ApkVersionInfo | null>(null);
@@ -207,18 +208,38 @@ export function ApkAppCard() {
           {downloadUrl ? (
             <button
               onClick={() => {
+                setIsDownloading(true);
+                addToast({
+                  variant: "info",
+                  title: "Mengunduh Pembaruan...",
+                  description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
+                  duration: 7000
+                });
+
                 const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
                 if (isCapacitor) {
                   window.open(downloadUrl, "_system");
                 } else {
                   window.open(downloadUrl, "_blank");
                 }
+
+                setTimeout(() => setIsDownloading(false), 5000);
               }}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90"
+              disabled={isDownloading}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 disabled:cursor-wait"
               type="button"
             >
-              <Download className="h-4 w-4 text-white" />
-              {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
+              {isDownloading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  Mengunduh APK...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 text-white" />
+                  {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
+                </>
+              )}
             </button>
           ) : (
             <div className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-sm font-black text-zinc-400 border border-zinc-200">

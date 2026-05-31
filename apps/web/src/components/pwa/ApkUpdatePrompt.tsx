@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, Smartphone, X } from "lucide-react";
+import { CheckCircle2, Download, Smartphone, X, Loader2 } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
+import { useToast } from "../toast/ToastProvider";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
@@ -17,6 +18,8 @@ export function ApkUpdatePrompt() {
   const [updateInfo, setUpdateInfo] = useState<ApkVersionInfo | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentVersion, setCurrentVersion] = useState({ code: 2, name: "1.1" });
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     // 1. Cek apakah berjalan di dalam environment Android APK
@@ -100,17 +103,31 @@ export function ApkUpdatePrompt() {
 
   function handleUpdate() {
     if (updateInfo && updateInfo.apkDownloadUrl) {
+      setIsDownloading(true);
+      addToast({
+        variant: "info",
+        title: "Mengunduh Pembaruan...",
+        description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
+        duration: 7000
+      });
+      
       const url = updateInfo.apkDownloadUrl;
       const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
 
       if (isCapacitor) {
-        // Gunakan window.open dengan _system agar OS yang menangani download
-        // Mencegah freeze pada Capacitor browser saat mendownload APK
         window.open(url, "_system");
       } else {
-        // Peramban web/PWA standar
         window.open(url, "_blank");
       }
+
+      // Reset state setelah beberapa detik
+      setTimeout(() => {
+        setIsDownloading(false);
+        // Jika force update, kita biarkan saja prompt-nya tidak tertutup agar user menginstallnya
+        if (!updateInfo.forceUpdate) {
+           setShowPrompt(false);
+        }
+      }, 5000);
     }
   }
 
@@ -155,11 +172,21 @@ export function ApkUpdatePrompt() {
             {updateInfo.apkDownloadUrl ? (
               <button
                 onClick={handleUpdate}
-                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98"
+                disabled={isDownloading}
+                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98 disabled:opacity-70 disabled:cursor-wait"
                 type="button"
               >
-                <Download className="h-4 w-4 text-white" />
-                Perbarui Sekarang
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    Sedang Mengunduh...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 text-white" />
+                    Perbarui Sekarang
+                  </>
+                )}
               </button>
             ) : (
               <div className="mt-5 p-3 text-center text-xs font-semibold leading-relaxed text-rose-700 bg-rose-50 rounded-2xl border border-rose-100">
@@ -222,11 +249,16 @@ export function ApkUpdatePrompt() {
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               <button
                 onClick={handleUpdate}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90"
+                disabled={isDownloading}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 disabled:cursor-wait"
                 type="button"
               >
-                <Download className="h-3.5 w-3.5 text-white" />
-                Perbarui
+                {isDownloading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 text-white" />
+                )}
+                {isDownloading ? "Mengunduh..." : "Perbarui"}
               </button>
               <button
                 onClick={handleDismiss}
