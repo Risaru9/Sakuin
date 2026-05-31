@@ -4,4 +4,5 @@
     <string name="title_activity_main">Sakuin</string>
     <string name="package_name">com.sakuin.app</string>
     <string name="custom_url_scheme">com.sakuin.app</string>
+    <string name="server_client_id">1090124544185-jqgvut63n2hg4rhf341eohvg7i7fnp32.apps.googleusercontent.com</string>
 </resources>

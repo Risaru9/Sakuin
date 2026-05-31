@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 
 type GoogleAuthButtonText = "signin_with" | "signup_with" | "continue_with";
 
@@ -27,33 +28,29 @@ export function GoogleAuthButton({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [buttonWidth, setButtonWidth] = useState(320);
 
+  useEffect(() => {
+    if (isCapacitorEnvironment()) {
+      GoogleAuth.initialize({
+        clientId: googleClientId,
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+    }
+  }, []);
+
   if (isCapacitorEnvironment()) {
-    function handleGoogleRedirectLogin() {
-      if (!googleClientId) {
-        onFailure("Google client ID tidak ditemukan.");
-        return;
+    async function handleNativeGoogleLogin() {
+      try {
+        const user = await GoogleAuth.signIn();
+        if (user && user.authentication && user.authentication.idToken) {
+          await onCredential(user.authentication.idToken);
+        } else {
+          onFailure("Google credential tidak ditemukan. Silakan coba lagi.");
+        }
+      } catch (error: any) {
+        console.error("Google Auth Error:", error);
+        onFailure(error?.message || "Login Google dibatalkan atau gagal.");
       }
-
-      const state = "app_auth_" + Math.random().toString(36).substring(2, 15);
-      const nonce = Math.random().toString(36).substring(2, 15);
-      localStorage.setItem("google_oauth_state", state);
-      localStorage.setItem("google_oauth_nonce", nonce);
-
-      const redirectUri = "https://sakuin-web.vercel.app/oauth-callback";
-      const authUrl = [
-        "https://accounts.google.com/o/oauth2/v2/auth",
-        `?client_id=${encodeURIComponent(googleClientId)}`,
-        `&redirect_uri=${encodeURIComponent(redirectUri)}`,
-        `&response_type=id_token`,
-        `&scope=${encodeURIComponent("openid email profile")}`,
-        `&nonce=${encodeURIComponent(nonce)}`,
-        `&state=${encodeURIComponent(state)}`,
-        `&prompt=select_account`
-      ].join("");
-
-      // Buka di Chrome Custom Tab (Android) / Safari View Controller (iOS)
-      // melalui Capacitor Browser plugin
-      void Browser.open({ url: authUrl });
     }
 
 
@@ -62,7 +59,7 @@ export function GoogleAuthButton({
         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] active:scale-[0.98]"
         type="button"
         disabled={disabled}
-        onClick={handleGoogleRedirectLogin}
+        onClick={handleNativeGoogleLogin}
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>

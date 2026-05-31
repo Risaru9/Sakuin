@@ -18,6 +18,13 @@ const config: CapacitorConfig = {
   ios: {
     // Override User Agent to look like standard mobile Safari to bypass Google OAuth WebView block
     overrideUserAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+  },
+  plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '1090124544185-jqgvut63n2hg4rhf341eohvg7i7fnp32.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
+    },
   }
 };
 
