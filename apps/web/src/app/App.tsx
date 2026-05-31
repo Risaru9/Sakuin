@@ -152,10 +152,12 @@ export function App() {
 
     consumeWidgetQuickAction();
     const retryTimer = window.setTimeout(consumeWidgetQuickAction, 700);
+    window.addEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
     window.addEventListener("focus", consumeWidgetQuickAction);
 
     return () => {
       window.clearTimeout(retryTimer);
+      window.removeEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
       window.removeEventListener("focus", consumeWidgetQuickAction);
     };
   }, []);

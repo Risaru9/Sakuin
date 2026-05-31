@@ -87,11 +87,14 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         WidgetSize widgetSize = getWidgetSize(appWidgetManager, appWidgetId);
         applyResponsiveLayout(views, widgetSize);
 
-        // Setup click to open main app
+        // Setup non-button areas to open main app. Keep root free so widget buttons
+        // are not swallowed by parent click handling on some Android launchers.
         Intent configIntent = new Intent(context, MainActivity.class);
         PendingIntent configPendingIntent = PendingIntent.getActivity(
                 context, 0, configIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_root, configPendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_header_area, configPendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_amount_grid, configPendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_status_row, configPendingIntent);
 
         // Setup refresh button click
         Intent refreshIntent = new Intent(context, SakuinFinanceWidgetProvider.class);
@@ -102,7 +105,9 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
         Intent quickTransactionIntent = new Intent(context, MainActivity.class);
         quickTransactionIntent.setAction(ACTION_QUICK_TRANSACTION);
-        quickTransactionIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        quickTransactionIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        quickTransactionIntent.setData(android.net.Uri.parse("sakuin://widget/quick-transaction"));
+        quickTransactionIntent.putExtra("source", "widget");
         PendingIntent quickTransactionPendingIntent = PendingIntent.getActivity(
                 context, 3, quickTransactionIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_quick_add_button, quickTransactionPendingIntent);

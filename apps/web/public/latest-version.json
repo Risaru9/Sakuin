@@ -1,14 +1,14 @@
 {
-  "latestVersionCode": 7,
-  "latestVersionName": "1.6.0",
+  "latestVersionCode": 8,
+  "latestVersionName": "1.6.1",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Widget Android kini punya tombol Reload khusus untuk memperbarui saldo, pemasukan, dan pengeluaran.",
-    "Area widget selain tombol Reload membuka aplikasi Sakuin.",
-    "Widget ukuran besar dan ekstra besar memiliki tombol Catat transaksi untuk membuka Catat Cepat.",
-    "Nama aplikasi Android diperbarui menjadi Sakuin v1.6.0."
+    "Memperbaiki tombol Catat transaksi di widget agar benar-benar membuka Catat Cepat.",
+    "Area buka aplikasi dipisahkan dari tombol Reload dan Catat transaksi agar aksi widget tidak saling menimpa.",
+    "Widget mengirim sinyal langsung ke WebView saat tombol Catat transaksi ditekan.",
+    "Nama aplikasi Android diperbarui menjadi Sakuin v1.6.1."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-05-31T17:00:00.000Z"
+  "publishedAt": "2026-06-01T00:30:00.000Z"
 }

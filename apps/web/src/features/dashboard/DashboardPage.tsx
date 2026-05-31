@@ -2603,11 +2603,13 @@ const profileQuery = useQuery({
 
     consumeWidgetQuickAction();
     const retryTimer = window.setTimeout(consumeWidgetQuickAction, 700);
+    window.addEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
     window.addEventListener("focus", consumeWidgetQuickAction);
 
     return () => {
       isCancelled = true;
       window.clearTimeout(retryTimer);
+      window.removeEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
       window.removeEventListener("focus", consumeWidgetQuickAction);
     };
   }, []);

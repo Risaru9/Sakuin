@@ -142,5 +142,21 @@ public class MainActivity extends BridgeActivity {
 
         SharedPreferences sharedPref = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         sharedPref.edit().putBoolean(KEY_PENDING_QUICK_ACTION, true).apply();
+        notifyWebViewAboutWidgetQuickAction();
+    }
+
+    private void notifyWebViewAboutWidgetQuickAction() {
+        try {
+            WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+            if (webView == null) {
+                return;
+            }
+
+            webView.post(() -> webView.evaluateJavascript(
+                    "window.dispatchEvent(new CustomEvent('sakuin:widget-quick-transaction'))",
+                    null));
+        } catch (Exception ignored) {
+            // The web layer also polls the bridge when it regains focus.
+        }
     }
 }
