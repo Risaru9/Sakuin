@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { Browser } from "@capacitor/browser";
 
 type GoogleAuthButtonText = "signin_with" | "signup_with" | "continue_with";
 
@@ -37,10 +38,10 @@ export function GoogleAuthButton({
       localStorage.setItem("google_oauth_state", state);
       localStorage.setItem("google_oauth_nonce", nonce);
 
-      const redirectUri = window.location.origin + "/login";
+      const redirectUri = window.location.origin + "/oauth-callback";
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent("openid email profile")}&nonce=${nonce}&state=${state}`;
 
-      window.location.assign(authUrl);
+      void Browser.open({ url: authUrl });
     }
 
     return (

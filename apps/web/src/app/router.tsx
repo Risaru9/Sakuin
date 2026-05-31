@@ -39,6 +39,12 @@ const LoginPage = lazy(() =>
   }))
 );
 
+const OAuthCallbackPage = lazy(() =>
+  import("../features/auth/pages/OAuthCallbackPage").then((module) => ({
+    default: module.OAuthCallbackPage
+  }))
+);
+
 const RegisterPage = lazy(() =>
   import("../features/auth/pages/RegisterPage").then((module) => ({
     default: module.RegisterPage
@@ -1100,6 +1106,10 @@ export const router = createBrowserRouter([
         <LoginPage />
       </GuestRoute>
     )
+  },
+  {
+    path: "/oauth-callback",
+    element: <OAuthCallbackPage />
   },
   {
     path: "/register",

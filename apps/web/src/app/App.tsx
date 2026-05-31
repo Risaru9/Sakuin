@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
+import { App as CapApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { AppReleaseNotesPrompt } from "../components/pwa/AppReleaseNotesPrompt";
 import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
 import { ApkUpdatePrompt } from "../components/pwa/ApkUpdatePrompt";
@@ -27,6 +29,32 @@ export function App() {
     return () => {
       window.removeEventListener("sakuin:pwa-update", handlePwaUpdate);
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).Capacitor) {
+      const handleAppUrlOpen = (event: { url: string }) => {
+        try {
+          const parsedUrl = new URL(event.url);
+          const idToken = parsedUrl.searchParams.get("id_token");
+          if (idToken) {
+            // Close Chrome Custom Tab / Safari View Controller
+            void Browser.close();
+            
+            // Navigate the internal router to login hash fragment
+            void router.navigate(`/login#id_token=${idToken}`);
+          }
+        } catch (error) {
+          console.error("Gagal memproses deep link URL:", error);
+        }
+      };
+
+      const listenerPromise = CapApp.addListener("appUrlOpen", handleAppUrlOpen);
+
+      return () => {
+        void listenerPromise.then((handle) => handle.remove());
+      };
+    }
   }, []);
 
   return (

@@ -9,12 +9,7 @@ const config: CapacitorConfig = {
     // Load from production Vercel URL so the WebView origin matches the
     // whitelisted CORS origin and Google OAuth works without restrictions.
     url: 'https://sakuin-web.vercel.app',
-    cleartext: false,
-    allowNavigation: [
-      'accounts.google.com',
-      '*.google.com',
-      '*.googleusercontent.com'
-    ]
+    cleartext: false
   },
   android: {
     // Override User Agent to look like standard mobile Chrome to bypass Google OAuth WebView block
