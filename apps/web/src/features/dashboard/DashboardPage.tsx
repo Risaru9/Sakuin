@@ -8,6 +8,7 @@ import {
   ArrowUpCircle,
   CalendarDays,
   ChevronDown,
+  ChevronUp,
   CheckCircle2,
   Clock3,
   Download,
@@ -2128,12 +2129,17 @@ function TodayViewCard({
   isLoading: boolean;
   onOpenQuickTransaction: () => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const todayStr = getLocalDateKey();
 
   const todayTransactions = useMemo(() => {
     if (!summary?.recentTransactions) return [];
     return summary.recentTransactions.filter((tx) => getLocalDateKey(new Date(tx.date)) === todayStr);
   }, [summary?.recentTransactions, todayStr]);
+
+  const visibleTransactions = useMemo(() => {
+    return isExpanded ? todayTransactions : todayTransactions.slice(0, 5);
+  }, [todayTransactions, isExpanded]);
 
   const todayExpenseSum = useMemo(() => {
     return todayTransactions
@@ -2206,9 +2212,31 @@ function TodayViewCard({
         
         <div className="mt-4 grid gap-3">
           {todayTransactions.length > 0 ? (
-            todayTransactions.map((tx) => (
-              <TransactionItem key={tx.id} transaction={tx} />
-            ))
+            <>
+              {visibleTransactions.map((tx) => (
+                <TransactionItem key={tx.id} transaction={tx} />
+              ))}
+              
+              {todayTransactions.length > 5 && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--sakuin-border)] py-2 text-xs font-black text-[var(--sakuin-text)] hover:bg-[var(--sakuin-primary-soft)] transition"
+                  type="button"
+                >
+                  {isExpanded ? (
+                    <>
+                      Tutup
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Lihat Semua ({todayTransactions.length - 5} lainnya)
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           ) : (
             <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-5 text-center text-xs font-semibold text-zinc-600">
               Belum ada transaksi khusus hari ini.
@@ -2233,7 +2261,7 @@ export function DashboardPage() {
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [activeMobileTab, setActiveMobileTab] = useState<
-    "overview" | "today" | "transactions" | "stats"
+    "overview" | "transactions" | "stats"
   >("overview");
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
@@ -2684,18 +2712,7 @@ const profileQuery = useQuery({
               >
                 Ringkasan
               </button>
-              <button
-                className={[
-                  "flex-1 rounded-xl px-3 py-2 transition",
-                  activeMobileTab === "today"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent text-zinc-600"
-                ].join(" ")}
-                onClick={() => setActiveMobileTab("today")}
-                type="button"
-              >
-                Hari Ini
-              </button>
+
               <button
                 className={[
                   "flex-1 rounded-xl px-3 py-2 transition",
@@ -2825,49 +2842,49 @@ const profileQuery = useQuery({
                 </>
               ) : null}
 
-              {activeMobileTab === "today" ? (
-                <TodayViewCard
-                  summary={summary}
-                  isLoading={isLoadingSummary}
-                  onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
-                />
-              ) : null}
-
               {activeMobileTab === "transactions" ? (
-                <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-                  <div className="mb-4 flex items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                        Transaksi Terbaru
-                      </h2>
-                      <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
-                        Aktivitas terakhir dari akunmu.
-                      </p>
+                <>
+                  <TodayViewCard
+                    summary={summary}
+                    isLoading={isLoadingSummary}
+                    onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
+                  />
+
+                  <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <div>
+                        <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                          Transaksi Terbaru (Semua)
+                        </h2>
+                        <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
+                          Aktivitas terakhir dari akunmu secara keseluruhan.
+                        </p>
+                      </div>
+
+                      <Link
+                        className="rounded-xl border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                        to="/transactions"
+                      >
+                        Lihat semua
+                      </Link>
                     </div>
 
-                    <Link
-                      className="rounded-xl border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-                      to="/transactions"
-                    >
-                      Lihat semua
-                    </Link>
+                    <div className="grid gap-3">
+                      {(summary?.recentTransactions ?? []).length > 0 ? (
+                        summary?.recentTransactions.slice(0, 5).map((transaction) => (
+                          <TransactionItem
+                            key={transaction.id}
+                            transaction={transaction}
+                          />
+                        ))
+                      ) : (
+                        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
+                          Belum ada transaksi terbaru.
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="grid gap-3">
-                    {(summary?.recentTransactions ?? []).length > 0 ? (
-                      summary?.recentTransactions.slice(0, 5).map((transaction) => (
-                        <TransactionItem
-                          key={transaction.id}
-                          transaction={transaction}
-                        />
-                      ))
-                    ) : (
-                      <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-6 text-center text-sm font-semibold text-zinc-600">
-                        Belum ada transaksi terbaru.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                </>
               ) : null}
 
               {activeMobileTab === "stats" ? (
