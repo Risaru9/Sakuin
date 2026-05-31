@@ -44,7 +44,7 @@ function formatDate(value: string | null) {
 
 export function GoalDetailModal({ open, goalId, onClose }: GoalDetailModalProps) {
   const goalQuery = useQuery({
-    queryKey: [queryKeys.goals, goalId],
+    queryKey: [...queryKeys.goals, goalId],
     queryFn: () => getGoal(goalId!),
     enabled: Boolean(open && goalId)
   });
