@@ -29,12 +29,11 @@ export function GoogleAuthButton({
   const [buttonWidth, setButtonWidth] = useState(320);
 
   useEffect(() => {
-    if (isCapacitorEnvironment()) {
-      GoogleAuth.initialize({
-        clientId: googleClientId,
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
-      });
+    // Pada Native Android/iOS, plugin dikonfigurasi melalui capacitor.config.ts dan string.xml.
+    // Initialize hanya diperlukan untuk Web.
+    if (!isCapacitorEnvironment()) {
+      // (Tidak berjalan di web karena komponen ini hanya di-render untuk native di AppShell jika ada logika render khusus,
+      // tapi untuk amannya kita tidak init jika di Capacitor)
     }
   }, []);
 
