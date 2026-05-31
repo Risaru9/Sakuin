@@ -38,11 +38,23 @@ export function GoogleAuthButton({
       localStorage.setItem("google_oauth_state", state);
       localStorage.setItem("google_oauth_nonce", nonce);
 
-      const redirectUri = window.location.origin + "/oauth-callback";
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent("openid email profile")}&nonce=${nonce}&state=${state}`;
+      const redirectUri = "https://sakuin-web.vercel.app/oauth-callback";
+      const authUrl = [
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        `?client_id=${encodeURIComponent(googleClientId)}`,
+        `&redirect_uri=${encodeURIComponent(redirectUri)}`,
+        `&response_type=id_token`,
+        `&scope=${encodeURIComponent("openid email profile")}`,
+        `&nonce=${encodeURIComponent(nonce)}`,
+        `&state=${encodeURIComponent(state)}`,
+        `&prompt=select_account`
+      ].join("");
 
+      // Buka di Chrome Custom Tab (Android) / Safari View Controller (iOS)
+      // melalui Capacitor Browser plugin
       void Browser.open({ url: authUrl });
     }
+
 
     return (
       <button

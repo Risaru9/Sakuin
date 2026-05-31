@@ -10,6 +10,12 @@ import { TransactionReminderRunner } from "../components/pwa/TransactionReminder
 import { ToastProvider } from "../components/toast/ToastProvider";
 import { AuthProvider } from "../features/auth/auth-context";
 import { queryClient } from "../lib/query-client";
+import {
+  setStoredToken,
+  setCachedUser,
+  syncTokenToServiceWorker
+} from "../lib/auth-storage";
+import type { AuthUser } from "../features/auth/auth.types";
 import { router } from "./router";
 
 type PwaUpdateEvent = CustomEvent<ServiceWorkerRegistration>;
@@ -32,29 +38,100 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Capacitor) {
-      const handleAppUrlOpen = (event: { url: string }) => {
-        try {
-          const parsedUrl = new URL(event.url);
+    if (typeof window === "undefined" || !(window as any).Capacitor) {
+      return;
+    }
+
+    /**
+     * Handler untuk deep link yang datang dari Chrome Custom Tab setelah login Google.
+     *
+     * Flow:
+     * 1. OAuthCallbackPage (di Chrome Custom Tab) → autentikasi ke API → dapat JWT
+     * 2. OAuthCallbackPage redirect ke: com.sakuin.app://auth?token=JWT&user=BASE64
+     * 3. Handler ini menerima event, simpan token ke WebView localStorage
+     * 4. Tutup Chrome Custom Tab
+     * 5. Navigasi ke dashboard
+     *
+     * PENTING: Chrome Custom Tab dan WebView memiliki storage TERPISAH.
+     * Kita TIDAK bisa mengandalkan token yang disimpan di Custom Tab.
+     * Kita harus menerima token via deep link dan menyimpannya di WebView.
+     */
+    const handleAppUrlOpen = async (event: { url: string }) => {
+      try {
+        const parsedUrl = new URL(event.url);
+
+        // ─── FLOW BARU: com.sakuin.app://auth?token=JWT&user=BASE64 ──────────
+        // OAuthCallbackPage sudah mengautentikasi ke API dan mengirim JWT Sakuin
+        // (bukan Google id_token) via deep link ini.
+        //
+        // parsedUrl.host = "auth" untuk URL: com.sakuin.app://auth?...
+        if (parsedUrl.host === "auth") {
+          const token = parsedUrl.searchParams.get("token");
+          const userBase64 = parsedUrl.searchParams.get("user");
+
+          if (token) {
+            // Decode user data dari base64 jika tersedia
+            let user: AuthUser | null = null;
+            if (userBase64) {
+              try {
+                user = JSON.parse(decodeURIComponent(atob(userBase64))) as AuthUser;
+              } catch {
+                // Jika decode gagal, tetap lanjutkan dengan token saja
+                // AuthProvider akan fetch user dari API menggunakan token
+              }
+            }
+
+            // Simpan token dan user ke WebView localStorage
+            // PENTING: ini HARUS dilakukan sebelum Browser.close() dan navigate
+            setStoredToken(token);
+            if (user) {
+              setCachedUser(user);
+            }
+            syncTokenToServiceWorker(token);
+
+            // Tutup Chrome Custom Tab
+            try {
+              await Browser.close();
+            } catch {
+              // Ignore jika Browser.close() gagal (sudah tertutup, dsb)
+            }
+
+            // Navigasi ke dashboard dengan full page reload.
+            // Full reload DIPERLUKAN agar AuthProvider membaca token baru dari
+            // localStorage dan menginisialisasi isAuthenticated = true.
+            // Tanpa reload, AuthContext masih dalam state isAuthenticated = false
+            // dan ProtectedRoute akan redirect kembali ke /login.
+            window.location.href = "/dashboard";
+          }
+          return;
+        }
+
+        // ─── FLOW LAMA (DEPRECATED) ─────────────────────────────────────────
+        // com.sakuin.app://login?id_token=GOOGLE_TOKEN
+        // Dipertahankan untuk backward compatibility saja
+        if (parsedUrl.host === "login") {
           const idToken = parsedUrl.searchParams.get("id_token");
           if (idToken) {
-            // Close Chrome Custom Tab / Safari View Controller
-            void Browser.close();
-            
-            // Navigate the internal router to login hash fragment
+            try {
+              await Browser.close();
+            } catch {
+              // ignore
+            }
             void router.navigate(`/login#id_token=${idToken}`);
           }
-        } catch (error) {
-          console.error("Gagal memproses deep link URL:", error);
         }
-      };
 
-      const listenerPromise = CapApp.addListener("appUrlOpen", handleAppUrlOpen);
+      } catch (error) {
+        console.error("Gagal memproses deep link URL:", error);
+      }
+    };
 
-      return () => {
-        void listenerPromise.then((handle) => handle.remove());
-      };
-    }
+
+    const listenerPromise = CapApp.addListener("appUrlOpen", handleAppUrlOpen);
+
+    return () => {
+      void listenerPromise.then((handle) => handle.remove());
+    };
   }, []);
 
   return (
