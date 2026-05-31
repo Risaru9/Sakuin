@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Download, RefreshCcw, Smartphone, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useToast } from "../toast/ToastProvider";
 import { apiRequest } from "../../lib/api-client";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 
 type ApkVersionInfo = {
   latestVersionName: string;
@@ -213,6 +215,11 @@ export function ApkAppCard() {
                 if (isDownloading) {
                   e.preventDefault();
                   return;
+                }
+
+                if (Capacitor.isNativePlatform()) {
+                  e.preventDefault();
+                  void Browser.open({ url: downloadUrl });
                 }
                 
                 // Beri delay pada perubahan UI

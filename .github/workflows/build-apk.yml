@@ -47,7 +47,9 @@ jobs:
       # Untuk sementara, kita build release unsigned atau membiarkan build gradle mencari release.keystore lokal jika tidak di-ignore.
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
         working-directory: ./apps/web/android
 
       - name: Upload APK

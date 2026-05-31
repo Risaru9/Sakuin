@@ -4,6 +4,7 @@ import { apiRequest } from "../../lib/api-client";
 import { useToast } from "../toast/ToastProvider";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 type ApkVersionInfo = {
   latestVersionName: string;
@@ -108,6 +109,11 @@ export function ApkUpdatePrompt() {
     }
 
     if (updateInfo && updateInfo.apkDownloadUrl) {
+      if (Capacitor.isNativePlatform()) {
+        e.preventDefault();
+        void Browser.open({ url: updateInfo.apkDownloadUrl });
+      }
+
       // 2. Beri delay pada perubahan UI agar intent OS tidak terinterupsi/dibatalkan
       setTimeout(() => {
         setIsDownloading(true);
