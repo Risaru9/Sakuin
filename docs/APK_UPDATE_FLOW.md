@@ -4,14 +4,55 @@ Dokumen ini menjelaskan arsitektur, manajemen build, dan mekanisme update APK un
 
 ---
 
-## 1. Perbedaan Update Webapp/Vercel vs APK Native
+## 1. Pembaruan Mikro (Web/Server) vs Pembaruan Makro (Native APK)
 
-Sakuin didesain sebagai aplikasi berbasis **Capacitor WebView Wrapper**, yang membagi pembaruan menjadi dua kategori:
+Sakuin didesain sebagai aplikasi berbasis **Capacitor WebView Wrapper**, yang membagi pembaruan menjadi dua kategori utama:
 
-| Pembaruan | Contoh Perubahan | Cara Distribusi | Perlu APK Baru? |
+### A. Pembaruan Mikro / Web (Tanpa Perlu Update APK)
+> [!NOTE]
+> **Tidak perlu mengunduh atau memasang APK baru.** Perubahan akan langsung aktif di perangkat pengguna saat mereka membuka aplikasi (selama terhubung ke internet).
+
+#### Mengapa Hal Ini Bisa Terjadi?
+Aplikasi Android Sakuin dikonfigurasi menggunakan Capacitor untuk memuat situs web utama di Vercel. WebView di dalam aplikasi bertindak sebagai browser khusus yang selalu menampilkan halaman web terbaru dari server.
+* **Pemisahan Logika Backend dan Frontend:**
+  Aplikasi di HP (*frontend*) berkomunikasi dengan server (*backend*) melalui API internet (biasanya menggunakan format JSON). Jika Anda mengubah logika internal di backend (misalnya cara menghitung total transaksi di server, mengganti jenis database, atau mengoptimalkan kecepatan query database), aplikasi di HP hanya memanggil URL API yang sama (seperti `/api/transactions`) dan menerima hasil akhir yang sudah diperbarui secara otomatis.
+* **Kolaborasi Frontend Vercel dan Backend:**
+  Bahkan jika Anda menambahkan **fitur baru yang memiliki tampilan UI baru**, Anda hanya perlu menambahkan endpoint API baru di backend dan membuat halaman atau komponen React baru di kode frontend web. Setelah kedua bagian tersebut di-deploy ke server dan Vercel, WebView di dalam APK pengguna akan langsung memuat versi web terbaru dan fitur baru dapat langsung digunakan secara instan.
+
+#### Contoh Kasus Pembaruan Mikro:
+* Mengubah skema warna UI, tata letak tombol, atau tipografi.
+* Menambahkan halaman baru (seperti halaman Laporan Keuangan Bulanan berbasis web).
+* Mengubah rumus perhitungan matematika di database/server.
+* Memperbaiki bug validasi formulir pada input data transaksi.
+
+---
+
+### B. Pembaruan Makro / Native (Wajib Update/Pasang APK Baru)
+> [!WARNING]
+> **Pengguna wajib mengunduh file APK versi terbaru dan memasangnya secara manual.** Versi kode internal (`versionCode` di Gradle) harus dinaikkan agar Checker Pembaruan di aplikasi dapat mendeteksi adanya versi baru.
+
+Pengguna wajib melakukan instalasi ulang APK baru jika terdapat perubahan pada bagian **native/platform Android**, yang meliputi:
+1. **Menambah atau Mengubah Plugin Native:** Jika fitur baru memerlukan akses langsung ke perangkat keras HP atau API sistem operasi Android tingkat rendah yang memerlukan kode Java/Kotlin baru (misalnya login sidik jari/Biometrik, push notification Firebase, atau database lokal offline SQLite native).
+2. **Perubahan Izin Akses (Permissions):** Jika aplikasi memerlukan izin baru dari sistem operasi Android yang harus dideklarasikan di dalam file konfigurasi manifest Android (`AndroidManifest.xml`) (misalnya akses Kamera untuk memindai struk belanja, izin Galeri Foto, atau izin Lokasi GPS).
+3. **Mengubah Identitas dan Aset Native Aplikasi:** Mengganti ikon aplikasi di layar utama HP, mengubah gambar *splash screen* (tampilan pemuatan awal saat aplikasi dibuka), atau mengganti nama tampilan aplikasi.
+4. **Perubahan Konfigurasi Capacitor:** Jika Anda melakukan perubahan pada file konfigurasi inti Capacitor (`capacitor.config.ts`), seperti mengubah alamat URL server utama atau header user-agent.
+5. **Kepatuhan Sistem Operasi (Target SDK):** Pembaruan konfigurasi build Gradle untuk menyesuaikan dengan kebijakan versi Android terbaru dari Google (misalnya menaikkan target versi Android dari Android 13 ke Android 14 di file `build.gradle`).
+
+---
+
+### C. Tabel Perbandingan Cepat
+
+| Jenis Perubahan | Lokasi Kode | Perlu Build APK Baru? | Efek bagi Pengguna |
 |---|---|---|---|
-| **Webapp (Vercel)** | Tampilan UI, Halaman Transaksi, Asisten AI, Logic React/JS | Cukup push kode ke branch `main` & deploy Vercel | **Tidak.** APK lama otomatis me-load versi web baru dari URL. |
-| **APK Native** | Izin permission baru, Widget Android, Nama Aplikasi/Package, Signing Key, Splash screen native | Re-build APK & distribusikan file `.apk` baru | **Ya.** User harus mendownload dan menginstall file APK terbaru. |
+| Perbaikan UI / Bug Halaman Web | React (Frontend) | **TIDAK** | Instan setelah Vercel deploy sukses. |
+| Logika Backend / Database | API Server (Backend) | **TIDAK** | Instan setelah Server deploy sukses. |
+| Menambah Izin Kamera / File | Android Manifest | **YA** | Harus download & install APK baru. |
+| Mengganti Ikon Aplikasi | Android Res / Aset | **YA** | Harus download & install APK baru. |
+| Menambah Fitur Push Notification | Java / Plugin Native | **YA** | Harus download & install APK baru. |
+
+#### Kesimpulan untuk Pengembang:
+* **90% Pengembangan Fitur Sehari-hari:** Hanya membutuhkan **Pembaruan Mikro**. Cukup lakukan commit, push ke GitHub, dan biarkan Vercel atau server backend melakukan pembaruan secara otomatis. APK pengguna akan menyesuaikan diri secara instan.
+* **10% Pengembangan Fitur Khusus:** Membutuhkan **Pembaruan Makro**. Lakukan kompilasi build APK baru, naikkan nomor versi (`versionCode`), unggah file `.apk` baru ke server distribusi, dan beri tahu pengguna melalui dialog update agar mereka melakukan pembaruan manual.
 
 ---
 
