@@ -3,6 +3,7 @@ import { CheckCircle2, Download, Smartphone, X } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
 import { Browser } from "@capacitor/browser";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 type ApkVersionInfo = {
   latestVersionName: string;
@@ -20,10 +21,9 @@ export function ApkUpdatePrompt() {
 
   useEffect(() => {
     // 1. Cek apakah berjalan di dalam environment Android APK
-    const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-    const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
+    const isNativeCapacitor = Capacitor.isNativePlatform();
     const isAndroidWidgetBridge = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
-    const isAndroidApk = isAndroid && (isCapacitor || isAndroidWidgetBridge);
+    const isAndroidApk = isNativeCapacitor || isAndroidWidgetBridge;
 
     if (!isAndroidApk) {
       return;
@@ -36,7 +36,7 @@ export function ApkUpdatePrompt() {
         let installedCode = 2;
         let installedName = "1.1";
 
-        if (isCapacitor) {
+        if (isNativeCapacitor) {
           try {
             const info = await CapacitorApp.getInfo();
             installedCode = parseInt(info.build || "2", 10);

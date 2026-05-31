@@ -6,6 +6,6 @@
     "Pembaruan metode Login Google menggunakan Native Sign-In agar lebih mulus.",
     "Perbaikan isu redirect ke Play Store."
   ],
-  "forceUpdate": true,
+  "forceUpdate": false,
   "publishedAt": "2026-05-31T15:00:00.000Z"
 }
