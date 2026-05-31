@@ -33,7 +33,7 @@ export function GoogleAuthButton({
         return;
       }
 
-      const state = Math.random().toString(36).substring(2, 15);
+      const state = "app_auth_" + Math.random().toString(36).substring(2, 15);
       const nonce = Math.random().toString(36).substring(2, 15);
       localStorage.setItem("google_oauth_state", state);
       localStorage.setItem("google_oauth_nonce", nonce);
