@@ -49,13 +49,16 @@ export function GoogleAuthButton({
         }
       } catch (error: any) {
         console.error("Google Auth Error:", error);
-        // Tampilkan error secara detail agar bisa di-debug
-        let errorMsg = "Login Google gagal. ";
-        if (typeof error === 'object') {
-          errorMsg += JSON.stringify(error, Object.getOwnPropertyNames(error));
-        } else {
-          errorMsg += String(error);
+        
+        let errorString = typeof error === 'object' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error);
+        
+        // 12501 = Canceled by user
+        // 10 = Developer error / often happens when dialog is dismissed
+        if (errorString.includes("12501") || errorString.includes('"code":10') || errorString.toLowerCase().includes("cancel")) {
+          return; // Ignore gracefully
         }
+
+        let errorMsg = "Login Google gagal. " + errorString;
         onFailure(errorMsg);
       }
     }

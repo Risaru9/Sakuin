@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode
 } from "react";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import {
   getStoredToken,
   hasStoredToken,
@@ -98,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    GoogleAuth.signOut().catch((err) => console.error("Google signOut error:", err));
     removeStoredToken();
     removeCachedUser();
     setUser(null);
