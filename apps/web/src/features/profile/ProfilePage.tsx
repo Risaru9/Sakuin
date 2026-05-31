@@ -25,7 +25,7 @@ import {
   WalletCards
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
-import { PwaAppCard } from "../../components/pwa/PwaAppCard";
+
 import { ApkAppCard } from "../../components/pwa/ApkAppCard";
 import { useToast } from "../../components/toast/ToastProvider";
 import { Button } from "../../components/ui/button";
@@ -1220,7 +1220,7 @@ export function ProfilePage() {
 
             {activeSection === "account" ? (
               <div className="grid gap-5 xl:grid-cols-2">
-                <PwaAppCard />
+
                 <ApkAppCard />
 
                 <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-5">

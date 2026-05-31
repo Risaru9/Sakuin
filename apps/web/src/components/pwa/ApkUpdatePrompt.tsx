@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Smartphone, X } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
-import { Browser } from "@capacitor/browser";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
@@ -105,11 +104,9 @@ export function ApkUpdatePrompt() {
       const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
 
       if (isCapacitor) {
-        // Non-blocking Capacitor Browser open dengan fallback window.open(_system)
-        Browser.open({ url }).catch((e) => {
-          console.error("Gagal membuka Browser.open, menggunakan fallback _system", e);
-          window.open(url, "_system");
-        });
+        // Gunakan window.open dengan _system agar OS yang menangani download
+        // Mencegah freeze pada Capacitor browser saat mendownload APK
+        window.open(url, "_system");
       } else {
         // Peramban web/PWA standar
         window.open(url, "_blank");

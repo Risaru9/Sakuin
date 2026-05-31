@@ -1,99 +1,58 @@
-name: Build Sakuin APK
+name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'apps/web/android/**'
-      - 'apps/web/src/**'
-      - 'apps/web/capacitor.config.ts'
-      - 'package.json'
-      - 'pnpm-workspace.yaml'
-      - '.github/workflows/build-apk.yml'
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK 17
-        uses: actions/setup-java@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install
+        working-directory: ./apps/web
+
+      - name: Build Web App
+        run: pnpm run build
+        working-directory: ./apps/web
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+        working-directory: ./apps/web
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Web App
-        run: pnpm --filter @sakuin/web build
-
-      - name: Sync Capacitor Android
-        run: |
-          cd apps/web
-          git checkout -- android/capacitor.settings.gradle android/app/capacitor.build.gradle || true
-          npx cap sync android
-
-      - name: Setup Gradle Cache
-        uses: gradle/actions/setup-gradle@v3
+      # Note: Untuk signing APK, Anda perlu menambahkan secrets (KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, STORE_PASSWORD)
+      # dan men-decode keystore sebelum build. 
+      # Dokumentasi: https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-google-play
+      # Untuk sementara, kita build release unsigned atau membiarkan build gradle mencari release.keystore lokal jika tidak di-ignore.
 
       - name: Build Release APK
-        run: |
-          cd apps/web/android
-          chmod +x gradlew
-          ./gradlew assembleRelease -x lint --refresh-dependencies
+        run: ./gradlew assembleRelease
+        working-directory: ./apps/web/android
 
-      - name: Upload Gradle Reports (on failure)
-        if: failure()
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-reports
-          path: apps/web/android/app/build/reports/
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sakuin-release-apk
-          path: |
-            apps/web/android/app/build/outputs/apk/release/app-release.apk
-            apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk
-          if-no-files-found: warn
-
-      - name: Deploy APK to webapp
-        run: |
-          mkdir -p apps/web/public/downloads
-          if [ -f "apps/web/android/app/build/outputs/apk/release/app-release.apk" ]; then
-            cp apps/web/android/app/build/outputs/apk/release/app-release.apk apps/web/public/downloads/sakuin.apk
-          elif [ -f "apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
-            cp apps/web/android/app/build/outputs/apk/release/app-release-unsigned.apk apps/web/public/downloads/sakuin.apk
-          fi
-          
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/downloads/sakuin.apk
-          
-          # Hanya lakukan commit jika file berubah agar tidak error
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore(android): auto-update APK in public/downloads [skip actions]"
-          git pull --rebase origin main || echo "No rebase needed or failed"
-          git push
+          name: app-release.apk
+          path: apps/web/android/app/build/outputs/apk/release/app-release.apk

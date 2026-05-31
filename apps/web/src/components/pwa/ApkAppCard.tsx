@@ -205,15 +205,21 @@ export function ApkAppCard() {
 
         <div className="grid gap-2">
           {downloadUrl ? (
-            <a
-              href={downloadUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => {
+                const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
+                if (isCapacitor) {
+                  window.open(downloadUrl, "_system");
+                } else {
+                  window.open(downloadUrl, "_blank");
+                }
+              }}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90"
+              type="button"
             >
               <Download className="h-4 w-4 text-white" />
               {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
-            </a>
+            </button>
           ) : (
             <div className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-sm font-black text-zinc-400 border border-zinc-200">
               Unduhan belum tersedia saat ini
