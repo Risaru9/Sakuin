@@ -219,8 +219,8 @@ export function AddGoalProgressModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
-      <div className="w-full max-w-md rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-black text-[var(--sakuin-text)]">Tambah dana</p>

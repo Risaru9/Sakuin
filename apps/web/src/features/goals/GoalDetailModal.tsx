@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarDays, Loader2, Target, TrendingUp, X } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Loader2, Target, TrendingUp, X } from "lucide-react";
 import { queryKeys } from "../../lib/query-keys";
 import { getGoal } from "./goal.service";
 
@@ -75,8 +75,8 @@ export function GoalDetailModal({ open, goalId, onClose }: GoalDetailModalProps)
   const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-100 p-5 sm:p-6">
           <div className="min-w-0">
@@ -170,46 +170,67 @@ export function GoalDetailModal({ open, goalId, onClose }: GoalDetailModalProps)
                 </h3>
 
                 {/* History List */}
-                <div className="mt-3.5 space-y-3">
+                <div className="mt-3.5 space-y-3 pb-4">
                   {!goal.history || goal.history.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                      <p className="text-xs font-bold text-slate-500">
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/55 p-8 text-center">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3">
+                        <TrendingUp className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-black text-slate-700">
                         Belum ada riwayat tabungan.
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-1 max-w-[280px] mx-auto">
-                        Silakan gunakan tombol "Tambah Dana" untuk mulai mengisi target tabungan ini.
+                      <p className="text-xs text-slate-500 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                        Silakan gunakan tombol <span className="font-bold text-[var(--sakuin-secondary)]">"Tambah Dana"</span> untuk mulai mengisi target tabungan ini.
                       </p>
                     </div>
                   ) : (
-                    goal.history.map((item, index) => {
+                    goal.history.map((item) => {
                       const amountNum = Number(item.amount);
                       const isPositive = amountNum > 0;
                       return (
                         <div
                           key={item.id}
-                          className="relative flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm transition hover:border-slate-200"
+                          className={`relative flex items-center justify-between rounded-2xl border p-4 shadow-sm transition ${
+                            isPositive
+                              ? "bg-emerald-50/40 border-emerald-100/60 hover:bg-emerald-50/60"
+                              : "bg-rose-50/40 border-rose-100/60 hover:bg-rose-50/60"
+                          }`}
                         >
-                          <div className="flex items-start gap-3">
-                            {/* Decorative timeline node */}
-                            <div className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-[var(--sakuin-primary)]" />
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold ${
+                                isPositive
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-rose-100 text-rose-700"
+                              }`}
+                            >
+                              {isPositive ? (
+                                <ArrowDownRight className="h-5 w-5" />
+                              ) : (
+                                <ArrowUpRight className="h-5 w-5" />
+                              )}
+                            </div>
                             <div>
-                              <p className="text-xs font-bold text-slate-800">
+                              <p className="text-xs font-black text-slate-500 uppercase tracking-wider">
                                 {new Intl.DateTimeFormat("id-ID", {
                                   day: "2-digit",
-                                  month: "short",
+                                  month: "long",
                                   year: "numeric"
                                 }).format(new Date(item.createdAt))}
                               </p>
-                              <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                                Saldo akhir: {formatRupiah(item.currentAmount)}
+                              <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                                Saldo akhir: <span className="font-bold text-slate-600">{formatRupiah(item.currentAmount)}</span>
                               </p>
                             </div>
                           </div>
 
                           <div className="text-right">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                              {isPositive ? "Menabung" : "Penarikan"}
+                            </p>
                             <span
-                              className={`text-sm font-black ${
-                                isPositive ? "text-emerald-600" : "text-rose-600"
+                              className={`text-sm font-black mt-0.5 block ${
+                                isPositive ? "text-emerald-700" : "text-rose-700"
                               }`}
                             >
                               {isPositive ? "+" : ""}

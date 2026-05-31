@@ -297,7 +297,7 @@ export function GoalFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--sakuin-secondary)]/35 px-4 py-4 backdrop-blur-md sm:items-center">
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.28)] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>

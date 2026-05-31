@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Edit3,
+  History,
   Loader2,
   Plus,
   PlusCircle,
@@ -164,13 +165,14 @@ function GoalCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-4">
         <button
           onClick={() => onOpenDetail(goal)}
-          className="text-xs font-bold text-[var(--sakuin-secondary)] hover:underline"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-slate-50/50 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
           type="button"
         >
-          Lihat Riwayat Tabungan →
+          <History className="h-4 w-4 text-slate-500" />
+          Lihat Riwayat Tabungan
         </button>
       </div>
 
