@@ -206,18 +206,16 @@ export function ApkAppCard() {
 
         <div className="grid gap-2">
           {downloadUrl ? (
-            <button
-              onClick={() => {
-                const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
-                
-                // 1. Panggil OS Intent lebih dulu
-                if (isCapacitor) {
-                  window.open(downloadUrl, "_system");
-                } else {
-                  window.open(downloadUrl, "_blank");
+            <a
+              href={downloadUrl}
+              target="_system"
+              onClick={(e) => {
+                if (isDownloading) {
+                  e.preventDefault();
+                  return;
                 }
-
-                // 2. Beri delay pada perubahan UI
+                
+                // Beri delay pada perubahan UI
                 setTimeout(() => {
                   setIsDownloading(true);
                   addToast({
@@ -227,13 +225,14 @@ export function ApkAppCard() {
                     duration: 7000
                   });
                   
-                  // 3. Reset state
+                  // Reset state
                   setTimeout(() => setIsDownloading(false), 5000);
                 }, 100);
               }}
-              disabled={isDownloading}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 disabled:cursor-wait"
-              type="button"
+              aria-disabled={isDownloading}
+              className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 ${
+                isDownloading ? "opacity-70 cursor-wait pointer-events-none" : ""
+              }`}
             >
               {isDownloading ? (
                 <>
@@ -246,7 +245,7 @@ export function ApkAppCard() {
                   {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
                 </>
               )}
-            </button>
+            </a>
           ) : (
             <div className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-sm font-black text-zinc-400 border border-zinc-200">
               Unduhan belum tersedia saat ini

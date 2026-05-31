@@ -101,18 +101,13 @@ export function ApkUpdatePrompt() {
     setShowPrompt(false);
   }
 
-  function handleUpdate() {
+  function handleUpdate(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (isDownloading) {
+      e.preventDefault();
+      return;
+    }
+
     if (updateInfo && updateInfo.apkDownloadUrl) {
-      const url = updateInfo.apkDownloadUrl;
-      const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
-
-      // 1. Eksekusi native intent TERLEBIH DAHULU sebelum ada perubahan DOM/State
-      if (isCapacitor) {
-        window.open(url, "_system");
-      } else {
-        window.open(url, "_blank");
-      }
-
       // 2. Beri delay pada perubahan UI agar intent OS tidak terinterupsi/dibatalkan
       setTimeout(() => {
         setIsDownloading(true);
@@ -174,11 +169,14 @@ export function ApkUpdatePrompt() {
             </div>
 
             {updateInfo.apkDownloadUrl ? (
-              <button
+              <a
+                href={updateInfo.apkDownloadUrl}
+                target="_system"
                 onClick={handleUpdate}
-                disabled={isDownloading}
-                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98 disabled:opacity-70 disabled:cursor-wait"
-                type="button"
+                aria-disabled={isDownloading}
+                className={`mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98 ${
+                  isDownloading ? "opacity-70 cursor-wait pointer-events-none" : ""
+                }`}
               >
                 {isDownloading ? (
                   <>
@@ -191,7 +189,7 @@ export function ApkUpdatePrompt() {
                     Perbarui Sekarang
                   </>
                 )}
-              </button>
+              </a>
             ) : (
               <div className="mt-5 p-3 text-center text-xs font-semibold leading-relaxed text-rose-700 bg-rose-50 rounded-2xl border border-rose-100">
                 Pembaruan terdeteksi, tetapi tautan unduhan belum tersedia saat ini.
@@ -251,11 +249,14 @@ export function ApkUpdatePrompt() {
 
           {updateInfo.apkDownloadUrl ? (
             <div className="mt-4 grid grid-cols-2 gap-2.5">
-              <button
+              <a
+                href={updateInfo.apkDownloadUrl}
+                target="_system"
                 onClick={handleUpdate}
-                disabled={isDownloading}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 disabled:cursor-wait"
-                type="button"
+                aria-disabled={isDownloading}
+                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90 ${
+                  isDownloading ? "opacity-70 cursor-wait pointer-events-none" : ""
+                }`}
               >
                 {isDownloading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
@@ -263,7 +264,7 @@ export function ApkUpdatePrompt() {
                   <Download className="h-3.5 w-3.5 text-white" />
                 )}
                 {isDownloading ? "Mengunduh..." : "Perbarui"}
-              </button>
+              </a>
               <button
                 onClick={handleDismiss}
                 className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
