@@ -103,31 +103,35 @@ export function ApkUpdatePrompt() {
 
   function handleUpdate() {
     if (updateInfo && updateInfo.apkDownloadUrl) {
-      setIsDownloading(true);
-      addToast({
-        variant: "info",
-        title: "Mengunduh Pembaruan...",
-        description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
-        duration: 7000
-      });
-      
       const url = updateInfo.apkDownloadUrl;
       const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
 
+      // 1. Eksekusi native intent TERLEBIH DAHULU sebelum ada perubahan DOM/State
       if (isCapacitor) {
         window.open(url, "_system");
       } else {
         window.open(url, "_blank");
       }
 
-      // Reset state setelah beberapa detik
+      // 2. Beri delay pada perubahan UI agar intent OS tidak terinterupsi/dibatalkan
       setTimeout(() => {
-        setIsDownloading(false);
-        // Jika force update, kita biarkan saja prompt-nya tidak tertutup agar user menginstallnya
-        if (!updateInfo.forceUpdate) {
-           setShowPrompt(false);
-        }
-      }, 5000);
+        setIsDownloading(true);
+        addToast({
+          variant: "info",
+          title: "Mengunduh Pembaruan...",
+          description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
+          duration: 7000
+        });
+
+        // 3. Reset state setelah beberapa detik
+        setTimeout(() => {
+          setIsDownloading(false);
+          // Jika force update, kita biarkan saja prompt-nya tidak tertutup agar user menginstallnya
+          if (!updateInfo.forceUpdate) {
+             setShowPrompt(false);
+          }
+        }, 5000);
+      }, 100);
     }
   }
 

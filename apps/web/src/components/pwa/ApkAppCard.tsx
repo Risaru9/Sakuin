@@ -208,22 +208,28 @@ export function ApkAppCard() {
           {downloadUrl ? (
             <button
               onClick={() => {
-                setIsDownloading(true);
-                addToast({
-                  variant: "info",
-                  title: "Mengunduh Pembaruan...",
-                  description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
-                  duration: 7000
-                });
-
                 const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
+                
+                // 1. Panggil OS Intent lebih dulu
                 if (isCapacitor) {
                   window.open(downloadUrl, "_system");
                 } else {
                   window.open(downloadUrl, "_blank");
                 }
 
-                setTimeout(() => setIsDownloading(false), 5000);
+                // 2. Beri delay pada perubahan UI
+                setTimeout(() => {
+                  setIsDownloading(true);
+                  addToast({
+                    variant: "info",
+                    title: "Mengunduh Pembaruan...",
+                    description: "Pengunduhan APK dimulai di latar belakang. Silakan periksa panel notifikasi Anda.",
+                    duration: 7000
+                  });
+                  
+                  // 3. Reset state
+                  setTimeout(() => setIsDownloading(false), 5000);
+                }, 100);
               }}
               disabled={isDownloading}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 disabled:cursor-wait"
