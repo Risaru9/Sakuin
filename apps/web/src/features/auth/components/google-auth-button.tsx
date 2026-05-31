@@ -49,7 +49,14 @@ export function GoogleAuthButton({
         }
       } catch (error: any) {
         console.error("Google Auth Error:", error);
-        onFailure(error?.message || "Login Google dibatalkan atau gagal.");
+        // Tampilkan error secara detail agar bisa di-debug
+        let errorMsg = "Login Google gagal. ";
+        if (typeof error === 'object') {
+          errorMsg += JSON.stringify(error, Object.getOwnPropertyNames(error));
+        } else {
+          errorMsg += String(error);
+        }
+        onFailure(errorMsg);
       }
     }
 
