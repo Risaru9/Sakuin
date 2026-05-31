@@ -57,13 +57,14 @@
 
         <TextView
             android:id="@+id/widget_refresh_button"
-            android:layout_width="32dp"
+            android:layout_width="56dp"
             android:layout_height="32dp"
-            android:contentDescription="Refresh widget"
+            android:background="#F1F5F9"
+            android:contentDescription="Reload saldo widget"
             android:gravity="center"
-            android:text="R"
+            android:text="Reload"
             android:textColor="#64748B"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -168,13 +169,15 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/widget_status_message"
+        android:id="@+id/widget_quick_add_button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:ellipsize="end"
-        android:maxLines="2"
-        android:text="Keuangan kamu aman, lanjutkan kebiasaan baik ini!"
-        android:textColor="#475569"
-        android:textSize="10sp" />
+        android:layout_height="34dp"
+        android:layout_marginTop="8dp"
+        android:background="#2563EB"
+        android:contentDescription="Tambah transaksi cepat"
+        android:gravity="center"
+        android:text="+ Catat transaksi"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold" />
 </LinearLayout>

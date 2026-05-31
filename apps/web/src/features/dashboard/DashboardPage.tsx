@@ -1368,16 +1368,19 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
-            {(selectedSize === "large" || selectedSize === "xl") && (
-              <p className="mt-3 text-[11px] font-semibold leading-5 text-zinc-600">
-                Keuangan kamu aman, lanjutkan kebiasaan baik ini!
-              </p>
-            )}
-
             {selectedSize === "xl" && (
               <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold text-zinc-500">
                 Pengeluaran 23% dari pemasukan bulan ini.
               </p>
+            )}
+
+            {(selectedSize === "large" || selectedSize === "xl") && (
+              <button
+                className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-[var(--sakuin-primary)] px-3 text-xs font-black text-white"
+                type="button"
+              >
+                + Catat transaksi
+              </button>
             )}
           </div>
         </div>
@@ -1436,7 +1439,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">3</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Atur ukuran:</strong> Tekan lama widget di layar utama, lalu tarik tepinya. Isi widget akan menyesuaikan ukuran.
+                  <strong>Gunakan aksinya:</strong> Ketuk Reload untuk memperbarui data, area widget untuk buka aplikasi, dan tombol Catat transaksi untuk Catat Cepat.
                 </p>
               </div>
             </div>
@@ -2580,6 +2583,47 @@ const profileQuery = useQuery({
     setQuickTransactionInitialText("");
     setIsQuickTransactionOpen(true);
   }
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    function consumeWidgetQuickAction() {
+      const bridge = window.AndroidWidgetBridge;
+      if (
+        isCancelled ||
+        !bridge?.consumePendingWidgetQuickAction ||
+        !bridge.consumePendingWidgetQuickAction()
+      ) {
+        return;
+      }
+
+      setQuickTransactionInitialText("");
+      setIsQuickTransactionOpen(true);
+    }
+
+    consumeWidgetQuickAction();
+    const retryTimer = window.setTimeout(consumeWidgetQuickAction, 700);
+    window.addEventListener("focus", consumeWidgetQuickAction);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(retryTimer);
+      window.removeEventListener("focus", consumeWidgetQuickAction);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("widgetAction") !== "quick") {
+      return;
+    }
+
+    setQuickTransactionInitialText("");
+    setIsQuickTransactionOpen(true);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("widgetAction");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   function openQuickTransactionWithText(text: string) {
     setQuickTransactionInitialText(text);

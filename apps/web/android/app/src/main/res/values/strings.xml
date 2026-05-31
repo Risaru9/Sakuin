@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Sakuin</string>
-    <string name="title_activity_main">Sakuin</string>
+    <string name="app_name">Sakuin v1.6.0</string>
+    <string name="title_activity_main">Sakuin v1.6.0</string>
     <string name="package_name">com.sakuin.app</string>
     <string name="custom_url_scheme">com.sakuin.app</string>
     <string name="server_client_id">1090124544185-jqgvut63n2hg4rhf341eohvg7i7fnp32.apps.googleusercontent.com</string>

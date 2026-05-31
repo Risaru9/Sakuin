@@ -14,10 +14,21 @@ import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private static final String PREFS_NAME = "SakuinWidgetPref";
+    private static final String KEY_PENDING_QUICK_ACTION = "pending_quick_transaction";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         registerPlugin(GoogleAuth.class);
+        handleWidgetIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleWidgetIntent(intent);
     }
 
     @Override
@@ -29,7 +40,7 @@ public class MainActivity extends BridgeActivity {
             webView.addJavascriptInterface(new Object() {
                 @JavascriptInterface
                 public void saveConfig(String token, String apiUrl) {
-                    SharedPreferences sharedPref = getSharedPreferences("SakuinWidgetPref", Context.MODE_PRIVATE);
+                    SharedPreferences sharedPref = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("jwt_token", token);
                     editor.putString("api_url", apiUrl);
@@ -90,6 +101,17 @@ public class MainActivity extends BridgeActivity {
                     boolean requested = appWidgetManager.requestPinAppWidget(widgetComponent, null, successCallback);
                     return requested ? "REQUESTED" : "FAILED";
                 }
+
+                @JavascriptInterface
+                public boolean consumePendingWidgetQuickAction() {
+                    SharedPreferences sharedPref = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    boolean hasPendingAction = sharedPref.getBoolean(KEY_PENDING_QUICK_ACTION, false);
+                    if (hasPendingAction) {
+                        sharedPref.edit().putBoolean(KEY_PENDING_QUICK_ACTION, false).apply();
+                    }
+
+                    return hasPendingAction;
+                }
             }, "AndroidWidgetBridge");
         }
     }
@@ -111,5 +133,14 @@ public class MainActivity extends BridgeActivity {
             updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
             sendBroadcast(updateIntent);
         }
+    }
+
+    private void handleWidgetIntent(Intent intent) {
+        if (intent == null || !SakuinFinanceWidgetProvider.ACTION_QUICK_TRANSACTION.equals(intent.getAction())) {
+            return;
+        }
+
+        SharedPreferences sharedPref = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        sharedPref.edit().putBoolean(KEY_PENDING_QUICK_ACTION, true).apply();
     }
 }

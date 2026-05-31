@@ -46,6 +46,7 @@ declare global {
       requestPinWidget?: () => "REQUESTED" | "FAILED" | "UNSUPPORTED_ANDROID_VERSION" | "UNSUPPORTED_LAUNCHER" | string;
       getAppVersionCode?: () => number;
       getAppVersionName?: () => string;
+      consumePendingWidgetQuickAction?: () => boolean;
     };
   }
 }

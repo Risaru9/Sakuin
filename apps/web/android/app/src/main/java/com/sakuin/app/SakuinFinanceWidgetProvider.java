@@ -23,6 +23,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "SakuinWidgetPref";
     private static final String ACTION_REFRESH = "com.sakuin.app.action.REFRESH";
     public static final String ACTION_PINNED = "com.sakuin.app.action.WIDGET_PINNED";
+    public static final String ACTION_QUICK_TRANSACTION = "com.sakuin.app.action.QUICK_TRANSACTION";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -99,6 +100,13 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 context, 1, refreshIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent);
 
+        Intent quickTransactionIntent = new Intent(context, MainActivity.class);
+        quickTransactionIntent.setAction(ACTION_QUICK_TRANSACTION);
+        quickTransactionIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent quickTransactionPendingIntent = PendingIntent.getActivity(
+                context, 3, quickTransactionIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_quick_add_button, quickTransactionPendingIntent);
+
         // Retrieve config from shared preferences
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String token = prefs.getString("jwt_token", null);
@@ -109,7 +117,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_income, "Silakan login");
             views.setTextViewText(R.id.widget_expense, "di aplikasi");
             views.setTextViewText(R.id.widget_status, "Offline");
-            views.setTextViewText(R.id.widget_status_message, "Buka Sakuin agar widget bisa sinkron dengan dashboard.");
             views.setTextViewText(R.id.widget_ratio, "Belum sinkron");
             views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
             appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -163,17 +170,14 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
                 if ("HEMAT".equals(status)) {
                     views.setTextViewText(R.id.widget_status, "Hemat");
-                    views.setTextViewText(R.id.widget_status_message, "Keuangan kamu aman, lanjutkan kebiasaan baik ini!");
                     views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#10B981"));
                     views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_safe);
                 } else if ("STABIL".equals(status)) {
                     views.setTextViewText(R.id.widget_status, "Stabil");
-                    views.setTextViewText(R.id.widget_status_message, "Keuangan kamu cukup seimbang, tetap pantau pengeluaran ya.");
                     views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#F59E0B"));
                     views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
                 } else {
                     views.setTextViewText(R.id.widget_status, "Boros");
-                    views.setTextViewText(R.id.widget_status_message, "Pengeluaran kamu cukup tinggi, yuk coba lebih hemat.");
                     views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#EF4444"));
                     views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
                 }
@@ -182,7 +186,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_income, "Sesi habis");
                 views.setTextViewText(R.id.widget_expense, "Login ulang");
                 views.setTextViewText(R.id.widget_status, "Offline");
-                views.setTextViewText(R.id.widget_status_message, "Masuk lagi ke Sakuin agar widget bisa diperbarui.");
                 views.setTextViewText(R.id.widget_ratio, "Butuh login");
                 views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
             } else {
@@ -191,7 +194,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         } catch (Exception e) {
             e.printStackTrace();
             views.setTextViewText(R.id.widget_status, "Cek koneksi");
-            views.setTextViewText(R.id.widget_status_message, "Widget belum bisa mengambil data terbaru.");
             views.setTextViewText(R.id.widget_balance, "Rp -");
             views.setTextViewText(R.id.widget_income, "Rp -");
             views.setTextViewText(R.id.widget_expense, "Rp -");
@@ -223,11 +225,11 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
     private static void applyResponsiveLayout(RemoteViews views, WidgetSize widgetSize) {
         boolean showAmounts = widgetSize != WidgetSize.SMALL;
-        boolean showInsight = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showQuickAction = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
         boolean showRatio = widgetSize == WidgetSize.EXTRA_LARGE;
 
         views.setViewVisibility(R.id.widget_amount_grid, showAmounts ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_status_message, showInsight ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_quick_add_button, showQuickAction ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_ratio, showRatio ? View.VISIBLE : View.GONE);
     }
 

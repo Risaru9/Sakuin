@@ -134,6 +134,32 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    function consumeWidgetQuickAction() {
+      const bridge = window.AndroidWidgetBridge;
+      if (!bridge?.consumePendingWidgetQuickAction) {
+        return;
+      }
+
+      try {
+        if (bridge.consumePendingWidgetQuickAction()) {
+          void router.navigate("/dashboard?widgetAction=quick");
+        }
+      } catch (error) {
+        console.error("Gagal membuka Catat Cepat dari widget Android", error);
+      }
+    }
+
+    consumeWidgetQuickAction();
+    const retryTimer = window.setTimeout(consumeWidgetQuickAction, 700);
+    window.addEventListener("focus", consumeWidgetQuickAction);
+
+    return () => {
+      window.clearTimeout(retryTimer);
+      window.removeEventListener("focus", consumeWidgetQuickAction);
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
