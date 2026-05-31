@@ -48,7 +48,6 @@ import {
 import type {
   FinancialCheckupData,
   MonthlyTrendItem,
-  SafeToSpendData,
   SummaryData,
   SummaryCategoryItem,
   SummaryHabitData,
@@ -113,77 +112,7 @@ function formatCompactRupiah(value: string | number | null | undefined) {
   return formatRupiah(numberValue);
 }
 
-function formatSafeToSpendStatus(status: SafeToSpendData["status"]) {
-  if (status === "SAFE") {
-    return "Aman";
-  }
 
-  if (status === "WATCH") {
-    return "Waspada";
-  }
-
-  if (status === "HOLD") {
-    return "Tahan";
-  }
-
-  return "Belum bisa dinilai";
-}
-
-function formatSpendingPaceStatus(status: SafeToSpendData["spendingPaceStatus"]) {
-  if (status === "ON_TRACK") {
-    return "Sesuai ritme";
-  }
-
-  if (status === "WATCH") {
-    return "Perlu dipantau";
-  }
-
-  if (status === "FAST") {
-    return "Terlalu cepat";
-  }
-
-  return "Belum bisa dinilai";
-}
-
-function getSafeToSpendStatusStyle(status: SafeToSpendData["status"]) {
-  if (status === "SAFE") {
-    return {
-      card: "border-[var(--sakuin-border)] bg-white",
-      badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
-      icon: "bg-emerald-600 text-white",
-      text: "text-[var(--sakuin-text)]",
-      muted: "text-zinc-600"
-    };
-  }
-
-  if (status === "WATCH") {
-    return {
-      card: "border-[var(--sakuin-border)] bg-white",
-      badge: "bg-amber-100 text-amber-800 ring-amber-200",
-      icon: "bg-[var(--sakuin-amber)] text-white",
-      text: "text-[var(--sakuin-text)]",
-      muted: "text-zinc-600"
-    };
-  }
-
-  if (status === "HOLD") {
-    return {
-      card: "border-rose-200 bg-white",
-      badge: "bg-rose-100 text-rose-700 ring-rose-200",
-      icon: "bg-rose-600 text-white",
-      text: "text-[var(--sakuin-text)]",
-      muted: "text-zinc-600"
-    };
-  }
-
-  return {
-    card: "border-[var(--sakuin-border)] bg-white",
-    badge: "bg-slate-100 text-slate-700 ring-slate-200",
-    icon: "bg-slate-700 text-white",
-    text: "text-[var(--sakuin-text)]",
-    muted: "text-zinc-600"
-  };
-}
 
 function formatFinancialCheckupStatus(status: FinancialCheckupData["status"]) {
   if (status === "GOOD") {
@@ -1725,180 +1654,7 @@ function DashboardGoalsCard({
   );
 }
 
-function SafeToSpendCard({
-  safeToSpend,
-  isLoading
-}: {
-  safeToSpend: SafeToSpendData | undefined;
-  isLoading: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-        <div className="flex min-h-28 items-center justify-center rounded-2xl bg-slate-50 sm:min-h-40">
-          <div className="flex items-center gap-2 text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <p className="text-xs font-bold">Menghitung aman dipakai...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  if (!safeToSpend) {
-    return (
-      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-        <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
-          <p className="text-sm font-black text-slate-950">
-            Aman Dipakai belum tersedia
-          </p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Data safe-to-spend belum bisa dimuat. Coba refresh dashboard.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const style = getSafeToSpendStatusStyle(safeToSpend.status);
-  const hasDailyLimit = safeToSpend.suggestedDailyLimit !== null;
-  const primaryWarning = safeToSpend.warnings[0] ?? null;
-
-  const headline =
-    safeToSpend.status === "SAFE"
-      ? "Masih aman dipakai dengan tetap menjaga batas aman."
-      : safeToSpend.status === "WATCH"
-        ? "Masih bisa dipakai, tapi perlu dipantau."
-        : safeToSpend.status === "HOLD"
-          ? "Tahan pengeluaran non-prioritas dulu."
-          : "Catat transaksi dulu agar batas aman bisa dihitung.";
-
-  const shouldShowWarning =
-    safeToSpend.status !== "SAFE" && Boolean(primaryWarning);
-
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-3.5 shadow-sm sm:p-5",
-        style.card
-      ].join(" ")}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className={["text-sm font-black sm:text-base", style.text].join(" ")}>
-              Aman Dipakai
-            </p>
-
-            <span
-              className={[
-                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[11px]",
-                style.badge
-              ].join(" ")}
-            >
-              {formatSafeToSpendStatus(safeToSpend.status)}
-            </span>
-          </div>
-
-          <p className={["mt-1.5 text-xs font-semibold leading-5", style.muted].join(" ")}>
-            {headline}
-          </p>
-        </div>
-
-        <div
-          className={[
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10",
-            style.icon
-          ].join(" ")}
-        >
-          {safeToSpend.status === "SAFE" ? (
-            <CheckCircle2 className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-          ) : safeToSpend.status === "HOLD" ? (
-            <AlertTriangle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-          ) : (
-            <Activity className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
-          <p className="text-[10px] font-black uppercase text-zinc-500">
-            Sisa aman
-          </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--sakuin-text)] sm:text-xl">
-            {formatCompactRupiah(safeToSpend.availableToSpend)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
-          <p className="text-[10px] font-black uppercase text-zinc-500">
-            Limit harian
-          </p>
-          <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--sakuin-text)] sm:text-xl">
-            {hasDailyLimit
-              ? formatCompactRupiah(safeToSpend.suggestedDailyLimit)
-              : "-"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
-          <p className="text-[10px] font-black uppercase text-zinc-500">
-            Ritme
-          </p>
-          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
-            {formatSpendingPaceStatus(safeToSpend.spendingPaceStatus)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
-          <p className="text-[10px] font-black uppercase text-zinc-500">
-            Fokus
-          </p>
-          <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
-            {safeToSpend.topRiskCategoryName ?? "Belum ada"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-2.5 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
-        <p className="text-[10px] font-black uppercase text-zinc-500">Aksi utama</p>
-        <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
-          {safeToSpend.action}
-        </p>
-      </div>
-
-      <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
-        <p className="text-[10px] font-black uppercase text-zinc-500">Kenapa status ini?</p>
-        <p className="mt-1.5 text-xs font-medium leading-5 text-zinc-700">
-          {safeToSpend.reason}
-        </p>
-      </div>
-
-      {shouldShowWarning ? (
-        <div className="mt-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3">
-          <div className="flex items-start gap-2 text-xs leading-5 text-zinc-700">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <p className="font-black text-[var(--sakuin-text)]">Perlu diperhatikan</p>
-              <p className="mt-0.5 font-semibold">{primaryWarning}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <Link
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-        to="/asisten"
-      >
-        <MessageSquare className="h-4 w-4 text-white" />
-        <span className="text-white">Tanya Asisten</span>
-      </Link>
-    </div>
-  );
-}
 
 function FinancialCheckupCard({
   financialCheckup,
@@ -2402,21 +2158,7 @@ function TodayViewCard({
     );
   }
 
-  const suggestedDailyLimit = summary?.safeToSpend?.suggestedDailyLimit ?? null;
-  const safeToSpendStatus = summary?.safeToSpend?.status ?? "UNKNOWN";
-  
-  const remainingBudget = suggestedDailyLimit !== null ? suggestedDailyLimit - todayExpenseSum : null;
-  const isOverBudget = remainingBudget !== null && remainingBudget < 0;
 
-  const todayExpensePercent = suggestedDailyLimit && suggestedDailyLimit > 0 
-    ? Math.min(100, Math.round((todayExpenseSum / suggestedDailyLimit) * 100))
-    : 0;
-
-  const gaugeColor = todayExpensePercent >= 100 
-    ? "bg-rose-500" 
-    : todayExpensePercent >= 80 
-      ? "bg-amber-500" 
-      : "bg-emerald-500";
 
   const categorySummaryMap = new Map<string, { name: string; amount: number; color?: string }>();
   for (const tx of todayTransactions) {
@@ -2431,65 +2173,7 @@ function TodayViewCard({
 
   return (
     <div className="space-y-4">
-      {/* Widget Sisa Jatah Belanja */}
-      <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-black text-[var(--sakuin-text)]">Batas Belanja Aman Hari Ini</p>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1 ${
-            safeToSpendStatus === "SAFE" && suggestedDailyLimit !== null ? "bg-emerald-100 text-emerald-700 ring-emerald-200" :
-            safeToSpendStatus === "WATCH" && suggestedDailyLimit !== null ? "bg-amber-100 text-amber-800 ring-amber-200" :
-            safeToSpendStatus === "HOLD" && suggestedDailyLimit !== null ? "bg-rose-100 text-rose-700 ring-rose-200" : "bg-slate-100 text-slate-700 ring-slate-200"
-          }`}>
-            {suggestedDailyLimit === null || safeToSpendStatus === "UNKNOWN"
-              ? "Belum bisa dinilai"
-              : safeToSpendStatus === "SAFE" ? "Aman"
-              : safeToSpendStatus === "WATCH" ? "Pantau"
-              : safeToSpendStatus === "HOLD" ? "Tahan"
-              : "Belum bisa dinilai"}
-          </span>
-        </div>
 
-        <div className="mt-4">
-          {suggestedDailyLimit !== null && safeToSpendStatus !== "UNKNOWN" ? (
-            <>
-              <p className={`text-3xl font-black tracking-tight ${isOverBudget ? "text-[var(--sakuin-red)]" : "text-[var(--sakuin-text)]"}`}>
-                {formatRupiah(remainingBudget)}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">
-                {isOverBudget 
-                  ? `Melebihi jatah harian sebesar ${formatRupiah(Math.abs(remainingBudget ?? 0))}` 
-                  : `Aman digunakan hari ini jika tetap ingin menjaga target (Batas harian: ${formatRupiah(suggestedDailyLimit)})`}
-              </p>
-
-              {/* Progress Bar Harian */}
-              <div className="mt-4">
-                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div className={`h-full rounded-full transition-[width] duration-300 ${gaugeColor}`} style={{ width: `${todayExpensePercent}%` }} />
-                </div>
-                <div className="mt-2 flex justify-between text-[10px] font-black uppercase text-zinc-500">
-                  <span>Terpakai: {formatRupiah(todayExpenseSum)}</span>
-                  <span>{todayExpensePercent}%</span>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-slate-100 pt-3">
-                <p className="text-[10px] font-semibold leading-4 text-zinc-400">
-                  * Bukan total saldo, ini estimasi batas belanja harian agar cashflow tetap aman.
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-2xl font-black text-zinc-400">
-                Belum bisa dinilai
-              </p>
-              <p className="mt-1.5 text-xs font-semibold text-zinc-500 font-medium leading-5">
-                Belum ada data transaksi yang cukup untuk menyusun estimasi batas belanja harian yang aman.
-              </p>
-            </>
-          )}
-        </div>
-      </div>
 
       {/* Ringkasan Kategori Hari Ini */}
       <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
@@ -3127,11 +2811,7 @@ const profileQuery = useQuery({
                     </div>
                   </div>
 
-                  {/* Aman dipakai + Checkup + Goals dalam satu kolom di mobile */}
-                  <SafeToSpendCard
-                    safeToSpend={summary?.safeToSpend}
-                    isLoading={isLoadingSummary}
-                  />
+
                   <FinancialCheckupCard
                     financialCheckup={summary?.financialCheckup}
                     isLoading={isLoadingSummary}
@@ -3259,12 +2939,7 @@ const profileQuery = useQuery({
               />
             </div>
 
-            <div className="hidden xl:block">
-              <SafeToSpendCard
-                safeToSpend={summary?.safeToSpend}
-                isLoading={isLoadingSummary}
-              />
-            </div>
+
 
             <div className="hidden xl:block">
               <DashboardGoalsCard
