@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Smartphone, X } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
 import { Browser } from "@capacitor/browser";
+import { App as CapacitorApp } from "@capacitor/app";
 
 type ApkVersionInfo = {
   latestVersionName: string;
@@ -35,7 +36,15 @@ export function ApkUpdatePrompt() {
         let installedCode = 2;
         let installedName = "1.1";
 
-        if (isAndroidWidgetBridgeNow && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
+        if (isCapacitor) {
+          try {
+            const info = await CapacitorApp.getInfo();
+            installedCode = parseInt(info.build || "2", 10);
+            installedName = info.version || "1.1";
+          } catch (e) {
+            console.error("Gagal mendapatkan info versi dari Capacitor", e);
+          }
+        } else if (isAndroidWidgetBridgeNow && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
           try {
             installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
             installedName = (window as any).AndroidWidgetBridge.getAppVersionName 
