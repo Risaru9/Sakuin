@@ -1196,6 +1196,8 @@ function StatsDetailModal({
 
 function WidgetInfoModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll(true);
+  const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large" | "xl">("medium");
+  const [pinStatus, setPinStatus] = useState<"idle" | "requested" | "unsupported" | "failed">("idle");
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -1217,6 +1219,46 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
 
   const isAndroid =
     typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
+  const androidWidgetBridge =
+    typeof window !== "undefined" ? window.AndroidWidgetBridge : undefined;
+  const canRequestNativeWidget = Boolean(
+    isAndroid &&
+      androidWidgetBridge?.requestPinWidget &&
+      (!androidWidgetBridge.isWidgetPinningSupported ||
+        androidWidgetBridge.isWidgetPinningSupported())
+  );
+
+  function handleAddWidget() {
+    if (!androidWidgetBridge?.requestPinWidget) {
+      setPinStatus("unsupported");
+      return;
+    }
+
+    try {
+      const result = androidWidgetBridge.requestPinWidget();
+      if (result === "REQUESTED") {
+        setPinStatus("requested");
+        return;
+      }
+
+      if (result === "UNSUPPORTED_ANDROID_VERSION" || result === "UNSUPPORTED_LAUNCHER") {
+        setPinStatus("unsupported");
+        return;
+      }
+
+      setPinStatus("failed");
+    } catch {
+      setPinStatus("failed");
+    }
+  }
+
+  const sizeOptions = [
+    { id: "small" as const, label: "Kecil", title: "Saldo + status", details: "Ringkas untuk ruang sempit." },
+    { id: "medium" as const, label: "Sedang", title: "Saldo, masuk, keluar", details: "Pilihan paling seimbang." },
+    { id: "large" as const, label: "Besar", title: "Tambah insight", details: "Ada pesan hemat/stabil/boros." },
+    { id: "xl" as const, label: "Ekstra", title: "Dashboard mini", details: "Termasuk rasio pengeluaran." }
+  ];
 
   return (
     <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
@@ -1252,8 +1294,96 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        <div className="mb-4 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-bg)] p-4">
+          <p className="mb-3 text-xs font-black uppercase text-zinc-500">
+            Pilih ukuran
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {sizeOptions.map((item) => (
+              <button
+                className={[
+                  "min-h-[86px] rounded-2xl border p-3 text-left transition",
+                  selectedSize === item.id
+                    ? "border-[var(--sakuin-primary)] bg-white shadow-sm"
+                    : "border-slate-200 bg-white/70 hover:bg-white"
+                ].join(" ")}
+                key={item.id}
+                onClick={() => setSelectedSize(item.id)}
+                type="button"
+              >
+                <span className="text-xs font-black text-[var(--sakuin-text)]">
+                  {item.label}
+                </span>
+                <span className="mt-1 block text-[11px] font-bold text-zinc-600">
+                  {item.title}
+                </span>
+                <span className="mt-1 block text-[10px] font-medium leading-4 text-zinc-500">
+                  {item.details}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm">
+          <p className="mb-3 text-xs font-black uppercase text-zinc-500">
+            Preview data dashboard
+          </p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                <WalletCards className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-zinc-500">Saldo aktif</p>
+                <p className="truncate text-base font-black text-[var(--sakuin-text)]">
+                  Rp 2.450.000
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
+                Hemat
+              </span>
+            </div>
+
+            {selectedSize !== "small" && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-emerald-50 p-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-700">
+                    <ArrowUpCircle className="h-3 w-3" />
+                    Masuk
+                  </div>
+                  <p className="mt-1 truncate text-xs font-black text-emerald-700">
+                    Rp 3.200.000
+                  </p>
+                </div>
+                <div className="rounded-xl bg-rose-50 p-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-rose-700">
+                    <ArrowDownCircle className="h-3 w-3" />
+                    Keluar
+                  </div>
+                  <p className="mt-1 truncate text-xs font-black text-rose-700">
+                    Rp 750.000
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {(selectedSize === "large" || selectedSize === "xl") && (
+              <p className="mt-3 text-[11px] font-semibold leading-5 text-zinc-600">
+                Keuangan kamu aman, lanjutkan kebiasaan baik ini!
+              </p>
+            )}
+
+            {selectedSize === "xl" && (
+              <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold text-zinc-500">
+                Pengeluaran 23% dari pemasukan bulan ini.
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Widget preview */}
-        <div className="mb-5 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-bg)] p-4">
+        <div className="hidden">
           <p className="mb-3 text-xs font-black uppercase tracking-wide text-zinc-500">
             Tampilan Widget
           </p>
@@ -1288,25 +1418,25 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
         {isAndroid ? (
           <div className="mb-4 space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
             <p className="text-xs font-black text-[var(--sakuin-text)]">
-              Cara Mengeluarkan & Mengatur Ukuran Widget:
+              Flow pemasangan widget:
             </p>
             <div className="space-y-2">
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">1</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Buka Galeri Widget:</strong> Tekan lama area kosong di layar utama HP kamu, lalu ketuk menu <strong>Widget</strong>.
+                  <strong>Tekan Tambahkan Widget:</strong> Android akan menampilkan konfirmasi dari launcher jika perangkat mendukung.
                 </p>
               </div>
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">2</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Cari Sakuin:</strong> Ketik atau cari <strong>Sakuin</strong>, lalu pilih widget Sakuin dan tambahkan ke layar utama.
+                  <strong>Pilih/konfirmasi widget:</strong> Jika launcher tidak mendukung tombol langsung, buka galeri widget lalu cari <strong>Sakuin</strong>.
                 </p>
               </div>
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">3</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Atur Besar/Kecil Widget:</strong> Tekan lama widget yang ada di layar utama, lalu tarik ujung/tepi kotak untuk menyesuaikan ukuran sesukamu.
+                  <strong>Atur ukuran:</strong> Tekan lama widget di layar utama, lalu tarik tepinya. Isi widget akan menyesuaikan ukuran.
                 </p>
               </div>
             </div>
@@ -1361,13 +1491,39 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        <button
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-primary)] text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
-          onClick={onClose}
-          type="button"
-        >
-          Mengerti, tutup
-        </button>
+        {pinStatus !== "idle" && (
+          <p
+            className={[
+              "mt-3 rounded-2xl px-3 py-2 text-[11px] font-bold leading-5",
+              pinStatus === "requested"
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-amber-50 text-amber-800"
+            ].join(" ")}
+          >
+            {pinStatus === "requested"
+              ? "Permintaan pemasangan widget dikirim. Ikuti konfirmasi Android di layar."
+              : "Launcher perangkat ini belum mendukung pemasangan langsung. Gunakan galeri widget Android lalu cari Sakuin."}
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+          <button
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-primary)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:bg-slate-300"
+            disabled={isAndroid && !canRequestNativeWidget}
+            onClick={handleAddWidget}
+            type="button"
+          >
+            <Smartphone className="h-4 w-4" />
+            Tambahkan Widget
+          </button>
+          <button
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50"
+            onClick={onClose}
+            type="button"
+          >
+            Tutup
+          </button>
+        </div>
       </div>
     </div>
   );

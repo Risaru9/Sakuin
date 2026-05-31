@@ -42,6 +42,10 @@ declare global {
   interface Window {
     AndroidWidgetBridge?: {
       saveConfig: (token: string | null, apiUrl: string) => void;
+      isWidgetPinningSupported?: () => boolean;
+      requestPinWidget?: () => "REQUESTED" | "FAILED" | "UNSUPPORTED_ANDROID_VERSION" | "UNSUPPORTED_LAUNCHER" | string;
+      getAppVersionCode?: () => number;
+      getAppVersionName?: () => string;
     };
   }
 }

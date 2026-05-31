@@ -5,9 +5,11 @@ import android.content.SharedPreferences;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.os.Bundle;
+import android.os.Build;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.app.PendingIntent;
 import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;
 import com.getcapacitor.BridgeActivity;
 
@@ -53,6 +55,40 @@ public class MainActivity extends BridgeActivity {
                     } catch (Exception e) {
                         return "unknown";
                     }
+                }
+
+                @JavascriptInterface
+                public boolean isWidgetPinningSupported() {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        return false;
+                    }
+
+                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(MainActivity.this);
+                    return appWidgetManager.isRequestPinAppWidgetSupported();
+                }
+
+                @JavascriptInterface
+                public String requestPinWidget() {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        return "UNSUPPORTED_ANDROID_VERSION";
+                    }
+
+                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(MainActivity.this);
+                    if (!appWidgetManager.isRequestPinAppWidgetSupported()) {
+                        return "UNSUPPORTED_LAUNCHER";
+                    }
+
+                    ComponentName widgetComponent = new ComponentName(MainActivity.this, SakuinFinanceWidgetProvider.class);
+                    Intent pinnedIntent = new Intent(MainActivity.this, SakuinFinanceWidgetProvider.class);
+                    pinnedIntent.setAction(SakuinFinanceWidgetProvider.ACTION_PINNED);
+                    PendingIntent successCallback = PendingIntent.getBroadcast(
+                            MainActivity.this,
+                            2,
+                            pinnedIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+                    boolean requested = appWidgetManager.requestPinAppWidget(widgetComponent, null, successCallback);
+                    return requested ? "REQUESTED" : "FAILED";
                 }
             }, "AndroidWidgetBridge");
         }
