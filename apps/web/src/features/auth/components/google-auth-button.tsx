@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 
 type GoogleAuthButtonText = "signin_with" | "signup_with" | "continue_with";
 
@@ -14,7 +15,7 @@ type GoogleAuthButtonProps = {
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function isCapacitorEnvironment() {
-  return typeof window !== "undefined" && !!(window as any).Capacitor;
+  return typeof window !== "undefined" && Capacitor.isNativePlatform();
 }
 
 export function GoogleAuthButton({

@@ -4,6 +4,7 @@ import { useAuth } from "../auth-context";
 import { googleLoginUser } from "../auth.service";
 import { ApiClientError } from "../../../lib/api-client";
 import { ShieldCheck } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -16,7 +17,7 @@ function getErrorMessage(error: unknown) {
 }
 
 function isCapacitorEnvironment() {
-  return typeof window !== "undefined" && !!(window as any).Capacitor;
+  return typeof window !== "undefined" && Capacitor.isNativePlatform();
 }
 
 export function OAuthCallbackPage() {
@@ -65,7 +66,15 @@ export function OAuthCallbackPage() {
           );
 
           // Buat deep link dengan JWT Sakuin (bukan Google id_token)
-          const url = `com.sakuin.app://auth?token=${encodeURIComponent(result.token)}&user=${userBase64}`;
+          const isAndroid = /android/i.test(navigator.userAgent);
+          let url = `com.sakuin.app://auth?token=${encodeURIComponent(result.token)}&user=${userBase64}`;
+          
+          // Chrome Custom Tab pada Android mungkin memblokir custom scheme, 
+          // gunakan format intent:// yang direkomendasikan
+          if (isAndroid) {
+            url = `intent://auth?token=${encodeURIComponent(result.token)}&user=${userBase64}#Intent;scheme=com.sakuin.app;package=com.sakuin.app;end`;
+          }
+          
           setDeepLinkUrl(url);
 
           // Auto-click tombol setelah render (Chrome mengizinkan click() yang
