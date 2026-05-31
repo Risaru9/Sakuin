@@ -491,44 +491,6 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     };
   }
   
-  const latestMonth = monthlyTrend[monthlyTrend.length - 1];
-  const previousMonth = monthlyTrend[monthlyTrend.length - 2];
-  const latestExpense = latestMonth ? Number(latestMonth.expense) : 0;
-  const previousExpense = previousMonth ? Number(previousMonth.expense) : 0;
-  const expenseDeltaPercent =
-    previousExpense > 0
-      ? Number((((latestExpense - previousExpense) / previousExpense) * 100).toFixed(1))
-      : null;
-
-  let weeklyStatus: "UP" | "DOWN" | "STABLE" | "NO_DATA" = "NO_DATA";
-  if (expenseDeltaPercent !== null) {
-    if (expenseDeltaPercent >= 5) {
-      weeklyStatus = "UP";
-    } else if (expenseDeltaPercent <= -5) {
-      weeklyStatus = "DOWN";
-    } else {
-      weeklyStatus = "STABLE";
-    }
-  }
-
-  const weeklySummary =
-    weeklyStatus === "NO_DATA"
-      ? "Data bulan sebelumnya belum cukup untuk membandingkan ritme pengeluaran."
-      : weeklyStatus === "UP"
-        ? `Pengeluaran naik ${expenseDeltaPercent}% dibanding periode sebelumnya.`
-        : weeklyStatus === "DOWN"
-          ? `Pengeluaran turun ${Math.abs(expenseDeltaPercent ?? 0)}% dibanding periode sebelumnya.`
-          : "Ritme pengeluaran relatif stabil dibanding periode sebelumnya.";
-
-  const weeklyAction =
-    weeklyStatus === "UP"
-      ? "Pilih satu kategori dengan kenaikan tertinggi, lalu tetapkan batas mingguan kecil."
-      : weeklyStatus === "DOWN"
-        ? "Pertahankan ritme saat ini dan alokasikan selisih ke goal prioritas."
-        : weeklyStatus === "STABLE"
-          ? "Lanjutkan kebiasaan saat ini, lalu review ulang di akhir minggu."
-          : "Catat transaksi lebih rutin minggu ini agar insight makin akurat.";
-
   console.log("[Summary] Returning summary response");
   return {
     totalIncome: decimalToString(totalIncome),
@@ -550,12 +512,6 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     expenseByCategory,
     incomeByCategory,
     monthlyTrend,
-    weeklyCheckin: {
-      expenseDeltaPercent,
-      status: weeklyStatus,
-      summary: weeklySummary,
-      action: weeklyAction
-    },
     recurringStatus: {
       generatedCount: recurringRunResult.generatedCount,
       processedRuleCount: recurringRunResult.processedRuleCount

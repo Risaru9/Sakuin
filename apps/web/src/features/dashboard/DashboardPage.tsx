@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
-  CalendarCheck2,
   CalendarDays,
   ChevronDown,
   CheckCircle2,
@@ -2362,80 +2361,7 @@ function DailyReviewCard({
   );
 }
 
-function WeeklyCheckinCard({
-  data
-}: {
-  data:
-    | {
-        expenseDeltaPercent: number | null;
-        status: "UP" | "DOWN" | "STABLE" | "NO_DATA";
-        summary: string;
-        action: string;
-      }
-    | undefined;
-}) {
-  if (!data) {
-    return null;
-  }
-
-  const statusLabel =
-    data.status === "UP"
-      ? "Lebih boros"
-      : data.status === "DOWN"
-        ? "Lebih hemat"
-        : data.status === "STABLE"
-          ? "Stabil"
-          : "Data minim";
-
-  return (
-    <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:mb-5 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-text)]">
-              <CalendarCheck2 className="h-4.5 w-4.5" />
-            </div>
-            <p className="text-sm font-black text-[var(--sakuin-text)]">
-              Weekly Check-in 30 Detik
-            </p>
-          </div>
-          <p className="mt-2 text-xs font-semibold text-zinc-600">
-            {data.summary}
-          </p>
-        </div>
-        <span className="rounded-full bg-[var(--sakuin-primary-soft)] px-2.5 py-1 text-[10px] font-black uppercase text-[var(--sakuin-text)]">
-          {statusLabel}
-        </span>
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-zinc-50 p-3 ring-1 ring-[var(--sakuin-border)]">
-        <p className="text-[10px] font-black uppercase text-zinc-500">Aksi minggu ini</p>
-        <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--sakuin-text)]">
-          {data.action}
-        </p>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <Button
-          className="rounded-xl bg-[var(--sakuin-primary)] text-white hover:bg-[var(--sakuin-secondary)]"
-          onClick={() => {
-            // CTA ringan: biarkan user lanjut review harian tanpa berpindah halaman.
-          }}
-          size="md"
-          type="button"
-        >
-          Lanjutkan
-        </Button>
-        <Link
-          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-semibold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-          to="/categories"
-        >
-          Atur budget
-        </Link>
-      </div>
-    </section>
-  );
-}
+// WeeklyCheckinCard removed
 
 function TodayViewCard({
   summary,
@@ -2508,18 +2434,23 @@ function TodayViewCard({
       {/* Widget Sisa Jatah Belanja */}
       <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-black text-[var(--sakuin-text)]">Jatah Belanja Hari Ini</p>
+          <p className="text-sm font-black text-[var(--sakuin-text)]">Batas Belanja Aman Hari Ini</p>
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1 ${
-            safeToSpendStatus === "SAFE" ? "bg-emerald-100 text-emerald-700 ring-emerald-200" :
-            safeToSpendStatus === "WATCH" ? "bg-amber-100 text-amber-800 ring-amber-200" :
-            safeToSpendStatus === "HOLD" ? "bg-rose-100 text-rose-700 ring-rose-200" : "bg-slate-100 text-slate-700 ring-slate-200"
+            safeToSpendStatus === "SAFE" && suggestedDailyLimit !== null ? "bg-emerald-100 text-emerald-700 ring-emerald-200" :
+            safeToSpendStatus === "WATCH" && suggestedDailyLimit !== null ? "bg-amber-100 text-amber-800 ring-amber-200" :
+            safeToSpendStatus === "HOLD" && suggestedDailyLimit !== null ? "bg-rose-100 text-rose-700 ring-rose-200" : "bg-slate-100 text-slate-700 ring-slate-200"
           }`}>
-            {safeToSpendStatus === "SAFE" ? "Aman" : safeToSpendStatus === "WATCH" ? "Waspada" : safeToSpendStatus === "HOLD" ? "Tahan" : "Belum Dinilai"}
+            {suggestedDailyLimit === null || safeToSpendStatus === "UNKNOWN"
+              ? "Belum bisa dinilai"
+              : safeToSpendStatus === "SAFE" ? "Aman"
+              : safeToSpendStatus === "WATCH" ? "Pantau"
+              : safeToSpendStatus === "HOLD" ? "Tahan"
+              : "Belum bisa dinilai"}
           </span>
         </div>
 
         <div className="mt-4">
-          {suggestedDailyLimit !== null ? (
+          {suggestedDailyLimit !== null && safeToSpendStatus !== "UNKNOWN" ? (
             <>
               <p className={`text-3xl font-black tracking-tight ${isOverBudget ? "text-[var(--sakuin-red)]" : "text-[var(--sakuin-text)]"}`}>
                 {formatRupiah(remainingBudget)}
@@ -2527,7 +2458,7 @@ function TodayViewCard({
               <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">
                 {isOverBudget 
                   ? `Melebihi jatah harian sebesar ${formatRupiah(Math.abs(remainingBudget ?? 0))}` 
-                  : `Tersisa dari batas harian ${formatRupiah(suggestedDailyLimit)}`}
+                  : `Aman digunakan hari ini jika tetap ingin menjaga target (Batas harian: ${formatRupiah(suggestedDailyLimit)})`}
               </p>
 
               {/* Progress Bar Harian */}
@@ -2540,14 +2471,20 @@ function TodayViewCard({
                   <span>{todayExpensePercent}%</span>
                 </div>
               </div>
+
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <p className="text-[10px] font-semibold leading-4 text-zinc-400">
+                  * Bukan total saldo, ini estimasi batas belanja harian agar cashflow tetap aman.
+                </p>
+              </div>
             </>
           ) : (
             <>
-              <p className="text-2xl font-black text-[var(--sakuin-text)]">
-                {formatRupiah(summary?.safeToSpend?.availableToSpend)}
+              <p className="text-2xl font-black text-zinc-400">
+                Belum bisa dinilai
               </p>
-              <p className="mt-1 text-xs font-semibold text-zinc-500 font-medium">
-                Jatah harian belum disetel. Menampilkan total Safe-to-Spend bulan ini.
+              <p className="mt-1.5 text-xs font-semibold text-zinc-500 font-medium leading-5">
+                Belum ada data transaksi yang cukup untuk menyusun estimasi batas belanja harian yang aman.
               </p>
             </>
           )}
@@ -2868,7 +2805,7 @@ const profileQuery = useQuery({
           onOpenQuickTransaction={openDailyQuickTransaction}
         />
 
-        <WeeklyCheckinCard data={summary?.weeklyCheckin} />
+        {/* WeeklyCheckinCard removed */}
 
         {summaryError ? (
           <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">

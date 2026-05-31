@@ -87,11 +87,6 @@ const ProfilePage = lazy(() =>
   }))
 );
 
-const CategoriesPage = lazy(() =>
-  import("../features/categories/CategoriesPage").then((module) => ({
-    default: module.CategoriesPage
-  }))
-);
 
 const AsistenPage = lazy(() =>
   import("../features/ai/pages/AsistenPage").then((module) => ({
@@ -1178,14 +1173,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
-  {
-    path: "/categories",
-    element: (
-      <ProtectedRoute>
-        <CategoriesPage />
-      </ProtectedRoute>
-    )
-  },
+
   {
     path: "*",
     element: <Navigate to="/" replace />
