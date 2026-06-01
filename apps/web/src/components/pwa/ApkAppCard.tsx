@@ -17,7 +17,7 @@ type ApkVersionInfo = {
 export function ApkAppCard() {
   const { addToast } = useToast();
   const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator === "undefined" ? true : navigator.onLine
+    typeof navigator === "undefined" ? true : navigator.onLine !== false
   );
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -53,7 +53,7 @@ export function ApkAppCard() {
 
     // 2. Event listener online/offline
     function handleOnlineChange() {
-      setIsOnline(navigator.onLine);
+      setIsOnline(navigator.onLine !== false);
     }
     window.addEventListener("online", handleOnlineChange);
     window.addEventListener("offline", handleOnlineChange);

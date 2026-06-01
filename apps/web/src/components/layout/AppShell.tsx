@@ -134,7 +134,7 @@ export function AppShell({
   const location = useLocation();
   const { user } = useAuth();
 
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(navigator.onLine === false);
   const [servedFromCache, setServedFromCache] = useState(false);
   const [offlineQueueLength, setOfflineQueueLength] = useState(0);
 
@@ -146,7 +146,7 @@ export function AppShell({
     updateQueueLength();
     window.addEventListener("sakuin-offline-queue-changed", updateQueueLength);
 
-    if (navigator.onLine) {
+    if (navigator.onLine !== false) {
       void syncOfflineTransactions();
     }
 

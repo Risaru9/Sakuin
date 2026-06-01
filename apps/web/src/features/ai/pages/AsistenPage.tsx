@@ -693,7 +693,7 @@ export function AsistenPage() {
   );
   const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
     useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(navigator.onLine === false);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);

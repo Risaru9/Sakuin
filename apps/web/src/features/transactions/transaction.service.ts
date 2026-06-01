@@ -58,7 +58,7 @@ export function getTransactions(params: GetTransactionsParams = {}) {
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
     const offlineTx = addToOfflineQueue(input);
     const mockTx: Transaction = {
       id: offlineTx.offlineId,
@@ -95,7 +95,7 @@ export async function createTransaction(input: CreateTransactionInput) {
 }
 
 export async function createTransactionsBulk(input: CreateTransactionsBulkInput) {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
     const mockTransactions: Transaction[] = [];
     for (const tx of input.transactions) {
       const offlineTx = addToOfflineQueue(tx);
