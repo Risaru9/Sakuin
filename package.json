@@ -10,7 +10,8 @@
     "dev:web": "pnpm --filter @sakuin/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "safety:production": "node scripts/production-safety-check.mjs"
   },
   "pnpm": {
     "overrides": {

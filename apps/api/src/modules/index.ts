@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { appVersionMetadata } from "../config/app-version.js";
 import type { AppEnv } from "../types/app.js";
 import { successResponse } from "../utils/api-response.js";
 import { authRoutes } from "./auth/auth.route.js";
@@ -29,18 +30,11 @@ apiRoutes.get("/health", (c) => {
 });
 
 apiRoutes.get("/app-version", (c) => {
-  return successResponse(c, "Metadata versi aplikasi Android Sakuin", {
-    latestVersionName: "1.2",
-    latestVersionCode: 3,
-    apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
-    releaseNotes: [
-      "Pembaruan sistem update APK otomatis langsung dari dalam aplikasi.",
-      "Perbaikan performa widget home-screen.",
-      "Pembersihan dashboard dari tombol unduh yang mengganggu."
-    ],
-    forceUpdate: false,
-    publishedAt: "2026-05-30T15:00:00Z"
-  });
+  return successResponse(
+    c,
+    "Metadata versi aplikasi Android Sakuin",
+    appVersionMetadata
+  );
 });
 
 apiRoutes.route("/auth", authRoutes);

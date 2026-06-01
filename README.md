@@ -270,5 +270,3 @@ User review before automation.
 Tujuan akhirnya sederhana:
 
 > Membantu pengguna mencatat, memahami, dan mengelola keuangan pribadi dengan lebih mudah.
-
-aaa bbb ccc__

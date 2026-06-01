@@ -150,7 +150,7 @@ function logPasswordResetEmailFailure(userId: string, error: unknown) {
       : "password_reset_email_unknown_error";
 
   writePasswordResetErrorLog("password_reset_email_failed", {
-    userId,
+    userKnown: Boolean(userId),
     status,
     reason
   });

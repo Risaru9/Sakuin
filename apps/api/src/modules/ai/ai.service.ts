@@ -1,13 +1,15 @@
 import { env } from "../../config/env.js";
 import { prisma } from "../../db/prisma.js";
-import { sendGenericPushNotification } from "../reminders/reminder.service.js";
 import {
   createGeminiTextProvider,
   type AiTextProvider
 } from "./ai.provider.js";
-import { classifyAiIntent } from "./ai.intent.js";
 import { selectAiModelPlan } from "./ai-model-router.js";
 import { buildRuleBasedTransactionDrafts } from "./ai-transaction-draft.js";
+import {
+  buildConversationHistoryText,
+  classifyAiChatMessage
+} from "./ai-chat-classifier.js";
 import {
   analyzeFinancialScenario,
   buildFinancialScenarioPromptContext,
@@ -34,6 +36,8 @@ import type {
   AiIntent,
   AiTransactionDraft
 } from "./ai.types.js";
+
+export { generateWeeklyProactiveInsight } from "./ai-weekly-insight.js";
 
 const OUT_OF_SCOPE_REPLY =
   "Maaf, Asisten Sakuin hanya bisa membantu pertanyaan seputar keuangan pribadi di Sakuin, seperti transaksi, pemasukan, pengeluaran, goals, budget, dan ringkasan keuangan.";
@@ -63,56 +67,6 @@ const AI_MATERIAL_EXPENSE_RATIO_THRESHOLD = 20;
 const AI_REPEATED_CATEGORY_TRANSACTION_THRESHOLD = 8;
 const AI_MIN_TRANSACTIONS_FOR_CATEGORY_RISK = 5;
 const MAX_AI_REPLY_CHARS = 6000;
-
-const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
-  "kalau",
-  "kalo",
-  "bagaimana jika",
-  "gimana jika",
-  "jika",
-  "berarti",
-  "itu",
-  "tersebut",
-  "opsi",
-  "alternatif",
-  "lebih realistis",
-  "lebih aman",
-  "low risk",
-  "risiko",
-  "risk",
-  "bulan",
-  "tahun",
-  "deadline",
-  "target",
-  "harga",
-  "seharga",
-  "beli",
-  "membeli",
-  "android",
-  "iphone",
-  "handphone",
-  "hp",
-  "motor",
-  "mobil",
-  "laptop"
-];
-
-const CONTINUATION_FOLLOW_UP_KEYWORDS = [
-  "lanjut",
-  "lanjutannya",
-  "lanjutkan",
-  "terus",
-  "teruskan",
-  "sambung",
-  "sambungkan",
-  "detailnya",
-  "jelaskan lagi",
-  "penjelasan lanjut",
-  "apa lanjutannya",
-  "bagian lanjutannya",
-  "next",
-  "continue"
-];
 
 type AiChatServiceOptions = {
   provider?: AiTextProvider;
@@ -187,145 +141,6 @@ function logAiProviderEvent(
       timestamp: new Date().toISOString()
     })
   );
-}
-
-function sanitizeChatHistory(history: AiChatHistoryMessage[] = []) {
-  return history
-    .filter((message) => {
-      const content = message.content.trim();
-
-      return (
-        content.length > 0 &&
-        (message.role === "user" || message.role === "assistant")
-      );
-    })
-    .slice(-12)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim().slice(0, 1500)
-    }));
-}
-
-function buildConversationHistoryText(history: AiChatHistoryMessage[] = []) {
-  const sanitizedHistory = sanitizeChatHistory(history);
-
-  if (sanitizedHistory.length === 0) {
-    return "Tidak ada konteks percakapan sebelumnya.";
-  }
-
-  return sanitizedHistory
-    .map((message, index) => {
-      const speaker = message.role === "user" ? "USER" : "ASSISTANT";
-
-      return `${index + 1}. ${speaker}: ${message.content}`;
-    })
-    .join("\n");
-}
-
-function looksLikeContextualFinancialFollowUp(message: string) {
-  const normalizedMessage = message.toLowerCase();
-
-  return (
-    CONTEXTUAL_FOLLOW_UP_KEYWORDS.some((keyword) =>
-      normalizedMessage.includes(keyword)
-    ) || /\d/.test(normalizedMessage)
-  );
-}
-
-function looksLikeContinuationFollowUp(message: string) {
-  const normalizedMessage = message.toLowerCase().trim();
-
-  if (!normalizedMessage || normalizedMessage.length > 120) {
-    return false;
-  }
-
-  return CONTINUATION_FOLLOW_UP_KEYWORDS.some((keyword) =>
-    normalizedMessage.includes(keyword)
-  );
-}
-
-function inferRecentFinancialIntentFromHistory(
-  history: AiChatHistoryMessage[] = []
-): AiIntent | null {
-  for (let index = history.length - 1; index >= 0; index -= 1) {
-    const historyMessage = history[index];
-
-    if (historyMessage.role !== "user") {
-      continue;
-    }
-
-    const content = historyMessage.content.trim();
-
-    if (!content) {
-      continue;
-    }
-
-    const classification = classifyAiIntent(content);
-
-    if (
-      classification.intent !== "OUT_OF_SCOPE" &&
-      classification.intent !== "TRANSACTION_DRAFT"
-    ) {
-      return classification.intent;
-    }
-  }
-
-  return null;
-}
-
-function classifyAiChatMessage(
-  message: string,
-  history: AiChatHistoryMessage[] = []
-) {
-  const directClassification = classifyAiIntent(message);
-
-  if (directClassification.intent !== "OUT_OF_SCOPE") {
-    return directClassification;
-  }
-
-  if (history.length === 0) {
-    return directClassification;
-  }
-
-  const isContextualFollowUp = looksLikeContextualFinancialFollowUp(message);
-  const isContinuationFollowUp = looksLikeContinuationFollowUp(message);
-
-  if (!isContextualFollowUp && !isContinuationFollowUp) {
-    return directClassification;
-  }
-
-  const recentFinancialIntent = inferRecentFinancialIntentFromHistory(history);
-
-  if (isContinuationFollowUp && recentFinancialIntent) {
-    return {
-      intent: recentFinancialIntent,
-      confidence: "medium" as const,
-      reason: "contextual_continuation_follow_up"
-    };
-  }
-
-  const recentContext = buildConversationHistoryText(history);
-
-  const contextualClassification = classifyAiIntent(
-    `${recentContext}\nFOLLOW UP USER MESSAGE:\n${message}`
-  );
-
-  if (contextualClassification.intent !== "OUT_OF_SCOPE") {
-    return {
-      ...contextualClassification,
-      reason: `contextual_${contextualClassification.reason}`
-    };
-  }
-
-  if (recentFinancialIntent) {
-    return {
-      intent: recentFinancialIntent,
-      confidence: "medium" as const,
-      reason: "contextual_recent_financial_intent"
-    };
-  }
-
-  return directClassification;
 }
 
 function toNumber(value: string | number | null | undefined) {
@@ -2845,164 +2660,3 @@ export async function clearAiChatHistory(userId: string): Promise<void> {
   });
 }
 
-function buildWeeklyInsightPrompt(
-  userName: string,
-  transactions: any[],
-  context: AiFinancialContext
-) {
-  const expenseSum = transactions
-    .filter(t => t.type === "EXPENSE")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-  
-  const incomeSum = transactions
-    .filter(t => t.type === "INCOME")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const categoryExpenses = transactions
-    .filter(t => t.type === "EXPENSE")
-    .reduce((acc: Record<string, number>, t) => {
-      const catName = t.category?.name || "Lainnya";
-      acc[catName] = (acc[catName] || 0) + Number(t.amount);
-      return acc;
-    }, {});
-
-  const sortedCategories = Object.entries(categoryExpenses)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, amount]) => `- ${name}: Rp ${amount.toLocaleString("id-ID")}`)
-    .join("\n");
-
-  return `
-Halo Gemini,
-Berikan saran keuangan mingguan (Weekly Financial Insight) untuk pengguna bernama ${userName}.
-Berikut adalah rangkuman keuangannya dalam 7 hari terakhir:
-- Total Pengeluaran: Rp ${expenseSum.toLocaleString("id-ID")}
-- Total Pemasukan: Rp ${incomeSum.toLocaleString("id-ID")}
-- Pengeluaran per Kategori:
-${sortedCategories || "Tidak ada transaksi pengeluaran."}
-
-Context Keuangan Saat Ini:
-- Safe Balance Limit: Rp ${Number(context.safeBalanceLimit).toLocaleString("id-ID")}
-- Sisa Safe-to-Spend: Rp ${Number(context.safeToSpend.availableToSpend).toLocaleString("id-ID")}
-- Progress Budget Kategori Bulanan: ${JSON.stringify(context.currentMonth.topExpenseCategories)}
-
-Tugasmu:
-1. Berikan evaluasi singkat (maks 3-4 kalimat) mengenai pengeluaran minggu ini (misalnya jika ada kategori yang terlalu dominan atau jika pengeluaran melebihi pemasukan).
-2. Berikan 2 tips/tindakan hemat yang konkrit, spesifik, dan praktis untuk minggu depan berdasarkan kategori pengeluaran terbesarnya.
-3. Gunakan nada bicara yang bersahabat, mendukung (tidak menghakimi), dan profesional dalam Bahasa Indonesia.
-
-Format respons kamu harus berupa string teks markdown yang rapi yang siap ditampilkan ke pengguna.
-`;
-}
-
-export async function generateWeeklyProactiveInsight(): Promise<{ processedUsers: number; insightsGenerated: number }> {
-  const users = await prisma.user.findMany({
-    include: {
-      pushSubscriptions: true
-    }
-  });
-
-  let processedUsers = 0;
-  let insightsGenerated = 0;
-
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-  for (const user of users) {
-    processedUsers++;
-
-    try {
-      const weeklyTransactions = await prisma.transaction.findMany({
-        where: {
-          userId: user.id,
-          date: { gte: oneWeekAgo }
-        },
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-              icon: true,
-              color: true
-            }
-          }
-        }
-      });
-
-      if (weeklyTransactions.length === 0) {
-        continue;
-      }
-
-      const context = await getAiFinancialContext(user.id);
-      const provider = createGeminiTextProvider();
-      const prompt = buildWeeklyInsightPrompt(user.name, weeklyTransactions, context);
-      
-      const result = await provider.generateText({
-        systemInstruction: "Kamu adalah Asisten Finansial Sakuin yang proaktif dan memberikan saran mingguan yang bersahabat dan praktis.",
-        prompt,
-        model: "gemini-1.5-flash",
-        maxOutputTokens: 2000,
-        temperature: 0.5
-      });
-
-      const aiReply = normalizeAiReply(result.text) || "Tetap pantau pengeluaranmu minggu depan agar selalu sesuai anggaran ya!";
-
-      const totalExpense = weeklyTransactions
-        .filter(t => t.type === "EXPENSE")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      const topCategory = weeklyTransactions
-        .filter(t => t.type === "EXPENSE")
-        .reduce((acc: { name: string; amount: number }[], t) => {
-          const catName = t.category?.name || "Lainnya";
-          const match = acc.find(item => item.name === catName);
-          if (match) {
-            match.amount += Number(t.amount);
-          } else {
-            acc.push({ name: catName, amount: Number(t.amount) });
-          }
-          return acc;
-        }, [])
-        .sort((a, b) => b.amount - a.amount)[0]?.name || "N/A";
-
-      const cards = [
-        { label: "Pengeluaran Minggu Ini", value: `Rp ${totalExpense.toLocaleString("id-ID")}` },
-        { label: "Kategori Terbesar", value: topCategory },
-        { label: "Safe-to-Spend", value: `Rp ${Number(context.safeToSpend.availableToSpend).toLocaleString("id-ID")}` }
-      ];
-
-      await prisma.chatMessage.create({
-        data: {
-          userId: user.id,
-          role: "assistant",
-          content: aiReply,
-          intent: "SPENDING_ANALYSIS",
-          cards: cards as any,
-          suggestions: [
-            "Bagaimana cara menghemat minggu ini?",
-            "Lihat pengeluaran bulan ini",
-            "Target tabungan saya masih realistis?"
-          ] as any
-        }
-      });
-
-      insightsGenerated++;
-
-      if (user.pushSubscriptions.length > 0) {
-        await sendGenericPushNotification(user.id, {
-          title: "Saran Finansial Mingguan",
-          body: `Halo ${user.name}, saran keuangan barumu sudah siap! Intip tips hemat khusus untukmu minggu ini.`,
-          url: "/asisten",
-          tag: "sakuin-weekly-insight"
-        });
-      }
-    } catch (error) {
-      console.error(`Gagal membuat proactive insight untuk user ${user.id}:`, error);
-    }
-  }
-
-  return {
-    processedUsers,
-    insightsGenerated
-  };
-}

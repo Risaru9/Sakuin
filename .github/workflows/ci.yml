@@ -79,6 +79,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @sakuin/api db:generate
 
+      - name: Production safety check
+        run: pnpm safety:production
+
       - name: Sync CI database schema
         run: pnpm --filter @sakuin/api exec prisma db push --skip-generate
 

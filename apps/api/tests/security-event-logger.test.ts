@@ -21,6 +21,7 @@ describe("Security event logger", () => {
       method: "POST",
       path: "/api/auth/login",
       status: 401,
+      userId: "user-id-123",
       metadata: {
         reason: "invalid_credentials",
         identifierHash: createSecurityHash("user@example.com"),
@@ -41,11 +42,13 @@ describe("Security event logger", () => {
     expect(log.metadata.rawEmail).toBe("[REDACTED]");
     expect(log.metadata.requestBody).toBe("[REDACTED]");
     expect(log.metadata.sessionCookie).toBe("[REDACTED]");
+    expect(log.userHash).toBe(createSecurityHash("user-id-123"));
 
     expect(serializedLog).not.toContain("SuperSecret123");
     expect(serializedLog).not.toContain("jwt-token-value");
     expect(serializedLog).not.toContain("sensitive-token");
     expect(serializedLog).not.toContain("user@example.com");
+    expect(serializedLog).not.toContain("user-id-123");
     expect(serializedLog).not.toContain("raw-body-content");
     expect(serializedLog).not.toContain("session-cookie-value");
   });

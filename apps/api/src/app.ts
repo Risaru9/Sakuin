@@ -117,6 +117,22 @@ function getErrorDetails(error: unknown, status: number) {
   return null;
 }
 
+function getSafeErrorName(error: unknown) {
+  if (error instanceof Error) {
+    return error.name;
+  }
+
+  return "UnknownError";
+}
+
+function getRequestPath(requestUrl: string) {
+  try {
+    return new URL(requestUrl).pathname;
+  } catch {
+    return "unknown-path";
+  }
+}
+
 function jsonError(
   message: string,
   status: number,
@@ -180,8 +196,7 @@ app.get("/", (c) => {
 app.get("/health", (c) => {
   return successResponse(c, "Server sehat", {
     status: "ok",
-    timestamp: new Date().toISOString(),
-    debug_tag: "antigravity-debug-v1"
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -198,24 +213,30 @@ app.notFound((c) => {
 
 app.onError((error, c) => {
   const status = getErrorStatus(error);
+  const requestId = getRequestIdForRequest(
+    c.req.raw,
+    c.req.header(REQUEST_ID_HEADER)
+  );
 
   if (env.NODE_ENV !== "test" && (status >= 500 || !(error instanceof HttpError))) {
-    console.error("GLOBAL ERROR:", error);
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "global_error",
+        requestId,
+        method: c.req.method,
+        path: getRequestPath(c.req.url),
+        status,
+        errorName: getSafeErrorName(error),
+        timestamp: new Date().toISOString()
+      })
+    );
   }
   
-  let message = getErrorMessage(error, status);
-  if (status >= 500 && env.NODE_ENV === "production" && c.req.query("debug") === "true") {
-    message = error instanceof Error ? `${error.message}\n${error.stack}` : String(error);
-  }
-  
+  const message = getErrorMessage(error, status);
   const errors = getErrorDetails(error, status);
 
-  return jsonError(
-    message,
-    status,
-    errors,
-    getRequestIdForRequest(c.req.raw, c.req.header(REQUEST_ID_HEADER))
-  );
+  return jsonError(message, status, errors, requestId);
 });
 
 export default app;

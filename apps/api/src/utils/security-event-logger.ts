@@ -45,7 +45,7 @@ export function createSafeSecurityEventLog(input: SecurityEventInput) {
     method: input.method,
     path: input.path,
     status: input.status,
-    userId: input.userId,
+    userHash: input.userId ? createSecurityHash(input.userId) : undefined,
     metadata: sanitizeSafeMetadata(input.metadata),
     timestamp: new Date().toISOString()
   };

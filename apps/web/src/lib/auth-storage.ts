@@ -55,7 +55,7 @@ export function syncTokenToServiceWorker(token?: string | null) {
   const finalToken = token !== undefined ? token : getStoredToken();
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
 
-  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  if (typeof navigator !== "undefined" && navigator.serviceWorker) {
     if (navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
         type: "SET_TOKEN",

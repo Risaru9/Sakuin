@@ -178,17 +178,14 @@ function buildCategorySummaryItems(input: {
 }
 
 export async function getSummary(userId: string): Promise<SummaryResponse> {
-  console.log("[Summary] Starting getSummary for userId:", userId);
   const now = new Date();
   
   // Run recurring rules with error handling - don't let it break summary
   let recurringRunResult = { generatedCount: 0, processedRuleCount: 0 };
   try {
-    console.log("[Summary] Running recurring rules...");
     recurringRunResult = await runDueRecurringRules(userId, now);
-    console.log("[Summary] Recurring rules completed:", recurringRunResult);
   } catch (error) {
-    console.error("[Summary] Error running recurring rules:", error);
+    console.error("[Summary] Error running recurring rules");
     // Continue with default values - recurring rules failure shouldn't break summary
   }
   
@@ -196,10 +193,9 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   const endOfCurrentMonth = getEndOfMonth(now);
   const monthlyTrendMonths = getLastMonths(now, SUMMARY_MONTHLY_TREND_MONTHS);
 
-  // Get AI financial context with error handling
-  console.log("[Summary] Getting AI financial context...");
+  // Get AI financial context with error handling.
   const aiFinancialContextPromise = getAiFinancialContext(userId, now).catch((error) => {
-    console.error("[Summary] Error getting AI financial context:", error);
+    console.error("[Summary] Error getting AI financial context");
     // Re-throw to handle it later with fallback
     throw error;
   });
@@ -428,24 +424,18 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   let habit = null;
   
   try {
-    console.log("[Summary] Awaiting AI financial context...");
     aiFinancialContext = await aiFinancialContextPromise;
-    console.log("[Summary] AI financial context received, building checkup...");
     financialCheckup = buildFinancialCheckup(aiFinancialContext);
     safeToSpend = aiFinancialContext.safeToSpend;
     habit = aiFinancialContext.habit ?? null;
-    console.log("[Summary] Financial checkup built successfully");
   } catch (error) {
-    console.error("[Summary] Error building financial checkup, using fallback:", error);
-    console.error("[Summary] Error details:", error instanceof Error ? error.message : String(error));
+    console.error("[Summary] Error building financial checkup, using fallback");
     
     // Provide safe fallback values
     const totalIncome = totalAmountByType[TransactionType.INCOME];
     const totalExpense = totalAmountByType[TransactionType.EXPENSE];
     const netCashflow = totalIncome.minus(totalExpense);
-    
-    console.log("[Summary] Creating fallback safeToSpend and financialCheckup");
-    
+
     safeToSpend = {
       status: "UNKNOWN" as const,
       spendingPaceStatus: "UNKNOWN" as const,
@@ -491,7 +481,6 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     };
   }
   
-  console.log("[Summary] Returning summary response");
   return {
     totalIncome: decimalToString(totalIncome),
     totalExpense: decimalToString(totalExpense),

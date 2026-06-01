@@ -463,7 +463,14 @@ async function buildDynamicNotificationPayload(
     const finContext = await getAiFinancialContext(userId, now);
     availableToSpend = finContext.safeToSpend.availableToSpend;
   } catch (error) {
-    console.error(`Failed to fetch safe-to-spend for user ${userId}:`, error);
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "reminder.safe_to_spend_fetch_failed",
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        timestamp: new Date().toISOString()
+      })
+    );
   }
 
   const formattedExpense = formatRupiah(todayExpenseSum);
