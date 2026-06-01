@@ -75,21 +75,54 @@ function PortalLayer({ children }: { children: ReactNode }) {
 
 export function FloatingAssistantButton() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isLaunchingAssistant, setIsLaunchingAssistant] = useState(false);
 
   if (isAssistantRoute(location.pathname)) {
     return null;
   }
 
+  function openAssistant() {
+    if (isLaunchingAssistant) {
+      return;
+    }
+
+    setIsLaunchingAssistant(true);
+    window.setTimeout(() => {
+      navigate("/asisten");
+    }, 420);
+  }
+
   return (
-    <Link
-      aria-label="Buka Asisten Sakuin"
-      className="sakuin-floating-assistant sakuin-press sakuin-pulse-ring bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] left-4 right-auto z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:left-auto lg:right-6"
-      title="Buka Asisten Sakuin"
-      to="/asisten"
-    >
-      <Sparkles aria-hidden="true" className="absolute -right-1 -top-1 h-3.5 w-3.5" />
-      <MessageCircle aria-hidden="true" className="sakuin-icon-bounce h-5 w-5" />
-    </Link>
+    <>
+      {isLaunchingAssistant ? (
+        <PortalLayer>
+          <div
+            aria-hidden="true"
+            className="sakuin-assistant-launch fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-[360] h-12 w-12 rounded-full bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] lg:bottom-6 lg:right-6"
+          />
+        </PortalLayer>
+      ) : null}
+
+      <button
+        aria-label="Buka Asisten Sakuin"
+        className={[
+          "sakuin-floating-assistant sakuin-press sakuin-pulse-ring bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] left-auto right-4 z-[65] inline-flex h-12 w-12 items-center justify-center overflow-visible rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6",
+          isLaunchingAssistant ? "sakuin-assistant-button-pop" : ""
+        ].join(" ")}
+        disabled={isLaunchingAssistant}
+        onClick={openAssistant}
+        title="Buka Asisten Sakuin"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-white/10 opacity-0 transition group-active:opacity-100"
+        />
+        <Sparkles aria-hidden="true" className="absolute -right-1 -top-1 h-3.5 w-3.5" />
+        <MessageCircle aria-hidden="true" className="sakuin-icon-bounce h-5 w-5" />
+      </button>
+    </>
   );
 }
 

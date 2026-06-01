@@ -282,6 +282,37 @@ a {
   }
 }
 
+@keyframes sakuinAssistantLaunch {
+  0% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+
+  62% {
+    opacity: 0.92;
+    transform: scale(18);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(24);
+  }
+}
+
+@keyframes sakuinAssistantButtonPop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(0.86);
+  }
+
+  100% {
+    transform: scale(1.08);
+  }
+}
+
 @keyframes sakuinBootFade {
   0% {
     opacity: 1;
@@ -474,6 +505,16 @@ a {
   animation: sakuinFabActionPop 560ms cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
 }
 
+.sakuin-assistant-launch {
+  animation: sakuinAssistantLaunch 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 0 70px rgb(59 130 246 / 0.38);
+  transform-origin: center;
+}
+
+.sakuin-assistant-button-pop {
+  animation: sakuinAssistantButtonPop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 .sakuin-tab-panel {
   animation: sakuinTabSlide 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -590,6 +631,8 @@ a {
   .sakuin-ripple::after,
   .sakuin-fab-backdrop,
   .sakuin-fab-action-pop,
+  .sakuin-assistant-launch,
+  .sakuin-assistant-button-pop,
   .sakuin-boot-screen,
   .sakuin-boot-mark,
   .sakuin-skeleton,
