@@ -123,6 +123,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_income, "Silakan login");
             views.setTextViewText(R.id.widget_expense, "di aplikasi");
             views.setTextViewText(R.id.widget_status, "Offline");
+            views.setTextViewText(R.id.widget_status_headline, "Widget belum tersambung");
             views.setTextViewText(R.id.widget_ratio, "Belum sinkron");
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
@@ -193,12 +194,18 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
                 if ("HEMAT".equals(status)) {
                     views.setTextViewText(R.id.widget_status, "Hemat");
+                    views.setTextViewText(R.id.widget_status_headline, "Kondisi keuangan kamu");
+                    views.setTextViewText(R.id.widget_ratio, "Pertahankan terus kebiasaan baikmu!");
                     applyStatusTone(views, "HEMAT");
                 } else if ("WASPADA".equals(status)) {
                     views.setTextViewText(R.id.widget_status, "Waspada");
+                    views.setTextViewText(R.id.widget_status_headline, "Pengeluaran mulai tinggi");
+                    views.setTextViewText(R.id.widget_ratio, "Yuk lebih bijak sebelum tambah transaksi.");
                     applyStatusTone(views, "WASPADA");
                 } else {
                     views.setTextViewText(R.id.widget_status, "Boros");
+                    views.setTextViewText(R.id.widget_status_headline, "Pengeluaran melewati batas");
+                    views.setTextViewText(R.id.widget_ratio, "Rem dulu pengeluaran non-prioritas.");
                     applyStatusTone(views, "BOROS");
                 }
             } else if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
@@ -207,6 +214,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_income, "Sesi habis");
                 views.setTextViewText(R.id.widget_expense, "Login ulang");
                 views.setTextViewText(R.id.widget_status, "Offline");
+                views.setTextViewText(R.id.widget_status_headline, "Sesi perlu diperbarui");
                 views.setTextViewText(R.id.widget_ratio, "Butuh login");
             } else {
                 applyStatusTone(views, "WASPADA");
@@ -216,6 +224,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             e.printStackTrace();
             applyStatusTone(views, "WASPADA");
             views.setTextViewText(R.id.widget_status, "Cek koneksi");
+            views.setTextViewText(R.id.widget_status_headline, "Widget belum tersambung");
             views.setTextViewText(R.id.widget_balance, "Rp -");
             views.setTextViewText(R.id.widget_income, "Rp -");
             views.setTextViewText(R.id.widget_expense, "Rp -");
@@ -249,12 +258,15 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         boolean showAmounts = widgetSize != WidgetSize.SMALL;
         boolean showHeaderActions = widgetSize != WidgetSize.SMALL;
         boolean showStatus = widgetSize != WidgetSize.SMALL;
-        boolean showRatio = widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showRatio = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showMascot = widgetSize != WidgetSize.SMALL;
 
         views.setViewVisibility(R.id.widget_amount_grid, showAmounts ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_header_actions, showHeaderActions ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_status_row, showStatus ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_ratio, showRatio ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_mascot, showMascot ? View.VISIBLE : View.GONE);
+
     }
 
     private static String classifyFinancialStatus(double income, double expense, JSONObject safeToSpend) {
@@ -310,15 +322,21 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
         if ("BOROS".equals(status)) {
             backgroundResource = R.drawable.sakuin_widget_background_risk;
+            views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_risk);
+            views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#FECDD3"));
         } else if ("WASPADA".equals(status)) {
             backgroundResource = R.drawable.sakuin_widget_background_watch;
+            views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
+            views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#FDE68A"));
         } else {
             backgroundResource = R.drawable.sakuin_widget_background_safe;
+            views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_safe);
+            views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#A3E635"));
         }
 
         views.setInt(R.id.widget_root, "setBackgroundResource", backgroundResource);
-        views.setTextColor(R.id.widget_status, android.graphics.Color.WHITE);
-        views.setTextColor(R.id.widget_ratio, android.graphics.Color.parseColor("#E0F2FE"));
+        views.setTextColor(R.id.widget_ratio, android.graphics.Color.parseColor("#F8FAFC"));
+        views.setTextColor(R.id.widget_status_headline, android.graphics.Color.parseColor("#E0F2FE"));
         views.setTextColor(R.id.widget_balance_label, android.graphics.Color.parseColor("#DBEAFE"));
         views.setTextColor(R.id.widget_balance, android.graphics.Color.WHITE);
     }

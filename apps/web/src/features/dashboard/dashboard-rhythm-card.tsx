@@ -17,6 +17,53 @@ import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 import type { Goal } from "../goals/goal.types";
 import { buildFinancialRhythm } from "../summary/financial-rhythm";
 import type { SummaryData } from "../summary/summary.types";
+import { formatRupiah, toNumber } from "./dashboard-utils";
+
+type FinanceWidgetStatus = "hemat" | "waspada" | "boros";
+
+const widgetStatusTheme: Record<
+  FinanceWidgetStatus,
+  {
+    label: string;
+    headline: string;
+    note: string;
+    cardClass: string;
+    accentClass: string;
+    mascotClass: string;
+    ringClass: string;
+  }
+> = {
+  hemat: {
+    label: "Hemat",
+    headline: "Kondisi keuangan kamu",
+    note: "Pertahankan terus kebiasaan baikmu!",
+    cardClass: "from-cyan-950 via-blue-800 to-emerald-600",
+    accentClass: "bg-emerald-400 text-emerald-950",
+    mascotClass: "from-lime-200 via-lime-400 to-green-700",
+    ringClass: "ring-emerald-300/35"
+  },
+  waspada: {
+    label: "Waspada",
+    headline: "Pengeluaran mulai tinggi",
+    note: "Yuk lebih bijak sebelum tambah transaksi.",
+    cardClass: "from-blue-950 via-sky-800 to-amber-500",
+    accentClass: "bg-amber-300 text-amber-950",
+    mascotClass: "from-lime-200 via-lime-500 to-green-700",
+    ringClass: "ring-amber-300/40"
+  },
+  boros: {
+    label: "Boros",
+    headline: "Pengeluaran melewati batas",
+    note: "Rem dulu pengeluaran non-prioritas.",
+    cardClass: "from-slate-950 via-rose-900 to-red-500",
+    accentClass: "bg-rose-300 text-rose-950",
+    mascotClass: "from-yellow-200 via-lime-400 to-green-700",
+    ringClass: "ring-rose-300/40"
+  }
+};
+
+// Replace with a transparent PNG/SVG asset path when the official Sakuin mascot is ready.
+const widgetMascotAssetSrc = "";
 
 function FinancialRhythmSkeleton() {
   return (
@@ -54,7 +101,229 @@ function PortalLayer({ children }: { children: ReactNode }) {
   return createPortal(children, root);
 }
 
-function WidgetInfoModal({ onClose }: { onClose: () => void }) {
+function getWidgetStatus(income: number, expense: number, summary: SummaryData | null) {
+  const safeStatus = summary?.safeToSpend?.status;
+
+  if (safeStatus === "HOLD") {
+    return "boros";
+  }
+
+  if (safeStatus === "WATCH") {
+    return "waspada";
+  }
+
+  if (safeStatus === "SAFE") {
+    return "hemat";
+  }
+
+  if (income <= 0) {
+    return "hemat";
+  }
+
+  const ratio = expense / income;
+
+  if (ratio <= 0.55) {
+    return "hemat";
+  }
+
+  if (ratio <= 0.85) {
+    return "waspada";
+  }
+
+  return "boros";
+}
+
+function FinanceWidgetMascot({
+  status,
+  mascotSrc = widgetMascotAssetSrc
+}: {
+  status: FinanceWidgetStatus;
+  mascotSrc?: string;
+}) {
+  const theme = widgetStatusTheme[status];
+
+  if (mascotSrc) {
+    return (
+      <img
+        alt=""
+        aria-hidden="true"
+        className="sakuin-widget-mascot absolute -bottom-8 -right-3 h-36 w-36 object-contain sm:h-44 sm:w-44"
+        src={mascotSrc}
+      />
+    );
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      className="sakuin-widget-mascot absolute -bottom-8 -right-3 h-36 w-36 sm:h-44 sm:w-44"
+    >
+      <div
+        className={[
+          "absolute inset-0 rounded-[2.25rem] bg-gradient-to-br shadow-2xl ring-8",
+          theme.mascotClass,
+          theme.ringClass
+        ].join(" ")}
+      >
+        <span className="absolute left-4 top-5 h-14 w-14 rounded-full bg-white/90 shadow-inner sm:h-16 sm:w-16">
+          <span className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400">
+            <span className="absolute left-2 top-1 h-3 w-3 rounded-full bg-yellow-200" />
+          </span>
+        </span>
+        <span className="absolute right-4 top-5 h-14 w-14 rounded-full bg-white/90 shadow-inner sm:h-16 sm:w-16">
+          <span className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400">
+            <span className="absolute left-2 top-1 h-3 w-3 rounded-full bg-yellow-200" />
+          </span>
+        </span>
+        <span className="absolute left-1/2 top-[78px] h-8 w-12 -translate-x-1/2 rounded-[50%] bg-orange-500 sm:top-[86px]">
+          <span className="absolute left-1/2 top-4 h-4 w-8 -translate-x-1/2 rounded-b-full bg-amber-900" />
+        </span>
+        <span className="absolute left-5 top-1 h-10 w-8 -rotate-12 rounded-t-full bg-lime-200/60" />
+        <span className="absolute right-5 top-1 h-10 w-8 rotate-12 rounded-t-full bg-lime-200/60" />
+      </div>
+    </div>
+  );
+}
+
+function WidgetMetricPill({
+  label,
+  value,
+  type
+}: {
+  label: string;
+  value: string;
+  type: "income" | "expense";
+}) {
+  const Icon = type === "income" ? ArrowUpCircle : ArrowDownCircle;
+
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/15 bg-white/14 p-2.5 text-white shadow-sm backdrop-blur-md">
+      <div className="flex items-center gap-1.5">
+        <span
+          className={[
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white",
+            type === "income" ? "bg-emerald-400" : "bg-rose-400"
+          ].join(" ")}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-black text-white/80">{label}</p>
+          <p className="truncate text-xs font-black sm:text-sm">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WidgetPreviewCard({
+  selectedSize,
+  summary
+}: {
+  selectedSize: "small" | "medium" | "large" | "xl";
+  summary: SummaryData | null;
+}) {
+  const fallbackIncome = 350000;
+  const fallbackExpense = 211700;
+  const income = toNumber(summary?.incomeThisMonth) || toNumber(summary?.totalIncome) || fallbackIncome;
+  const expense = toNumber(summary?.expenseThisMonth) || toNumber(summary?.totalExpense) || fallbackExpense;
+  const balance = toNumber(summary?.balance) || income - expense;
+  const status = getWidgetStatus(income, expense, summary);
+  const theme = widgetStatusTheme[status];
+  const ratio = income > 0 ? Math.min(Math.round((expense / income) * 100), 999) : 0;
+  const showMetrics = selectedSize !== "small";
+  const showInsight = selectedSize === "large" || selectedSize === "xl";
+  const showRatio = selectedSize === "xl";
+
+  return (
+    <div
+      className={[
+        "relative min-h-[210px] overflow-hidden rounded-[1.75rem] bg-gradient-to-br p-4 text-white shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:min-h-[245px] sm:p-5",
+        theme.cardClass
+      ].join(" ")}
+    >
+      <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/18 blur-3xl" />
+      <div className="absolute -left-20 bottom-4 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_10%,rgba(255,255,255,0.24),transparent_28%),radial-gradient(circle_at_90%_78%,rgba(255,255,255,0.18),transparent_30%)]" />
+
+      <div className="relative z-10 flex min-h-[178px] flex-col sm:min-h-[205px]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="max-w-[64%]">
+            <p className="text-sm font-bold text-white/78">Saldo aktif</p>
+            <p className="mt-1 truncate text-3xl font-black tracking-normal text-white drop-shadow-sm sm:text-4xl">
+              {formatRupiah(balance)}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              aria-label="Muat ulang widget"
+              className="grid h-11 w-11 place-items-center rounded-2xl bg-white/16 text-white backdrop-blur-xl transition hover:bg-white/24"
+              type="button"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </button>
+            <button
+              aria-label="Tambah transaksi dari widget"
+              className="grid h-11 w-11 place-items-center rounded-2xl bg-white/16 text-white backdrop-blur-xl transition hover:bg-white/24"
+              type="button"
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        {showMetrics ? (
+          <div className="mt-4 grid max-w-[68%] grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+            <WidgetMetricPill label="Pemasukan" type="income" value={formatRupiah(income)} />
+            <WidgetMetricPill label="Pengeluaran" type="expense" value={formatRupiah(expense)} />
+          </div>
+        ) : null}
+
+        {showRatio ? (
+          <div className="mt-4 max-w-[66%]">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-white/80">
+              <span>Rasio pengeluaran</span>
+              <span>{ratio}%</span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
+              <div
+                className={["h-full rounded-full", theme.accentClass].join(" ")}
+                style={{ width: `${Math.min(ratio, 100)}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-auto max-w-[68%] pt-4">
+          {showInsight ? (
+            <div className="rounded-2xl border border-white/15 bg-white/12 px-3 py-2.5 backdrop-blur-md">
+              <p className="text-[11px] font-semibold text-white/82">{theme.headline}</p>
+              <p className="mt-1 text-lg font-black uppercase leading-none text-lime-300">
+                {theme.label}
+              </p>
+              <p className="mt-1 truncate text-[11px] font-semibold text-white/86">{theme.note}</p>
+            </div>
+          ) : (
+            <span className={["inline-flex rounded-xl px-3 py-1.5 text-xs font-black", theme.accentClass].join(" ")}>
+              {theme.label}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <FinanceWidgetMascot status={status} />
+    </div>
+  );
+}
+
+function WidgetInfoModal({
+  onClose,
+  summary
+}: {
+  onClose: () => void;
+  summary: SummaryData | null;
+}) {
   useLockBodyScroll(true);
   const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large" | "xl">("medium");
   const [pinStatus, setPinStatus] = useState<"idle" | "requested" | "unsupported" | "failed">("idle");
@@ -190,65 +459,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           <p className="mb-3 text-xs font-black uppercase text-zinc-500">
             Preview data dashboard
           </p>
-          <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-blue-100">Saldo aktif</p>
-                <p className="truncate text-lg font-black">
-                  Rp 2.450.000
-                </p>
-              </div>
-              <button
-                aria-label="Muat ulang widget"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20"
-                type="button"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-              <button
-                aria-label="Tambah transaksi dari widget"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20"
-                type="button"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
-
-            {selectedSize !== "small" && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-white p-2 text-slate-900">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-                    <ArrowUpCircle className="h-3 w-3" />
-                    Masuk
-                  </div>
-                  <p className="mt-1 truncate text-xs font-black">
-                    Rp 3.200.000
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white p-2 text-slate-900">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-                    <ArrowDownCircle className="h-3 w-3" />
-                    Keluar
-                  </div>
-                  <p className="mt-1 truncate text-xs font-black">
-                    Rp 750.000
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedSize === "xl" && (
-              <p className="mt-2 truncate text-[10px] font-bold text-blue-100">
-                Bulan ini: keluar 23% dari pemasukan
-              </p>
-            )}
-
-            {selectedSize !== "small" && (
-              <span className="mt-2 inline-flex rounded-lg bg-white/20 px-2.5 py-1 text-[10px] font-black">
-                Hemat
-              </span>
-            )}
-          </div>
+          <WidgetPreviewCard selectedSize={selectedSize} summary={summary} />
         </div>
 
         {/* Panduan Mengatur Widget untuk Android (dari APK) */}
@@ -324,7 +535,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
 
         <div className="mt-3 rounded-2xl bg-slate-50 p-3">
           <p className="text-[11px] font-semibold leading-5 text-zinc-500">
-            💡 Untuk Android, pastikan Anda telah memasang **Aplikasi Resmi (APK)** Sakuin agar dapat menggunakan fitur widget home-screen native ini.
+            Untuk Android, pastikan Anda telah memasang aplikasi resmi Sakuin agar dapat menggunakan widget home-screen native.
           </p>
         </div>
 
@@ -521,7 +732,10 @@ export function FinancialRhythmCard({
 
       {/* Widget Info Modal */}
       {isWidgetModalOpen && (
-        <WidgetInfoModal onClose={() => setIsWidgetModalOpen(false)} />
+        <WidgetInfoModal
+          onClose={() => setIsWidgetModalOpen(false)}
+          summary={summary}
+        />
       )}
     </>
   );

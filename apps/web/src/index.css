@@ -377,6 +377,17 @@ a {
   }
 }
 
+@keyframes sakuinWidgetMascotFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-0.45rem) rotate(1deg);
+  }
+}
+
 @keyframes sakuinBootFade {
   0% {
     opacity: 1;
@@ -603,6 +614,10 @@ a {
   animation: sakuinAssistantHello 420ms ease-out 380ms both;
 }
 
+.sakuin-widget-mascot {
+  animation: sakuinWidgetMascotFloat 3s ease-in-out infinite;
+}
+
 .sakuin-tab-panel {
   animation: sakuinTabSlide 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -727,6 +742,7 @@ a {
   .sakuin-assistant-mascot-arm,
   .sakuin-assistant-hello,
   .sakuin-assistant-hello-subtitle,
+  .sakuin-widget-mascot,
   .sakuin-boot-screen,
   .sakuin-boot-mark,
   .sakuin-skeleton,
