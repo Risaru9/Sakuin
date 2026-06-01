@@ -197,8 +197,11 @@ app.notFound((c) => {
 });
 
 app.onError((error, c) => {
-  console.error('GLOBAL ERROR:', error);
   const status = getErrorStatus(error);
+
+  if (env.NODE_ENV !== "test" && (status >= 500 || !(error instanceof HttpError))) {
+    console.error("GLOBAL ERROR:", error);
+  }
   
   let message = getErrorMessage(error, status);
   if (status >= 500 && env.NODE_ENV === "production" && c.req.query("debug") === "true") {
