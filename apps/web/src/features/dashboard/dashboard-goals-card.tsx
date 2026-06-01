@@ -25,7 +25,7 @@ export function DashboardGoalsCard({
   );
 
   return (
-    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
+    <div className="sakuin-card-lift rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-black text-[var(--sakuin-text)]">
@@ -110,13 +110,15 @@ export function DashboardGoalsCard({
             <span>{formatCompactRupiah(priorityGoal.targetAmount)}</span>
           </div>
 
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+          <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-[var(--sakuin-primary)]"
+              className="sakuin-progress-fill relative h-full overflow-hidden rounded-full bg-[var(--sakuin-primary)]"
               style={{
                 width: `${getGoalProgress(priorityGoal)}%`
               }}
-            />
+            >
+              <span className="sakuin-progress-shine" />
+            </div>
           </div>
 
           <Link

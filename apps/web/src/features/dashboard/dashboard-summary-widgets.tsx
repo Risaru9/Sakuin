@@ -33,7 +33,7 @@ export function TransactionItem({
   const isIncome = transaction.type === "INCOME";
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:gap-4 sm:p-4">
+    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:gap-4 sm:p-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div
           className={
@@ -127,14 +127,14 @@ export function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
               <div className="flex h-[85%] w-full max-w-[28px] items-end justify-center gap-1 sm:max-w-[36px] sm:gap-1.5">
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-[var(--sakuin-green)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
+                    className="sakuin-progress-fill w-full rounded-t-md bg-[var(--sakuin-green)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
                     style={{ height: `${incomeHeight}%` }}
                   />
                 </div>
 
                 <div className="relative flex h-full w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-[var(--sakuin-red)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
+                    className="sakuin-progress-fill w-full rounded-t-md bg-[var(--sakuin-red)] opacity-75 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:opacity-95"
                     style={{ height: `${expenseHeight}%` }}
                   />
                 </div>
@@ -216,11 +216,13 @@ export function CategoryBreakdown({
                     {formatCompactRupiah(item.totalAmount)}
                   </p>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
+                <div className="relative h-2 overflow-hidden rounded-full bg-zinc-100">
                   <div
-                    className={["h-full rounded-full", barToneClass].join(" ")}
+                    className={["sakuin-progress-fill relative h-full overflow-hidden rounded-full", barToneClass].join(" ")}
                     style={{ width: `${widthPercent}%` }}
-                  />
+                  >
+                    <span className="sakuin-progress-shine" />
+                  </div>
                 </div>
               </div>
             );

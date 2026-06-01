@@ -157,7 +157,7 @@ function TransactionRow({
   )}`;
 
   return (
-    <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:p-4">
+    <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:p-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
             <div
@@ -219,7 +219,7 @@ function TransactionRow({
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)] sm:min-h-10 sm:gap-2"
+              className="sakuin-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)] sm:min-h-10 sm:gap-2"
               onClick={() => onEdit(transaction)}
               type="button"
             >
@@ -228,7 +228,7 @@ function TransactionRow({
             </button>
 
             <button
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2"
+              className="sakuin-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2"
               disabled={isDeleting}
               onClick={() => onDelete(transaction)}
               type="button"
@@ -577,7 +577,7 @@ const transactionsQuery = useQuery({
           <button
             aria-controls="transaction-advanced-filter"
             aria-expanded={isFilterExpanded}
-            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left transition hover:border-[var(--sakuin-primary)]/30 hover:bg-[var(--sakuin-secondary-soft)]"
+            className="sakuin-press mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-3.5 py-3 text-left transition hover:border-[var(--sakuin-primary)]/30 hover:bg-[var(--sakuin-secondary-soft)]"
             onClick={() => setIsFilterExpanded((current) => !current)}
             type="button"
           >

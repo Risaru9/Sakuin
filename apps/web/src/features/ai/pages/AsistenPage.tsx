@@ -430,7 +430,7 @@ function ChatBubble({
 
   return (
     <div
-      className={isUser ? "flex justify-end" : "flex justify-start"}
+      className={isUser ? "sakuin-enter flex justify-end" : "sakuin-enter flex justify-start"}
       ref={messageRef}
     >
       <div
@@ -444,7 +444,7 @@ function ChatBubble({
           className={
             isUser
               ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-secondary)] text-white sm:h-9 sm:w-9"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 sm:h-9 sm:w-9"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 animate-[sakuinSoftPulse_2.8s_ease-in-out_infinite] sm:h-9 sm:w-9"
           }
         >
           {isUser ? (
@@ -565,7 +565,7 @@ function ChatBubble({
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {message.cards.map((card) => (
                 <div
-                  className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+                  className="sakuin-card-lift min-w-0 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5"
                   key={`${message.id}-${card.label}`}
                 >
                   <p className="text-[9px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]">
@@ -584,7 +584,7 @@ function ChatBubble({
               {visibleSuggestions.map((suggestion) => (
                 <button
                   aria-label={`Kirim prompt: ${suggestion}`}
-                  className="rounded-full bg-[var(--sakuin-ai-soft)] px-3 py-1.5 text-left text-[10px] font-black leading-4 text-[var(--sakuin-ai)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-ai-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sakuin-press rounded-full bg-[var(--sakuin-ai-soft)] px-3 py-1.5 text-left text-[10px] font-black leading-4 text-[var(--sakuin-ai)] ring-1 ring-[var(--sakuin-border)] transition hover:bg-[var(--sakuin-ai-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={disabled}
                   key={`${message.id}-${suggestion}`}
                   onClick={() => onSuggestionClick(suggestion)}
@@ -1591,15 +1591,19 @@ export function AsistenPage() {
             ))}
 
             {isSubmitting ? (
-              <div className="flex justify-start">
+              <div className="sakuin-enter flex justify-start">
                 <div className="flex max-w-[96%] items-start gap-2 sm:max-w-[86%] sm:gap-3 lg:max-w-[78%]">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 sm:h-9 sm:w-9">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-md shadow-black/10 animate-[sakuinSoftPulse_2.8s_ease-in-out_infinite] sm:h-9 sm:w-9">
                     <Bot className="h-4 w-4" />
                   </div>
 
                   <div className="rounded-[1.15rem] rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-slate-600 shadow-sm shadow-slate-950/5">
                     <div className="flex items-center gap-2 text-[13px] font-bold">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span aria-hidden="true" className="flex items-center gap-1 text-[var(--sakuin-ai)]">
+                        <span className="sakuin-typing-dot" />
+                        <span className="sakuin-typing-dot" />
+                        <span className="sakuin-typing-dot" />
+                      </span>
                       Membaca data Sakuin...
                     </div>
                   </div>
@@ -1659,7 +1663,7 @@ export function AsistenPage() {
             {SUGGESTED_PROMPT_OPTIONS.map((option) => (
               <button
                 aria-label={`Kirim prompt: ${option.prompt}`}
-                className="shrink-0 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 text-left shadow-sm transition hover:border-[var(--sakuin-border)] hover:bg-[var(--sakuin-ai-soft)] hover:text-[var(--sakuin-ai)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="sakuin-card-lift sakuin-press shrink-0 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 text-left shadow-sm transition hover:border-[var(--sakuin-border)] hover:bg-[var(--sakuin-ai-soft)] hover:text-[var(--sakuin-ai)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSubmitting || isOffline}
                 key={option.prompt}
                 onClick={() => handlePromptClick(option.prompt)}
@@ -1701,7 +1705,7 @@ export function AsistenPage() {
 
             <button
               aria-label="Kirim pesan"
-              className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="sakuin-press mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting || isOffline || input.trim().length === 0}
               type="submit"
             >

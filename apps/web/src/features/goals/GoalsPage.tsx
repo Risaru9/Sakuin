@@ -110,7 +110,7 @@ function GoalCard({
   const progress = getGoalProgress(goal);
 
   return (
-    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]">
+    <div className="sakuin-card-lift sakuin-stagger-enter rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <button
@@ -155,13 +155,15 @@ function GoalCard({
           <span className="shrink-0">{formatRupiah(goal.targetAmount)}</span>
         </div>
 
-        <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
+        <div className="relative h-3 overflow-hidden rounded-full bg-zinc-100">
           <div
-            className="h-full rounded-full bg-[var(--sakuin-primary)]"
+            className="sakuin-progress-fill relative h-full overflow-hidden rounded-full bg-[var(--sakuin-primary)]"
             style={{
               width: `${progress}%`
             }}
-          />
+          >
+            <span className="sakuin-progress-shine" />
+          </div>
         </div>
       </div>
 
@@ -481,13 +483,15 @@ export function GoalsPage() {
           ) : null}
         </div>
 
-        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/60">
+        <div className="relative mt-5 h-3 overflow-hidden rounded-full bg-white/60">
           <div
-            className="h-full rounded-full bg-[var(--sakuin-secondary)]"
+            className="sakuin-progress-fill relative h-full overflow-hidden rounded-full bg-[var(--sakuin-secondary)]"
             style={{
               width: `${overallProgress}%`
             }}
-          />
+          >
+            <span className="sakuin-progress-shine" />
+          </div>
         </div>
       </div>
 

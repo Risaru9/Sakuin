@@ -275,7 +275,7 @@ export function SixMonthStatsCard({
         <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <div
-              className="h-[72px] animate-pulse rounded-2xl bg-zinc-100 ring-1 ring-[var(--sakuin-border)]"
+              className="sakuin-skeleton h-[72px] rounded-2xl bg-zinc-100 ring-1 ring-[var(--sakuin-border)]"
               key={index}
             />
           ))}
@@ -284,7 +284,7 @@ export function SixMonthStatsCard({
 
       {analytics ? (
         <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-          <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
+          <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
             <p className="text-[10px] font-black uppercase text-zinc-500">
               Net {analytics.totalMonths} bulan
             </p>
@@ -298,7 +298,7 @@ export function SixMonthStatsCard({
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
+          <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
             <p className="text-[10px] font-black uppercase text-zinc-500">
               Rata-rata expense
             </p>
@@ -307,14 +307,14 @@ export function SixMonthStatsCard({
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
+          <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
             <p className="text-[10px] font-black uppercase text-zinc-500">Bulan positif</p>
             <p className="mt-1 text-sm font-black text-[var(--sakuin-text)] sm:text-base">
               {analytics.positiveMonths}/{analytics.totalMonths}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
+          <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white p-3 ring-1 ring-[var(--sakuin-border)]">
             <p className="text-[10px] font-black uppercase text-zinc-500">Momentum</p>
             <p className="mt-1 text-sm font-black text-[var(--sakuin-text)] sm:text-base">
               {analytics.momentum}
@@ -352,14 +352,16 @@ export function SixMonthStatsCard({
                   <p className="text-[11px] font-black text-zinc-500">
                     {getMonthLabel(item.month)}
                   </p>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-zinc-100">
                     <div
                       className={[
-                        "h-full rounded-full",
+                        "sakuin-progress-fill relative h-full overflow-hidden rounded-full",
                         net >= 0 ? "bg-[var(--sakuin-green)]" : "bg-[var(--sakuin-red)]"
                       ].join(" ")}
                       style={{ width: `${Math.max(10, percent)}%` }}
-                    />
+                    >
+                      <span className="sakuin-progress-shine" />
+                    </div>
                   </div>
                   <p
                     className={[
@@ -454,14 +456,16 @@ export function SixMonthStatsCard({
                   <p className="text-[11px] font-black text-zinc-500">
                     {getMonthLabel(item.month)}
                   </p>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-zinc-100">
                     <div
                       className={[
-                        "h-full rounded-full",
+                        "sakuin-progress-fill relative h-full overflow-hidden rounded-full",
                         net >= 0 ? "bg-[var(--sakuin-green)]" : "bg-[var(--sakuin-red)]"
                       ].join(" ")}
                       style={{ width: `${Math.max(10, percent)}%` }}
-                    />
+                    >
+                      <span className="sakuin-progress-shine" />
+                    </div>
                   </div>
                   <p
                     className={[
