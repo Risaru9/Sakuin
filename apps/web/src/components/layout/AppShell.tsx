@@ -15,6 +15,7 @@ import {
   MobileMainActionMenu
 } from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
+import { getOfflineQueue, syncOfflineTransactions } from "../../lib/offline-queue";
 
 type AppShellProps = {
   children: ReactNode;
@@ -135,11 +136,24 @@ export function AppShell({
 
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [servedFromCache, setServedFromCache] = useState(false);
+  const [offlineQueueLength, setOfflineQueueLength] = useState(0);
 
   useEffect(() => {
+    const updateQueueLength = () => {
+      setOfflineQueueLength(getOfflineQueue().length);
+    };
+
+    updateQueueLength();
+    window.addEventListener("sakuin-offline-queue-changed", updateQueueLength);
+
+    if (navigator.onLine) {
+      void syncOfflineTransactions();
+    }
+
     const handleOnline = () => {
       setIsOffline(false);
       setServedFromCache(false);
+      void syncOfflineTransactions();
     };
     const handleOffline = () => {
       setIsOffline(true);
@@ -154,6 +168,7 @@ export function AppShell({
     window.addEventListener("sakuin-offline-cache-hit", handleCacheHit);
 
     return () => {
+      window.removeEventListener("sakuin-offline-queue-changed", updateQueueLength);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("sakuin-offline-cache-hit", handleCacheHit);
@@ -165,10 +180,18 @@ export function AppShell({
   const isAssistantRoute = isActivePath(location.pathname, ASSISTANT_ROUTE);
   const shouldShowMobileNavigation = !isAssistantRoute;
 
-  const showBanner = isOffline || servedFromCache;
-  const bannerMessage = isOffline
-    ? "Anda sedang offline. Menampilkan data tersimpan dalam mode read-only."
-    : "Koneksi terganggu. Beberapa data diambil dari penyimpanan lokal (cache).";
+  const showBanner = isOffline || servedFromCache || offlineQueueLength > 0;
+  
+  let bannerMessage = "";
+  if (isOffline) {
+    bannerMessage = offlineQueueLength > 0
+      ? `Anda sedang offline. Ada ${offlineQueueLength} transaksi tersimpan lokal yang menunggu sinkronisasi.`
+      : "Anda sedang offline. Menampilkan data tersimpan dalam mode read-only.";
+  } else if (offlineQueueLength > 0) {
+    bannerMessage = `Menyinkronkan ${offlineQueueLength} transaksi offline ke server...`;
+  } else {
+    bannerMessage = "Koneksi terganggu. Beberapa data diambil dari penyimpanan lokal (cache).";
+  }
 
   return (
     <main

@@ -1,4 +1,5 @@
 import { apiRequest } from "../../lib/api-client";
+import { addToOfflineQueue } from "../../lib/offline-queue";
 import type {
   CreateTransactionInput,
   CreateTransactionsBulkInput,
@@ -57,6 +58,32 @@ export function getTransactions(params: GetTransactionsParams = {}) {
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    const offlineTx = addToOfflineQueue(input);
+    const mockTx: Transaction = {
+      id: offlineTx.offlineId,
+      categoryId: input.categoryId,
+      type: input.type,
+      amount: input.amount,
+      note: input.note ?? null,
+      date: input.date,
+      category: {
+        id: input.categoryId,
+        name: "Transaksi Offline",
+        type: input.type,
+        icon: null,
+        color: null,
+        isDefault: false
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sakuin:transaction-added"));
+    }
+    return mockTx;
+  }
+
   const result = await apiRequest<Transaction>("/api/transactions", {
     method: "POST",
     body: input
@@ -68,6 +95,35 @@ export async function createTransaction(input: CreateTransactionInput) {
 }
 
 export async function createTransactionsBulk(input: CreateTransactionsBulkInput) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    const mockTransactions: Transaction[] = [];
+    for (const tx of input.transactions) {
+      const offlineTx = addToOfflineQueue(tx);
+      mockTransactions.push({
+        id: offlineTx.offlineId,
+        categoryId: tx.categoryId,
+        type: tx.type,
+        amount: tx.amount,
+        note: tx.note ?? null,
+        date: tx.date,
+        category: {
+          id: tx.categoryId,
+          name: "Transaksi Offline",
+          type: tx.type,
+          icon: null,
+          color: null,
+          isDefault: false
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sakuin:transaction-added"));
+    }
+    return mockTransactions;
+  }
+
   const result = await apiRequest<Transaction[]>("/api/transactions/bulk", {
     method: "POST",
     body: input
