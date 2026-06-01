@@ -83,7 +83,7 @@ export function FloatingAssistantButton() {
   return (
     <Link
       aria-label="Buka Asisten Sakuin"
-      className="sakuin-press sakuin-pulse-ring fixed bottom-[calc(var(--sakuin-mobile-nav-height)+4.75rem)] left-auto right-4 z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
+      className="sakuin-floating-assistant sakuin-press sakuin-pulse-ring bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] left-4 right-auto z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:left-auto lg:right-6"
       title="Buka Asisten Sakuin"
       to="/asisten"
     >
@@ -148,7 +148,7 @@ export function MobileMainActionMenu() {
             <button
               aria-label="Tutup menu aksi transaksi"
               className={[
-                "fixed inset-x-0 top-0 bottom-[var(--sakuin-mobile-nav-height)] z-[320] cursor-default bg-slate-950/18 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none lg:hidden",
+                "sakuin-fab-backdrop fixed inset-x-0 top-0 bottom-[var(--sakuin-mobile-nav-height)] z-[320] cursor-default bg-slate-950/24 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none lg:hidden",
                 isMenuOpen
                   ? "pointer-events-auto opacity-100"
                   : "pointer-events-none opacity-0"
@@ -170,13 +170,16 @@ export function MobileMainActionMenu() {
               <button
                 aria-label="Catat Biasa"
                 className={[
-                  "sakuin-press absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute left-[calc(50%_-_1.5rem)] top-0 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition duration-500 ease-[cubic-bezier(0.68,-0.55,0.265,1.55)] hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
-                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none translate-y-6 scale-75 opacity-0"
+                    ? "sakuin-fab-action-pop pointer-events-auto scale-100 opacity-100"
+                    : "pointer-events-none translate-y-8 scale-0 opacity-0"
                 ].join(" ")}
                 onClick={() => openModal("manual")}
-                style={{ transitionDelay: isMenuOpen ? "40ms" : "0ms" }}
+                style={{
+                  animationDelay: isMenuOpen ? "40ms" : "0ms",
+                  transitionDelay: isMenuOpen ? "40ms" : "0ms"
+                }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Catat Biasa"
                 type="button"
@@ -187,13 +190,16 @@ export function MobileMainActionMenu() {
               <button
                 aria-label="Catat Cepat"
                 className={[
-                  "sakuin-press absolute bottom-9 left-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_18px_38px_rgba(29,78,216,0.26)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute bottom-9 left-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_18px_38px_rgba(29,78,216,0.26)] transition duration-500 ease-[cubic-bezier(0.68,-0.55,0.265,1.55)] hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
-                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none translate-x-8 translate-y-8 scale-75 opacity-0"
+                    ? "sakuin-fab-action-pop pointer-events-auto scale-100 opacity-100"
+                    : "pointer-events-none translate-x-8 translate-y-8 scale-0 opacity-0"
                 ].join(" ")}
                 onClick={() => openModal("quick")}
-                style={{ transitionDelay: isMenuOpen ? "80ms" : "0ms" }}
+                style={{
+                  animationDelay: isMenuOpen ? "80ms" : "0ms",
+                  transitionDelay: isMenuOpen ? "80ms" : "0ms"
+                }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Catat Cepat"
                 type="button"
@@ -204,13 +210,16 @@ export function MobileMainActionMenu() {
               <button
                 aria-label="Export data"
                 className={[
-                  "sakuin-press absolute bottom-9 right-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_18px_38px_rgba(37,99,235,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute bottom-9 right-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_18px_38px_rgba(37,99,235,0.2)] transition duration-500 ease-[cubic-bezier(0.68,-0.55,0.265,1.55)] hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
-                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none -translate-x-8 translate-y-8 scale-75 opacity-0"
+                    ? "sakuin-fab-action-pop pointer-events-auto scale-100 opacity-100"
+                    : "pointer-events-none -translate-x-8 translate-y-8 scale-0 opacity-0"
                 ].join(" ")}
                 onClick={openExport}
-                style={{ transitionDelay: isMenuOpen ? "120ms" : "0ms" }}
+                style={{
+                  animationDelay: isMenuOpen ? "120ms" : "0ms",
+                  transitionDelay: isMenuOpen ? "120ms" : "0ms"
+                }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Export"
                 type="button"
@@ -400,7 +409,7 @@ export function DesktopMainActionMenu() {
         aria-label={
           isMenuOpen ? "Tutup menu aksi transaksi" : "Buka menu aksi transaksi"
         }
-        className="sakuin-ripple sakuin-pulse-ring fixed bottom-24 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_36px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-reduce:transition-none"
+        className="sakuin-floating-action sakuin-ripple sakuin-pulse-ring bottom-24 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_36px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:translate-y-0.5 active:scale-95 motion-reduce:transition-none"
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >

@@ -255,6 +255,33 @@ a {
   }
 }
 
+@keyframes sakuinFabActionPop {
+  0% {
+    opacity: 0;
+    transform: translateY(1.1rem) scale(0.25);
+  }
+
+  68% {
+    opacity: 1;
+    transform: translateY(-0.18rem) scale(1.12);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sakuinFabBackdrop {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
 @keyframes sakuinBootFade {
   0% {
     opacity: 1;
@@ -379,6 +406,11 @@ a {
   position: relative;
 }
 
+.sakuin-floating-assistant,
+.sakuin-floating-action {
+  position: fixed;
+}
+
 .sakuin-pulse-ring::before {
   animation: sakuinPulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   border: 1px solid currentColor;
@@ -432,6 +464,14 @@ a {
 
 .sakuin-ripple:active::after {
   animation: sakuinRipple 620ms ease-out;
+}
+
+.sakuin-fab-backdrop {
+  animation: sakuinFabBackdrop 220ms ease-out both;
+}
+
+.sakuin-fab-action-pop {
+  animation: sakuinFabActionPop 560ms cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
 }
 
 .sakuin-tab-panel {
@@ -548,6 +588,8 @@ a {
   .sakuin-progress-shine,
   .sakuin-pulse-ring::before,
   .sakuin-ripple::after,
+  .sakuin-fab-backdrop,
+  .sakuin-fab-action-pop,
   .sakuin-boot-screen,
   .sakuin-boot-mark,
   .sakuin-skeleton,

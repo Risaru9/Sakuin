@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -37,6 +38,20 @@ function FinancialRhythmSkeleton() {
       </div>
     </div>
   );
+}
+
+function PortalLayer({ children }: { children: ReactNode }) {
+  const [root, setRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setRoot(document.body);
+  }, []);
+
+  if (!root) {
+    return null;
+  }
+
+  return createPortal(children, root);
 }
 
 function WidgetInfoModal({ onClose }: { onClose: () => void }) {
@@ -106,19 +121,20 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
-      <button
-        aria-label="Tutup"
-        className="absolute inset-0 bg-[var(--sakuin-secondary)]/40 backdrop-blur-md"
-        onClick={onClose}
-        type="button"
-      />
+    <PortalLayer>
+      <div className="fixed inset-0 z-[210] flex items-end justify-center p-0 sm:items-center sm:p-6">
+        <button
+          aria-label="Tutup"
+          className="absolute inset-0 bg-[var(--sakuin-secondary)]/40 backdrop-blur-md"
+          onClick={onClose}
+          type="button"
+        />
 
-      <div
-        aria-modal="true"
-        className="relative z-[211] max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border border-white/70 bg-white p-4 shadow-[0_-24px_70px_rgba(15,23,42,0.22)] sm:max-w-lg sm:rounded-[2rem] sm:p-6"
-        role="dialog"
-      >
+        <div
+          aria-modal="true"
+          className="relative z-[211] max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border border-white/70 bg-white p-4 shadow-[0_-24px_70px_rgba(15,23,42,0.22)] sm:max-w-lg sm:rounded-[2rem] sm:p-6"
+          role="dialog"
+        >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -345,8 +361,9 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
             Tutup
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </PortalLayer>
   );
 }
 
