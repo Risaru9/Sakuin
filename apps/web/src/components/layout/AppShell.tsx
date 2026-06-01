@@ -1,11 +1,12 @@
-import type { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Download,
   Home,
   Settings,
-  Target
+  Target,
+  WifiOff
 } from "lucide-react";
 import { SakuinIdentityLogo } from "../brand/SakuinIdentityLogo";
 import {
@@ -132,10 +133,42 @@ export function AppShell({
   const location = useLocation();
   const { user } = useAuth();
 
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [servedFromCache, setServedFromCache] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setServedFromCache(false);
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    const handleCacheHit = () => {
+      setServedFromCache(true);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("sakuin-offline-cache-hit", handleCacheHit);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("sakuin-offline-cache-hit", handleCacheHit);
+    };
+  }, []);
+
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
   const isAssistantRoute = isActivePath(location.pathname, ASSISTANT_ROUTE);
   const shouldShowMobileNavigation = !isAssistantRoute;
+
+  const showBanner = isOffline || servedFromCache;
+  const bannerMessage = isOffline
+    ? "Anda sedang offline. Menampilkan data tersimpan dalam mode read-only."
+    : "Koneksi terganggu. Beberapa data diambil dari penyimpanan lokal (cache).";
 
   return (
     <main
@@ -200,6 +233,12 @@ export function AppShell({
         </aside>
 
         <section className="min-w-0 px-4 py-5 sm:px-8 sm:py-8">
+          {showBanner && (
+            <div className="mb-6 flex items-center gap-3 rounded-[var(--sakuin-radius-card)] border border-amber-200 bg-amber-50/80 p-4 text-xs sm:text-sm font-bold text-amber-800 shadow-sm backdrop-blur-md">
+              <WifiOff className="h-5 w-5 shrink-0 text-amber-600 animate-pulse" />
+              <div>{bannerMessage}</div>
+            </div>
+          )}
           {children}
         </section>
       </div>

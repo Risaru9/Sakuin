@@ -183,8 +183,11 @@ app.use(
 );
 
 app.use("/api/auth/login", authLoginRateLimitMiddleware);
+app.use("/api/v1/auth/login", authLoginRateLimitMiddleware);
 app.use("/api/auth/register", authRegisterRateLimitMiddleware);
+app.use("/api/v1/auth/register", authRegisterRateLimitMiddleware);
 app.use("/api/*", apiGeneralRateLimitMiddleware);
+app.use("/api/v1/*", apiGeneralRateLimitMiddleware);
 
 app.get("/", (c) => {
   return successResponse(c, "Sakuin API berjalan dengan normal", {
@@ -201,6 +204,7 @@ app.get("/health", (c) => {
 });
 
 app.route("/api", apiRoutes);
+app.route("/api/v1", apiRoutes);
 
 app.notFound((c) => {
   return jsonError(

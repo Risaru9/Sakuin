@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { aiCircuitBreaker } from "./ai.circuit-breaker.js";
 import {
   createGeminiTextProvider,
   type AiTextProvider
@@ -115,71 +116,74 @@ async function enhanceFinancialResponseWithAi(input: {
     };
   }
 
-  try {
-    const result = await generateWithModel(modelPlan.primaryModel);
+  return aiCircuitBreaker.execute(
+    async () => {
+      try {
+        const result = await generateWithModel(modelPlan.primaryModel);
 
-    logAiProviderEvent("ai.provider_used", {
-      intent: input.intent,
-      route: modelPlan.route,
-      reason: modelPlan.reason,
-      model: result.model,
-      fallback: false
-    });
+        logAiProviderEvent("ai.provider_used", {
+          intent: input.intent,
+          route: modelPlan.route,
+          reason: modelPlan.reason,
+          model: result.model,
+          fallback: false
+        });
 
-    return {
-      ...input.baseResponse,
-      reply: result.reply
-    };
-  } catch (primaryError) {
-    const shouldTryFallback =
-      modelPlan.fallbackModel &&
-      modelPlan.fallbackModel !== modelPlan.primaryModel;
+        return {
+          ...input.baseResponse,
+          reply: result.reply
+        };
+      } catch (primaryError) {
+        const shouldTryFallback =
+          modelPlan.fallbackModel &&
+          modelPlan.fallbackModel !== modelPlan.primaryModel;
 
-    logAiProviderEvent("ai.provider_fallback", {
-      intent: input.intent,
-      route: modelPlan.route,
-      reason:
-        primaryError instanceof Error
-          ? primaryError.name
-          : "UnknownAiProviderError",
-      model: modelPlan.primaryModel,
-      fallbackModel: shouldTryFallback ? modelPlan.fallbackModel : null
-    });
+        logAiProviderEvent("ai.provider_fallback", {
+          intent: input.intent,
+          route: modelPlan.route,
+          reason:
+            primaryError instanceof Error
+              ? primaryError.name
+              : "UnknownAiProviderError",
+          model: modelPlan.primaryModel,
+          fallbackModel: shouldTryFallback ? modelPlan.fallbackModel : null
+        });
 
-    if (!shouldTryFallback) {
-      return input.baseResponse;
-    }
+        if (!shouldTryFallback) {
+          throw primaryError;
+        }
 
-    try {
-      const fallbackResult = await generateWithModel(modelPlan.fallbackModel);
+        const fallbackResult = await generateWithModel(modelPlan.fallbackModel);
 
-      logAiProviderEvent("ai.provider_used", {
-        intent: input.intent,
-        route: "default",
-        reason: "fallback_model_used",
-        model: fallbackResult.model,
-        fallback: true
-      });
+        logAiProviderEvent("ai.provider_used", {
+          intent: input.intent,
+          route: "default",
+          reason: "fallback_model_used",
+          model: fallbackResult.model,
+          fallback: true
+        });
+
+        return {
+          ...input.baseResponse,
+          reply: fallbackResult.reply
+        };
+      }
+    },
+    async (error) => {
+      console.warn("[AiService] Menggunakan fallback lokal karena kegagalan LLM:", error.message);
+
+      const warningNotice = "\n\n(Asisten Sakuin sedang istirahat sejenak untuk memproses data. Menampilkan analisis otomatis berbasis aturan lokal. Anda tetap bisa mencatat transaksi secara manual melalui tombol tambah transaksi (+))";
+
+      const fallbackReply = input.baseResponse.reply
+        ? `${input.baseResponse.reply}${warningNotice}`
+        : `Asisten Sakuin sedang istirahat sejenak untuk memproses data. Anda tetap bisa mencatat transaksi secara manual melalui tombol tambah transaksi (+).${warningNotice}`;
 
       return {
         ...input.baseResponse,
-        reply: fallbackResult.reply
+        reply: fallbackReply
       };
-    } catch (fallbackError) {
-      logAiProviderEvent("ai.provider_fallback", {
-        intent: input.intent,
-        route: "default",
-        reason:
-          fallbackError instanceof Error
-            ? fallbackError.name
-            : "UnknownAiProviderFallbackError",
-        model: modelPlan.fallbackModel,
-        fallbackModel: null
-      });
-
-      return input.baseResponse;
     }
-  }
+  );
 }
 
 export async function getAiChatResponse(

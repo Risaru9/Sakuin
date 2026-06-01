@@ -314,7 +314,7 @@ describe("AI chat service contract", () => {
     const providerInput = generateText.mock.calls[0]?.[0];
     const serializedProviderInput = JSON.stringify(providerInput);
 
-    expect(serializedProviderInput).toContain("SAFE FINANCIAL CONTEXT");
+    expect(serializedProviderInput).toContain("COMPACT FINANCIAL CONTEXT");
     expect(serializedProviderInput).toContain("DETERMINISTIC BACKEND SUMMARY");
     expect(serializedProviderInput).toContain("SPENDING PATTERN INSIGHT");
     expect(serializedProviderInput).not.toContain(user.id);

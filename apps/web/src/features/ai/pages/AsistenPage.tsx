@@ -693,6 +693,20 @@ export function AsistenPage() {
   );
   const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] =
     useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
@@ -1646,7 +1660,7 @@ export function AsistenPage() {
               <button
                 aria-label={`Kirim prompt: ${option.prompt}`}
                 className="shrink-0 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 text-left shadow-sm transition hover:border-[var(--sakuin-border)] hover:bg-[var(--sakuin-ai-soft)] hover:text-[var(--sakuin-ai)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isOffline}
                 key={option.prompt}
                 onClick={() => handlePromptClick(option.prompt)}
                 type="button"
@@ -1670,12 +1684,12 @@ export function AsistenPage() {
               <textarea
                 aria-label="Tulis pertanyaan atau transaksi untuk Asisten Sakuin"
                 className="max-h-32 min-h-12 w-full resize-none rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/20 disabled:cursor-not-allowed disabled:bg-slate-50"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isOffline}
                 enterKeyHint="send"
                 maxLength={1000}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleTextareaKeyDown}
-                placeholder="Tanya keuangan atau catat transaksi..."
+                placeholder={isOffline ? "Fitur Asisten tidak tersedia saat offline." : "Tanya keuangan atau catat transaksi..."}
                 ref={textareaRef}
                 rows={1}
                 value={input}
@@ -1688,7 +1702,7 @@ export function AsistenPage() {
             <button
               aria-label="Kirim pesan"
               className="mb-5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-ai)] text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmitting || input.trim().length === 0}
+              disabled={isSubmitting || isOffline || input.trim().length === 0}
               type="submit"
             >
               {isSubmitting ? (

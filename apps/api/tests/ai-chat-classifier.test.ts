@@ -7,7 +7,7 @@ import type { AiChatHistoryMessage } from "../src/modules/ai/ai.types.js";
 
 describe("AI chat classifier", () => {
   it("membersihkan dan membatasi konteks history sebelum dipakai prompt", () => {
-    const longContent = "a".repeat(1600);
+    const longContent = "a".repeat(700);
     const history: AiChatHistoryMessage[] = [
       { role: "assistant", content: "   " },
       { role: "user", content: ` ${longContent} ` }
@@ -16,8 +16,8 @@ describe("AI chat classifier", () => {
     const text = buildConversationHistoryText(history);
 
     expect(text).toContain("1. USER:");
-    expect(text).toContain("a".repeat(1500));
-    expect(text).not.toContain("a".repeat(1501));
+    expect(text).toContain("a".repeat(600));
+    expect(text).not.toContain("a".repeat(601));
   });
 
   it("menganggap pesan lanjutan sebagai follow-up intent finansial terakhir", () => {

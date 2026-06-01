@@ -20,6 +20,7 @@ import {
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
 import { buttonClassName } from "../components/ui/button";
+import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import { useAuth } from "../features/auth/auth-context";
 
 const FEEDBACK_FORM_URL =
@@ -1147,7 +1148,9 @@ export const router = createBrowserRouter([
     path: "/asisten",
     element: (
       <ProtectedRoute>
-        <AsistenPage />
+        <ErrorBoundary fallbackText="Asisten Sakuin sedang tidak aktif" fallbackSubtitle="Terjadi kendala sistem saat memuat fitur Asisten. Anda tetap dapat mencatat transaksi secara manual.">
+          <AsistenPage />
+        </ErrorBoundary>
       </ProtectedRoute>
     )
   },

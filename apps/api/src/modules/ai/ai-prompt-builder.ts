@@ -345,8 +345,19 @@ export function buildFinancialPrompt(input: {
       ? buildPurchaseDecisionPromptContext(input.purchaseDecision)
       : "Tidak ada keputusan pembelian langsung yang perlu dianalisis.",
     "",
-    "SAFE FINANCIAL CONTEXT:",
-    JSON.stringify(input.context, null, 2),
+    "COMPACT FINANCIAL CONTEXT:",
+    JSON.stringify({
+      currentMonthTopCategories: input.context.currentMonth.topExpenseCategories.map(c => ({
+        category: c.name,
+        amount: formatRupiah(c.amount),
+        percentage: `${c.percentageOfExpense}%`
+      })),
+      previousMonthTopCategories: input.context.previousMonth.topExpenseCategories.map(c => ({
+        category: c.name,
+        amount: formatRupiah(c.amount),
+        percentage: `${c.percentageOfExpense}%`
+      }))
+    }, null, 2),
     "",
     "DETERMINISTIC BACKEND SUMMARY:",
     input.baseResponse.reply,

@@ -64,7 +64,7 @@ function sanitizeChatHistory(history: AiChatHistoryMessage[] = []) {
     .slice(-12)
     .map((message) => ({
       role: message.role,
-      content: message.content.trim().slice(0, 1500)
+      content: message.content.trim().slice(0, 600)
     }));
 }
 

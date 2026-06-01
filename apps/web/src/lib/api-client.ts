@@ -25,7 +25,13 @@ function buildUrl(path: string) {
     );
   }
 
-  return `${API_BASE_URL}${normalizedPath}`;
+  // Arahkan ke /api/v1/... jika path diawali /api/
+  let finalPath = normalizedPath;
+  if (normalizedPath.startsWith("/api/")) {
+    finalPath = "/api/v1/" + normalizedPath.slice(5);
+  }
+
+  return `${API_BASE_URL}${finalPath}`;
 }
 
 function handleUnauthorized() {
@@ -54,11 +60,33 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(buildUrl(path), {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body)
-  });
+  const method = options.method ?? "GET";
+  const cacheKey = `api_cache:${path}`;
+
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path), {
+      method,
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    });
+  } catch (error) {
+    // Jika fetch gagal (koneksi terputus/server mati) dan metode GET, gunakan cache jika tersedia
+    if (method === "GET") {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        console.warn(`[ApiClient] Koneksi gagal. Menggunakan data cache untuk path: ${path}`);
+        try {
+          // Trigger custom event untuk memberi tahu UI bahwa kita menyajikan data offline
+          window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
+          return JSON.parse(cached) as T;
+        } catch (e) {
+          console.error("[ApiClient] Gagal mem-parse cache localStorage:", e);
+        }
+      }
+    }
+    throw error;
+  }
 
   const contentType = response.headers.get("content-type");
   const isJson = contentType?.includes("application/json");
@@ -70,6 +98,17 @@ export async function apiRequest<T>(
     }
 
     if (!response.ok) {
+      // Jika server error (>= 500) dan metode GET, coba ambil dari cache
+      if (method === "GET" && response.status >= 500) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          console.warn(`[ApiClient] Server error (${response.status}). Menggunakan data cache untuk path: ${path}`);
+          try {
+            window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
+            return JSON.parse(cached) as T;
+          } catch (e) {}
+        }
+      }
       throw new ApiClientError(
         `Request gagal dengan status ${response.status}`,
         response.status
@@ -89,11 +128,31 @@ export async function apiRequest<T>(
   }
 
   if (result.success === false) {
+    // Jika server error (>= 500) dan metode GET, coba ambil dari cache
+    if (method === "GET" && response.status >= 500) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        console.warn(`[ApiClient] Server error (${response.status}). Menggunakan data cache untuk path: ${path}`);
+        try {
+          window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
+          return JSON.parse(cached) as T;
+        } catch (e) {}
+      }
+    }
     throw new ApiClientError(result.message, response.status, result.errors);
   }
 
   if (!response.ok) {
     throw new ApiClientError(result.message, response.status);
+  }
+
+  // Simpan data sukses ke cache jika metode GET
+  if (method === "GET") {
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(result.data));
+    } catch (e) {
+      console.error("[ApiClient] Gagal menyimpan ke cache localStorage:", e);
+    }
   }
 
   return result.data;
