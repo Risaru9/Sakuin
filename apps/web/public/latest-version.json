@@ -1,14 +1,14 @@
 {
-  "latestVersionCode": 8,
-  "latestVersionName": "1.6.1",
+  "latestVersionCode": 9,
+  "latestVersionName": "1.6.2",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Memperbaiki tombol Catat transaksi di widget agar benar-benar membuka Catat Cepat.",
-    "Area buka aplikasi dipisahkan dari tombol Reload dan Catat transaksi agar aksi widget tidak saling menimpa.",
-    "Widget mengirim sinyal langsung ke WebView saat tombol Catat transaksi ditekan.",
-    "Nama aplikasi Android diperbarui menjadi Sakuin v1.6.1."
+    "Pengingat transaksi dibuat otomatis dengan aturan aplikasi.",
+    "Tampilan izin notifikasi diperjelas dan tombol tes notifikasi dibuat lebih jelas.",
+    "Notifikasi lokal Android dijadwalkan sebagai notifikasi sistem HP.",
+    "Nama aplikasi Android diperbarui menjadi Sakuin v1.6.2."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-06-01T00:30:00.000Z"
+  "publishedAt": "2026-06-01T00:50:00.000Z"
 }

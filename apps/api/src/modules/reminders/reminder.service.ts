@@ -23,6 +23,12 @@ const DEFAULT_REMINDER_SETTINGS = {
   timezoneOffsetMinutes: -420
 };
 
+const REMINDER_POLICY = {
+  frequency: "EVENING" as ReminderFrequency,
+  eveningHour: 20,
+  maxPerDay: 1
+};
+
 const reminderFrequencyMinutes: Record<ReminderFrequency, number | null> = {
   EVENING: null,
   EVERY_1_HOUR: 60,
@@ -142,6 +148,27 @@ function isWithinQuietHours(input: {
   );
 }
 
+function isHourWithinQuietHours(
+  preference: ReminderPreferenceLike,
+  currentHour: number
+) {
+  if (preference.quietStartHour === preference.quietEndHour) {
+    return false;
+  }
+
+  if (preference.quietStartHour < preference.quietEndHour) {
+    return (
+      currentHour >= preference.quietStartHour &&
+      currentHour < preference.quietEndHour
+    );
+  }
+
+  return (
+    currentHour >= preference.quietStartHour ||
+    currentHour < preference.quietEndHour
+  );
+}
+
 function hasReachedReminderDelay(input: {
   preference: ReminderPreferenceLike;
   now: Date;
@@ -155,7 +182,10 @@ function hasReachedReminderDelay(input: {
       timezoneOffsetMinutes: input.preference.timezoneOffsetMinutes
     });
 
-    return currentHour >= input.preference.eveningHour;
+    return (
+      currentHour >= input.preference.eveningHour ||
+      isHourWithinQuietHours(input.preference, input.preference.eveningHour)
+    );
   }
 
   if (!input.preference.lastReminderSentAt) {
@@ -175,14 +205,34 @@ function mapPreferenceToResponse(input: {
 }): ReminderSettingsResponse {
   return {
     enabled: input.preference.enabled,
-    frequency: normalizeFrequency(input.preference.frequency),
-    eveningHour: input.preference.eveningHour,
+    frequency: REMINDER_POLICY.frequency,
+    eveningHour: REMINDER_POLICY.eveningHour,
     quietStartHour: input.preference.quietStartHour,
     quietEndHour: input.preference.quietEndHour,
-    maxPerDay: input.preference.maxPerDay,
+    maxPerDay: REMINDER_POLICY.maxPerDay,
     timezoneOffsetMinutes: input.preference.timezoneOffsetMinutes,
     dailyReviewCompletedDate: input.preference.dailyReviewCompletedDate,
     hasActiveSubscription: input.hasActiveSubscription
+  };
+}
+
+function applyReminderPolicy<T extends UpdateReminderSettingsInput>(input: T): T {
+  return {
+    ...input,
+    frequency: REMINDER_POLICY.frequency,
+    eveningHour: REMINDER_POLICY.eveningHour,
+    maxPerDay: REMINDER_POLICY.maxPerDay
+  };
+}
+
+function getEffectivePreference(
+  preference: ReminderPreferenceLike
+): ReminderPreferenceLike {
+  return {
+    ...preference,
+    frequency: REMINDER_POLICY.frequency,
+    eveningHour: REMINDER_POLICY.eveningHour,
+    maxPerDay: REMINDER_POLICY.maxPerDay
   };
 }
 
@@ -232,14 +282,15 @@ export async function updateReminderSettings(
   userId: string,
   input: UpdateReminderSettingsInput
 ): Promise<ReminderSettingsResponse> {
+  const policyInput = applyReminderPolicy(input);
   const preference = await prisma.reminderPreference.upsert({
     where: {
       userId
     },
-    update: input,
+    update: policyInput,
     create: {
       userId,
-      ...input
+      ...policyInput
     }
   });
 
@@ -336,33 +387,35 @@ function shouldSendReminder(input: {
   preference: ReminderPreferenceLike;
   now: Date;
 }) {
-  if (!input.preference.enabled) {
+  const preference = getEffectivePreference(input.preference);
+
+  if (!preference.enabled) {
     return false;
   }
 
   const today = getLocalDateKey({
     now: input.now,
-    timezoneOffsetMinutes: input.preference.timezoneOffsetMinutes
+    timezoneOffsetMinutes: preference.timezoneOffsetMinutes
   });
 
-  if (input.preference.dailyReviewCompletedDate === today) {
+  if (preference.dailyReviewCompletedDate === today) {
     return false;
   }
 
   const reminderCountToday =
-    input.preference.lastReminderDate === today
-      ? input.preference.reminderCountToday
+    preference.lastReminderDate === today
+      ? preference.reminderCountToday
       : 0;
 
-  if (reminderCountToday >= input.preference.maxPerDay) {
+  if (reminderCountToday >= preference.maxPerDay) {
     return false;
   }
 
-  if (isWithinQuietHours(input)) {
+  if (isWithinQuietHours({ preference, now: input.now })) {
     return false;
   }
 
-  return hasReachedReminderDelay(input);
+  return hasReachedReminderDelay({ preference, now: input.now });
 }
 
 function formatRupiah(value: number) {

@@ -38,14 +38,19 @@ type ReminderNotificationOptions = NotificationOptions & {
 
 const REMINDER_SETTINGS_PREFIX = "sakuin_transaction_reminder_settings_v1";
 const REMINDER_DELIVERY_PREFIX = "sakuin_transaction_reminder_delivery_v1";
+export const TRANSACTION_REMINDER_POLICY = {
+  frequency: "EVENING" as TransactionReminderFrequency,
+  eveningHour: 20,
+  maxPerDay: 1
+};
 
 export const DEFAULT_TRANSACTION_REMINDER_SETTINGS: TransactionReminderSettings = {
   enabled: false,
-  frequency: "EVENING",
-  eveningHour: 20,
+  frequency: TRANSACTION_REMINDER_POLICY.frequency,
+  eveningHour: TRANSACTION_REMINDER_POLICY.eveningHour,
   quietStartHour: 21,
   quietEndHour: 7,
-  maxPerDay: 1,
+  maxPerDay: TRANSACTION_REMINDER_POLICY.maxPerDay,
   timezoneOffsetMinutes: new Date().getTimezoneOffset()
 };
 
@@ -122,6 +127,18 @@ function normalizeReminderSettings(
   };
 }
 
+export function applyTransactionReminderPolicy(
+  settings: TransactionReminderSettings
+): TransactionReminderSettings {
+  return {
+    ...settings,
+    frequency: TRANSACTION_REMINDER_POLICY.frequency,
+    eveningHour: TRANSACTION_REMINDER_POLICY.eveningHour,
+    maxPerDay: TRANSACTION_REMINDER_POLICY.maxPerDay,
+    timezoneOffsetMinutes: new Date().getTimezoneOffset()
+  };
+}
+
 function getDeliveryState(userId: string | null | undefined) {
   const today = getLocalDateKey();
 
@@ -191,6 +208,27 @@ function isWithinQuietHours(settings: TransactionReminderSettings, date: Date) {
   );
 }
 
+function isHourWithinQuietHours(
+  settings: TransactionReminderSettings,
+  currentHour: number
+) {
+  if (settings.quietStartHour === settings.quietEndHour) {
+    return false;
+  }
+
+  if (settings.quietStartHour < settings.quietEndHour) {
+    return (
+      currentHour >= settings.quietStartHour &&
+      currentHour < settings.quietEndHour
+    );
+  }
+
+  return (
+    currentHour >= settings.quietStartHour ||
+    currentHour < settings.quietEndHour
+  );
+}
+
 function hasReachedFrequencyDelay(input: {
   settings: TransactionReminderSettings;
   deliveryState: ReminderDeliveryState;
@@ -199,7 +237,10 @@ function hasReachedFrequencyDelay(input: {
   const intervalMinutes = frequencyMinutes[input.settings.frequency];
 
   if (intervalMinutes === null) {
-    return input.now.getHours() >= input.settings.eveningHour;
+    return (
+      input.now.getHours() >= input.settings.eveningHour ||
+      isHourWithinQuietHours(input.settings, input.settings.eveningHour)
+    );
   }
 
   if (!input.deliveryState.lastSentAt) {
@@ -216,6 +257,38 @@ function hasReachedFrequencyDelay(input: {
     (input.now.getTime() - lastSentAt.getTime()) / (1000 * 60);
 
   return elapsedMinutes >= intervalMinutes;
+}
+
+function getNextNativeReminderDate(input: {
+  hasTransactionsToday: boolean;
+  settings: TransactionReminderSettings;
+  now: Date;
+}) {
+  const scheduleDate = new Date(input.now);
+  scheduleDate.setHours(TRANSACTION_REMINDER_POLICY.eveningHour, 0, 0, 0);
+
+  if (
+    input.hasTransactionsToday ||
+    scheduleDate.getTime() <= input.now.getTime()
+  ) {
+    scheduleDate.setDate(scheduleDate.getDate() + 1);
+  }
+
+  if (!isWithinQuietHours(input.settings, scheduleDate)) {
+    return scheduleDate;
+  }
+
+  scheduleDate.setHours(input.settings.quietEndHour, 0, 0, 0);
+
+  if (scheduleDate.getTime() <= input.now.getTime()) {
+    scheduleDate.setDate(scheduleDate.getDate() + 1);
+  }
+
+  if (isWithinQuietHours(input.settings, scheduleDate)) {
+    scheduleDate.setDate(scheduleDate.getDate() + 1);
+  }
+
+  return scheduleDate;
 }
 
 export function getTransactionReminderSettings(
@@ -241,7 +314,9 @@ export function setTransactionReminderSettings(
   settings: TransactionReminderSettings
 ) {
   const previousSettings = getTransactionReminderSettings(userId);
-  const normalizedSettings = normalizeReminderSettings(settings);
+  const normalizedSettings = applyTransactionReminderPolicy(
+    normalizeReminderSettings(settings)
+  );
 
   localStorage.setItem(
     getReminderSettingsKey(userId),
@@ -421,16 +496,11 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
     const status = await LocalNotifications.checkPermissions();
     if (status.display !== "granted") return;
 
-    const now = new Date();
-    const targetHour = settings.eveningHour;
-
-    let scheduleDate = new Date();
-    scheduleDate.setHours(targetHour, 0, 0, 0);
-
-    // Geser ke besok jika hari ini sudah lewat jamnya ATAU jika sudah ada transaksi hari ini
-    if (hasTransactionsToday || scheduleDate.getTime() <= now.getTime()) {
-      scheduleDate.setDate(scheduleDate.getDate() + 1);
-    }
+    const scheduleDate = getNextNativeReminderDate({
+      hasTransactionsToday,
+      settings,
+      now: new Date()
+    });
 
     await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
 
@@ -440,7 +510,7 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
           title: "Sakuin",
           body: "Jangan lupa catat transaksi hari ini agar ritme keuanganmu tetap terjaga.",
           id: 1,
-          schedule: { at: scheduleDate },
+          schedule: { at: scheduleDate, repeats: true },
           smallIcon: "ic_stat_icon_config_sample", 
           iconColor: "#10b981"
         }

@@ -34,6 +34,7 @@ import { ApiClientError } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import {
   DEFAULT_TRANSACTION_REMINDER_SETTINGS,
+  applyTransactionReminderPolicy,
   getNotificationPermission,
   getTransactionReminderSettings,
   setTransactionReminderSettings,
@@ -41,7 +42,6 @@ import {
   subscribeBrowserToPushReminder,
   unsubscribeBrowserFromPushReminder,
   isNativePlatform,
-  type TransactionReminderFrequency,
   type TransactionReminderSettings
 } from "../../lib/transaction-reminder";
 import { useAuth } from "../auth/auth-context";
@@ -70,28 +70,6 @@ type ProfileFormState = {
 };
 
 type ProfileSection = "profile" | "automation" | "notifications" | "account";
-
-const reminderFrequencyOptions: Array<{
-  value: TransactionReminderFrequency;
-  label: string;
-}> = [
-  {
-    value: "EVENING",
-    label: "Sekali malam"
-  },
-  {
-    value: "EVERY_1_HOUR",
-    label: "Setiap 1 jam"
-  },
-  {
-    value: "EVERY_2_HOURS",
-    label: "Setiap 2 jam"
-  },
-  {
-    value: "EVERY_4_HOURS",
-    label: "Setiap 4 jam"
-  }
-];
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError) {
@@ -184,15 +162,7 @@ function formatHourLabel(hour: number) {
 }
 
 function getReminderFrequencySummary(settings: TransactionReminderSettings) {
-  if (settings.frequency === "EVENING") {
-    return `Sekali malam mulai ${formatHourLabel(settings.eveningHour)}`;
-  }
-
-  const option = reminderFrequencyOptions.find(
-    (item) => item.value === settings.frequency
-  );
-
-  return option?.label ?? "Mengikuti pengaturanmu";
+  return `Otomatis, maksimal ${settings.maxPerDay} kali per hari`;
 }
 
 export function ProfilePage() {
@@ -213,6 +183,9 @@ export function ProfilePage() {
       DEFAULT_TRANSACTION_REMINDER_SETTINGS
     );
   const [notificationPermission, setNotificationPermission] = useState("default");
+  const [notificationTestStatus, setNotificationTestStatus] = useState<
+    "idle" | "sent" | "failed"
+  >("idle");
 
   // Support deep link: /profile?section=notifications
   const initialSection = ((): ProfileSection => {
@@ -443,10 +416,12 @@ export function ProfilePage() {
   }
 
   function saveReminderSettings(settings: TransactionReminderSettings) {
-    setReminderSettingsState(settings);
-    setTransactionReminderSettings(user?.id, settings);
+    const policySettings = applyTransactionReminderPolicy(settings);
 
-    updateRemoteReminderSettings(settings).catch((caughtError: unknown) => {
+    setReminderSettingsState(policySettings);
+    setTransactionReminderSettings(user?.id, policySettings);
+
+    updateRemoteReminderSettings(policySettings).catch((caughtError: unknown) => {
       const message = getErrorMessage(caughtError);
 
       addToast({
@@ -527,17 +502,21 @@ export function ProfilePage() {
 
   async function handleTestNotification() {
     try {
+      setNotificationTestStatus("idle");
       await sendTestTransactionReminder();
       getNotificationPermission().then(setNotificationPermission);
+      setNotificationTestStatus("sent");
 
       addToast({
         variant: "success",
         title: "Tes notifikasi dikirim",
-        description:
-          "Jika izin browser aktif, notifikasi Sakuin akan muncul beberapa detik lagi."
+        description: isNativePlatform()
+          ? "Notifikasi sistem HP akan muncul beberapa detik lagi."
+          : "Notifikasi sistem browser akan muncul beberapa detik lagi."
       });
     } catch (caughtError) {
       getNotificationPermission().then(setNotificationPermission);
+      setNotificationTestStatus("failed");
 
       addToast({
         variant: "error",
@@ -658,7 +637,9 @@ export function ProfilePage() {
   }, [profile]);
 
   useEffect(() => {
-    setReminderSettingsState(getTransactionReminderSettings(user?.id));
+    setReminderSettingsState(
+      applyTransactionReminderPolicy(getTransactionReminderSettings(user?.id))
+    );
     getNotificationPermission().then(setNotificationPermission);
 
     getRemoteReminderSettings()
@@ -672,16 +653,19 @@ export function ProfilePage() {
           maxPerDay: settings.maxPerDay,
           timezoneOffsetMinutes: settings.timezoneOffsetMinutes
         };
+        const policySettings = applyTransactionReminderPolicy(nextSettings);
 
-        setReminderSettingsState(nextSettings);
-        setTransactionReminderSettings(user?.id, nextSettings);
+        setReminderSettingsState(policySettings);
+        setTransactionReminderSettings(user?.id, policySettings);
       })
       .catch(() => {
         // Local settings remain usable if backend sync is temporarily unavailable.
       });
 
     function handleReminderSettingsChange() {
-      setReminderSettingsState(getTransactionReminderSettings(user?.id));
+      setReminderSettingsState(
+        applyTransactionReminderPolicy(getTransactionReminderSettings(user?.id))
+      );
       getNotificationPermission().then(setNotificationPermission);
     }
 
@@ -1028,27 +1012,38 @@ export function ProfilePage() {
               </div>
 
               <div className="mt-4 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="min-w-0">
                     <p className="text-xs font-black text-[var(--sakuin-text)]">
-                      Status notifikasi
+                      Izin notifikasi sistem
                     </p>
                     <p className="mt-0.5 text-xs font-semibold text-zinc-600">
                       {getNotificationPermissionLabel(notificationPermission)}
                     </p>
+                    <p className="mt-1 text-xs font-medium leading-5 text-zinc-600">
+                      Ini adalah notifikasi yang muncul di bar notifikasi HP,
+                      bukan pesan di dalam aplikasi.
+                    </p>
+                    {notificationTestStatus === "sent" ? (
+                      <p className="mt-2 text-xs font-black text-emerald-700">
+                        Tes terkirim. Cek panel notifikasi HP/browser.
+                      </p>
+                    ) : null}
+                    {notificationTestStatus === "failed" ? (
+                      <p className="mt-2 text-xs font-black text-rose-700">
+                        Tes belum berhasil. Cek izin notifikasi perangkat.
+                      </p>
+                    ) : null}
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    {reminderSettings.enabled && (
-                      <button
-                        className="inline-flex min-h-8 items-center justify-center rounded-lg px-3 text-[11px] font-bold text-zinc-400 underline decoration-zinc-300 underline-offset-2 transition hover:text-zinc-600"
-                        onClick={() => void handleTestNotification()}
-                        type="button"
-                      >
-                        Tes Notifikasi
-                      </button>
-                    )}
-
+                  <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-white/80"
+                      onClick={() => void handleTestNotification()}
+                      type="button"
+                    >
+                      Tes
+                    </button>
                     <button
                       className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
                       onClick={() =>
@@ -1076,10 +1071,7 @@ export function ProfilePage() {
                 <div className="grid gap-2 text-xs font-semibold leading-5 text-zinc-700">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
-                    <p>
-                      {getReminderFrequencySummary(reminderSettings)}, maksimal{" "}
-                      {reminderSettings.maxPerDay} kali per hari.
-                    </p>
+                    <p>{getReminderFrequencySummary(reminderSettings)}.</p>
                   </div>
 
                   <div className="flex items-start gap-2">
@@ -1101,47 +1093,6 @@ export function ProfilePage() {
               </div>
 
               <div className="mt-4 grid gap-3">
-                <label className="block">
-                  <span className="text-xs font-black uppercase text-zinc-500">
-                    Frekuensi
-                  </span>
-                  <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-                    value={reminderSettings.frequency}
-                    onChange={(event) =>
-                      updateReminderSettings({
-                        frequency: event.target
-                          .value as TransactionReminderFrequency
-                      })
-                    }
-                  >
-                    {reminderFrequencyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-black uppercase text-zinc-500">
-                    Maksimal per hari
-                  </span>
-                  <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-                    value={reminderSettings.maxPerDay}
-                    onChange={(event) =>
-                      updateReminderSettings({
-                        maxPerDay: Number(event.target.value)
-                      })
-                    }
-                  >
-                    <option value={1}>1 kali</option>
-                    <option value={2}>2 kali</option>
-                    <option value={3}>3 kali</option>
-                  </select>
-                </label>
-
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block">
                     <span className="text-xs font-black uppercase text-zinc-500">
@@ -1185,34 +1136,13 @@ export function ProfilePage() {
                     </select>
                   </label>
                 </div>
-
-                <label className="block">
-                  <span className="text-xs font-black uppercase text-zinc-500">
-                    Jam malam
-                  </span>
-                  <select
-                    className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-                    value={reminderSettings.eveningHour}
-                    onChange={(event) =>
-                      updateReminderSettings({
-                        eveningHour: Number(event.target.value)
-                      })
-                    }
-                  >
-                    {hourOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </div>
 
               <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 text-xs font-semibold leading-5 text-zinc-700">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  Default-nya 1 kali per hari. Pengingat ini tidak menampilkan
-                  nominal, saldo, atau detail transaksi.
+                  Pengingat berjalan otomatis dengan aturan aplikasi. Pengingat
+                  ini tidak menampilkan nominal, saldo, atau detail transaksi.
                 </p>
               </div>
             </section>

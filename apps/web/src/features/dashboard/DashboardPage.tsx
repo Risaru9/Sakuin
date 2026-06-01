@@ -2574,6 +2574,7 @@ const profileQuery = useQuery({
   function completeDailyReview() {
     setStoredDailyReviewDate(dailyReviewStorageKey, todayReviewDate);
     setDailyReviewCompletedDate(todayReviewDate);
+    window.dispatchEvent(new Event("sakuin:daily-review-completed"));
     completeRemoteDailyReview(todayReviewDate).catch(() => {
       // Local review state still keeps the dashboard experience responsive.
     });

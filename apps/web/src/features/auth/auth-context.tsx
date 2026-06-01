@@ -17,6 +17,7 @@ import {
   removeCachedUser
 } from "../../lib/auth-storage";
 import { getTransactions } from "../transactions/transaction.service";
+import { isDailyReviewCompletedToday } from "../../lib/daily-review";
 import { 
   getTransactionReminderSettings, 
   syncLocalHabitReminder, 
@@ -154,7 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
         
         const response = await getTransactions({ startDate: startOfDay, endDate: endOfDay, limit: 1 });
-        const hasTransactionsToday = response.items.length > 0;
+        const hasTransactionsToday =
+          response.items.length > 0 || isDailyReviewCompletedToday(user!.id);
         
         await syncLocalHabitReminder(hasTransactionsToday, settings);
       } catch (error) {
@@ -170,10 +172,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("sakuin:transaction-added", handleTransactionAdded);
     window.addEventListener("sakuin:transaction-reminder-settings", handleTransactionAdded);
+    window.addEventListener("sakuin:daily-review-completed", handleTransactionAdded);
 
     return () => {
       window.removeEventListener("sakuin:transaction-added", handleTransactionAdded);
       window.removeEventListener("sakuin:transaction-reminder-settings", handleTransactionAdded);
+      window.removeEventListener("sakuin:daily-review-completed", handleTransactionAdded);
     };
   }, [user]);
 
