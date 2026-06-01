@@ -385,7 +385,6 @@ export function buildFinancialPrompt(input: {
     "- Jangan mengklaim bisa menyimpan transaksi kecuali response memang berupa draft transaksi yang perlu direview user.",
     "",
     "TASK:",
-    "Buat jawaban final yang lebih natural, jelas, dan bernilai dari financial context, financial health snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, dan deterministic backend summary.",
     "Buat jawaban final yang lebih natural, jelas, and bernilai dari financial context, financial health snapshot, financial checkup snapshot, safe-to-spend snapshot, spending pattern insight, consultant action plan, financial scenario analysis, purchase decision impact, dan deterministic backend summary.",
     "Gunakan angka yang sama seperti context/backend summary/health snapshot/spending insight/scenario analysis atau angka yang disebut user.",
     "Jangan tambahkan angka baru tanpa dasar.",

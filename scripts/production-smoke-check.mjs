@@ -40,10 +40,12 @@ async function fetchJson(url) {
   }
 }
 
-async function fetchJsonWithExpectedStatus(url, expectedStatus) {
+async function fetchJsonWithExpectedStatus(url, expectedStatus, options = {}) {
   const response = await fetch(url, {
+    ...options,
     headers: {
-      Accept: "application/json"
+      Accept: "application/json",
+      ...options.headers
     }
   });
   const body = await response.text();
@@ -120,6 +122,25 @@ const checks = [
       );
       if (payload.message !== "Authorization header wajib diisi") {
         throw new Error("Protected summary route did not reach auth middleware.");
+      }
+    }
+  },
+  {
+    name: "login route validation",
+    run: async () => {
+      const payload = await fetchJsonWithExpectedStatus(
+        `${apiUrl}/api/auth/login`,
+        400,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        }
+      );
+      if (payload.message === "Route tidak ditemukan") {
+        throw new Error("Login route fell through to 404.");
       }
     }
   }

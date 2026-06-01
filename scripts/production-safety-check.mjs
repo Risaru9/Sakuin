@@ -25,6 +25,16 @@ const checks = [
     file: "apps/api/src/modules/summary/summary.service.ts",
     forbidden: "Starting getSummary for userId",
     message: "Summary logs must not include raw user identifiers."
+  },
+  {
+    file: "apps/api/src/modules/ai/ai-financial-context.ts",
+    forbidden: "for user: ${userId}",
+    message: "AI financial context logs must not include raw user identifiers."
+  },
+  {
+    file: "apps/api/src/modules/ai/ai-financial-context-cache.ts",
+    forbidden: "for user: ${userId}",
+    message: "AI financial context cache logs must not include raw user identifiers."
   }
 ];
 

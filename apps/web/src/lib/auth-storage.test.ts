@@ -6,6 +6,7 @@ import {
   hasStoredToken,
   removeCachedUser,
   removeStoredToken,
+  clearPrivateApiCache,
   setCachedUser,
   setStoredToken,
   syncTokenToServiceWorker
@@ -41,6 +42,18 @@ describe("auth-storage", () => {
 
     expect(getStoredToken()).toBeNull();
     expect(hasStoredToken()).toBe(false);
+  });
+
+  it("menghapus seluruh private API cache ketika token dihapus", () => {
+    localStorage.setItem("api_cache:user-a:/api/summary", "{}");
+    localStorage.setItem("api_cache:/api/summary", "{}");
+    localStorage.setItem("unrelated", "keep");
+
+    clearPrivateApiCache();
+
+    expect(localStorage.getItem("api_cache:user-a:/api/summary")).toBeNull();
+    expect(localStorage.getItem("api_cache:/api/summary")).toBeNull();
+    expect(localStorage.getItem("unrelated")).toBe("keep");
   });
 
   it("menyimpan, membaca, dan menghapus cached user", () => {

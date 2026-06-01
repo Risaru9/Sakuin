@@ -266,9 +266,14 @@ export async function getAiFinancialContext(
   userId: string,
   referenceDate = new Date()
 ): Promise<AiFinancialContext> {
-  const cached = getCachedFinancialContext(userId);
+  const cached = getCachedFinancialContext(userId, referenceDate);
   if (cached) {
-    console.log(`[FinancialContextCache] Cache hit for user: ${userId}`);
+    console.log(
+      JSON.stringify({
+        level: "info",
+        event: "ai.financial_context_cache_hit"
+      })
+    );
     return cached;
   }
 
@@ -352,8 +357,13 @@ export async function getAiFinancialContext(
     })
   };
 
-  setCachedFinancialContext(userId, context);
-  console.log(`[FinancialContextCache] Cache miss. Saved context for user: ${userId}`);
+  setCachedFinancialContext(userId, context, referenceDate);
+  console.log(
+    JSON.stringify({
+      level: "info",
+      event: "ai.financial_context_cache_miss"
+    })
+  );
 
   return context;
 }

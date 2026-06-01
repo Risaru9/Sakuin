@@ -1,6 +1,7 @@
 import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
+import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
 import type {
   CreateRecurringRuleInput,
   RecurringRuleResponse,
@@ -282,6 +283,7 @@ export async function runDueRecurringRules(
 
   let generatedCount = 0;
   let skippedCount = 0;
+  let generatedTransactionCount = 0;
 
   for (const rule of dueRules) {
     let occurrenceDate = normalizeStartOfDay(rule.nextRunAt);
@@ -330,6 +332,9 @@ export async function runDueRecurringRules(
           });
         });
         generatedCount += 1;
+        if (rule.autoPost) {
+          generatedTransactionCount += 1;
+        }
       } catch (error) {
         if (!isUniqueConstraintError(error)) {
           throw error;
@@ -349,6 +354,10 @@ export async function runDueRecurringRules(
         nextRunAt: occurrenceDate
       }
     });
+  }
+
+  if (generatedTransactionCount > 0) {
+    invalidateCachedFinancialContext(userId);
   }
 
   return {

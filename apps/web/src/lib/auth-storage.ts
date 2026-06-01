@@ -2,6 +2,7 @@ import type { AuthUser } from "../features/auth/auth.types";
 
 const AUTH_TOKEN_KEY = "sakuin_auth_token";
 const AUTH_CACHED_USER_KEY = "sakuin_cached_user";
+const PRIVATE_API_CACHE_PREFIX = "api_cache:";
 
 export function getStoredToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -13,6 +14,7 @@ export function setStoredToken(token: string) {
 
 export function removeStoredToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  clearPrivateApiCache();
 }
 
 export function hasStoredToken() {
@@ -36,6 +38,20 @@ export function setCachedUser(user: AuthUser) {
 
 export function removeCachedUser() {
   localStorage.removeItem(AUTH_CACHED_USER_KEY);
+}
+
+export function getActiveAccountScope() {
+  return getCachedUser()?.id ?? null;
+}
+
+export function clearPrivateApiCache() {
+  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+    const key = localStorage.key(index);
+
+    if (key?.startsWith(PRIVATE_API_CACHE_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
 }
 
 declare global {

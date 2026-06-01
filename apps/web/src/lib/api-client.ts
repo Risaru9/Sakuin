@@ -1,5 +1,9 @@
 import type { ApiRequestOptions, ApiResponse } from "../types/api";
-import { getStoredToken, removeStoredToken } from "./auth-storage";
+import {
+  getActiveAccountScope,
+  getStoredToken,
+  removeStoredToken
+} from "./auth-storage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
 
@@ -55,7 +59,7 @@ export async function apiRequest<T>(
   }
 
   const method = options.method ?? "GET";
-  const cacheKey = `api_cache:${path}`;
+  const cacheKey = getPrivateCacheKey(path);
 
   let response: Response;
   try {
@@ -67,16 +71,10 @@ export async function apiRequest<T>(
   } catch (error) {
     // Jika fetch gagal (koneksi terputus/server mati) dan metode GET, gunakan cache jika tersedia
     if (method === "GET") {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
+      const cached = getCachedResponse<T>(cacheKey, path);
+      if (cached.hit) {
         console.warn(`[ApiClient] Koneksi gagal. Menggunakan data cache untuk path: ${path}`);
-        try {
-          // Trigger custom event untuk memberi tahu UI bahwa kita menyajikan data offline
-          window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
-          return JSON.parse(cached) as T;
-        } catch (e) {
-          console.error("[ApiClient] Gagal mem-parse cache localStorage:", e);
-        }
+        return cached.data;
       }
     }
     throw error;
@@ -94,13 +92,10 @@ export async function apiRequest<T>(
     if (!response.ok) {
       // Jika server error (>= 500) dan metode GET, coba ambil dari cache
       if (method === "GET" && response.status >= 500) {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
+        const cached = getCachedResponse<T>(cacheKey, path);
+        if (cached.hit) {
           console.warn(`[ApiClient] Server error (${response.status}). Menggunakan data cache untuk path: ${path}`);
-          try {
-            window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
-            return JSON.parse(cached) as T;
-          } catch (e) {}
+          return cached.data;
         }
       }
       throw new ApiClientError(
@@ -124,13 +119,10 @@ export async function apiRequest<T>(
   if (result.success === false) {
     // Jika server error (>= 500) dan metode GET, coba ambil dari cache
     if (method === "GET" && response.status >= 500) {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
+      const cached = getCachedResponse<T>(cacheKey, path);
+      if (cached.hit) {
         console.warn(`[ApiClient] Server error (${response.status}). Menggunakan data cache untuk path: ${path}`);
-        try {
-          window.dispatchEvent(new CustomEvent("sakuin-offline-cache-hit", { detail: { path } }));
-          return JSON.parse(cached) as T;
-        } catch (e) {}
+        return cached.data;
       }
     }
     throw new ApiClientError(result.message, response.status, result.errors);
@@ -141,7 +133,7 @@ export async function apiRequest<T>(
   }
 
   // Simpan data sukses ke cache jika metode GET
-  if (method === "GET") {
+  if (method === "GET" && cacheKey) {
     try {
       localStorage.setItem(cacheKey, JSON.stringify(result.data));
     } catch (e) {
@@ -191,4 +183,35 @@ export async function apiDownload(
   }
 
   return response;
+}
+
+function getPrivateCacheKey(path: string) {
+  const accountScope = getActiveAccountScope();
+
+  return accountScope
+    ? `api_cache:${encodeURIComponent(accountScope)}:${path}`
+    : null;
+}
+
+function getCachedResponse<T>(cacheKey: string | null, path: string) {
+  if (!cacheKey) {
+    return { hit: false as const };
+  }
+
+  const cached = localStorage.getItem(cacheKey);
+
+  if (!cached) {
+    return { hit: false as const };
+  }
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent("sakuin-offline-cache-hit", { detail: { path } })
+    );
+    return { hit: true as const, data: JSON.parse(cached) as T };
+  } catch (error) {
+    console.error("[ApiClient] Gagal mem-parse cache localStorage:", error);
+    localStorage.removeItem(cacheKey);
+    return { hit: false as const };
+  }
 }

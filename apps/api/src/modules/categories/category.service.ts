@@ -1,6 +1,7 @@
 import { Prisma, type TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
+import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
 
 type GetCategoriesInput = {
   userId: string;
@@ -250,6 +251,7 @@ export async function createCategoryService(
     });
   });
 
+  invalidateCachedFinancialContext(userId);
   return mapCategory(category);
 }
 
@@ -337,6 +339,7 @@ export async function updateCategoryService(
     });
   });
 
+  invalidateCachedFinancialContext(userId);
   return mapCategory(category);
 }
 
@@ -378,5 +381,6 @@ export async function deleteCategoryService(
     });
   });
 
+  invalidateCachedFinancialContext(userId);
   return mapCategory(deletedCategory);
 }

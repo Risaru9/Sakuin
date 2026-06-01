@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/db/prisma.js";
 import {
   getCachedFinancialContext,
@@ -11,6 +11,12 @@ import { getAiFinancialContext, type AiFinancialContext } from "../src/modules/a
 import { createTransaction } from "../src/modules/transactions/transaction.service.js";
 import { createGoal } from "../src/modules/goals/goal.service.js";
 import { updateUserProfile } from "../src/modules/users/user.service.js";
+import {
+  createCategoryService,
+  deleteCategoryService,
+  updateCategoryService
+} from "../src/modules/categories/category.service.js";
+import { runDueRecurringRules } from "../src/modules/recurring/recurring.service.js";
 
 function createUniqueEmail(label: string) {
   return `sakuin+ai-cache-${label}-${Date.now()}-${Math.random()
@@ -36,6 +42,7 @@ describe("AI Financial Context Caching & Invalidation", () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     setBypassTestCheck(false);
     clearAllFinancialContextCaches();
     await prisma.user.deleteMany({
@@ -140,6 +147,40 @@ describe("AI Financial Context Caching & Invalidation", () => {
     expect(getCachedFinancialContext(user.id)).toBeNull();
   });
 
+  it("should expire cached context after TTL and when the calendar day changes", () => {
+    const userId = "cache-expiry-user";
+    const referenceDate = new Date("2026-06-01T10:00:00.000Z");
+    const mockContext = {
+      generatedAt: referenceDate.toISOString()
+    } as AiFinancialContext;
+
+    vi.useFakeTimers();
+    vi.setSystemTime(referenceDate);
+
+    setCachedFinancialContext(userId, mockContext, referenceDate, {
+      ttlMs: 1000
+    });
+
+    expect(
+      getCachedFinancialContext(userId, new Date("2026-06-01T10:00:00.500Z"))
+    ).toBe(mockContext);
+
+    vi.setSystemTime(new Date("2026-06-01T10:00:01.000Z"));
+
+    expect(
+      getCachedFinancialContext(userId, new Date("2026-06-01T10:00:01.000Z"))
+    ).toBeNull();
+
+    vi.setSystemTime(referenceDate);
+    setCachedFinancialContext(userId, mockContext, referenceDate, {
+      ttlMs: 24 * 60 * 60 * 1000
+    });
+
+    expect(
+      getCachedFinancialContext(userId, new Date("2026-06-02T00:00:00.000Z"))
+    ).toBeNull();
+  });
+
   it("should invalidate cache when a goal is created", async () => {
     const user = await createTestUser("goal-create");
     
@@ -166,5 +207,68 @@ describe("AI Financial Context Caching & Invalidation", () => {
     });
 
     expect(getCachedFinancialContext(user.id)).toBeNull();
+  });
+
+  it("should invalidate cache when a category is created, updated, or deleted", async () => {
+    const user = await createTestUser("category-create");
+
+    await getAiFinancialContext(user.id);
+    expect(getCachedFinancialContext(user.id)).toBeDefined();
+
+    const category = await createCategoryService(user.id, {
+      name: `Cache Category ${Date.now()}`,
+      type: "EXPENSE"
+    });
+
+    expect(getCachedFinancialContext(user.id)).toBeNull();
+
+    await getAiFinancialContext(user.id);
+    await updateCategoryService(user.id, category.id, {
+      name: `${category.name} Updated`
+    });
+
+    expect(getCachedFinancialContext(user.id)).toBeNull();
+
+    await getAiFinancialContext(user.id);
+    await deleteCategoryService(user.id, category.id);
+
+    expect(getCachedFinancialContext(user.id)).toBeNull();
+  });
+
+  it("should invalidate cache when recurring rules generate transactions", async () => {
+    const user = await createTestUser("recurring-run");
+    const category = await prisma.category.create({
+      data: {
+        userId: user.id,
+        name: "Langganan",
+        type: "EXPENSE",
+        isDefault: false
+      }
+    });
+    const occurrenceDate = new Date("2026-06-01T00:00:00.000Z");
+    const runDate = new Date("2026-06-02T00:00:00.000Z");
+
+    await prisma.recurringRule.create({
+      data: {
+        userId: user.id,
+        categoryId: category.id,
+        type: "EXPENSE",
+        amount: "15000",
+        frequency: "MONTHLY",
+        interval: 1,
+        dayOfMonth: 1,
+        startDate: occurrenceDate,
+        nextRunAt: occurrenceDate,
+        autoPost: true,
+        isActive: true
+      }
+    });
+
+    await getAiFinancialContext(user.id, runDate);
+    expect(getCachedFinancialContext(user.id, runDate)).toBeDefined();
+
+    await runDueRecurringRules(user.id, runDate);
+
+    expect(getCachedFinancialContext(user.id, runDate)).toBeNull();
   });
 });

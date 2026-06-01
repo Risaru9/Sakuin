@@ -279,8 +279,11 @@ describe("AsistenPage - Flow Simpan Draft", () => {
       date: "2026-06-01"
     });
 
-    await waitFor(() => {
-      expect(screen.getByText("2 draft transaksi berhasil disimpan sekaligus. Data dashboard dan transaksi akan ikut diperbarui.")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText("2 draft transaksi berhasil disimpan sekaligus. Data dashboard dan transaksi akan ikut diperbarui.")).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 });

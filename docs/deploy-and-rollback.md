@@ -11,6 +11,16 @@ Dokumen ini berisi Standard Operating Procedure (SOP) untuk melakukan deployment
 2. Vercel secara otomatis mendeteksi perubahan di `apps/web` (Frontend) dan `apps/api` (Backend/API) lalu melakukan build dan deployment.
 3. Database migrations dijalankan secara otomatis saat build backend via command `prisma migrate deploy` yang didefinisikan pada script `vercel-build` / `build` backend.
 
+### C. Perubahan Kontrak API Lintas Aplikasi
+Jika frontend mulai memakai route, field, atau perilaku backend baru, deploy harus dilakukan bertahap:
+
+1. Deploy backend yang menerima kontrak lama dan baru.
+2. Verifikasi endpoint backend production secara langsung.
+3. Deploy frontend yang memakai kontrak baru.
+4. Jalankan `pnpm smoke:production`.
+
+Frontend tidak boleh beralih ke kontrak baru sebelum backend production terbukti kompatibel. Alias `/api/v1` dapat dipakai sebagai jalur migrasi, tetapi frontend stabil tetap memakai `/api` sampai rollout backend selesai diverifikasi.
+
 ### B. Deployment Manual via Vercel CLI
 Jika CI/CD mengalami kendala, deployment dapat dilakukan secara manual menggunakan Vercel CLI dari root workspace:
 

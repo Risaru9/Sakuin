@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTransaction, createTransactionsBulk } from "./transaction.service";
-import { getOfflineQueue, saveOfflineQueue, syncOfflineTransactions } from "../../lib/offline-queue";
+import {
+  getOfflineQueue,
+  hasLegacyOfflineQueue,
+  saveOfflineQueue,
+  syncOfflineTransactions
+} from "../../lib/offline-queue";
 import { apiRequest } from "../../lib/api-client";
+import { setCachedUser } from "../../lib/auth-storage";
 
 // Mock api-client
 vi.mock("../../lib/api-client", () => ({
@@ -14,6 +20,12 @@ describe("Offline Transaction Handling", () => {
     localStorage.clear();
     // Reset navigator.onLine mock status
     vi.stubGlobal("navigator", { onLine: true, userAgent: "node" });
+    setCachedUser({
+      id: "user-a",
+      name: "User A",
+      email: "user-a@example.com",
+      safeBalanceLimit: "0"
+    });
   });
 
   it("should perform online requests normally when online", async () => {
@@ -112,6 +124,7 @@ describe("Offline Transaction Handling", () => {
         date: "2026-05-27T00:00:00.000Z",
         offlineId: "offline-1",
         queuedAt: new Date().toISOString(),
+        ownerScope: "user-a",
       },
       {
         categoryId: "cat-2",
@@ -120,6 +133,7 @@ describe("Offline Transaction Handling", () => {
         date: "2026-05-27T00:00:00.000Z",
         offlineId: "offline-2",
         queuedAt: new Date().toISOString(),
+        ownerScope: "user-a",
       },
     ];
     saveOfflineQueue(offlineTxs);
@@ -151,5 +165,45 @@ describe("Offline Transaction Handling", () => {
 
     // Pastikan queue dikosongkan setelah sukses sinkronisasi
     expect(getOfflineQueue().length).toBe(0);
+  });
+
+  it("should not sync offline transactions owned by another account", async () => {
+    saveOfflineQueue(
+      [
+        {
+          categoryId: "cat-1",
+          amount: "10000",
+          type: "EXPENSE",
+          date: "2026-05-27T00:00:00.000Z",
+          offlineId: "offline-user-a",
+          queuedAt: new Date().toISOString(),
+          ownerScope: "user-a"
+        }
+      ],
+      "user-a"
+    );
+
+    setCachedUser({
+      id: "user-b",
+      name: "User B",
+      email: "user-b@example.com",
+      safeBalanceLimit: "0"
+    });
+
+    expect(await syncOfflineTransactions()).toBe(false);
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(getOfflineQueue("user-a")).toHaveLength(1);
+  });
+
+  it("should quarantine legacy queue entries instead of syncing them automatically", async () => {
+    localStorage.setItem(
+      "sakuin_offline_transactions_queue",
+      JSON.stringify([{ offlineId: "legacy-offline-entry" }])
+    );
+
+    expect(hasLegacyOfflineQueue()).toBe(true);
+    expect(await syncOfflineTransactions()).toBe(false);
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(hasLegacyOfflineQueue()).toBe(true);
   });
 });

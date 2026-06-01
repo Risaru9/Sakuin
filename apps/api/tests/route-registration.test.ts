@@ -39,4 +39,14 @@ describe("API route registration", () => {
     expect(response.status).not.toBe(404);
     expect(body.message).not.toBe("Route tidak ditemukan");
   });
+
+  it("mempertahankan alias /api/v1 untuk rollout frontend bertahap", async () => {
+    const response = await app.request("/api/v1/summary", {
+      method: "GET"
+    });
+    const body = await readJson(response);
+
+    expect(response.status).toBe(401);
+    expect(body.message).toBe("Authorization header wajib diisi");
+  });
 });

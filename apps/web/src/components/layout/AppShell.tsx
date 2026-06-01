@@ -15,7 +15,11 @@ import {
   MobileMainActionMenu
 } from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
-import { getOfflineQueue, syncOfflineTransactions } from "../../lib/offline-queue";
+import {
+  getOfflineQueue,
+  hasLegacyOfflineQueue,
+  syncOfflineTransactions
+} from "../../lib/offline-queue";
 
 type AppShellProps = {
   children: ReactNode;
@@ -137,10 +141,13 @@ export function AppShell({
   const [isOffline, setIsOffline] = useState(navigator.onLine === false);
   const [servedFromCache, setServedFromCache] = useState(false);
   const [offlineQueueLength, setOfflineQueueLength] = useState(0);
+  const [hasQuarantinedLegacyQueue, setHasQuarantinedLegacyQueue] =
+    useState(false);
 
   useEffect(() => {
     const updateQueueLength = () => {
       setOfflineQueueLength(getOfflineQueue().length);
+      setHasQuarantinedLegacyQueue(hasLegacyOfflineQueue());
     };
 
     updateQueueLength();
@@ -180,10 +187,17 @@ export function AppShell({
   const isAssistantRoute = isActivePath(location.pathname, ASSISTANT_ROUTE);
   const shouldShowMobileNavigation = !isAssistantRoute;
 
-  const showBanner = isOffline || servedFromCache || offlineQueueLength > 0;
+  const showBanner =
+    isOffline ||
+    servedFromCache ||
+    offlineQueueLength > 0 ||
+    hasQuarantinedLegacyQueue;
   
   let bannerMessage = "";
-  if (isOffline) {
+  if (hasQuarantinedLegacyQueue) {
+    bannerMessage =
+      "Ada antrean transaksi offline dari versi lama yang ditahan agar tidak masuk ke akun yang salah. Catat ulang transaksi tersebut setelah memastikan akun yang benar.";
+  } else if (isOffline) {
     bannerMessage = offlineQueueLength > 0
       ? `Anda sedang offline. Ada ${offlineQueueLength} transaksi tersimpan lokal yang menunggu sinkronisasi.`
       : "Anda sedang offline. Menampilkan data tersimpan dalam mode read-only.";

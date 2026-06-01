@@ -1,4 +1,5 @@
 import { apiRequest } from "./api-client";
+import { getActiveAccountScope } from "./auth-storage";
 import type { CreateTransactionInput } from "../features/transactions/transaction.types";
 
 const OFFLINE_QUEUE_KEY = "sakuin_offline_transactions_queue";
@@ -6,12 +7,21 @@ const OFFLINE_QUEUE_KEY = "sakuin_offline_transactions_queue";
 export interface OfflineTransaction extends CreateTransactionInput {
   offlineId: string;
   queuedAt: string;
+  ownerScope: string;
 }
 
-export function getOfflineQueue(): OfflineTransaction[] {
+function getOfflineQueueKey(ownerScope: string) {
+  return `${OFFLINE_QUEUE_KEY}:${encodeURIComponent(ownerScope)}`;
+}
+
+export function getOfflineQueue(
+  ownerScope = getActiveAccountScope()
+): OfflineTransaction[] {
   if (typeof window === "undefined") return [];
+  if (!ownerScope) return [];
+
   try {
-    const queue = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    const queue = localStorage.getItem(getOfflineQueueKey(ownerScope));
     return queue ? JSON.parse(queue) : [];
   } catch (e) {
     console.error("[OfflineQueue] Gagal mengambil antrean offline:", e);
@@ -19,10 +29,15 @@ export function getOfflineQueue(): OfflineTransaction[] {
   }
 }
 
-export function saveOfflineQueue(queue: OfflineTransaction[]) {
+export function saveOfflineQueue(
+  queue: OfflineTransaction[],
+  ownerScope = getActiveAccountScope()
+) {
   if (typeof window === "undefined") return;
+  if (!ownerScope) return;
+
   try {
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    localStorage.setItem(getOfflineQueueKey(ownerScope), JSON.stringify(queue));
     // Trigger custom event agar UI tahu antrean berubah
     window.dispatchEvent(new Event("sakuin-offline-queue-changed"));
   } catch (e) {
@@ -31,20 +46,34 @@ export function saveOfflineQueue(queue: OfflineTransaction[]) {
 }
 
 export function addToOfflineQueue(transaction: CreateTransactionInput) {
-  const queue = getOfflineQueue();
+  const ownerScope = getActiveAccountScope();
+
+  if (!ownerScope) {
+    throw new Error("Akun aktif diperlukan untuk menyimpan transaksi offline.");
+  }
+
+  const queue = getOfflineQueue(ownerScope);
   const newTx: OfflineTransaction = {
     ...transaction,
     offlineId: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    queuedAt: new Date().toISOString()
+    queuedAt: new Date().toISOString(),
+    ownerScope
   };
   queue.push(newTx);
-  saveOfflineQueue(queue);
-  console.log("[OfflineQueue] Menambahkan transaksi ke antrean offline:", newTx);
+  saveOfflineQueue(queue, ownerScope);
+  console.log("[OfflineQueue] Transaksi ditambahkan ke antrean offline.");
   return newTx;
 }
 
 export async function syncOfflineTransactions(): Promise<boolean> {
-  const queue = getOfflineQueue();
+  const ownerScope = getActiveAccountScope();
+
+  if (!ownerScope) return false;
+
+  const storedQueue = getOfflineQueue(ownerScope);
+  const queue = storedQueue.filter(
+    (transaction) => transaction.ownerScope === ownerScope
+  );
   if (queue.length === 0) return false;
 
   console.log(`[OfflineQueue] Memulai sinkronisasi ${queue.length} transaksi offline ke server...`);
@@ -60,7 +89,6 @@ export async function syncOfflineTransactions(): Promise<boolean> {
       }))
     };
 
-    // Kirim bulk post ke /api/transactions/bulk (akan dirouting otomatis ke /api/v1/...)
     await apiRequest("/api/transactions/bulk", {
       method: "POST",
       body: payload
@@ -68,7 +96,10 @@ export async function syncOfflineTransactions(): Promise<boolean> {
 
     console.log("[OfflineQueue] Sinkronisasi transaksi offline berhasil!");
     // Bersihkan antrean
-    saveOfflineQueue([]);
+    saveOfflineQueue(
+      storedQueue.filter((transaction) => transaction.ownerScope !== ownerScope),
+      ownerScope
+    );
     // Trigger refresh transaksi
     window.dispatchEvent(new Event("sakuin:transaction-added"));
     
@@ -84,4 +115,10 @@ export async function syncOfflineTransactions(): Promise<boolean> {
     console.error("[OfflineQueue] Gagal sinkronisasi transaksi offline:", error);
     return false;
   }
+}
+
+export function hasLegacyOfflineQueue() {
+  if (typeof window === "undefined") return false;
+
+  return Boolean(localStorage.getItem(OFFLINE_QUEUE_KEY));
 }

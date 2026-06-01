@@ -2,6 +2,15 @@ import { buildFinancialCheckup, type FinancialCheckupResult } from "../finance/f
 import { type FinancialScenarioAnalysis } from "./ai-financial-scenario.js";
 import { type PurchaseDecisionAnalysis } from "./ai-purchase-decision.js";
 import type { AiFinancialContext } from "./ai-financial-context.js";
+import {
+  calculateExpenseRatio,
+  formatChangePercent,
+  formatPercent,
+  formatRatio,
+  formatRupiah,
+  roundOneDecimal,
+  toNumber
+} from "./ai-response-formatters.js";
 import type {
   AiChatCard,
   AiChatResponse,
@@ -95,66 +104,15 @@ export type ConsultantActionPlan = {
   riskSignals: string[];
 };
 
-export function toNumber(value: string | number | null | undefined) {
-  const numberValue = Number(value ?? 0);
-
-  if (Number.isNaN(numberValue)) {
-    return 0;
-  }
-
-  return numberValue;
-}
-
-export function formatRupiah(value: string | number | null | undefined) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0
-  }).format(toNumber(value));
-}
-
-export function formatPercent(value: number | null) {
-  if (value === null) {
-    return "Belum bisa dibandingkan";
-  }
-
-  if (value > 0) {
-    return `+${value}%`;
-  }
-
-  return `${value}%`;
-}
-
-export function formatRatio(value: number | null) {
-  if (value === null) {
-    return "Belum bisa dinilai";
-  }
-
-  return `${value}%`;
-}
-
-export function formatChangePercent(value: number | null) {
-  if (value === null) {
-    return "Baru / belum ada pembanding";
-  }
-
-  return formatPercent(value);
-}
-
-export function roundOneDecimal(value: number) {
-  return Number(value.toFixed(1));
-}
-
-export function calculateExpenseRatio(input: {
-  income: number;
-  expense: number;
-}) {
-  if (input.income <= 0) {
-    return null;
-  }
-
-  return roundOneDecimal((input.expense / input.income) * 100);
-}
+export {
+  calculateExpenseRatio,
+  formatChangePercent,
+  formatPercent,
+  formatRatio,
+  formatRupiah,
+  roundOneDecimal,
+  toNumber
+};
 
 export function isMaterialExpenseCategoryConcern(input: {
   transactionCount: number;
