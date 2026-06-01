@@ -231,35 +231,6 @@ a {
   }
 }
 
-@keyframes sakuinFabChildIn {
-  0% {
-    opacity: 0;
-    transform: translate(var(--sakuin-fab-closed-x, 0), var(--sakuin-fab-closed-y, 1rem)) scale(0.35);
-  }
-
-  70% {
-    opacity: 1;
-    transform: translate(var(--sakuin-fab-open-x, 0), var(--sakuin-fab-open-y, 0)) scale(1.08);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate(var(--sakuin-fab-open-x, 0), var(--sakuin-fab-open-y, 0)) scale(1);
-  }
-}
-
-@keyframes sakuinFabLabelIn {
-  0% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.92);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @keyframes sakuinTabSlide {
   0% {
     opacity: 0;
@@ -281,6 +252,38 @@ a {
   100% {
     opacity: 0;
     transform: scale(3.2);
+  }
+}
+
+@keyframes sakuinBootFade {
+  0% {
+    opacity: 1;
+  }
+
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sakuinBootMark {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.86);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translateY(0) scale(1.04);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -431,17 +434,6 @@ a {
   animation: sakuinRipple 620ms ease-out;
 }
 
-.sakuin-fab-action {
-  --sakuin-fab-open-x: 0px;
-  --sakuin-fab-open-y: 0px;
-  animation: sakuinFabChildIn 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  transform: translate(var(--sakuin-fab-open-x), var(--sakuin-fab-open-y));
-}
-
-.sakuin-fab-label {
-  animation: sakuinFabLabelIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 .sakuin-tab-panel {
   animation: sakuinTabSlide 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -450,6 +442,14 @@ a {
   transition:
     left 300ms cubic-bezier(0.22, 1, 0.36, 1),
     width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sakuin-boot-screen {
+  animation: sakuinBootFade 1050ms ease-out forwards;
+}
+
+.sakuin-boot-mark {
+  animation: sakuinBootMark 620ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @media (hover: hover) {
@@ -548,8 +548,8 @@ a {
   .sakuin-progress-shine,
   .sakuin-pulse-ring::before,
   .sakuin-ripple::after,
-  .sakuin-fab-action,
-  .sakuin-fab-label,
+  .sakuin-boot-screen,
+  .sakuin-boot-mark,
   .sakuin-skeleton,
   .sakuin-tab-panel,
   .sakuin-stagger-enter,

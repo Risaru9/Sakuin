@@ -8,6 +8,7 @@ import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
 import { ApkUpdatePrompt } from "../components/pwa/ApkUpdatePrompt";
 import { TransactionReminderRunner } from "../components/pwa/TransactionReminderRunner";
 import { ToastProvider } from "../components/toast/ToastProvider";
+import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
 import { AuthProvider } from "../features/auth/auth-context";
 import { queryClient } from "../lib/query-client";
 import {
@@ -23,6 +24,17 @@ type PwaUpdateEvent = CustomEvent<ServiceWorkerRegistration>;
 export function App() {
   const [waitingServiceWorkerRegistration, setWaitingServiceWorkerRegistration] =
     useState<ServiceWorkerRegistration | null>(null);
+  const [showBootScreen, setShowBootScreen] = useState(true);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setShowBootScreen(false);
+    }, 1100);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     function handlePwaUpdate(event: Event) {
@@ -167,6 +179,17 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <RouterProvider router={router} />
+          {showBootScreen ? (
+            <div
+              aria-label="Memuat Sakuin"
+              className="sakuin-boot-screen pointer-events-none fixed inset-0 z-[999] flex items-center justify-center bg-[var(--sakuin-bg)]"
+              role="status"
+            >
+              <div className="sakuin-boot-mark rounded-3xl border border-[var(--sakuin-border)] bg-white px-5 py-4 shadow-[0_22px_55px_rgba(37,99,235,0.18)]">
+                <SakuinIdentityLogo subtitle="Mempersiapkan dashboard" size="md" />
+              </div>
+            </div>
+          ) : null}
           <TransactionReminderRunner />
           <AppReleaseNotesPrompt />
           <ApkUpdatePrompt />

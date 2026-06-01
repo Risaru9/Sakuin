@@ -96,7 +96,6 @@ export function DashboardPage() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
-  const [inlineText, setInlineText] = useState("");
   const [quickTransactionInitialText, setQuickTransactionInitialText] = useState("");
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
     string | null
@@ -299,12 +298,6 @@ const profileQuery = useQuery({
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  function openQuickTransactionWithText(text: string) {
-    setQuickTransactionInitialText(text);
-    setInlineText("");
-    setIsQuickTransactionOpen(true);
-  }
-
   function refreshDashboardData() {
   // Mutation handlers already update transaction and summary caches optimistically.
   // Heavy derived data is marked stale in the background by transaction-cache.ts.
@@ -501,78 +494,38 @@ const profileQuery = useQuery({
                     />
                   </button>
 
-                  <div
-                    className={[
-                      "grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-300 ease-out motion-reduce:transition-none",
-                      isSummaryActionOpen
-                        ? "mt-2 grid-rows-[1fr] opacity-100"
-                        : "mt-0 grid-rows-[0fr] opacity-0"
-                    ].join(" ")}
-                  >
-                    <div className="min-h-0">
-                      <div className="grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
-                        <button
-                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
-                          onClick={() => setIsQuickTransactionOpen(true)}
-                          tabIndex={isSummaryActionOpen ? 0 : -1}
-                          type="button"
-                        >
-                          <MessageSquare className="sakuin-icon-bounce h-4 w-4" />
-                          Catat Cepat
-                        </button>
+                  {isSummaryActionOpen ? (
+                    <div className="sakuin-enter mt-2 grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
+                      <button
+                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
+                        onClick={() => setIsQuickTransactionOpen(true)}
+                        type="button"
+                      >
+                        <MessageSquare className="sakuin-icon-bounce h-4 w-4" />
+                        Catat Cepat
+                      </button>
 
-                        <button
-                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
-                          onClick={() => setIsAddTransactionOpen(true)}
-                          tabIndex={isSummaryActionOpen ? 0 : -1}
-                          type="button"
-                        >
-                          <Plus className="sakuin-icon-bounce h-4 w-4" />
-                          Tambah Manual
-                        </button>
+                      <button
+                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
+                        onClick={() => setIsAddTransactionOpen(true)}
+                        type="button"
+                      >
+                        <Plus className="sakuin-icon-bounce h-4 w-4" />
+                        Tambah Manual
+                      </button>
 
-                        <Link
-                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
-                          tabIndex={isSummaryActionOpen ? 0 : -1}
-                          to="/export"
-                        >
-                          <Download className="sakuin-icon-shake h-4 w-4" />
-                          Export Laporan
-                        </Link>
-                      </div>
+                      <Link
+                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
+                        to="/export"
+                      >
+                        <Download className="sakuin-icon-shake h-4 w-4" />
+                        Export Laporan
+                      </Link>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
             )}
-
-            {/* Bar Catat Cepat inline di bawah kartu saldo */}
-            <form
-              className="sakuin-card-lift flex items-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 shadow-sm transition-shadow focus-within:border-[var(--sakuin-primary)] focus-within:ring-2 focus-within:ring-[var(--sakuin-focus)]/20 sm:px-4 sm:py-2.5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (inlineText.trim()) {
-                  openQuickTransactionWithText(inlineText.trim());
-                }
-              }}
-            >
-              <MessageSquare className="sakuin-icon-bounce h-4 w-4 shrink-0 text-zinc-400" />
-              <input
-                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[var(--sakuin-text)] outline-none placeholder:text-zinc-400"
-                placeholder="Catat cepat… contoh: makan siang 25000 atau gaji 3000000"
-                type="text"
-                value={inlineText}
-                onChange={(e) => setInlineText(e.target.value)}
-              />
-              {inlineText.trim() ? (
-                <button
-                  className="sakuin-ripple sakuin-press shrink-0 rounded-lg bg-[var(--sakuin-primary)] px-3 py-1.5 text-xs font-black text-white transition hover:opacity-90 active:scale-95"
-                  type="submit"
-                >
-                  Catat
-                </button>
-              ) : null}
-            </form>
 
             {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
             <div className="relative mt-1 flex gap-2 overflow-hidden rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">

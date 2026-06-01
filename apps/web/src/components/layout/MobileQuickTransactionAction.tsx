@@ -1,7 +1,6 @@
 import {
   lazy,
   Suspense,
-  type CSSProperties,
   type ReactNode,
   useEffect,
   useId,
@@ -84,7 +83,7 @@ export function FloatingAssistantButton() {
   return (
     <Link
       aria-label="Buka Asisten Sakuin"
-      className="sakuin-press sakuin-pulse-ring fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
+      className="sakuin-press sakuin-pulse-ring fixed bottom-[calc(var(--sakuin-mobile-nav-height)+4.75rem)] left-auto right-4 z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6"
       title="Buka Asisten Sakuin"
       to="/asisten"
     >
@@ -162,7 +161,7 @@ export function MobileMainActionMenu() {
               aria-hidden={!isMenuOpen}
               aria-label="Menu aksi transaksi"
               className={[
-                "pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+0.5rem)] left-1/2 z-[340] h-28 w-48 -translate-x-1/2 transition duration-200 motion-reduce:transition-none lg:hidden",
+                "pointer-events-none fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1.25rem)] left-1/2 z-[340] h-36 w-52 -translate-x-1/2 transition duration-200 motion-reduce:transition-none lg:hidden",
                 isMenuOpen ? "opacity-100" : "opacity-0"
               ].join(" ")}
               id={dialogId}
@@ -171,79 +170,52 @@ export function MobileMainActionMenu() {
               <button
                 aria-label="Catat Biasa"
                 className={[
-                  "sakuin-fab-action sakuin-press absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute left-1/2 top-0 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
                     ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                    : "pointer-events-none translate-y-6 scale-75 opacity-0"
                 ].join(" ")}
                 onClick={() => openModal("manual")}
-                style={
-                  {
-                    "--sakuin-fab-open-x": "-50%",
-                    "--sakuin-fab-open-y": "-0.5rem",
-                    transitionDelay: isMenuOpen ? "40ms" : "0ms"
-                  } as CSSProperties
-                }
+                style={{ transitionDelay: isMenuOpen ? "40ms" : "0ms" }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Catat Biasa"
                 type="button"
               >
                 <WalletCards aria-hidden="true" className="sakuin-icon-flip h-5 w-5" />
-                <span className="sakuin-fab-label pointer-events-none absolute -top-8 rounded-full bg-slate-950/80 px-2 py-1 text-[10px] font-black text-white shadow-sm">
-                  Biasa
-                </span>
               </button>
 
               <button
                 aria-label="Catat Cepat"
                 className={[
-                  "sakuin-fab-action sakuin-press absolute bottom-2 left-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_18px_38px_rgba(29,78,216,0.26)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute bottom-9 left-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[var(--sakuin-secondary)] text-white shadow-[0_18px_38px_rgba(29,78,216,0.26)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
                     ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                    : "pointer-events-none translate-x-8 translate-y-8 scale-75 opacity-0"
                 ].join(" ")}
                 onClick={() => openModal("quick")}
-                style={
-                  {
-                    "--sakuin-fab-open-x": "-1.4rem",
-                    "--sakuin-fab-open-y": "-0.1rem",
-                    transitionDelay: isMenuOpen ? "80ms" : "0ms"
-                  } as CSSProperties
-                }
+                style={{ transitionDelay: isMenuOpen ? "80ms" : "0ms" }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Catat Cepat"
                 type="button"
               >
                 <MessageSquare aria-hidden="true" className="sakuin-icon-bounce h-5 w-5" />
-                <span className="sakuin-fab-label pointer-events-none absolute -bottom-8 rounded-full bg-slate-950/80 px-2 py-1 text-[10px] font-black text-white shadow-sm">
-                  Cepat
-                </span>
               </button>
 
               <button
                 aria-label="Export data"
                 className={[
-                  "sakuin-fab-action sakuin-press absolute bottom-2 right-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_18px_38px_rgba(37,99,235,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
+                  "sakuin-press absolute bottom-9 right-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sakuin-border)] bg-white text-[var(--sakuin-primary)] shadow-[0_18px_38px_rgba(37,99,235,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25 active:scale-95 motion-reduce:transition-none",
                   isMenuOpen
                     ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none translate-y-4 scale-75 opacity-0"
+                    : "pointer-events-none -translate-x-8 translate-y-8 scale-75 opacity-0"
                 ].join(" ")}
                 onClick={openExport}
-                style={
-                  {
-                    "--sakuin-fab-open-x": "1.4rem",
-                    "--sakuin-fab-open-y": "-0.1rem",
-                    transitionDelay: isMenuOpen ? "120ms" : "0ms"
-                  } as CSSProperties
-                }
+                style={{ transitionDelay: isMenuOpen ? "120ms" : "0ms" }}
                 tabIndex={isMenuOpen ? 0 : -1}
                 title="Export"
                 type="button"
               >
                 <Download aria-hidden="true" className="sakuin-icon-shake h-5 w-5" />
-                <span className="sakuin-fab-label pointer-events-none absolute -bottom-8 rounded-full bg-slate-950/80 px-2 py-1 text-[10px] font-black text-white shadow-sm">
-                  Export
-                </span>
               </button>
             </div>
           </>

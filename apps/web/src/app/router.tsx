@@ -103,12 +103,19 @@ const AsistenPage = lazy(() =>
 
 function LoadingScreen() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="flex items-center gap-4 rounded-2xl border border-[var(--sakuin-border)] bg-white px-6 py-5 shadow-sm">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--sakuin-text)]" />
-        <p className="text-sm font-semibold tracking-wide text-zinc-600">
-          Memuat Sakuin...
-        </p>
+    <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4">
+      <div className="sakuin-enter flex items-center gap-4 rounded-3xl border border-[var(--sakuin-border)] bg-white px-6 py-5 shadow-[0_18px_45px_rgba(37,99,235,0.12)]">
+        <span className="sakuin-pulse-ring flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
+          <Loader2 className="h-5 w-5 animate-spin text-white" />
+        </span>
+        <div>
+          <p className="text-sm font-black tracking-wide text-[var(--sakuin-text)]">
+            Memuat Sakuin
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-zinc-500">
+            Menyiapkan data keuanganmu...
+          </p>
+        </div>
       </div>
     </main>
   );
