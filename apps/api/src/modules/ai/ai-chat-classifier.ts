@@ -1,5 +1,8 @@
 import { classifyAiIntent } from "./ai.intent.js";
+import { buildConversationHistoryText } from "./ai-chat-history.js";
 import type { AiChatHistoryMessage, AiIntent } from "./ai.types.js";
+
+export { buildConversationHistoryText } from "./ai-chat-history.js";
 
 const CONTEXTUAL_FOLLOW_UP_KEYWORDS = [
   "kalau",
@@ -50,41 +53,6 @@ const CONTINUATION_FOLLOW_UP_KEYWORDS = [
   "next",
   "continue"
 ];
-
-function sanitizeChatHistory(history: AiChatHistoryMessage[] = []) {
-  return history
-    .filter((message) => {
-      const content = message.content.trim();
-
-      return (
-        content.length > 0 &&
-        (message.role === "user" || message.role === "assistant")
-      );
-    })
-    .slice(-12)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim().slice(0, 600)
-    }));
-}
-
-export function buildConversationHistoryText(
-  history: AiChatHistoryMessage[] = []
-) {
-  const sanitizedHistory = sanitizeChatHistory(history);
-
-  if (sanitizedHistory.length === 0) {
-    return "Tidak ada konteks percakapan sebelumnya.";
-  }
-
-  return sanitizedHistory
-    .map((message, index) => {
-      const speaker = message.role === "user" ? "USER" : "ASSISTANT";
-
-      return `${index + 1}. ${speaker}: ${message.content}`;
-    })
-    .join("\n");
-}
 
 function looksLikeContextualFinancialFollowUp(message: string) {
   const normalizedMessage = message.toLowerCase();

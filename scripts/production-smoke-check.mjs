@@ -3,6 +3,7 @@ const DEFAULT_API_URL = "https://sakuin-api.vercel.app";
 
 const webUrl = process.env.SAKUIN_SMOKE_WEB_URL || DEFAULT_WEB_URL;
 const apiUrl = process.env.SAKUIN_SMOKE_API_URL || DEFAULT_API_URL;
+const requireApiV1 = process.argv.includes("--require-api-v1");
 
 async function fetchText(url) {
   const response = await fetch(url, {
@@ -145,6 +146,42 @@ const checks = [
     }
   }
 ];
+
+if (requireApiV1) {
+  checks.push(
+    {
+      name: "versioned protected summary route",
+      run: async () => {
+        const payload = await fetchJsonWithExpectedStatus(
+          `${apiUrl}/api/v1/summary`,
+          401
+        );
+        if (payload.message !== "Authorization header wajib diisi") {
+          throw new Error("Versioned protected summary route did not reach auth middleware.");
+        }
+      }
+    },
+    {
+      name: "versioned login route validation",
+      run: async () => {
+        const payload = await fetchJsonWithExpectedStatus(
+          `${apiUrl}/api/v1/auth/login`,
+          400,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({})
+          }
+        );
+        if (payload.message === "Route tidak ditemukan") {
+          throw new Error("Versioned login route fell through to 404.");
+        }
+      }
+    }
+  );
+}
 
 const failures = [];
 

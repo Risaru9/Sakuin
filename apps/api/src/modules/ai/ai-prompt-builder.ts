@@ -1,4 +1,4 @@
-import { buildConversationHistoryText } from "./ai-chat-classifier.js";
+import { buildConversationHistoryText } from "./ai-chat-history.js";
 import {
   buildFinancialScenarioPromptContext,
   type FinancialScenarioAnalysis
