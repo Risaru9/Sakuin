@@ -12,7 +12,8 @@ import {
   RefreshCcw,
   Search,
   SlidersHorizontal,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { AppShell } from "../../components/layout/AppShell";
@@ -168,9 +169,9 @@ function TransactionRow({
               }
             >
             {isIncome ? (
-              <ArrowUpCircle className="h-5 w-5" />
-            ) : (
-              <ArrowDownCircle className="h-5 w-5" />
+            <ArrowUpCircle className="sakuin-icon-bounce h-5 w-5" />
+          ) : (
+              <ArrowDownCircle className="sakuin-icon-bounce h-5 w-5" />
             )}
           </div>
 
@@ -223,7 +224,7 @@ function TransactionRow({
               onClick={() => onEdit(transaction)}
               type="button"
             >
-              <Edit3 className="h-4 w-4" />
+              <Edit3 className="sakuin-icon-bounce h-4 w-4" />
               Edit
             </button>
 
@@ -236,7 +237,7 @@ function TransactionRow({
               {isDeleting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="sakuin-icon-shake h-4 w-4" />
               )}
               Hapus
             </button>
@@ -556,21 +557,31 @@ const transactionsQuery = useQuery({
           </div>
         </header>
 
-        <section className="mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:mb-5 sm:p-4">
+        <section className="sakuin-enter mb-4 rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:mb-5 sm:p-4">
           <label className="block">
             <span className="text-xs font-black uppercase text-zinc-500">
               Cari transaksi
             </span>
 
-            <div className="relative mt-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <div className="sakuin-card-lift relative mt-1 rounded-xl focus-within:scale-[1.01]">
+              <Search className="sakuin-icon-bounce pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
-                className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white pl-11 pr-4 text-sm font-medium text-[var(--sakuin-text)] outline-none transition placeholder:text-zinc-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+                className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white pl-11 pr-11 text-sm font-medium text-[var(--sakuin-text)] outline-none transition placeholder:text-zinc-400 focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
                 placeholder="Cari catatan transaksi..."
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
+              {search ? (
+                <button
+                  aria-label="Bersihkan pencarian transaksi"
+                  className="sakuin-press absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-primary)]"
+                  onClick={() => setSearch("")}
+                  type="button"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
             </div>
           </label>
 
@@ -583,7 +594,7 @@ const transactionsQuery = useQuery({
           >
             <span className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white ring-1 ring-[var(--sakuin-border)]">
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="sakuin-icon-shake h-4 w-4" />
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-black text-[var(--sakuin-text)]">
@@ -615,7 +626,7 @@ const transactionsQuery = useQuery({
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {activeFilterLabels.map((label) => (
                 <span
-                  className="shrink-0 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm"
+                  className="sakuin-stagger-enter shrink-0 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-[11px] font-black text-[var(--sakuin-text)] shadow-sm"
                   key={label}
                 >
                   {label}

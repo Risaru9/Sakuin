@@ -380,11 +380,11 @@ export function FinancialRhythmCard({
 
   return (
     <>
-      <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-6">
+      <section className="sakuin-card-lift rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-6">
         {/* Header */}
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)]">
-            <Activity className="h-4.5 w-4.5" />
+            <Activity className="sakuin-icon-bounce h-4.5 w-4.5" />
           </div>
           <div>
             <h2 className="text-sm font-black text-[var(--sakuin-text)] sm:text-base">
@@ -444,19 +444,19 @@ export function FinancialRhythmCard({
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-2 sm:flex-col sm:w-44">
             <button
-              className="flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
+              className="sakuin-ripple sakuin-press flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
               onClick={onOpenQuickTransaction}
               type="button"
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              <MessageSquare className="sakuin-icon-bounce h-3.5 w-3.5" />
               Catat Cepat
             </button>
             <button
-              className="flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50"
+              className="sakuin-press flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50"
               onClick={onOpenAddTransaction}
               type="button"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="sakuin-icon-bounce h-3.5 w-3.5" />
               Tambah Transaksi
             </button>
           </div>
@@ -468,6 +468,7 @@ export function FinancialRhythmCard({
             {rhythm.dayRhythm.map((day) => (
               <div
                 className={[
+                  "sakuin-stagger-enter",
                   "flex flex-col items-center justify-center rounded-xl py-1.5 text-center ring-1",
                   day.hasTransaction
                     ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
@@ -492,11 +493,11 @@ export function FinancialRhythmCard({
 
         {/* Tombol Tambah Widget */}
         <button
-          className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+          className="sakuin-press mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
           onClick={() => setIsWidgetModalOpen(true)}
           type="button"
         >
-          <Smartphone className="h-3.5 w-3.5" />
+          <Smartphone className="sakuin-icon-bounce h-3.5 w-3.5" />
           Tambah ke Layar Utama
         </button>
       </section>

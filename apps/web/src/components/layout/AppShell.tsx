@@ -103,17 +103,23 @@ function MobileNavigationLink({
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-1.5 py-2 text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)]"
-          : "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-slate-500 transition hover:bg-[var(--sakuin-primary-soft)] active:bg-[var(--sakuin-primary-soft)] active:text-[var(--sakuin-primary)] motion-reduce:transition-none"
+          ? "sakuin-ripple relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-1.5 py-2 text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)]"
+          : "sakuin-press flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-slate-500 transition hover:bg-[var(--sakuin-primary-soft)] active:bg-[var(--sakuin-primary-soft)] active:text-[var(--sakuin-primary)] motion-reduce:transition-none"
       }
       to={item.to}
     >
+      {active ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-4 bottom-1 h-1 rounded-full bg-white/70 animate-[sakuinNavMarker_1.8s_ease-in-out_infinite]"
+        />
+      ) : null}
       <Icon
         aria-hidden="true"
         className={
           active
-            ? "relative h-5 w-5 text-white"
-            : "h-5 w-5 text-slate-500"
+            ? "sakuin-icon-bounce relative h-5 w-5 text-white"
+            : "sakuin-icon-bounce h-5 w-5 text-slate-500"
         }
       />
 
@@ -235,8 +241,8 @@ export function AppShell({
                   aria-current={active ? "page" : undefined}
                   className={
                     active
-                      ? "group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
-                      : "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-text)]"
+                      ? "sakuin-ripple group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
+                      : "sakuin-press group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-text)]"
                   }
                   key={item.to}
                   to={item.to}
@@ -248,7 +254,7 @@ export function AppShell({
                         : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-white group-hover:text-[var(--sakuin-primary)]"
                     }
                   >
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="sakuin-icon-bounce h-4.5 w-4.5" />
                   </span>
 
                   <span className={active ? "relative text-white" : "text-zinc-700"}>

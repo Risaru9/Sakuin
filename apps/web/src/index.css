@@ -171,6 +171,119 @@ a {
   }
 }
 
+@keyframes sakuinPulseRing {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.78);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.85);
+  }
+}
+
+@keyframes sakuinIconBounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  45% {
+    transform: translateY(-3px) scale(1.12);
+  }
+}
+
+@keyframes sakuinIconShake {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-12deg);
+  }
+
+  40% {
+    transform: rotate(10deg);
+  }
+
+  60% {
+    transform: rotate(-7deg);
+  }
+
+  80% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes sakuinIconFlip {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotateY(180deg) scale(1.08);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+@keyframes sakuinFabChildIn {
+  0% {
+    opacity: 0;
+    transform: translate(var(--sakuin-fab-closed-x, 0), var(--sakuin-fab-closed-y, 1rem)) scale(0.35);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(var(--sakuin-fab-open-x, 0), var(--sakuin-fab-open-y, 0)) scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(var(--sakuin-fab-open-x, 0), var(--sakuin-fab-open-y, 0)) scale(1);
+  }
+}
+
+@keyframes sakuinFabLabelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sakuinTabSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--sakuin-tab-direction, 14px)) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes sakuinRipple {
+  0% {
+    opacity: 0.35;
+    transform: scale(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
 .sakuin-card-lift {
   transition:
     transform 220ms ease,
@@ -259,6 +372,86 @@ a {
   background-size: 200% 100%;
 }
 
+.sakuin-pulse-ring {
+  position: relative;
+}
+
+.sakuin-pulse-ring::before {
+  animation: sakuinPulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  border: 1px solid currentColor;
+  border-radius: inherit;
+  content: "";
+  inset: -0.2rem;
+  opacity: 0;
+  position: absolute;
+}
+
+.sakuin-icon-bounce,
+.sakuin-icon-shake,
+.sakuin-icon-flip {
+  transform-style: preserve-3d;
+}
+
+.sakuin-press:hover .sakuin-icon-bounce,
+.sakuin-card-lift:hover .sakuin-icon-bounce {
+  animation: sakuinIconBounce 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sakuin-press:hover .sakuin-icon-shake,
+.sakuin-card-lift:hover .sakuin-icon-shake {
+  animation: sakuinIconShake 520ms ease-in-out;
+}
+
+.sakuin-press:hover .sakuin-icon-flip,
+.sakuin-card-lift:hover .sakuin-icon-flip {
+  animation: sakuinIconFlip 620ms ease-in-out;
+}
+
+.sakuin-ripple {
+  overflow: hidden;
+  position: relative;
+}
+
+.sakuin-ripple::after {
+  animation: none;
+  background: rgb(255 255 255 / 0.32);
+  border-radius: 9999px;
+  content: "";
+  height: 3.5rem;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 3.5rem;
+}
+
+.sakuin-ripple:active::after {
+  animation: sakuinRipple 620ms ease-out;
+}
+
+.sakuin-fab-action {
+  --sakuin-fab-open-x: 0px;
+  --sakuin-fab-open-y: 0px;
+  animation: sakuinFabChildIn 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform: translate(var(--sakuin-fab-open-x), var(--sakuin-fab-open-y));
+}
+
+.sakuin-fab-label {
+  animation: sakuinFabLabelIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sakuin-tab-panel {
+  animation: sakuinTabSlide 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sakuin-tab-indicator {
+  transition:
+    left 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (hover: hover) {
   .sakuin-card-lift:hover {
     box-shadow: 0 12px 28px rgb(15 23 42 / 0.08);
@@ -341,6 +534,9 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-\[sakuinFloat_3\.6s_ease-in-out_infinite\],
+  .animate-\[sakuinFloat_3s_ease-in-out_infinite\],
+  .animate-\[sakuinFloat_7s_ease-in-out_infinite\],
+  .animate-\[sakuinFloat_8s_ease-in-out_infinite\],
   .animate-\[sakuinShine_4s_ease-in-out_infinite\],
   .animate-\[sakuinShine_4\.2s_ease-in-out_infinite\],
   .animate-\[sakuinSoftPulse_2\.8s_ease-in-out_infinite\],
@@ -350,7 +546,12 @@ a {
   .sakuin-enter,
   .sakuin-progress-fill,
   .sakuin-progress-shine,
+  .sakuin-pulse-ring::before,
+  .sakuin-ripple::after,
+  .sakuin-fab-action,
+  .sakuin-fab-label,
   .sakuin-skeleton,
+  .sakuin-tab-panel,
   .sakuin-stagger-enter,
   .sakuin-typing-dot {
     animation: none;
@@ -362,7 +563,14 @@ a {
   }
 
   .sakuin-card-lift:hover,
+  .sakuin-press:hover .sakuin-icon-bounce,
+  .sakuin-press:hover .sakuin-icon-flip,
+  .sakuin-press:hover .sakuin-icon-shake,
+  .sakuin-card-lift:hover .sakuin-icon-bounce,
+  .sakuin-card-lift:hover .sakuin-icon-flip,
+  .sakuin-card-lift:hover .sakuin-icon-shake,
   .sakuin-press:active {
+    animation: none;
     transform: none;
   }
 }

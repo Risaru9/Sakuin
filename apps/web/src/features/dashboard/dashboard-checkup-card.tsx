@@ -82,16 +82,16 @@ export function FinancialCheckupCard({
 
         <div
           className={[
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 animate-[sakuinFloat_3.6s_ease-in-out_infinite]",
             style.icon
           ].join(" ")}
         >
           {financialCheckup.status === "GOOD" ? (
-            <CheckCircle2 className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+            <CheckCircle2 className="sakuin-icon-bounce h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : financialCheckup.status === "RISK" ? (
-            <AlertTriangle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+            <AlertTriangle className="sakuin-icon-shake h-4.5 w-4.5 sm:h-5 sm:w-5" />
           ) : (
-            <Activity className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+            <Activity className="sakuin-icon-bounce h-4.5 w-4.5 sm:h-5 sm:w-5" />
           )}
         </div>
       </div>
@@ -116,7 +116,7 @@ export function FinancialCheckupCard({
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
+        <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Rasio
           </p>
@@ -127,7 +127,7 @@ export function FinancialCheckupCard({
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
+        <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Cashflow
           </p>
@@ -136,7 +136,7 @@ export function FinancialCheckupCard({
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
+        <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Sisa aman
           </p>
@@ -145,7 +145,7 @@ export function FinancialCheckupCard({
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
+        <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl bg-white px-3 py-2.5 ring-1 ring-[var(--sakuin-border)]">
           <p className="text-[10px] font-black uppercase text-zinc-500">
             Limit
           </p>
@@ -184,10 +184,10 @@ export function FinancialCheckupCard({
       ) : null}
 
       <Link
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
+        className="sakuin-ripple sakuin-press mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
         to="/asisten"
       >
-        <MessageSquare className="h-4 w-4 text-white" />
+        <MessageSquare className="sakuin-icon-bounce h-4 w-4 text-white" />
         <span className="text-white">Bahas dengan Asisten</span>
       </Link>
     </div>

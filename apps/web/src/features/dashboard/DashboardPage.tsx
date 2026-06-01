@@ -85,6 +85,14 @@ export function DashboardPage() {
   const [activeMobileTab, setActiveMobileTab] = useState<
     "overview" | "transactions" | "stats"
   >("overview");
+  const mobileTabItems = [
+    { id: "overview", label: "Ringkasan" },
+    { id: "transactions", label: "Transaksi" },
+    { id: "stats", label: "Ritme" }
+  ] as const;
+  const activeMobileTabIndex = mobileTabItems.findIndex(
+    (item) => item.id === activeMobileTab
+  );
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
@@ -412,8 +420,10 @@ const profileQuery = useQuery({
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
-              <div className="rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-primary)] to-[var(--sakuin-secondary)] p-4 text-white shadow-[0_22px_55px_rgba(37,99,235,0.18)] sm:p-8">
-                <div className="flex items-start justify-between gap-4">
+              <div className="sakuin-enter relative overflow-hidden rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-primary)] to-[var(--sakuin-secondary)] p-4 text-white shadow-[0_22px_55px_rgba(37,99,235,0.18)] sm:p-8">
+                <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/15 animate-[sakuinFloat_7s_ease-in-out_infinite]" />
+                <div aria-hidden="true" className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full border border-white/15 animate-[sakuinFloat_8s_ease-in-out_infinite]" />
+                <div className="relative flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white/85 sm:text-sm">
                       Total Saldo Aktif
@@ -436,16 +446,16 @@ const profileQuery = useQuery({
                     }
                   >
                     {summary?.isBelowSafeLimit ? (
-                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <AlertTriangle className="sakuin-icon-shake h-3.5 w-3.5" />
                     ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2 className="sakuin-icon-bounce h-3.5 w-3.5" />
                     )}
                     {summary?.isBelowSafeLimit ? "Waspada" : "Aman"}
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/25 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
-                  <div className="rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
+                <div className="relative mt-5 grid grid-cols-2 gap-2.5 border-t border-white/25 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
+                  <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Pemasukan
                     </p>
@@ -454,7 +464,7 @@ const profileQuery = useQuery({
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
+                  <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Pengeluaran
                     </p>
@@ -463,7 +473,7 @@ const profileQuery = useQuery({
                     </p>
                   </div>
 
-                  <div className="col-span-2 rounded-2xl border border-white/20 bg-white/95 p-3 sm:col-span-1 sm:p-4">
+                  <div className="sakuin-card-lift sakuin-stagger-enter col-span-2 rounded-2xl border border-white/20 bg-white/95 p-3 sm:col-span-1 sm:p-4">
                     <p className="text-xs font-semibold text-zinc-500">
                       Batas Aman
                     </p>
@@ -476,7 +486,7 @@ const profileQuery = useQuery({
                 <div className="mt-3 sm:hidden">
                   <button
                     aria-expanded={isSummaryActionOpen}
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/12 px-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/18 focus:outline-none focus:ring-4 focus:ring-white/25"
+                    className="sakuin-ripple sakuin-press flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/12 px-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/18 focus:outline-none focus:ring-4 focus:ring-white/25"
                     onClick={() =>
                       setIsSummaryActionOpen((current) => !current)
                     }
@@ -502,31 +512,31 @@ const profileQuery = useQuery({
                     <div className="min-h-0">
                       <div className="grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
                         <button
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
+                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
                           onClick={() => setIsQuickTransactionOpen(true)}
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           type="button"
                         >
-                          <MessageSquare className="h-4 w-4" />
+                          <MessageSquare className="sakuin-icon-bounce h-4 w-4" />
                           Catat Cepat
                         </button>
 
                         <button
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
+                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
                           onClick={() => setIsAddTransactionOpen(true)}
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           type="button"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="sakuin-icon-bounce h-4 w-4" />
                           Tambah Manual
                         </button>
 
                         <Link
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
+                          className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
                           tabIndex={isSummaryActionOpen ? 0 : -1}
                           to="/export"
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="sakuin-icon-shake h-4 w-4" />
                           Export Laporan
                         </Link>
                       </div>
@@ -538,7 +548,7 @@ const profileQuery = useQuery({
 
             {/* Bar Catat Cepat inline di bawah kartu saldo */}
             <form
-              className="flex items-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 shadow-sm transition-shadow focus-within:border-[var(--sakuin-primary)] focus-within:ring-2 focus-within:ring-[var(--sakuin-focus)]/20 sm:px-4 sm:py-2.5"
+              className="sakuin-card-lift flex items-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 py-2 shadow-sm transition-shadow focus-within:border-[var(--sakuin-primary)] focus-within:ring-2 focus-within:ring-[var(--sakuin-focus)]/20 sm:px-4 sm:py-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (inlineText.trim()) {
@@ -546,7 +556,7 @@ const profileQuery = useQuery({
                 }
               }}
             >
-              <MessageSquare className="h-4 w-4 shrink-0 text-zinc-400" />
+              <MessageSquare className="sakuin-icon-bounce h-4 w-4 shrink-0 text-zinc-400" />
               <input
                 className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[var(--sakuin-text)] outline-none placeholder:text-zinc-400"
                 placeholder="Catat cepat… contoh: makan siang 25000 atau gaji 3000000"
@@ -556,7 +566,7 @@ const profileQuery = useQuery({
               />
               {inlineText.trim() ? (
                 <button
-                  className="shrink-0 rounded-lg bg-[var(--sakuin-primary)] px-3 py-1.5 text-xs font-black text-white transition hover:opacity-90 active:scale-95"
+                  className="sakuin-ripple sakuin-press shrink-0 rounded-lg bg-[var(--sakuin-primary)] px-3 py-1.5 text-xs font-black text-white transition hover:opacity-90 active:scale-95"
                   type="submit"
                 >
                   Catat
@@ -565,44 +575,30 @@ const profileQuery = useQuery({
             </form>
 
             {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
-            <div className="mt-1 flex gap-2 overflow-x-auto rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">
-              <button
-                className={[
-                  "flex-1 rounded-xl px-3 py-2 transition",
-                  activeMobileTab === "overview"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent text-zinc-600"
-                ].join(" ")}
-                onClick={() => setActiveMobileTab("overview")}
-                type="button"
-              >
-                Ringkasan
-              </button>
-
-              <button
-                className={[
-                  "flex-1 rounded-xl px-3 py-2 transition",
-                  activeMobileTab === "transactions"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent text-zinc-600"
-                ].join(" ")}
-                onClick={() => setActiveMobileTab("transactions")}
-                type="button"
-              >
-                Transaksi
-              </button>
-              <button
-                className={[
-                  "flex-1 rounded-xl px-3 py-2 transition",
-                  activeMobileTab === "stats"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent text-zinc-600"
-                ].join(" ")}
-                onClick={() => setActiveMobileTab("stats")}
-                type="button"
-              >
-                Ritme
-              </button>
+            <div className="relative mt-1 flex gap-2 overflow-hidden rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">
+              <span
+                aria-hidden="true"
+                className="sakuin-tab-indicator absolute bottom-1.5 top-1.5 rounded-xl bg-white shadow-sm"
+                style={{
+                  left: `calc(${activeMobileTabIndex} * ((100% - 0.75rem) / 3) + 0.375rem + ${activeMobileTabIndex} * 0.25rem)`,
+                  width: "calc((100% - 0.75rem) / 3)"
+                }}
+              />
+              {mobileTabItems.map((item) => (
+                <button
+                  className={[
+                    "sakuin-press relative z-10 flex-1 rounded-xl px-3 py-2 transition",
+                    activeMobileTab === item.id
+                      ? "text-[var(--sakuin-text)]"
+                      : "text-zinc-600"
+                  ].join(" ")}
+                  key={item.id}
+                  onClick={() => setActiveMobileTab(item.id)}
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
 
             {/* Konten untuk layar lebar: ritme utama tetap ringkas, detail dibuka saat perlu */}
@@ -643,14 +639,17 @@ const profileQuery = useQuery({
             </div>
 
             {/* Konten mobile per tab: fokus supaya tidak perlu scroll panjang */}
-            <div className="space-y-4 xl:hidden">
+            <div
+              className="sakuin-tab-panel space-y-4 xl:hidden"
+              key={activeMobileTab}
+            >
               {activeMobileTab === "overview" ? (
                 <>
                   {/* Ringkasan cepat: income, expense, total transaksi */}
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
-                        <ArrowUpCircle className="h-5 w-5" />
+                        <ArrowUpCircle className="sakuin-icon-bounce h-5 w-5" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-500">
@@ -662,9 +661,9 @@ const profileQuery = useQuery({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11">
-                        <ArrowDownCircle className="h-5 w-5" />
+                        <ArrowDownCircle className="sakuin-icon-bounce h-5 w-5" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-500">
@@ -676,9 +675,9 @@ const profileQuery = useQuery({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
+                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-primary)]/15 sm:h-11 sm:w-11">
-                        <Activity className="h-5 w-5" />
+                        <Activity className="sakuin-icon-bounce h-5 w-5" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-500">

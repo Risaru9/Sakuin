@@ -131,12 +131,12 @@ function GoalCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-1 text-xs font-black text-[var(--sakuin-text)]">
+          <span className="sakuin-enter rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-1 text-xs font-black text-[var(--sakuin-text)]">
             {progress}%
           </span>
 
           {isDashboardPriority ? (
-            <span className="rounded-full bg-[var(--sakuin-secondary)] px-3 py-1 text-[10px] font-black text-white">
+            <span className="sakuin-pulse-ring rounded-full bg-[var(--sakuin-secondary)] px-3 py-1 text-[10px] font-black text-white">
               Dashboard
             </span>
           ) : null}
@@ -170,10 +170,10 @@ function GoalCard({
       <div className="mt-4">
         <button
           onClick={() => onOpenDetail(goal)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-slate-50/50 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
+          className="sakuin-press inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-slate-50/50 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
           type="button"
         >
-          <History className="h-4 w-4 text-slate-500" />
+          <History className="sakuin-icon-bounce h-4 w-4 text-slate-500" />
           Lihat Riwayat Tabungan
         </button>
       </div>
@@ -182,40 +182,40 @@ function GoalCard({
         <button
           className={
             isDashboardPriority
-              ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
-              : "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
+              ? "sakuin-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
+              : "sakuin-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
           }
           onClick={() => onSetDashboardPriority(goal)}
           type="button"
         >
           {isDashboardPriority ? (
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="sakuin-icon-bounce h-4 w-4" />
           ) : (
-            <Star className="h-4 w-4" />
+            <Star className="sakuin-icon-shake h-4 w-4" />
           )}
           {isDashboardPriority ? "Prioritas Aktif" : "Jadikan Prioritas"}
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
+          className="sakuin-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-3 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
           onClick={() => onAddProgress(goal)}
           type="button"
         >
-          <PlusCircle className="h-4 w-4" />
+          <PlusCircle className="sakuin-icon-bounce h-4 w-4" />
           Tambah Dana
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
+          className="sakuin-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-3 text-xs font-black text-[var(--sakuin-text)] transition hover:bg-[var(--sakuin-primary-soft)]"
           onClick={() => onEdit(goal)}
           type="button"
         >
-          <Edit3 className="h-4 w-4" />
+          <Edit3 className="sakuin-icon-bounce h-4 w-4" />
           Edit
         </button>
 
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="sakuin-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-50 px-3 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isDeleting}
           onClick={() => onDelete(goal)}
           type="button"
@@ -223,7 +223,7 @@ function GoalCard({
           {isDeleting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="sakuin-icon-shake h-4 w-4" />
           )}
           Hapus
         </button>
@@ -460,7 +460,8 @@ export function GoalsPage() {
         </Button>
       </header>
 
-      <div className="mb-5 rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-5 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-7">
+      <div className="sakuin-enter relative mb-5 overflow-hidden rounded-3xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary)] p-5 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-7">
+        <div aria-hidden="true" className="absolute -right-16 -top-16 h-44 w-44 rounded-full border border-white/15 animate-[sakuinFloat_7s_ease-in-out_infinite]" />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-white/85">
