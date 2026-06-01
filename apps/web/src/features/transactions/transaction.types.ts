@@ -1,4 +1,15 @@
-export type TransactionType = "INCOME" | "EXPENSE";
+import type {
+  CategoryType,
+  TransactionCategory,
+  Transaction,
+  TransactionPagination,
+  TransactionListResponse,
+  CreateTransactionInput,
+  CreateTransactionsBulkInput,
+  UpdateTransactionInput
+} from "@sakuin/shared";
+
+export type TransactionType = CategoryType;
 
 export type TransactionSort =
   | "date_desc"
@@ -12,50 +23,12 @@ export type TransactionCategoryOption = {
   type: TransactionType;
 };
 
-export type TransactionCategory = {
-  id: string;
-  name: string;
-  type: TransactionType;
-  icon: string | null;
-  color: string | null;
-  isDefault?: boolean;
+export type {
+  TransactionCategory,
+  Transaction,
+  TransactionPagination,
+  TransactionListResponse,
+  CreateTransactionInput,
+  CreateTransactionsBulkInput,
+  UpdateTransactionInput
 };
-
-export type Transaction = {
-  id: string;
-  type: TransactionType;
-  amount: string;
-  note: string | null;
-  date: string;
-  categoryId: string;
-  category: TransactionCategory;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type TransactionPagination = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
-
-export type TransactionListResponse = {
-  items: Transaction[];
-  pagination?: TransactionPagination;
-  meta?: TransactionPagination;
-};
-
-export type CreateTransactionInput = {
-  type: TransactionType;
-  amount: string;
-  categoryId: string;
-  date: string;
-  note?: string;
-};
-
-export type CreateTransactionsBulkInput = {
-  transactions: CreateTransactionInput[];
-};
-
-export type UpdateTransactionInput = Partial<CreateTransactionInput>;
