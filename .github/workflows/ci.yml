@@ -85,6 +85,9 @@ jobs:
       - name: Sync CI database schema
         run: pnpm --filter @sakuin/api exec prisma db push --skip-generate
 
+      - name: Shared typecheck
+        run: pnpm --filter @sakuin/shared typecheck
+
       - name: Frontend test
         run: pnpm --filter @sakuin/web test
 

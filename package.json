@@ -11,7 +11,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "safety:production": "node scripts/production-safety-check.mjs"
+    "safety:production": "node scripts/production-safety-check.mjs",
+    "smoke:production": "node scripts/production-smoke-check.mjs"
   },
   "pnpm": {
     "overrides": {

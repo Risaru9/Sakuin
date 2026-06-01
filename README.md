@@ -4,6 +4,8 @@
 
 Sakuin dibuat untuk pengguna yang ingin mengelola keuangan pribadi dengan cara yang lebih sederhana, cepat, dan nyaman dibanding mencatat manual di spreadsheet, notes, atau chat pribadi.
 
+Dokumentasi arsitektur dan aturan refactor ada di [docs/architecture.md](docs/architecture.md).
+
 ---
 
 ## Lihat Produk

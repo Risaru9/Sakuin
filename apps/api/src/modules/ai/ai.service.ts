@@ -1,5 +1,4 @@
 import { env } from "../../config/env.js";
-import { prisma } from "../../db/prisma.js";
 import {
   createGeminiTextProvider,
   type AiTextProvider
@@ -10,6 +9,13 @@ import {
   buildConversationHistoryText,
   classifyAiChatMessage
 } from "./ai-chat-classifier.js";
+import {
+  canPersistAiChat,
+  getPersistedChatContext,
+  saveAssistantResponse,
+  saveUserChatMessage,
+  selectChatContext
+} from "./ai-chat-persistence.js";
 import {
   analyzeFinancialScenario,
   buildFinancialScenarioPromptContext,
@@ -38,6 +44,10 @@ import type {
 } from "./ai.types.js";
 
 export { generateWeeklyProactiveInsight } from "./ai-weekly-insight.js";
+export {
+  clearAiChatHistory,
+  getAiChatHistory
+} from "./ai-chat-persistence.js";
 
 const OUT_OF_SCOPE_REPLY =
   "Maaf, Asisten Sakuin hanya bisa membantu pertanyaan seputar keuangan pribadi di Sakuin, seperti transaksi, pemasukan, pengeluaran, goals, budget, dan ringkasan keuangan.";
@@ -2489,34 +2499,6 @@ async function enhanceFinancialResponseWithAi(input: {
   }
 }
 
-async function saveAssistantResponse(
-  userId: string,
-  response: AiChatResponse,
-  shouldSaveToDb: boolean
-): Promise<AiChatResponse & { id?: string }> {
-  if (!shouldSaveToDb) {
-    return response;
-  }
-
-  const assistantMsg = await prisma.chatMessage.create({
-    data: {
-      userId,
-      role: "assistant",
-      content: response.reply,
-      intent: response.intent,
-      cards: response.cards ? (response.cards as any) : undefined,
-      suggestions: response.suggestions ? (response.suggestions as any) : undefined,
-      transactionDraft: response.transactionDraft ? (response.transactionDraft as any) : undefined,
-      transactionDrafts: response.transactionDrafts ? (response.transactionDrafts as any) : undefined
-    }
-  });
-
-  return {
-    ...response,
-    id: assistantMsg.id
-  };
-}
-
 export async function getAiChatResponse(
   input: AiChatServiceInput,
   options: AiChatServiceOptions = {}
@@ -2527,59 +2509,16 @@ export async function getAiChatResponse(
     throw new Error("Pesan tidak boleh kosong");
   }
 
-  // Cek apakah user ada di database
-  const userRecord = await prisma.user.findUnique({
-    where: { id: input.userId },
-    select: { id: true }
+  const shouldSaveToDb = await canPersistAiChat(input.userId);
+  const dbHistory = shouldSaveToDb
+    ? await getPersistedChatContext(input.userId)
+    : [];
+  const contextHistory = selectChatContext({
+    dbHistory,
+    requestHistory: input.history
   });
 
-  const shouldSaveToDb = !!userRecord;
-
-  let contextHistory: AiChatHistoryMessage[] = [];
-
-  if (shouldSaveToDb) {
-    // 1. Ambil riwayat chat SEBELUM menyimpan pesan user saat ini
-    // agar konteks tidak terkontaminasi oleh pesan yang sedang diproses
-    const dbHistory = await prisma.chatMessage.findMany({
-      where: { userId: input.userId },
-      orderBy: { createdAt: "desc" },
-      take: 12
-    });
-
-    const sortedDbHistory = dbHistory.reverse();
-
-    contextHistory = sortedDbHistory
-      .filter((msg) => msg.role === "user" || msg.role === "assistant")
-      .map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content
-      }));
-  }
-
-  // Jika riwayat dari DB kosong, gunakan input.history (jika dikirim oleh caller)
-  // Ini memastikan test dan integrasi frontend yang mengirim history eksplisit tetap bekerja
-  if (contextHistory.length === 0 && input.history && input.history.length > 0) {
-    contextHistory = input.history;
-  } else if (contextHistory.length > 0 && input.history && input.history.length > 0) {
-    // Jika DB history ada tapi lebih pendek dari input.history, coba merge
-    // Prioritaskan input.history jika lebih banyak konteks (misal: dari frontend dengan full chat)
-    const dbHistoryLength = contextHistory.length;
-    const inputHistoryLength = input.history.length;
-    if (inputHistoryLength > dbHistoryLength) {
-      contextHistory = input.history;
-    }
-  }
-
-  if (shouldSaveToDb) {
-    // 2. Simpan pesan user ke database setelah ambil history
-    await prisma.chatMessage.create({
-      data: {
-        userId: input.userId,
-        role: "user",
-        content: normalizedMessage
-      }
-    });
-  }
+  await saveUserChatMessage(input.userId, normalizedMessage, shouldSaveToDb);
 
   const classification = classifyAiChatMessage(
     normalizedMessage,
@@ -2634,29 +2573,4 @@ export async function getAiChatResponse(
   return saveAssistantResponse(input.userId, finalResponse, shouldSaveToDb);
 }
 
-export async function getAiChatHistory(userId: string) {
-  const messages = await prisma.chatMessage.findMany({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-    take: 80
-  });
-
-  return messages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as "user" | "assistant",
-    content: msg.content,
-    intent: msg.intent ?? undefined,
-    cards: msg.cards ? (msg.cards as any) : undefined,
-    suggestions: msg.suggestions ? (msg.suggestions as any) : undefined,
-    transactionDraft: msg.transactionDraft ? (msg.transactionDraft as any) : undefined,
-    transactionDrafts: msg.transactionDrafts ? (msg.transactionDrafts as any) : undefined,
-    createdAt: msg.createdAt.toISOString()
-  }));
-}
-
-export async function clearAiChatHistory(userId: string): Promise<void> {
-  await prisma.chatMessage.deleteMany({
-    where: { userId }
-  });
-}
 

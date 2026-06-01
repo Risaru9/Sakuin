@@ -31,6 +31,9 @@ jobs:
       - name: Production safety check
         run: pnpm safety:production
 
+      - name: Typecheck Shared Contracts
+        run: pnpm --filter @sakuin/shared typecheck
+
       - name: Typecheck Web App
         run: pnpm --filter @sakuin/web typecheck
 
