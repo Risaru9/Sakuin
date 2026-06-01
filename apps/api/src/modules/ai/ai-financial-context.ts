@@ -10,6 +10,10 @@ import {
   getHabitTransactionRange,
   type HabitSummaryResult
 } from "../finance/habit-engine.js";
+import {
+  getCachedFinancialContext,
+  setCachedFinancialContext
+} from "./ai-financial-context-cache.js";
 
 type TransactionWithCategory = Awaited<
   ReturnType<typeof getTransactionsForPeriod>
@@ -262,6 +266,12 @@ export async function getAiFinancialContext(
   userId: string,
   referenceDate = new Date()
 ): Promise<AiFinancialContext> {
+  const cached = getCachedFinancialContext(userId);
+  if (cached) {
+    console.log(`[FinancialContextCache] Cache hit for user: ${userId}`);
+    return cached;
+  }
+
   const user = await prisma.user.findUnique({
     where: {
       id: userId
@@ -331,7 +341,7 @@ export async function getAiFinancialContext(
     goals
   };
 
-  return {
+  const context: AiFinancialContext = {
     ...baseContext,
     safeToSpend: calculateSafeToSpend(baseContext, {
       referenceDate
@@ -341,4 +351,9 @@ export async function getAiFinancialContext(
       referenceDate
     })
   };
+
+  setCachedFinancialContext(userId, context);
+  console.log(`[FinancialContextCache] Cache miss. Saved context for user: ${userId}`);
+
+  return context;
 }

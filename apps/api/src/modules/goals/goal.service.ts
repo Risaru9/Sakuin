@@ -6,6 +6,7 @@ import type {
   GoalResponse,
   UpdateGoalInput
 } from "./goal.types.js";
+import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
 
 type GoalEntity = Prisma.GoalGetPayload<object> & {
   history?: Prisma.GoalHistoryGetPayload<object>[];
@@ -125,6 +126,7 @@ export async function createGoal(
     });
   }
 
+  invalidateCachedFinancialContext(userId);
   return mapGoalToResponse(goal);
 }
 
@@ -215,6 +217,7 @@ export async function updateGoal(
     });
   }
 
+  invalidateCachedFinancialContext(userId);
   return mapGoalToResponse(goal);
 }
 
@@ -230,5 +233,6 @@ export async function deleteGoal(
     }
   });
 
+  invalidateCachedFinancialContext(userId);
   return mapGoalToResponse(deletedGoal);
 }

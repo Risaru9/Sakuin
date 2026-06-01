@@ -9,6 +9,7 @@ import type {
   TransactionResponse,
   UpdateTransactionInput
 } from "./transaction.types.js";
+import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
 
 type TransactionWithCategory = Prisma.TransactionGetPayload<{
   include: {
@@ -199,6 +200,7 @@ export async function createTransaction(
     include: transactionCategoryInclude
   });
 
+  invalidateCachedFinancialContext(userId);
   return toTransactionResponse(transaction);
 }
 
@@ -224,6 +226,7 @@ export async function createTransactionsBulk(
     )
   );
 
+  invalidateCachedFinancialContext(userId);
   return transactions.map(toTransactionResponse);
 }
 
@@ -363,6 +366,7 @@ export async function updateTransaction(
     include: transactionCategoryInclude
   });
 
+  invalidateCachedFinancialContext(userId);
   return toTransactionResponse(transaction);
 }
 
@@ -382,5 +386,6 @@ export async function deleteTransaction(
     include: transactionCategoryInclude
   });
 
+  invalidateCachedFinancialContext(userId);
   return toTransactionResponse(deletedTransaction);
 }

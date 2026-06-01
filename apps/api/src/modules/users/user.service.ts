@@ -5,6 +5,7 @@ import type {
   UpdateUserProfileInput,
   UserProfileResponse
 } from "./user.types.js";
+import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
 
 type UserProfileEntity = {
   id: string;
@@ -87,5 +88,6 @@ export async function updateUserProfile(
     }
   });
 
+  invalidateCachedFinancialContext(userId);
   return mapUserProfileToResponse(user);
 }
