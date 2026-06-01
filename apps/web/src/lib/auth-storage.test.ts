@@ -73,10 +73,12 @@ describe("auth-storage", () => {
 
     syncTokenToServiceWorker("token-abc");
 
+    const expectedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
+
     expect(postMessage).toHaveBeenCalledWith({
       type: "SET_TOKEN",
       token: "token-abc",
-      apiBaseUrl: "http://127.0.0.1:5000"
+      apiBaseUrl: expectedApiBaseUrl
     });
   });
 
@@ -89,9 +91,11 @@ describe("auth-storage", () => {
 
     syncTokenToServiceWorker("token-widget");
 
+    const expectedApiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
+
     expect(saveConfig).toHaveBeenCalledWith(
       "token-widget",
-      "http://127.0.0.1:5000"
+      expectedApiBaseUrl
     );
   });
 });
