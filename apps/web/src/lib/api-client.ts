@@ -15,7 +15,7 @@ export class ApiClientError extends Error {
   }
 }
 
-function buildUrl(path: string) {
+export function buildUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
   if (!API_BASE_URL) {
@@ -25,13 +25,7 @@ function buildUrl(path: string) {
     );
   }
 
-  // Arahkan ke /api/v1/... jika path diawali /api/
-  let finalPath = normalizedPath;
-  if (normalizedPath.startsWith("/api/")) {
-    finalPath = "/api/v1/" + normalizedPath.slice(5);
-  }
-
-  return `${API_BASE_URL}${finalPath}`;
+  return `${API_BASE_URL}${normalizedPath}`;
 }
 
 function handleUnauthorized() {

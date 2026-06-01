@@ -40,6 +40,27 @@ async function fetchJson(url) {
   }
 }
 
+async function fetchJsonWithExpectedStatus(url, expectedStatus) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json"
+    }
+  });
+  const body = await response.text();
+
+  if (response.status !== expectedStatus) {
+    throw new Error(
+      `${url} returned ${response.status}, expected ${expectedStatus}: ${body.slice(0, 200)}`
+    );
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    throw new Error(`${url} did not return valid JSON`);
+  }
+}
+
 function assertSakuinHtml(html) {
   if (!html.includes("<html") || !html.includes("Sakuin")) {
     throw new Error("Frontend HTML does not look like the Sakuin app shell.");
@@ -87,6 +108,18 @@ const checks = [
       assertSuccessPayload("app version", payload);
       if (!payload.data.latestVersionName || !payload.data.apkDownloadUrl) {
         throw new Error("App version metadata is incomplete.");
+      }
+    }
+  },
+  {
+    name: "protected summary route",
+    run: async () => {
+      const payload = await fetchJsonWithExpectedStatus(
+        `${apiUrl}/api/summary`,
+        401
+      );
+      if (payload.message !== "Authorization header wajib diisi") {
+        throw new Error("Protected summary route did not reach auth middleware.");
       }
     }
   }
