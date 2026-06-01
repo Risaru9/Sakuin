@@ -56,6 +56,9 @@ const apiVersionConfig = readFileSync(
   join(rootDir, "apps/api/src/config/app-version.ts"),
   "utf8"
 );
+const apiVercelConfig = JSON.parse(
+  readFileSync(join(rootDir, "apps/api/vercel.json"), "utf8")
+);
 
 if (!apiVersionConfig.includes(`latestVersionCode: ${webVersion.latestVersionCode}`)) {
   failures.push(
@@ -67,6 +70,21 @@ if (!apiVersionConfig.includes(`latestVersionName: "${webVersion.latestVersionNa
   failures.push(
     "apps/api/src/config/app-version.ts: latestVersionName must match apps/web/public/latest-version.json."
   );
+}
+
+const expectedCronSchedules = new Map([
+  ["/api/reminders/run", "0 1 * * *"],
+  ["/api/ai/proactive-insight", "0 2 * * 0"]
+]);
+
+for (const cron of apiVercelConfig.crons ?? []) {
+  const expectedSchedule = expectedCronSchedules.get(cron.path);
+
+  if (expectedSchedule && cron.schedule !== expectedSchedule) {
+    failures.push(
+      `apps/api/vercel.json: ${cron.path} must keep the Hobby-compatible schedule ${expectedSchedule}.`
+    );
+  }
 }
 
 if (failures.length > 0) {
