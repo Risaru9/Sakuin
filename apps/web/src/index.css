@@ -282,20 +282,23 @@ a {
   }
 }
 
-@keyframes sakuinAssistantLaunch {
+@keyframes sakuinAssistantZoom {
   0% {
-    opacity: 0.85;
+    border-radius: 9999px;
+    opacity: 0.95;
     transform: scale(1);
   }
 
-  62% {
-    opacity: 0.92;
-    transform: scale(18);
+  88% {
+    border-radius: 1rem;
+    opacity: 1;
+    transform: scale(30);
   }
 
   100% {
-    opacity: 0;
-    transform: scale(24);
+    border-radius: 0;
+    opacity: 1;
+    transform: scale(34);
   }
 }
 
@@ -310,6 +313,67 @@ a {
 
   100% {
     transform: scale(1.08);
+  }
+}
+
+@keyframes sakuinAssistantMascotScreen {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes sakuinAssistantMascotStage {
+  0% {
+    opacity: 0;
+    transform: translateY(1.8rem) scale(0.84);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sakuinAssistantMascotFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-0.6rem);
+  }
+}
+
+@keyframes sakuinAssistantMascotWave {
+  0%,
+  100% {
+    transform: rotate(14deg);
+  }
+
+  25%,
+  75% {
+    transform: rotate(50deg);
+  }
+
+  50% {
+    transform: rotate(24deg);
+  }
+}
+
+@keyframes sakuinAssistantHello {
+  0% {
+    opacity: 0;
+    transform: translateY(0.9rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -505,14 +569,38 @@ a {
   animation: sakuinFabActionPop 560ms cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
 }
 
-.sakuin-assistant-launch {
-  animation: sakuinAssistantLaunch 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.sakuin-assistant-zoom-layer {
+  animation: sakuinAssistantZoom 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
   box-shadow: 0 0 70px rgb(59 130 246 / 0.38);
   transform-origin: center;
 }
 
 .sakuin-assistant-button-pop {
   animation: sakuinAssistantButtonPop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sakuin-assistant-mascot-screen {
+  animation: sakuinAssistantMascotScreen 250ms ease-out both;
+}
+
+.sakuin-assistant-mascot-stage {
+  animation: sakuinAssistantMascotStage 560ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sakuin-assistant-mascot {
+  animation: sakuinAssistantMascotFloat 1.2s ease-in-out infinite;
+}
+
+.sakuin-assistant-mascot-arm {
+  animation: sakuinAssistantMascotWave 850ms ease-in-out infinite;
+}
+
+.sakuin-assistant-hello {
+  animation: sakuinAssistantHello 420ms ease-out 250ms both;
+}
+
+.sakuin-assistant-hello-subtitle {
+  animation: sakuinAssistantHello 420ms ease-out 380ms both;
 }
 
 .sakuin-tab-panel {
@@ -631,8 +719,14 @@ a {
   .sakuin-ripple::after,
   .sakuin-fab-backdrop,
   .sakuin-fab-action-pop,
-  .sakuin-assistant-launch,
+  .sakuin-assistant-zoom-layer,
   .sakuin-assistant-button-pop,
+  .sakuin-assistant-mascot-screen,
+  .sakuin-assistant-mascot-stage,
+  .sakuin-assistant-mascot,
+  .sakuin-assistant-mascot-arm,
+  .sakuin-assistant-hello,
+  .sakuin-assistant-hello-subtitle,
   .sakuin-boot-screen,
   .sakuin-boot-mark,
   .sakuin-skeleton,

@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useEffect,
   useId,
+  useRef,
   useState
 } from "react";
 import { createPortal } from "react-dom";
@@ -76,7 +77,29 @@ function PortalLayer({ children }: { children: ReactNode }) {
 export function FloatingAssistantButton() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isLaunchingAssistant, setIsLaunchingAssistant] = useState(false);
+  const [assistantLaunchPhase, setAssistantLaunchPhase] = useState<
+    "idle" | "zoom" | "mascot"
+  >("idle");
+  const launchTimersRef = useRef<number[]>([]);
+  const isLaunchingAssistant = assistantLaunchPhase !== "idle";
+
+  useLockBodyScroll(isLaunchingAssistant);
+
+  useEffect(() => {
+    return () => {
+      launchTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAssistantRoute(location.pathname)) {
+      return;
+    }
+
+    launchTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    launchTimersRef.current = [];
+    setAssistantLaunchPhase("idle");
+  }, [location.pathname]);
 
   if (isAssistantRoute(location.pathname)) {
     return null;
@@ -87,20 +110,53 @@ export function FloatingAssistantButton() {
       return;
     }
 
-    setIsLaunchingAssistant(true);
-    window.setTimeout(() => {
-      navigate("/asisten");
-    }, 420);
+    setAssistantLaunchPhase("zoom");
+    launchTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    launchTimersRef.current = [
+      window.setTimeout(() => {
+        setAssistantLaunchPhase("mascot");
+      }, 650),
+      window.setTimeout(() => {
+        navigate("/asisten");
+      }, 2300)
+    ];
   }
 
   return (
     <>
-      {isLaunchingAssistant ? (
+      {assistantLaunchPhase === "zoom" ? (
         <PortalLayer>
           <div
             aria-hidden="true"
-            className="sakuin-assistant-launch fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-[360] h-12 w-12 rounded-full bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] lg:bottom-6 lg:right-6"
+            className="sakuin-assistant-zoom-layer fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-[360] h-14 w-14 rounded-full bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] lg:bottom-6 lg:right-6"
           />
+        </PortalLayer>
+      ) : null}
+
+      {assistantLaunchPhase === "mascot" ? (
+        <PortalLayer>
+          <div
+            aria-hidden="true"
+            className="sakuin-assistant-mascot-screen fixed inset-0 z-[370] flex items-center justify-center bg-gradient-to-br from-sky-500 via-blue-600 to-[var(--sakuin-primary)] px-6 text-white"
+          >
+            <div className="sakuin-assistant-mascot-stage text-center">
+              <div className="sakuin-assistant-mascot relative mx-auto h-40 w-40 rounded-[2.25rem] bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)] sm:h-44 sm:w-44">
+                <span className="absolute -top-8 left-1/2 h-5 w-1.5 -translate-x-1/2 rounded-full bg-white" />
+                <span className="absolute -top-5 left-1/2 h-8 w-8 -translate-x-1/2 rounded-full bg-white shadow-sm" />
+                <span className="absolute left-8 top-14 h-5 w-5 rounded-full bg-slate-900 sm:left-9" />
+                <span className="absolute right-8 top-14 h-5 w-5 rounded-full bg-slate-900 sm:right-9" />
+                <span className="absolute left-1/2 top-24 h-8 w-16 -translate-x-1/2 rounded-b-full border-b-8 border-slate-900" />
+                <span className="sakuin-assistant-mascot-arm absolute -right-8 top-14 h-16 w-9 origin-bottom rounded-full bg-white shadow-sm" />
+              </div>
+
+              <p className="sakuin-assistant-hello mt-8 text-5xl font-black tracking-normal text-white">
+                HAI!
+              </p>
+              <p className="sakuin-assistant-hello-subtitle mt-3 text-base font-semibold text-white/85">
+                Aku siap bantu cek keuanganmu hari ini.
+              </p>
+            </div>
+          </div>
         </PortalLayer>
       ) : null}
 
