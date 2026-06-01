@@ -118,12 +118,12 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         String apiUrl = prefs.getString("api_url", null);
 
         if (token == null || apiUrl == null) {
+            applyStatusTone(views, "WASPADA");
             views.setTextViewText(R.id.widget_balance, "Rp -");
             views.setTextViewText(R.id.widget_income, "Silakan login");
             views.setTextViewText(R.id.widget_expense, "di aplikasi");
             views.setTextViewText(R.id.widget_status, "Offline");
             views.setTextViewText(R.id.widget_ratio, "Belum sinkron");
-            views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
@@ -154,9 +154,21 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 JSONObject root = new JSONObject(response.toString());
                 JSONObject data = root.has("data") ? root.getJSONObject("data") : root;
 
-                double balance = data.optDouble("balance", 0.0);
-                double income = data.optDouble("incomeThisMonth", 0.0);
-                double expense = data.optDouble("expenseThisMonth", 0.0);
+                double balance = parseAmount(data, "balance");
+                double totalIncome = parseAmount(data, "totalIncome");
+                double totalExpense = parseAmount(data, "totalExpense");
+                double income = parseAmount(data, "incomeThisMonth");
+                double expense = parseAmount(data, "expenseThisMonth");
+                int transactionCount = data.optInt("transactionCount", 0);
+                boolean usingTotalFallback = income == 0.0
+                        && expense == 0.0
+                        && transactionCount > 0
+                        && (totalIncome > 0.0 || totalExpense > 0.0);
+
+                if (usingTotalFallback) {
+                    income = totalIncome;
+                    expense = totalExpense;
+                }
 
                 JSONObject safeToSpend = data.optJSONObject("safeToSpend");
                 String status = classifyFinancialStatus(income, expense, safeToSpend);
@@ -171,33 +183,38 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_balance, formattedBalance);
                 views.setTextViewText(R.id.widget_income, formattedIncome);
                 views.setTextViewText(R.id.widget_expense, formattedExpense);
-                views.setTextViewText(R.id.widget_ratio, income > 0 ? "Pengeluaran " + ratioPercent + "% dari pemasukan" : "Mulai catat pemasukan bulan ini");
+                views.setTextViewText(
+                        R.id.widget_ratio,
+                        income > 0
+                                ? (usingTotalFallback
+                                        ? "Total tercatat: keluar " + ratioPercent + "% dari pemasukan"
+                                        : "Bulan ini: keluar " + ratioPercent + "% dari pemasukan")
+                                : "Mulai catat pemasukan bulan ini");
 
                 if ("HEMAT".equals(status)) {
                     views.setTextViewText(R.id.widget_status, "Hemat");
-                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#10B981"));
-                    views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_safe);
-                } else if ("STABIL".equals(status)) {
-                    views.setTextViewText(R.id.widget_status, "Stabil");
-                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#F59E0B"));
-                    views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
+                    applyStatusTone(views, "HEMAT");
+                } else if ("WASPADA".equals(status)) {
+                    views.setTextViewText(R.id.widget_status, "Waspada");
+                    applyStatusTone(views, "WASPADA");
                 } else {
                     views.setTextViewText(R.id.widget_status, "Boros");
-                    views.setTextColor(R.id.widget_status, android.graphics.Color.parseColor("#EF4444"));
-                    views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
+                    applyStatusTone(views, "BOROS");
                 }
             } else if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                applyStatusTone(views, "WASPADA");
                 views.setTextViewText(R.id.widget_balance, "Rp -");
                 views.setTextViewText(R.id.widget_income, "Sesi habis");
                 views.setTextViewText(R.id.widget_expense, "Login ulang");
                 views.setTextViewText(R.id.widget_status, "Offline");
                 views.setTextViewText(R.id.widget_ratio, "Butuh login");
-                views.setImageViewResource(R.id.widget_mascot, R.drawable.sakuin_widget_mascot_watch);
             } else {
+                applyStatusTone(views, "WASPADA");
                 views.setTextViewText(R.id.widget_status, "Error " + responseCode);
             }
         } catch (Exception e) {
             e.printStackTrace();
+            applyStatusTone(views, "WASPADA");
             views.setTextViewText(R.id.widget_status, "Cek koneksi");
             views.setTextViewText(R.id.widget_balance, "Rp -");
             views.setTextViewText(R.id.widget_income, "Rp -");
@@ -230,34 +247,80 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
     private static void applyResponsiveLayout(RemoteViews views, WidgetSize widgetSize) {
         boolean showAmounts = widgetSize != WidgetSize.SMALL;
-        boolean showQuickAction = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showHeaderActions = widgetSize != WidgetSize.SMALL;
+        boolean showStatus = widgetSize != WidgetSize.SMALL;
         boolean showRatio = widgetSize == WidgetSize.EXTRA_LARGE;
 
         views.setViewVisibility(R.id.widget_amount_grid, showAmounts ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_quick_add_button, showQuickAction ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_header_actions, showHeaderActions ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_status_row, showStatus ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_ratio, showRatio ? View.VISIBLE : View.GONE);
     }
 
     private static String classifyFinancialStatus(double income, double expense, JSONObject safeToSpend) {
+        String safeStatus = safeToSpend != null ? safeToSpend.optString("status", "") : "";
+        if ("HOLD".equals(safeStatus)) {
+            return "BOROS";
+        }
+        if ("WATCH".equals(safeStatus)) {
+            return "WASPADA";
+        }
+        if ("SAFE".equals(safeStatus)) {
+            return "HEMAT";
+        }
+
         if (income > 0) {
             double ratio = expense / income;
             if (ratio < 0.6) {
                 return "HEMAT";
             }
             if (ratio < 0.9) {
-                return "STABIL";
+                return "WASPADA";
             }
             return "BOROS";
         }
 
-        String status = safeToSpend != null ? safeToSpend.optString("status", "SAFE") : "SAFE";
-        if ("SAFE".equals(status)) {
-            return "HEMAT";
+        return "HEMAT";
+    }
+
+    private static double parseAmount(JSONObject data, String key) {
+        Object value = data.opt(key);
+        if (value == null || JSONObject.NULL.equals(value)) {
+            return 0.0;
         }
-        if ("WATCH".equals(status)) {
-            return "STABIL";
+
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         }
-        return "BOROS";
+
+        try {
+            String rawValue = String.valueOf(value).trim();
+            if (rawValue.isEmpty()) {
+                return 0.0;
+            }
+
+            return Double.parseDouble(rawValue);
+        } catch (NumberFormatException ignored) {
+            return 0.0;
+        }
+    }
+
+    private static void applyStatusTone(RemoteViews views, String status) {
+        int backgroundResource;
+
+        if ("BOROS".equals(status)) {
+            backgroundResource = R.drawable.sakuin_widget_background_risk;
+        } else if ("WASPADA".equals(status)) {
+            backgroundResource = R.drawable.sakuin_widget_background_watch;
+        } else {
+            backgroundResource = R.drawable.sakuin_widget_background_safe;
+        }
+
+        views.setInt(R.id.widget_root, "setBackgroundResource", backgroundResource);
+        views.setTextColor(R.id.widget_status, android.graphics.Color.WHITE);
+        views.setTextColor(R.id.widget_ratio, android.graphics.Color.parseColor("#E0F2FE"));
+        views.setTextColor(R.id.widget_balance_label, android.graphics.Color.parseColor("#DBEAFE"));
+        views.setTextColor(R.id.widget_balance, android.graphics.Color.WHITE);
     }
 
     private enum WidgetSize {

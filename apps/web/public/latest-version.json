@@ -1,14 +1,14 @@
 {
-  "latestVersionCode": 9,
-  "latestVersionName": "1.6.2",
+  "latestVersionCode": 10,
+  "latestVersionName": "1.6.3",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Pengingat transaksi dibuat otomatis dengan aturan aplikasi.",
-    "Tampilan izin notifikasi diperjelas dan tombol tes notifikasi dibuat lebih jelas.",
-    "Notifikasi lokal Android dijadwalkan sebagai notifikasi sistem HP.",
-    "Nama aplikasi Android diperbarui menjadi Sakuin v1.6.2."
+    "Widget saldo dibuat lebih fleksibel untuk ukuran kecil.",
+    "Widget memakai fallback total transaksi saat bulan baru belum punya transaksi.",
+    "Tampilan widget diperbarui dengan warna status biru, orange, dan merah.",
+    "Tombol reload dan tambah transaksi widget diganti menjadi ikon."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-06-01T00:50:00.000Z"
+  "publishedAt": "2026-06-01T01:35:00.000Z"
 }

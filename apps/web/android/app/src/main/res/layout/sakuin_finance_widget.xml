@@ -3,7 +3,7 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/sakuin_widget_background"
+    android:background="@drawable/sakuin_widget_background_safe"
     android:orientation="vertical"
     android:padding="12dp">
 
@@ -15,32 +15,17 @@
         android:orientation="horizontal">
 
         <LinearLayout
-            android:id="@+id/widget_mascot_container"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/widget_mascot"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="Status keuangan Sakuin"
-                android:src="@drawable/sakuin_widget_mascot_safe" />
-        </LinearLayout>
-
-        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/widget_balance_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Saldo aktif"
-                android:textColor="#64748B"
+                android:textColor="#DBEAFE"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -51,22 +36,37 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Rp -"
-                android:textColor="#0F172A"
-                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:textSize="19sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/widget_refresh_button"
-            android:layout_width="56dp"
-            android:layout_height="32dp"
-            android:background="#F1F5F9"
-            android:contentDescription="Reload saldo widget"
+        <LinearLayout
+            android:id="@+id/widget_header_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
             android:gravity="center"
-            android:text="Reload"
-            android:textColor="#64748B"
-            android:textSize="10sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/widget_refresh_button"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/sakuin_widget_icon_button"
+                android:contentDescription="Reload saldo widget"
+                android:padding="8dp"
+                android:src="@drawable/ic_widget_refresh" />
+
+            <ImageButton
+                android:id="@+id/widget_quick_add_button"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/sakuin_widget_icon_button"
+                android:contentDescription="Tambah transaksi cepat"
+                android:padding="8dp"
+                android:src="@drawable/ic_widget_plus" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -81,7 +81,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:background="#ECFDF5"
+            android:background="@drawable/sakuin_widget_metric_card"
             android:orientation="vertical"
             android:padding="8dp">
 
@@ -89,7 +89,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Masuk"
-                android:textColor="#047857"
+                android:textColor="#64748B"
                 android:textSize="9sp"
                 android:textStyle="bold" />
 
@@ -100,7 +100,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Rp -"
-                android:textColor="#059669"
+                android:textColor="#0F172A"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -110,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:background="#FFF1F2"
+            android:background="@drawable/sakuin_widget_metric_card"
             android:orientation="vertical"
             android:padding="8dp">
 
@@ -118,7 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Keluar"
-                android:textColor="#BE123C"
+                android:textColor="#64748B"
                 android:textSize="9sp"
                 android:textStyle="bold" />
 
@@ -129,7 +129,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Rp -"
-                android:textColor="#E11D48"
+                android:textColor="#0F172A"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -147,13 +147,13 @@
             android:id="@+id/widget_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#ECFDF5"
+            android:background="@drawable/sakuin_widget_status_chip"
             android:paddingStart="8dp"
             android:paddingTop="3dp"
             android:paddingEnd="8dp"
             android:paddingBottom="3dp"
             android:text="Hemat"
-            android:textColor="#10B981"
+            android:textColor="#FFFFFF"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -166,20 +166,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Pengeluaran 0% dari pemasukan"
-            android:textColor="#64748B"
+            android:textColor="#DBEAFE"
             android:textSize="10sp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_quick_add_button"
-        android:layout_width="match_parent"
-        android:layout_height="34dp"
-        android:layout_marginTop="8dp"
-        android:background="#2563EB"
-        android:contentDescription="Tambah transaksi cepat"
-        android:gravity="center"
-        android:text="+ Catat transaksi"
-        android:textColor="#FFFFFF"
-        android:textSize="11sp"
-        android:textStyle="bold" />
 </LinearLayout>

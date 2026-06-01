@@ -16,9 +16,9 @@ import {
   MessageSquare,
   PiggyBank,
   Plus,
+  RefreshCw,
   Settings,
   Smartphone,
-  WalletCards,
   X
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
@@ -1329,39 +1329,47 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
           <p className="mb-3 text-xs font-black uppercase text-zinc-500">
             Preview data dashboard
           </p>
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <WalletCards className="h-5 w-5" />
-              </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-zinc-500">Saldo aktif</p>
-                <p className="truncate text-base font-black text-[var(--sakuin-text)]">
+                <p className="text-[10px] font-black text-blue-100">Saldo aktif</p>
+                <p className="truncate text-lg font-black">
                   Rp 2.450.000
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
-                Hemat
-              </span>
+              <button
+                aria-label="Muat ulang widget"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20"
+                type="button"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button
+                aria-label="Tambah transaksi dari widget"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20"
+                type="button"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
             </div>
 
             {selectedSize !== "small" && (
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-emerald-50 p-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-700">
+                <div className="rounded-xl bg-white p-2 text-slate-900">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500">
                     <ArrowUpCircle className="h-3 w-3" />
                     Masuk
                   </div>
-                  <p className="mt-1 truncate text-xs font-black text-emerald-700">
+                  <p className="mt-1 truncate text-xs font-black">
                     Rp 3.200.000
                   </p>
                 </div>
-                <div className="rounded-xl bg-rose-50 p-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-rose-700">
+                <div className="rounded-xl bg-white p-2 text-slate-900">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500">
                     <ArrowDownCircle className="h-3 w-3" />
                     Keluar
                   </div>
-                  <p className="mt-1 truncate text-xs font-black text-rose-700">
+                  <p className="mt-1 truncate text-xs font-black">
                     Rp 750.000
                   </p>
                 </div>
@@ -1369,52 +1377,17 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
             )}
 
             {selectedSize === "xl" && (
-              <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold text-zinc-500">
-                Pengeluaran 23% dari pemasukan bulan ini.
+              <p className="mt-2 truncate text-[10px] font-bold text-blue-100">
+                Bulan ini: keluar 23% dari pemasukan
               </p>
             )}
 
-            {(selectedSize === "large" || selectedSize === "xl") && (
-              <button
-                className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-[var(--sakuin-primary)] px-3 text-xs font-black text-white"
-                type="button"
-              >
-                + Catat transaksi
-              </button>
+            {selectedSize !== "small" && (
+              <span className="mt-2 inline-flex rounded-lg bg-white/20 px-2.5 py-1 text-[10px] font-black">
+                Hemat
+              </span>
             )}
           </div>
-        </div>
-
-        {/* Widget preview */}
-        <div className="hidden">
-          <p className="mb-3 text-xs font-black uppercase tracking-wide text-zinc-500">
-            Tampilan Widget
-          </p>
-          <div className="flex gap-3">
-            {/* Widget hemat */}
-            <div className="flex-1 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-3 text-white shadow-lg">
-              <p className="text-[10px] font-black uppercase tracking-wide opacity-80">
-                Sakuin
-              </p>
-              <p className="mt-1 text-xs font-black">Kondisi Keuangan</p>
-              <p className="mt-2 text-xl font-black">😊</p>
-              <p className="mt-1 text-[10px] font-black opacity-90">Hemat</p>
-              <p className="text-[9px] opacity-70">Hari ini sudah tercatat</p>
-            </div>
-            {/* Widget boros */}
-            <div className="flex-1 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-3 text-white shadow-lg">
-              <p className="text-[10px] font-black uppercase tracking-wide opacity-80">
-                Sakuin
-              </p>
-              <p className="mt-1 text-xs font-black">Kondisi Keuangan</p>
-              <p className="mt-2 text-xl font-black">😅</p>
-              <p className="mt-1 text-[10px] font-black opacity-90">Boros</p>
-              <p className="text-[9px] opacity-70">Belum catat hari ini</p>
-            </div>
-          </div>
-          <p className="mt-2 text-center text-[10px] font-semibold text-zinc-400">
-            Ikon berubah otomatis sesuai kondisi keuanganmu
-          </p>
         </div>
 
         {/* Panduan Mengatur Widget untuk Android (dari APK) */}
@@ -1439,7 +1412,7 @@ function WidgetInfoModal({ onClose }: { onClose: () => void }) {
               <div className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--sakuin-primary)] text-[9px] font-black text-white mt-0.5">3</span>
                 <p className="flex-1 text-[11px] font-medium leading-5 text-zinc-600">
-                  <strong>Gunakan aksinya:</strong> Ketuk Reload untuk memperbarui data, area widget untuk buka aplikasi, dan tombol Catat transaksi untuk Catat Cepat.
+                  <strong>Gunakan aksinya:</strong> Ketuk ikon reload untuk memperbarui data, area widget untuk buka aplikasi, dan ikon plus untuk Catat Cepat.
                 </p>
               </div>
             </div>
