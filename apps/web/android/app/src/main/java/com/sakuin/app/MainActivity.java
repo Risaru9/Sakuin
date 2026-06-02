@@ -132,8 +132,6 @@ public class MainActivity extends BridgeActivity {
     private void triggerWidgetUpdate() {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
         triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetProvider.class);
-        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetSmallProvider.class);
-        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetLargeProvider.class);
         triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetExtraProvider.class);
     }
 
@@ -151,14 +149,6 @@ public class MainActivity extends BridgeActivity {
     }
 
     private Class<?> getWidgetProviderClass(String size) {
-        if ("small".equals(size)) {
-            return SakuinFinanceWidgetSmallProvider.class;
-        }
-
-        if ("large".equals(size)) {
-            return SakuinFinanceWidgetLargeProvider.class;
-        }
-
         if ("xl".equals(size) || "extra".equals(size)) {
             return SakuinFinanceWidgetExtraProvider.class;
         }

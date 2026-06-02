@@ -1,14 +1,14 @@
 {
-  "latestVersionCode": 13,
-  "latestVersionName": "1.6.6",
+  "latestVersionCode": 14,
+  "latestVersionName": "1.6.7",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Merapikan layout internal widget agar teks pemasukan dan pengeluaran tidak terpotong.",
-    "Ukuran sedang dibuat lebih padat dan fokus pada saldo serta dua metrik utama.",
-    "Ukuran besar dan ekstra besar mendapat komposisi insight yang lebih jelas.",
-    "Preview aplikasi disesuaikan agar lebih mendekati tampilan widget homescreen."
+    "Pilihan widget disederhanakan menjadi ukuran Sedang dan Ekstra.",
+    "Varian kecil dan besar dihapus dari aplikasi serta galeri widget Android.",
+    "APK native tidak lagi membundel file download sakuin.apk di dalam aset aplikasi.",
+    "Ukuran APK turun drastis agar Sakuin tetap ringan."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-06-02T01:35:00.000Z"
+  "publishedAt": "2026-06-02T02:05:00.000Z"
 }

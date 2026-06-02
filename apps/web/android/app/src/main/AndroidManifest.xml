@@ -57,36 +57,6 @@
         </receiver>
 
         <receiver
-            android:name=".SakuinFinanceWidgetSmallProvider"
-            android:exported="true"
-            android:label="@string/widget_finance_small_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="com.sakuin.app.action.REFRESH" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/sakuin_finance_widget_small_info" />
-        </receiver>
-
-        <receiver
-            android:name=".SakuinFinanceWidgetLargeProvider"
-            android:exported="true"
-            android:label="@string/widget_finance_large_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="com.sakuin.app.action.REFRESH" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/sakuin_finance_widget_large_info" />
-        </receiver>
-
-        <receiver
             android:name=".SakuinFinanceWidgetExtraProvider"
             android:exported="true"
             android:label="@string/widget_finance_extra_name">

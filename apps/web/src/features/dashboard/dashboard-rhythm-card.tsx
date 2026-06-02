@@ -220,7 +220,7 @@ function WidgetPreviewCard({
   selectedSize,
   summary
 }: {
-  selectedSize: "small" | "medium" | "large" | "xl";
+  selectedSize: "medium" | "xl";
   summary: SummaryData | null;
 }) {
   const fallbackIncome = 350000;
@@ -231,10 +231,9 @@ function WidgetPreviewCard({
   const status = getWidgetStatus(income, expense, summary);
   const theme = widgetStatusTheme[status];
   const ratio = income > 0 ? Math.min(Math.round((expense / income) * 100), 999) : 0;
-  const showMetrics = selectedSize !== "small";
-  const showInsight = selectedSize === "large" || selectedSize === "xl";
+  const showMetrics = true;
+  const showInsight = selectedSize === "xl";
   const showRatio = selectedSize === "xl";
-  const showStatusChip = selectedSize === "small";
 
   return (
     <div
@@ -305,10 +304,6 @@ function WidgetPreviewCard({
               </p>
               <p className="mt-1 truncate text-[11px] font-semibold text-white/86">{theme.note}</p>
             </div>
-          ) : showStatusChip ? (
-            <span className={["inline-flex rounded-xl px-3 py-1.5 text-xs font-black", theme.accentClass].join(" ")}>
-              {theme.label}
-            </span>
           ) : null}
         </div>
       </div>
@@ -326,7 +321,7 @@ function WidgetInfoModal({
   summary: SummaryData | null;
 }) {
   useLockBodyScroll(true);
-  const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large" | "xl">("medium");
+  const [selectedSize, setSelectedSize] = useState<"medium" | "xl">("medium");
   const [pinStatus, setPinStatus] = useState<"idle" | "requested" | "unsupported" | "failed">("idle");
 
   useEffect(() => {
@@ -384,9 +379,7 @@ function WidgetInfoModal({
   }
 
   const sizeOptions = [
-    { id: "small" as const, label: "Kecil", title: "Saldo + status", details: "Ringkas untuk ruang sempit." },
     { id: "medium" as const, label: "Sedang", title: "Saldo, masuk, keluar", details: "Pilihan paling seimbang." },
-    { id: "large" as const, label: "Besar", title: "Tambah insight", details: "Ada pesan hemat/stabil/boros." },
     { id: "xl" as const, label: "Ekstra", title: "Dashboard mini", details: "Termasuk rasio pengeluaran." }
   ];
 
