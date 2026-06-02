@@ -15,6 +15,93 @@ import {
   syncGmailTransactions
 } from "./email-import.service.js";
 
+function buildGmailCallbackHtml({
+  status,
+  message
+}: {
+  status: "connected" | "error";
+  message?: string;
+}) {
+  const appUrl = new URL("com.sakuin.app://email-import");
+  appUrl.searchParams.set("status", status);
+
+  const webUrl = new URL("/dashboard", env.FRONTEND_URL);
+  webUrl.searchParams.set("emailImport", status);
+
+  if (message) {
+    appUrl.searchParams.set("message", message);
+    webUrl.searchParams.set("message", message);
+  }
+
+  return `<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Koneksi Gmail Sakuin</title>
+    <style>
+      body {
+        align-items: center;
+        background: #f7f9fc;
+        color: #111827;
+        display: flex;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+      }
+      main {
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+        border-radius: 24px;
+        box-shadow: 0 22px 55px rgba(37, 99, 235, 0.14);
+        max-width: 420px;
+        padding: 24px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 10px;
+      }
+      p {
+        color: #526070;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 18px;
+      }
+      a {
+        align-items: center;
+        background: #2563eb;
+        border-radius: 14px;
+        color: #ffffff;
+        display: inline-flex;
+        font-weight: 800;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 18px;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>${status === "connected" ? "Gmail terhubung" : "Koneksi Gmail gagal"}</h1>
+      <p>${status === "connected" ? "Kami sedang mengembalikan kamu ke aplikasi Sakuin." : message ?? "Silakan kembali ke Sakuin dan coba lagi."}</p>
+      <a href="${appUrl.toString()}">Kembali ke aplikasi</a>
+    </main>
+    <script>
+      const appUrl = ${JSON.stringify(appUrl.toString())};
+      const webUrl = ${JSON.stringify(webUrl.toString())};
+      window.location.href = appUrl;
+      window.setTimeout(() => {
+        window.location.href = webUrl;
+      }, 1600);
+    </script>
+  </body>
+</html>`;
+}
+
 function getAuthenticatedUserId(c: Context<AppEnv>) {
   const userId = c.get("userId");
 
@@ -45,19 +132,12 @@ export async function gmailOAuthCallbackController(c: Context<AppEnv>) {
   try {
     await handleGmailOAuthCallback(query.code, query.state);
 
-    return c.redirect(
-      `${env.FRONTEND_URL}/dashboard?emailImport=connected`,
-      302
-    );
+    return c.html(buildGmailCallbackHtml({ status: "connected" }));
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Koneksi Gmail gagal";
-    const params = new URLSearchParams({
-      emailImport: "error",
-      message
-    });
 
-    return c.redirect(`${env.FRONTEND_URL}/dashboard?${params.toString()}`, 302);
+    return c.html(buildGmailCallbackHtml({ status: "error", message }), 400);
   }
 }
 

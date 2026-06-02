@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -99,8 +101,13 @@ export function EmailDetectionCard() {
 
   const gmailMutation = useMutation({
     mutationFn: getGmailAuthUrl,
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (result.authUrl) {
+        if (Capacitor.isNativePlatform()) {
+          await Browser.open({ url: result.authUrl });
+          return;
+        }
+
         window.location.href = result.authUrl;
       }
     }
@@ -131,6 +138,19 @@ export function EmailDetectionCard() {
   });
 
   const overview = overviewQuery.data;
+
+  useEffect(() => {
+    function handleEmailImportReturned() {
+      setSyncMessage("Gmail terhubung. Tekan Sinkronkan untuk membaca email transaksi terbaru.");
+      void refreshAfterImport();
+    }
+
+    window.addEventListener("sakuin:email-import-returned", handleEmailImportReturned);
+
+    return () => {
+      window.removeEventListener("sakuin:email-import-returned", handleEmailImportReturned);
+    };
+  }, []);
 
   function handleImportSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

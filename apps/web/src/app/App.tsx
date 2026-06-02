@@ -121,6 +121,28 @@ export function App() {
         // ─── FLOW LAMA (DEPRECATED) ─────────────────────────────────────────
         // com.sakuin.app://login?id_token=GOOGLE_TOKEN
         // Dipertahankan untuk backward compatibility saja
+        if (parsedUrl.host === "email-import") {
+          const status = parsedUrl.searchParams.get("status") ?? "connected";
+          const message = parsedUrl.searchParams.get("message");
+          const params = new URLSearchParams({
+            emailImport: status
+          });
+
+          if (message) {
+            params.set("message", message);
+          }
+
+          try {
+            await Browser.close();
+          } catch {
+            // Ignore jika browser eksternal sudah tertutup.
+          }
+
+          void router.navigate(`/dashboard?${params.toString()}`);
+          window.dispatchEvent(new Event("sakuin:email-import-returned"));
+          return;
+        }
+
         if (parsedUrl.host === "login") {
           const idToken = parsedUrl.searchParams.get("id_token");
           if (idToken) {

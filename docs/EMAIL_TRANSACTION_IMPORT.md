@@ -140,6 +140,12 @@ Setelah user menekan `Hubungkan Gmail`, Google akan redirect ke callback backend
 
 User kemudian bisa menekan `Sinkronkan` di tab `Deteksi`. Backend akan membaca email Gmail terbaru dengan query transaksi, mengambil body email, lalu menjalankan pipeline parser yang sama dengan import manual.
 
+Untuk APK Android, callback Gmail memakai deep link:
+
+`com.sakuin.app://email-import?status=connected`
+
+Karena itu perubahan intent `email-import` membutuhkan build APK baru. Jika user masih memakai APK lama, callback bisa jatuh ke fallback web dashboard di Chrome dan terlihat seperti masuk ke halaman login web.
+
 Endpoint sinkronisasi:
 
 | Method | Endpoint | Fungsi |
