@@ -1,13 +1,13 @@
 export const appVersionMetadata = {
-  latestVersionName: "1.6.3",
-  latestVersionCode: 10,
+  latestVersionName: "1.6.4",
+  latestVersionCode: 11,
   apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   releaseNotes: [
-    "Widget saldo dibuat lebih fleksibel untuk ukuran kecil.",
-    "Widget memakai fallback total transaksi saat bulan baru belum punya transaksi.",
-    "Tampilan widget diperbarui dengan warna status biru, orange, dan merah.",
-    "Tombol reload dan tambah transaksi widget diganti menjadi ikon."
+    "Widget layar utama Android memakai desain baru yang sama dengan preview aplikasi.",
+    "Maskot widget ditampilkan di sisi kanan bawah dengan warna status hemat, waspada, dan boros.",
+    "Kartu pemasukan dan pengeluaran widget ditumpuk agar rapi di ruang launcher.",
+    "Status widget dibuat lebih ringkas untuk ukuran sedang dan tetap informatif untuk ukuran besar."
   ],
   forceUpdate: false,
-  publishedAt: "2026-06-01T01:35:00.000Z"
+  publishedAt: "2026-06-02T00:20:00.000Z"
 } as const;

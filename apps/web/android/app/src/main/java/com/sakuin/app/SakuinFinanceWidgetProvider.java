@@ -258,12 +258,14 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         boolean showAmounts = widgetSize != WidgetSize.SMALL;
         boolean showHeaderActions = widgetSize != WidgetSize.SMALL;
         boolean showStatus = widgetSize != WidgetSize.SMALL;
-        boolean showRatio = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showInsight = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
+        boolean showRatio = showInsight;
         boolean showMascot = widgetSize != WidgetSize.SMALL;
 
         views.setViewVisibility(R.id.widget_amount_grid, showAmounts ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_header_actions, showHeaderActions ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_status_row, showStatus ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_status_headline, showInsight ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_ratio, showRatio ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widget_mascot, showMascot ? View.VISIBLE : View.GONE);
 

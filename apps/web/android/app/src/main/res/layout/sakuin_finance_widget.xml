@@ -7,11 +7,11 @@
 
     <ImageView
         android:id="@+id/widget_mascot"
-        android:layout_width="118dp"
-        android:layout_height="118dp"
+        android:layout_width="128dp"
+        android:layout_height="128dp"
         android:layout_gravity="end|bottom"
-        android:layout_marginEnd="-8dp"
-        android:layout_marginBottom="-18dp"
+        android:layout_marginEnd="-10dp"
+        android:layout_marginBottom="-20dp"
         android:alpha="0.96"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
@@ -93,14 +93,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:paddingEnd="74dp">
+            android:orientation="vertical"
+            android:paddingEnd="118dp">
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="1"
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -142,10 +140,9 @@
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_weight="1"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -195,11 +192,11 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:orientation="vertical"
-            android:paddingEnd="96dp">
+            android:paddingEnd="118dp">
 
             <LinearLayout
                 android:id="@+id/widget_status_panel"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/sakuin_widget_insight_panel"
                 android:orientation="vertical"
