@@ -14,57 +14,63 @@ const providerRules: ProviderRule[] = [
     id: "BCA",
     label: "BCA",
     patterns: [/\bbca\b/i, /klikbca/i, /mybca/i],
-    trustedSenders: [/bca\.co\.id/i, /klikbca/i, /mybca/i]
+    trustedSenders: [/@[^@\s>]*bca\.co\.id\b/i, /@[^@\s>]*klikbca\.com\b/i]
   },
   {
     id: "BRI",
     label: "BRI",
     patterns: [/\bbri\b/i, /brimo/i, /\bbank rakyat indonesia\b/i],
-    trustedSenders: [/bri\.co\.id/i, /brimo/i]
+    trustedSenders: [/@[^@\s>]*bri\.co\.id\b/i, /@[^@\s>]*brimo\./i]
   },
   {
     id: "Mandiri",
     label: "Mandiri",
     patterns: [/\bmandiri\b/i, /livin/i],
-    trustedSenders: [/bankmandiri\.co\.id/i, /mandiri/i, /livin/i]
+    trustedSenders: [/@[^@\s>]*bankmandiri\.co\.id\b/i, /@[^@\s>]*mandiri\.co\.id\b/i]
   },
   {
     id: "SeaBank",
     label: "SeaBank",
     patterns: [/seabank/i],
-    trustedSenders: [/seabank/i]
+    trustedSenders: [/@[^@\s>]*seabank\.co\.id\b/i]
   },
   {
     id: "DANA",
     label: "DANA",
     patterns: [/\bdana\b/i],
-    trustedSenders: [/dana\.id/i, /\bdana\b/i]
+    trustedSenders: [/@[^@\s>]*dana\.id\b/i]
   },
   {
     id: "GoPay",
     label: "GoPay",
     patterns: [/gopay/i, /gojek/i],
-    trustedSenders: [/gopay/i, /gojek/i]
+    trustedSenders: [/@[^@\s>]*gopay\./i, /@[^@\s>]*gojek\.com\b/i, /@[^@\s>]*goto\./i]
   },
   {
     id: "OVO",
     label: "OVO",
     patterns: [/\bovo\b/i],
-    trustedSenders: [/\bovo\b/i]
+    trustedSenders: [/@[^@\s>]*ovo\.id\b/i]
   },
   {
     id: "ShopeePay",
     label: "ShopeePay",
     patterns: [/shopeepay/i],
-    trustedSenders: [/shopeepay/i, /shopee/i]
+    trustedSenders: [/@[^@\s>]*shopee\.co\.id\b/i, /@[^@\s>]*shopeepay\./i]
   }
 ];
 
+const trustedFinancialSenderPatterns = providerRules.flatMap(
+  (rule) => rule.trustedSenders
+);
+
 const nonFinancialSenderPatterns = [
   /linkedin/i,
+  /linkedIn/i,
   /facebook/i,
   /instagram/i,
   /tiktok/i,
+  /\bt\.co\b/i,
   /x\.com/i,
   /twitter/i,
   /github/i,
@@ -72,7 +78,24 @@ const nonFinancialSenderPatterns = [
   /google alerts/i,
   /newsletter/i,
   /medium/i,
-  /quora/i
+  /quora/i,
+  /mailchimp/i,
+  /substack/i,
+  /eventbrite/i,
+  /canva/i
+];
+
+const nonTransactionContentPatterns = [
+  /bangun\s+portofolio/i,
+  /portofolio\s+bisnis/i,
+  /premium\s+tersedia/i,
+  /lowongan/i,
+  /karier/i,
+  /newsletter/i,
+  /webinar/i,
+  /promo(?:si)?/i,
+  /diskon/i,
+  /voucher/i
 ];
 
 const expensePatterns = [
@@ -112,18 +135,40 @@ function getSenderText(input: ImportEmailInput) {
   return normalizeWhitespace([input.from, input.subject].filter(Boolean).join(" "));
 }
 
-function detectProvider(text: string, senderText: string) {
+function getFromText(input: ImportEmailInput) {
+  return normalizeWhitespace(input.from ?? "");
+}
+
+function detectProvider(text: string, fromText: string) {
+  const trustedRule = providerRules.find((rule) =>
+    rule.trustedSenders.some((pattern) => pattern.test(fromText))
+  );
+
+  if (trustedRule) {
+    return {
+      label: trustedRule.label,
+      isTrustedFinancialSender: true
+    };
+  }
+
   const matchedRule = providerRules.find((rule) =>
-    rule.trustedSenders.some((pattern) => pattern.test(senderText)) ||
     rule.patterns.some((pattern) => pattern.test(text))
   );
 
-  return matchedRule?.label ?? "Tidak Dikenal";
+  return {
+    label: matchedRule?.label ?? "Tidak Dikenal",
+    isTrustedFinancialSender: false
+  };
 }
 
 function isNonFinancialSender(input: ImportEmailInput) {
   const senderText = getSenderText(input);
   return nonFinancialSenderPatterns.some((pattern) => pattern.test(senderText));
+}
+
+export function isTrustedFinancialSender(input: ImportEmailInput) {
+  const fromText = getFromText(input);
+  return trustedFinancialSenderPatterns.some((pattern) => pattern.test(fromText));
 }
 
 function parseAmount(text: string) {
@@ -264,8 +309,11 @@ function hasStrongFinancialSignal(text: string) {
   const transactionKeyword =
     /(?:qris|pembayaran|transaksi|transfer\s+(?:masuk|keluar|ke)|debit|kredit|top\s*up|refund|cashback|belanja|pembelian|dana\s+masuk|uang\s+masuk)/i.test(text);
   const successKeyword = /(?:berhasil|sukses|diterima|selesai|completed|success)/i.test(text);
+  const marketingKeyword = nonTransactionContentPatterns.some((pattern) =>
+    pattern.test(text)
+  );
 
-  return amount && transactionKeyword && successKeyword;
+  return amount && transactionKeyword && successKeyword && !marketingKeyword;
 }
 
 function calculateConfidence(parsed: Omit<ParsedEmailTransaction, "confidence" | "warnings">) {
@@ -277,16 +325,18 @@ function calculateConfidence(parsed: Omit<ParsedEmailTransaction, "confidence" |
   if (parsed.merchant) score += 0.1;
   if (parsed.reference) score += 0.1;
   if (parsed.method) score += 0.05;
+  if (parsed.isTrustedFinancialSender) score += 0.1;
   if (parsed.isLikelyFinancialEmail) score += 0.1;
   return Math.min(Number(score.toFixed(2)), 1);
 }
 
 export function parseEmailTransaction(input: ImportEmailInput): ParsedEmailTransaction {
   const text = getSearchText(input);
-  const senderText = getSenderText(input);
+  const fromText = getFromText(input);
   const explicitDate = parseDate(text);
+  const provider = detectProvider(text, fromText);
   const parsed = {
-    financialProvider: detectProvider(text, senderText),
+    financialProvider: provider.label,
     type: detectType(text),
     amount: parseAmount(text),
     merchant: parseMerchant(text),
@@ -294,6 +344,7 @@ export function parseEmailTransaction(input: ImportEmailInput): ParsedEmailTrans
     reference: parseReference(text),
     occurredAt: explicitDate,
     hasExplicitTransactionDate: Boolean(explicitDate),
+    isTrustedFinancialSender: provider.isTrustedFinancialSender,
     isLikelyFinancialEmail:
       hasStrongFinancialSignal(text) && !isNonFinancialSender(input)
   };
@@ -304,6 +355,7 @@ export function parseEmailTransaction(input: ImportEmailInput): ParsedEmailTrans
   if (!parsed.occurredAt) warnings.push("Tanggal transaksi tidak terdeteksi.");
   if (parsed.occurredAt && isFutureDate(parsed.occurredAt)) warnings.push("Tanggal transaksi berada di masa depan.");
   if (!parsed.isLikelyFinancialEmail) warnings.push("Email tidak memiliki sinyal transaksi finansial yang cukup kuat.");
+  if (!parsed.isTrustedFinancialSender) warnings.push("Pengirim email belum termasuk sumber resmi bank/e-wallet.");
 
   return {
     ...parsed,

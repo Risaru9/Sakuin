@@ -15,6 +15,7 @@ export type ParsedEmailTransaction = {
   reference: string | null;
   occurredAt: Date | null;
   hasExplicitTransactionDate: boolean;
+  isTrustedFinancialSender: boolean;
   isLikelyFinancialEmail: boolean;
   confidence: number;
   warnings: string[];

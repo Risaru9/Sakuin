@@ -15,6 +15,7 @@ import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cac
 import {
   createEmailFingerprint,
   createTransactionFingerprint,
+  isTrustedFinancialSender,
   parseEmailTransaction
 } from "./email-import.parser.js";
 import type {
@@ -33,7 +34,7 @@ const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API_BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me";
 const GMAIL_SEARCH_QUERY =
-  'newer_than:14d (("Rp" OR "IDR") (qris OR pembayaran OR "transfer masuk" OR "transfer keluar" OR debit OR kredit OR "top up" OR refund OR cashback))';
+  'newer_than:14d ({from:bca.co.id from:klikbca.com from:bri.co.id from:brimo from:bankmandiri.co.id from:mandiri.co.id from:seabank.co.id from:dana.id from:gopay from:gojek.com from:goto from:ovo.id from:shopee.co.id from:shopeepay} ("Rp" OR "IDR") (qris OR pembayaran OR "transfer masuk" OR "transfer keluar" OR debit OR kredit OR "top up" OR refund OR cashback OR berhasil OR sukses))';
 
 const importInclude = {
   emailConnection: {
@@ -447,6 +448,7 @@ function canAutoImport(parsed: ParsedEmailTransaction) {
       parsed.amount &&
       parsed.occurredAt &&
       parsed.hasExplicitTransactionDate &&
+      parsed.isTrustedFinancialSender &&
       parsed.isLikelyFinancialEmail &&
       parsed.financialProvider !== "Tidak Dikenal" &&
       parsed.reference &&
@@ -462,9 +464,13 @@ function shouldPersistImport(parsed: ParsedEmailTransaction, input: ImportEmailI
 
   return Boolean(
     parsed.isLikelyFinancialEmail &&
+      parsed.isTrustedFinancialSender &&
       parsed.financialProvider !== "Tidak Dikenal" &&
       parsed.amount &&
-      parsed.type
+      parsed.type &&
+      parsed.occurredAt &&
+      parsed.hasExplicitTransactionDate &&
+      !parsed.warnings.some((warning) => warning.includes("masa depan"))
   );
 }
 
@@ -476,8 +482,14 @@ function isSuspiciousImport(record: {
   confidence: number;
   parsedMerchant: string | null;
   status: string;
+  metadata: Prisma.JsonValue | null;
 }) {
   const merchant = record.parsedMerchant ?? "";
+  const metadata =
+    record.metadata && typeof record.metadata === "object" && !Array.isArray(record.metadata)
+      ? (record.metadata as Record<string, unknown>)
+      : {};
+  const from = typeof metadata.from === "string" ? metadata.from : "";
   const isFuture = record.parsedOccurredAt
     ? record.parsedOccurredAt.getTime() > Date.now() + 24 * 60 * 60 * 1000
     : false;
@@ -490,7 +502,8 @@ function isSuspiciousImport(record: {
         !record.parsedOccurredAt ||
         record.confidence < AUTO_IMPORT_CONFIDENCE ||
         isFuture ||
-        /linkedin|\.com|\.id|newsletter|notification/i.test(merchant))
+        !isTrustedFinancialSender({ from, body: "" }) ||
+        /linkedin|t\.co|newsletter|notification|portofolio|premium|karier/i.test(merchant))
   );
 }
 
@@ -1043,7 +1056,8 @@ export async function cleanupSuspiciousEmailImports(userId: string) {
       confidence: true,
       parsedMerchant: true,
       status: true,
-      transactionId: true
+      transactionId: true,
+      metadata: true
     }
   });
 
@@ -1229,6 +1243,7 @@ export async function approveEmailImport(userId: string, importId: string) {
     occurredAt: record.parsedOccurredAt,
     hasExplicitTransactionDate: true,
     isLikelyFinancialEmail: true,
+    isTrustedFinancialSender: true,
     confidence: record.confidence,
     warnings: []
   };

@@ -35,7 +35,7 @@ Contoh:
 | bank-bca@gmail.com | BCA |
 | seabank@gmail.com | SeaBank |
 
-Dengan model ini user tidak perlu memilih bank secara manual. Provider dideteksi dari isi email dan pengirim email.
+Dengan model ini user tidak perlu memilih bank secara manual. Untuk sinkronisasi Gmail otomatis, provider hanya dianggap valid jika email berasal dari pengirim resmi bank/e-wallet. Mention seperti `BCA`, `BRI`, atau `transfer` di subject/body email promosi tidak cukup untuk disimpan sebagai deteksi transaksi.
 
 ## Cara Sakuin Mencatat Transaksi
 
@@ -139,6 +139,16 @@ Setelah user menekan `Hubungkan Gmail`, Google akan redirect ke callback backend
 5. Mengembalikan user ke Dashboard.
 
 User kemudian bisa menekan `Sinkronkan` di tab `Deteksi` untuk tes langsung. Backend juga menjalankan auto-sync terjadwal agar koneksi Gmail aktif diproses berkala tanpa user menekan tombol terus-menerus.
+
+Aturan sinkronisasi Gmail dibuat konservatif:
+
+- Gmail search hanya mengambil kandidat dari domain/sender bank dan e-wallet yang dikenal.
+- Email otomatis diabaikan jika pengirimnya bukan sumber resmi bank/e-wallet.
+- Email otomatis diabaikan jika tidak memiliki nominal, jenis transaksi, tanggal eksplisit, atau sinyal berhasil/sukses.
+- Email bertanggal masa depan tidak dicatat otomatis.
+- Email ambigu dari sumber resmi masuk review, bukan langsung menjadi transaksi.
+
+Aturan ini sengaja mengurangi false positive seperti LinkedIn, `t.co`, newsletter, promosi, atau artikel yang kebetulan berisi kata `transfer` dan nominal rupiah.
 
 Untuk APK Android, callback Gmail memakai deep link:
 

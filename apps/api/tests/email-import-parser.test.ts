@@ -16,6 +16,7 @@ describe("email transaction parser", () => {
     expect(parsed.amount).toBe("350000");
     expect(parsed.method).toBe("Transfer");
     expect(parsed.reference).toBe("BCA123456");
+    expect(parsed.isTrustedFinancialSender).toBe(true);
     expect(parsed.confidence).toBeGreaterThanOrEqual(0.8);
   });
 
@@ -34,6 +35,7 @@ describe("email transaction parser", () => {
     expect(parsed.merchant).toContain("KOPI SENJA");
     expect(parsed.method).toBe("QRIS");
     expect(parsed.reference).toBe("DN98765");
+    expect(parsed.isTrustedFinancialSender).toBe(true);
   });
 
   it("menolak email non-finansial walaupun mengandung kata transfer dan Rp", () => {
@@ -46,8 +48,24 @@ describe("email transaction parser", () => {
     });
 
     expect(parsed.isLikelyFinancialEmail).toBe(false);
+    expect(parsed.isTrustedFinancialSender).toBe(false);
     expect(parsed.financialProvider).toBe("Tidak Dikenal");
     expect(parsed.warnings).toContain("Email tidak memiliki sinyal transaksi finansial yang cukup kuat.");
+  });
+
+  it("tidak menganggap mention BCA di email non-resmi sebagai pengirim terpercaya", () => {
+    const parsed = parseEmailTransaction({
+      emailAddress: "utama@gmail.com",
+      from: "promo@example.com",
+      subject: "BCA - buka, bangun portofolio bisnis nyata 2026",
+      body:
+        "Transaksi BCA berhasil untuk program premium sebesar Rp 2.750.000 pada 04 Jun 2026. Lihat tautan t.co/example."
+    });
+
+    expect(parsed.financialProvider).toBe("BCA");
+    expect(parsed.isTrustedFinancialSender).toBe(false);
+    expect(parsed.isLikelyFinancialEmail).toBe(false);
+    expect(parsed.warnings).toContain("Pengirim email belum termasuk sumber resmi bank/e-wallet.");
   });
 
   it("menandai tanggal masa depan sebagai warning", () => {
