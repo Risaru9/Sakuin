@@ -5,6 +5,7 @@ import { validateRequest } from "../../middlewares/validate.middleware.js";
 import {
   approveEmailImportController,
   autoSyncGmailController,
+  cleanupEmailImportsController,
   disconnectGmailController,
   gmailOAuthCallbackController,
   getEmailImportOverviewController,
@@ -57,6 +58,12 @@ emailImportRoutes.post(
   authMiddleware,
   validateRequest("param", importIdParamSchema),
   disconnectGmailController
+);
+
+emailImportRoutes.post(
+  "/cleanup",
+  authMiddleware,
+  cleanupEmailImportsController
 );
 
 emailImportRoutes.post(

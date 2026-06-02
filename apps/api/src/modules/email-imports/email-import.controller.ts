@@ -6,6 +6,7 @@ import { HttpError } from "../../utils/http-error.js";
 import type { GmailSyncInput, ImportEmailInput } from "./email-import.types.js";
 import {
   approveEmailImport,
+  cleanupSuspiciousEmailImports,
   disconnectGmailConnection,
   getEmailImportOverview,
   getGmailAuthUrl,
@@ -206,10 +207,26 @@ export async function disconnectGmailController(c: Context<AppEnv>) {
   return successResponse(c, "Koneksi Gmail berhasil diputus", result);
 }
 
+export async function cleanupEmailImportsController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const result = await cleanupSuspiciousEmailImports(userId);
+
+  return successResponse(c, "Cleanup deteksi email berhasil", result);
+}
+
 export async function importEmailController(c: Context<AppEnv>) {
   const userId = getAuthenticatedUserId(c);
   const input = c.get("validatedJson") as ImportEmailInput;
   const result = await importEmailTransaction(userId, input);
+
+  if (!result) {
+    return successResponse(
+      c,
+      "Email diabaikan karena bukan transaksi finansial yang jelas",
+      null,
+      202
+    );
+  }
 
   return successResponse(c, "Email transaksi berhasil diproses", result, 201);
 }

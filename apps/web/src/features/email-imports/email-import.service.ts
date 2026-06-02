@@ -70,6 +70,12 @@ export type GmailSyncResult = {
   ignored: number;
 };
 
+export type EmailImportCleanupResult = {
+  flaggedImports: number;
+  deletedTransactions: number;
+  ignoredImports: number;
+};
+
 export function getEmailImportOverview() {
   return apiRequest<EmailImportOverview>("/api/email-imports/overview");
 }
@@ -96,8 +102,14 @@ export function disconnectGmail(connectionId: string) {
   );
 }
 
+export function cleanupEmailImports() {
+  return apiRequest<EmailImportCleanupResult>("/api/email-imports/cleanup", {
+    method: "POST"
+  });
+}
+
 export function importEmail(input: ImportEmailInput) {
-  return apiRequest<EmailTransactionImport>("/api/email-imports/import-email", {
+  return apiRequest<EmailTransactionImport | null>("/api/email-imports/import-email", {
     method: "POST",
     body: input
   });

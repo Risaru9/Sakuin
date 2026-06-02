@@ -19,6 +19,7 @@ import {
 } from "./email-import.parser.js";
 import type {
   EmailConnectionResponse,
+  EmailImportCleanupResponse,
   GmailAutoSyncResponse,
   GmailSyncInput,
   GmailSyncResponse,
@@ -27,12 +28,12 @@ import type {
   ParsedEmailTransaction
 } from "./email-import.types.js";
 
-const AUTO_IMPORT_CONFIDENCE = 0.78;
+const AUTO_IMPORT_CONFIDENCE = 0.9;
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API_BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me";
 const GMAIL_SEARCH_QUERY =
-  'newer_than:30d ("Rp" OR "IDR" OR transaksi OR transfer OR QRIS OR pembayaran)';
+  'newer_than:14d (("Rp" OR "IDR") (qris OR pembayaran OR "transfer masuk" OR "transfer keluar" OR debit OR kredit OR "top up" OR refund OR cashback))';
 
 const importInclude = {
   emailConnection: {
@@ -445,8 +446,51 @@ function canAutoImport(parsed: ParsedEmailTransaction) {
     parsed.type &&
       parsed.amount &&
       parsed.occurredAt &&
+      parsed.hasExplicitTransactionDate &&
+      parsed.isLikelyFinancialEmail &&
       parsed.financialProvider !== "Tidak Dikenal" &&
+      parsed.reference &&
+      !parsed.warnings.some((warning) => warning.includes("masa depan")) &&
       parsed.confidence >= AUTO_IMPORT_CONFIDENCE
+  );
+}
+
+function shouldPersistImport(parsed: ParsedEmailTransaction, input: ImportEmailInput) {
+  if (input.autoImport === false) {
+    return true;
+  }
+
+  return Boolean(
+    parsed.isLikelyFinancialEmail &&
+      parsed.financialProvider !== "Tidak Dikenal" &&
+      parsed.amount &&
+      parsed.type
+  );
+}
+
+function isSuspiciousImport(record: {
+  financialProvider: string;
+  parsedAmount: Prisma.Decimal | null;
+  parsedType: TransactionType | null;
+  parsedOccurredAt: Date | null;
+  confidence: number;
+  parsedMerchant: string | null;
+  status: string;
+}) {
+  const merchant = record.parsedMerchant ?? "";
+  const isFuture = record.parsedOccurredAt
+    ? record.parsedOccurredAt.getTime() > Date.now() + 24 * 60 * 60 * 1000
+    : false;
+
+  return Boolean(
+    record.status === "imported" &&
+      (record.financialProvider === "Tidak Dikenal" ||
+        !record.parsedAmount ||
+        !record.parsedType ||
+        !record.parsedOccurredAt ||
+        record.confidence < AUTO_IMPORT_CONFIDENCE ||
+        isFuture ||
+        /linkedin|\.com|\.id|newsletter|notification/i.test(merchant))
   );
 }
 
@@ -815,6 +859,10 @@ async function syncOneGmailConnection(
       autoImport: true
     });
 
+    if (!imported) {
+      continue;
+    }
+
     result.processed += 1;
     if (imported.status === "imported") result.imported += 1;
     if (imported.status === "needs_review") result.needsReview += 1;
@@ -980,8 +1028,82 @@ export async function disconnectGmailConnection(userId: string, connectionId: st
   return mapConnection(updated);
 }
 
+export async function cleanupSuspiciousEmailImports(userId: string) {
+  const imports = await prisma.emailTransactionImport.findMany({
+    where: {
+      userId,
+      status: "imported"
+    },
+    select: {
+      id: true,
+      financialProvider: true,
+      parsedAmount: true,
+      parsedType: true,
+      parsedOccurredAt: true,
+      confidence: true,
+      parsedMerchant: true,
+      status: true,
+      transactionId: true
+    }
+  });
+
+  const suspiciousImports = imports.filter(isSuspiciousImport);
+  const transactionIds = suspiciousImports
+    .map((item) => item.transactionId)
+    .filter((id): id is string => Boolean(id));
+
+  if (suspiciousImports.length === 0) {
+    return {
+      flaggedImports: 0,
+      deletedTransactions: 0,
+      ignoredImports: 0
+    } satisfies EmailImportCleanupResponse;
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const deletedTransactions = transactionIds.length
+      ? await tx.transaction.deleteMany({
+          where: {
+            id: {
+              in: transactionIds
+            },
+            userId
+          }
+        })
+      : { count: 0 };
+
+    const ignoredImports = await tx.emailTransactionImport.updateMany({
+      where: {
+        id: {
+          in: suspiciousImports.map((item) => item.id)
+        },
+        userId
+      },
+      data: {
+        status: "ignored",
+        statusReason:
+          "Dibersihkan otomatis karena hasil deteksi email tidak cukup valid.",
+        transactionId: null
+      }
+    });
+
+    return {
+      flaggedImports: suspiciousImports.length,
+      deletedTransactions: deletedTransactions.count,
+      ignoredImports: ignoredImports.count
+    } satisfies EmailImportCleanupResponse;
+  });
+
+  invalidateCachedFinancialContext(userId);
+  return result;
+}
+
 export async function importEmailTransaction(userId: string, input: ImportEmailInput) {
   const parsed = parseEmailTransaction(input);
+  if (!shouldPersistImport(parsed, input)) {
+    return null;
+  }
+
   const emailFingerprint = createEmailFingerprint(userId, input);
   const transactionFingerprint = createTransactionFingerprint(userId, parsed);
   const connection = await findOrCreateConnection(userId, input, parsed);
@@ -1105,6 +1227,8 @@ export async function approveEmailImport(userId: string, importId: string) {
     method: record.parsedMethod,
     reference: record.parsedReference,
     occurredAt: record.parsedOccurredAt,
+    hasExplicitTransactionDate: true,
+    isLikelyFinancialEmail: true,
     confidence: record.confidence,
     warnings: []
   };

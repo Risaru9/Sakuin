@@ -6,17 +6,73 @@ type ProviderRule = {
   id: string;
   label: string;
   patterns: RegExp[];
+  trustedSenders: RegExp[];
 };
 
 const providerRules: ProviderRule[] = [
-  { id: "BCA", label: "BCA", patterns: [/\bbca\b/i, /klikbca/i, /mybca/i] },
-  { id: "BRI", label: "BRI", patterns: [/\bbri\b/i, /brimo/i] },
-  { id: "Mandiri", label: "Mandiri", patterns: [/\bmandiri\b/i, /livin/i] },
-  { id: "SeaBank", label: "SeaBank", patterns: [/seabank/i] },
-  { id: "DANA", label: "DANA", patterns: [/\bdana\b/i] },
-  { id: "GoPay", label: "GoPay", patterns: [/gopay/i, /gojek/i] },
-  { id: "OVO", label: "OVO", patterns: [/\bovo\b/i] },
-  { id: "ShopeePay", label: "ShopeePay", patterns: [/shopeepay/i, /shopee/i] }
+  {
+    id: "BCA",
+    label: "BCA",
+    patterns: [/\bbca\b/i, /klikbca/i, /mybca/i],
+    trustedSenders: [/bca\.co\.id/i, /klikbca/i, /mybca/i]
+  },
+  {
+    id: "BRI",
+    label: "BRI",
+    patterns: [/\bbri\b/i, /brimo/i, /\bbank rakyat indonesia\b/i],
+    trustedSenders: [/bri\.co\.id/i, /brimo/i]
+  },
+  {
+    id: "Mandiri",
+    label: "Mandiri",
+    patterns: [/\bmandiri\b/i, /livin/i],
+    trustedSenders: [/bankmandiri\.co\.id/i, /mandiri/i, /livin/i]
+  },
+  {
+    id: "SeaBank",
+    label: "SeaBank",
+    patterns: [/seabank/i],
+    trustedSenders: [/seabank/i]
+  },
+  {
+    id: "DANA",
+    label: "DANA",
+    patterns: [/\bdana\b/i],
+    trustedSenders: [/dana\.id/i, /\bdana\b/i]
+  },
+  {
+    id: "GoPay",
+    label: "GoPay",
+    patterns: [/gopay/i, /gojek/i],
+    trustedSenders: [/gopay/i, /gojek/i]
+  },
+  {
+    id: "OVO",
+    label: "OVO",
+    patterns: [/\bovo\b/i],
+    trustedSenders: [/\bovo\b/i]
+  },
+  {
+    id: "ShopeePay",
+    label: "ShopeePay",
+    patterns: [/shopeepay/i],
+    trustedSenders: [/shopeepay/i, /shopee/i]
+  }
+];
+
+const nonFinancialSenderPatterns = [
+  /linkedin/i,
+  /facebook/i,
+  /instagram/i,
+  /tiktok/i,
+  /x\.com/i,
+  /twitter/i,
+  /github/i,
+  /vercel/i,
+  /google alerts/i,
+  /newsletter/i,
+  /medium/i,
+  /quora/i
 ];
 
 const expensePatterns = [
@@ -52,12 +108,22 @@ function getSearchText(input: ImportEmailInput) {
   );
 }
 
-function detectProvider(text: string) {
+function getSenderText(input: ImportEmailInput) {
+  return normalizeWhitespace([input.from, input.subject].filter(Boolean).join(" "));
+}
+
+function detectProvider(text: string, senderText: string) {
   const matchedRule = providerRules.find((rule) =>
+    rule.trustedSenders.some((pattern) => pattern.test(senderText)) ||
     rule.patterns.some((pattern) => pattern.test(text))
   );
 
   return matchedRule?.label ?? "Tidak Dikenal";
+}
+
+function isNonFinancialSender(input: ImportEmailInput) {
+  const senderText = getSenderText(input);
+  return nonFinancialSenderPatterns.some((pattern) => pattern.test(senderText));
 }
 
 function parseAmount(text: string) {
@@ -112,7 +178,18 @@ function parseMerchant(text: string) {
     const match = text.match(pattern);
     const value = match?.[1] ? normalizeWhitespace(match[1]) : null;
     if (value && !/^rp\b/i.test(value)) {
-      return value.replace(/\s+(tanggal|pada|sebesar|nominal).*$/i, "").trim();
+      const cleaned = value
+        .replace(/\s+(tanggal|pada|sebesar|nominal|berhasil|ref|rrn).*$/i, "")
+        .trim();
+
+      if (
+        cleaned.length >= 3 &&
+        !/@/.test(cleaned) &&
+        !/\.(com|id|net|org)\b/i.test(cleaned) &&
+        !/^(gmail|email|notifikasi|notification|invoice|linkedin)$/i.test(cleaned)
+      ) {
+        return cleaned;
+      }
     }
   }
 
@@ -134,7 +211,7 @@ function parseReference(text: string) {
   return match?.[1] ?? null;
 }
 
-function parseDate(text: string, fallback?: Date) {
+function parseDate(text: string) {
   const isoLike = text.match(/(20\d{2})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
   if (isoLike) {
     const [, year, month, day, hour = "0", minute = "0"] = isoLike;
@@ -168,7 +245,27 @@ function parseDate(text: string, fallback?: Date) {
     );
   }
 
-  return fallback ?? null;
+  return null;
+}
+
+function isFutureDate(date: Date | null) {
+  if (!date) {
+    return false;
+  }
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  return date.getTime() > todayEnd.getTime();
+}
+
+function hasStrongFinancialSignal(text: string) {
+  const amount = /(?:rp|idr)\s*[0-9]/i.test(text);
+  const transactionKeyword =
+    /(?:qris|pembayaran|transaksi|transfer\s+(?:masuk|keluar|ke)|debit|kredit|top\s*up|refund|cashback|belanja|pembelian|dana\s+masuk|uang\s+masuk)/i.test(text);
+  const successKeyword = /(?:berhasil|sukses|diterima|selesai|completed|success)/i.test(text);
+
+  return amount && transactionKeyword && successKeyword;
 }
 
 function calculateConfidence(parsed: Omit<ParsedEmailTransaction, "confidence" | "warnings">) {
@@ -176,29 +273,37 @@ function calculateConfidence(parsed: Omit<ParsedEmailTransaction, "confidence" |
   if (parsed.financialProvider !== "Tidak Dikenal") score += 0.2;
   if (parsed.amount) score += 0.25;
   if (parsed.type) score += 0.2;
-  if (parsed.occurredAt) score += 0.15;
+  if (parsed.occurredAt && parsed.hasExplicitTransactionDate) score += 0.15;
   if (parsed.merchant) score += 0.1;
-  if (parsed.reference) score += 0.05;
+  if (parsed.reference) score += 0.1;
   if (parsed.method) score += 0.05;
+  if (parsed.isLikelyFinancialEmail) score += 0.1;
   return Math.min(Number(score.toFixed(2)), 1);
 }
 
 export function parseEmailTransaction(input: ImportEmailInput): ParsedEmailTransaction {
   const text = getSearchText(input);
+  const senderText = getSenderText(input);
+  const explicitDate = parseDate(text);
   const parsed = {
-    financialProvider: detectProvider(text),
+    financialProvider: detectProvider(text, senderText),
     type: detectType(text),
     amount: parseAmount(text),
     merchant: parseMerchant(text),
     method: parseMethod(text),
     reference: parseReference(text),
-    occurredAt: parseDate(text, input.receivedAt ?? undefined)
+    occurredAt: explicitDate,
+    hasExplicitTransactionDate: Boolean(explicitDate),
+    isLikelyFinancialEmail:
+      hasStrongFinancialSignal(text) && !isNonFinancialSender(input)
   };
   const warnings: string[] = [];
   if (!parsed.amount) warnings.push("Nominal tidak terdeteksi.");
   if (!parsed.type) warnings.push("Jenis pemasukan/pengeluaran belum jelas.");
   if (parsed.financialProvider === "Tidak Dikenal") warnings.push("Bank/e-wallet belum dikenali.");
   if (!parsed.occurredAt) warnings.push("Tanggal transaksi tidak terdeteksi.");
+  if (parsed.occurredAt && isFutureDate(parsed.occurredAt)) warnings.push("Tanggal transaksi berada di masa depan.");
+  if (!parsed.isLikelyFinancialEmail) warnings.push("Email tidak memiliki sinyal transaksi finansial yang cukup kuat.");
 
   return {
     ...parsed,

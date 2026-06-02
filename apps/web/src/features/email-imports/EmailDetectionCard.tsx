@@ -6,6 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
+  Eraser,
   Mail,
   RefreshCw,
   ShieldCheck,
@@ -18,6 +19,7 @@ import { queryKeys } from "../../lib/query-keys";
 import { formatDate, formatRupiah, getErrorMessage } from "../dashboard/dashboard-utils";
 import {
   approveEmailImport,
+  cleanupEmailImports,
   disconnectGmail,
   getEmailImportOverview,
   getGmailAuthUrl,
@@ -55,6 +57,15 @@ function formatProvider(importItem: EmailTransactionImport) {
   return `Transfer ${provider}`;
 }
 
+function formatDetectionTitle(importItem: EmailTransactionImport) {
+  const title = formatProvider(importItem);
+  if (!importItem.merchant) {
+    return title;
+  }
+
+  return `${title} - ${importItem.merchant}`.slice(0, 72);
+}
+
 export function EmailDetectionCard() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,10 +91,13 @@ export function EmailDetectionCard() {
 
   const importMutation = useMutation({
     mutationFn: importEmail,
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       setFormError(null);
       setSubject("");
       setBody("");
+      if (!result) {
+        setSyncMessage("Email diabaikan karena belum terlihat sebagai transaksi finansial yang jelas.");
+      }
       await refreshAfterImport();
     },
     onError: (error) => {
@@ -132,6 +146,19 @@ export function EmailDetectionCard() {
     mutationFn: disconnectGmail,
     onSuccess: async () => {
       setSyncMessage("Koneksi Gmail diputus.");
+      await refreshAfterImport();
+    },
+    onError: (error) => {
+      setSyncMessage(getErrorMessage(error));
+    }
+  });
+
+  const cleanupMutation = useMutation({
+    mutationFn: cleanupEmailImports,
+    onSuccess: async (result) => {
+      setSyncMessage(
+        `${result.deletedTransactions} transaksi salah dibersihkan, ${result.ignoredImports} deteksi ditandai diabaikan.`
+      );
       await refreshAfterImport();
     },
     onError: (error) => {
@@ -283,6 +310,18 @@ export function EmailDetectionCard() {
             <RefreshCw className="h-4 w-4" />
             Sinkronkan
           </Button>
+          <Button
+            className="rounded-xl sm:col-span-2"
+            disabled={cleanupMutation.isPending}
+            isLoading={cleanupMutation.isPending}
+            onClick={() => cleanupMutation.mutate()}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            <Eraser className="h-4 w-4" />
+            Bersihkan deteksi salah
+          </Button>
         </div>
 
         {syncMessage ? (
@@ -366,7 +405,8 @@ export function EmailDetectionCard() {
             Memuat deteksi...
           </div>
         ) : (overview?.recentImports ?? []).length > 0 ? (
-          overview?.recentImports.map((item) => (
+          <div className="grid max-h-[32rem] gap-3 overflow-y-auto pr-1">
+            {overview?.recentImports.map((item) => (
             <div
               className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 shadow-sm"
               key={item.id}
@@ -374,8 +414,7 @@ export function EmailDetectionCard() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
-                    {formatProvider(item)}
-                    {item.merchant ? ` - ${item.merchant}` : ""}
+                    {formatDetectionTitle(item)}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-zinc-500">
                     {item.method ?? "Email"} | {item.occurredAt ? formatDate(item.occurredAt) : "Tanggal belum jelas"}
@@ -387,9 +426,15 @@ export function EmailDetectionCard() {
                 </span>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className={["text-lg font-black", item.type === "INCOME" ? "text-emerald-700" : "text-rose-700"].join(" ")}>
-                  {item.amount ? formatRupiah(item.amount) : "Rp -"}
-                </p>
+                {item.amount ? (
+                  <p className={["text-lg font-black", item.type === "INCOME" ? "text-emerald-700" : "text-rose-700"].join(" ")}>
+                    {formatRupiah(item.amount)}
+                  </p>
+                ) : (
+                  <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                    Nominal belum jelas
+                  </p>
+                )}
                 <p className="text-[11px] font-bold text-zinc-500">
                   Confidence {Math.round(item.confidence * 100)}%
                 </p>
@@ -425,7 +470,8 @@ export function EmailDetectionCard() {
                 </div>
               ) : null}
             </div>
-          ))
+            ))}
+          </div>
         ) : (
           <div className="rounded-2xl bg-[var(--sakuin-primary-soft)] p-5 text-center">
             <AlertTriangle className="mx-auto h-5 w-5 text-[var(--sakuin-primary)]" />

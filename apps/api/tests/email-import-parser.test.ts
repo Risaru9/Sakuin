@@ -35,4 +35,31 @@ describe("email transaction parser", () => {
     expect(parsed.method).toBe("QRIS");
     expect(parsed.reference).toBe("DN98765");
   });
+
+  it("menolak email non-finansial walaupun mengandung kata transfer dan Rp", () => {
+    const parsed = parseEmailTransaction({
+      emailAddress: "utama@gmail.com",
+      from: "LinkedIn <messages-noreply@linkedin.com>",
+      subject: "Rizal, v style membagikan update",
+      body:
+        "Transfer inspirasi karier minggu ini. Paket premium tersedia mulai Rp 2.750.000 dan berlaku sampai 04 Jun 2026."
+    });
+
+    expect(parsed.isLikelyFinancialEmail).toBe(false);
+    expect(parsed.financialProvider).toBe("Tidak Dikenal");
+    expect(parsed.warnings).toContain("Email tidak memiliki sinyal transaksi finansial yang cukup kuat.");
+  });
+
+  it("menandai tanggal masa depan sebagai warning", () => {
+    const parsed = parseEmailTransaction({
+      emailAddress: "wallet@gmail.com",
+      from: "notification@dana.id",
+      subject: "Pembayaran QRIS berhasil",
+      body:
+        "DANA: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2099-06-04 08:15. ID Transaksi: DN98765"
+    });
+
+    expect(parsed.isLikelyFinancialEmail).toBe(true);
+    expect(parsed.warnings).toContain("Tanggal transaksi berada di masa depan.");
+  });
 });

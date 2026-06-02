@@ -14,6 +14,8 @@ export type ParsedEmailTransaction = {
   method: string | null;
   reference: string | null;
   occurredAt: Date | null;
+  hasExplicitTransactionDate: boolean;
+  isLikelyFinancialEmail: boolean;
   confidence: number;
   warnings: string[];
 };
@@ -50,6 +52,12 @@ export type GmailAutoSyncResponse = GmailSyncResponse & {
     emailAddress: string;
     message: string;
   }>;
+};
+
+export type EmailImportCleanupResponse = {
+  flaggedImports: number;
+  deletedTransactions: number;
+  ignoredImports: number;
 };
 
 export type EmailConnectionResponse = {
