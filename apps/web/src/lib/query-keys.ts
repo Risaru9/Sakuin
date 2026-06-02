@@ -6,6 +6,9 @@ export const queryKeys = {
   profile: ["profile"] as const,
   categories: ["categories"] as const,
   recurring: ["recurring"] as const,
+  emailImports: {
+    overview: ["email-imports", "overview"] as const
+  },
   transactions: {
     all: ["transactions"] as const,
     list: (params: GetTransactionsParams) =>

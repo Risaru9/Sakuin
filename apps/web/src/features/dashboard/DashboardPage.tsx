@@ -65,6 +65,7 @@ import { FinancialRhythmCard } from "./dashboard-rhythm-card";
 import { DashboardGoalsCard } from "./dashboard-goals-card";
 import { FinancialCheckupCard } from "./dashboard-checkup-card";
 import { DailyReviewCard, TodayViewCard } from "./dashboard-daily-cards";
+import { EmailDetectionCard } from "../email-imports/EmailDetectionCard";
 
 const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
@@ -83,16 +84,14 @@ export function DashboardPage() {
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [activeMobileTab, setActiveMobileTab] = useState<
-    "overview" | "transactions" | "stats"
+    "overview" | "transactions" | "stats" | "email"
   >("overview");
   const mobileTabItems = [
     { id: "overview", label: "Ringkasan" },
     { id: "transactions", label: "Transaksi" },
-    { id: "stats", label: "Ritme" }
+    { id: "stats", label: "Ritme" },
+    { id: "email", label: "Deteksi" }
   ] as const;
-  const activeMobileTabIndex = mobileTabItems.findIndex(
-    (item) => item.id === activeMobileTab
-  );
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
@@ -529,20 +528,12 @@ const profileQuery = useQuery({
 
             {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
             <div className="relative mt-1 flex gap-2 overflow-hidden rounded-2xl bg-[var(--sakuin-primary-soft)] p-1.5 text-xs font-bold text-[var(--sakuin-text)] sm:text-sm xl:hidden">
-              <span
-                aria-hidden="true"
-                className="sakuin-tab-indicator absolute bottom-1.5 top-1.5 rounded-xl bg-white shadow-sm"
-                style={{
-                  left: `calc(${activeMobileTabIndex} * ((100% - 0.75rem) / 3) + 0.375rem + ${activeMobileTabIndex} * 0.25rem)`,
-                  width: "calc((100% - 0.75rem) / 3)"
-                }}
-              />
               {mobileTabItems.map((item) => (
                 <button
                   className={[
-                    "sakuin-press relative z-10 flex-1 rounded-xl px-3 py-2 transition",
+                    "sakuin-press relative z-10 flex-1 rounded-xl px-2 py-2 transition sm:px-3",
                     activeMobileTab === item.id
-                      ? "text-[var(--sakuin-text)]"
+                      ? "bg-white text-[var(--sakuin-text)] shadow-sm"
                       : "text-zinc-600"
                   ].join(" ")}
                   key={item.id}
@@ -563,6 +554,8 @@ const profileQuery = useQuery({
                 onOpenQuickTransaction={() => setIsQuickTransactionOpen(true)}
                 summary={summary}
               />
+
+              <EmailDetectionCard />
 
               <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
                 <div className="mb-4">
@@ -714,6 +707,8 @@ const profileQuery = useQuery({
                   summary={summary}
                 />
               ) : null}
+
+              {activeMobileTab === "email" ? <EmailDetectionCard /> : null}
             </div>
           </div>
 

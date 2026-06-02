@@ -30,6 +30,9 @@ const envSchema = z.object({
     .url("FRONTEND_URL harus berupa URL valid")
     .default("http://localhost:3000"),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_SECRET: z.string().optional(),
+  GMAIL_REDIRECT_URI: z.string().optional(),
 
   SMTP_HOST: z.string().default("smtp.gmail.com"),
   SMTP_PORT: z.coerce.number().int().positive().default(465),
