@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Sakuin v1.6.7</string>
-    <string name="title_activity_main">Sakuin v1.6.7</string>
+    <string name="app_name">Sakuin v1.6.8</string>
+    <string name="title_activity_main">Sakuin v1.6.8</string>
     <string name="widget_finance_medium_name">Sakuin Ringkasan</string>
     <string name="widget_finance_extra_name">Sakuin Dashboard Mini</string>
     <string name="widget_finance_medium_description">Saldo, pemasukan, pengeluaran, dan maskot.</string>

@@ -1,11 +1,14 @@
 package com.sakuin.app;
 
 import android.content.Context;
+import android.app.DownloadManager;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.os.Bundle;
 import android.os.Build;
+import android.os.Environment;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -119,6 +122,45 @@ public class MainActivity extends BridgeActivity {
                     return hasPendingAction;
                 }
             }, "AndroidWidgetBridge");
+
+            webView.addJavascriptInterface(new Object() {
+                @JavascriptInterface
+                public String enqueueDownload(String url, String fileName, String mimeType, String authToken) {
+                    try {
+                        String safeFileName = sanitizeExportFileName(fileName);
+                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+
+                        if (authToken != null && authToken.trim().length() > 0) {
+                            request.addRequestHeader("Authorization", "Bearer " + authToken.trim());
+                        }
+
+                        request.setTitle(safeFileName);
+                        request.setDescription("Laporan transaksi Sakuin sedang diunduh");
+                        request.setMimeType(mimeType != null && mimeType.trim().length() > 0
+                                ? mimeType
+                                : "application/octet-stream");
+                        request.setNotificationVisibility(
+                                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setAllowedOverMetered(true);
+                        request.setAllowedOverRoaming(true);
+                        request.setDestinationInExternalPublicDir(
+                                Environment.DIRECTORY_DOWNLOADS,
+                                "Sakuin/" + safeFileName);
+
+                        DownloadManager downloadManager =
+                                (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                        if (downloadManager == null) {
+                            return "{\"ok\":false,\"message\":\"Download Manager Android tidak tersedia.\"}";
+                        }
+
+                        long downloadId = downloadManager.enqueue(request);
+                        return "{\"ok\":true,\"downloadId\":" + downloadId
+                                + ",\"path\":\"Download/Sakuin/" + escapeJson(safeFileName) + "\"}";
+                    } catch (Exception e) {
+                        return "{\"ok\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}";
+                    }
+                }
+            }, "AndroidExportBridge");
         }
     }
 
@@ -154,6 +196,29 @@ public class MainActivity extends BridgeActivity {
         }
 
         return SakuinFinanceWidgetProvider.class;
+    }
+
+    private String sanitizeExportFileName(String fileName) {
+        String fallback = "sakuin-transactions.xlsx";
+        String value = fileName != null && fileName.trim().length() > 0 ? fileName.trim() : fallback;
+        value = value.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "-");
+        value = value.replaceAll("\\s+", "-");
+        value = value.replaceAll("-+", "-");
+        value = value.replaceAll("^-|-$", "");
+
+        return value.length() > 0 ? value : fallback;
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 
     private void handleWidgetIntent(Intent intent) {

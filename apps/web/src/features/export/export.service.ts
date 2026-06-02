@@ -1,7 +1,9 @@
 import {
   ApiClientError,
-  apiDownload
+  apiDownload,
+  buildUrl
 } from "../../lib/api-client";
+import { getStoredToken } from "../../lib/auth-storage";
 import type { TransactionType } from "../transactions/transaction.types";
 
 export type ExportFormat = "json" | "csv" | "xlsx";
@@ -15,6 +17,26 @@ export type DownloadTransactionsExportInput = {
   endDate?: string;
   fileName?: string;
 };
+
+type AndroidDownloadResult = {
+  ok: boolean;
+  downloadId?: number;
+  path?: string;
+  message?: string;
+};
+
+declare global {
+  interface Window {
+    AndroidExportBridge?: {
+      enqueueDownload: (
+        url: string,
+        fileName: string,
+        mimeType: string,
+        authToken: string
+      ) => string;
+    };
+  }
+}
 
 function buildExportPath(input: DownloadTransactionsExportInput) {
   const searchParams = new URLSearchParams();
@@ -34,6 +56,28 @@ function buildExportPath(input: DownloadTransactionsExportInput) {
   }
 
   return `/api/export/transactions?${searchParams.toString()}`;
+}
+
+function getExportMimeType(format: ExportFormat) {
+  if (format === "csv") {
+    return "text/csv";
+  }
+
+  if (format === "xlsx") {
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  }
+
+  return "application/json";
+}
+
+function isNativeAppRuntime() {
+  const capacitor = (window as unknown as {
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+    };
+  }).Capacitor;
+
+  return Boolean(capacitor?.isNativePlatform?.());
 }
 
 export function sanitizeExportFileName(value: string) {
@@ -91,7 +135,52 @@ export function getDownloadFileNamePreview(
 export async function downloadTransactionsExport(
   input: DownloadTransactionsExportInput
 ) {
-  const response = await apiDownload(buildExportPath(input));
+  const exportPath = buildExportPath(input);
+  const fallbackFileName = getDownloadFileName(input);
+
+  if (window.AndroidExportBridge) {
+    const token = getStoredToken();
+
+    if (!token) {
+      throw new ApiClientError("Sesi telah berakhir, silakan login kembali", 401);
+    }
+
+    let result: AndroidDownloadResult;
+    try {
+      result = JSON.parse(
+        window.AndroidExportBridge.enqueueDownload(
+          buildUrl(exportPath),
+          fallbackFileName,
+          getExportMimeType(input.format),
+          token
+        )
+      ) as AndroidDownloadResult;
+    } catch {
+      throw new ApiClientError("Download native Android gagal diproses.", 500);
+    }
+
+    if (!result.ok) {
+      throw new ApiClientError(
+        result.message || "Download native Android gagal diproses.",
+        500
+      );
+    }
+
+    return {
+      fileName: fallbackFileName,
+      location: result.path ?? `Download/Sakuin/${fallbackFileName}`,
+      nativeDownload: true
+    };
+  }
+
+  if (isNativeAppRuntime()) {
+    throw new ApiClientError(
+      "Versi aplikasi ini belum mendukung download native. Update atau install ulang APK Sakuin terbaru dulu.",
+      426
+    );
+  }
+
+  const response = await apiDownload(exportPath);
 
   const blob = await response.blob();
 
@@ -103,7 +192,7 @@ export async function downloadTransactionsExport(
     response.headers.get("content-disposition")
   );
 
-  const finalFileName = responseFileName || getDownloadFileName(input);
+  const finalFileName = responseFileName || fallbackFileName;
 
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -117,4 +206,10 @@ export async function downloadTransactionsExport(
   window.setTimeout(() => {
     URL.revokeObjectURL(objectUrl);
   }, 1000);
+
+  return {
+    fileName: finalFileName,
+    location: "Folder download browser",
+    nativeDownload: false
+  };
 }

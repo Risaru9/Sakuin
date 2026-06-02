@@ -170,11 +170,13 @@ export function ExportPage() {
         fileName: isCustomFileNameEnabled ? sanitizedFileName : undefined
       });
     },
-    onSuccess: (_result, variables) => {
+    onSuccess: (result, variables) => {
       addToast({
         variant: "success",
         title: `Export ${variables.format.toUpperCase()} berhasil`,
-        description: "File laporan transaksi mulai diunduh."
+        description: result.nativeDownload
+          ? `File masuk notifikasi Download Android dan tersimpan di ${result.location}.`
+          : `File laporan transaksi mulai diunduh ke ${result.location}.`
       });
     },
     onError: (caughtError, variables) => {
@@ -541,6 +543,17 @@ export function ExportPage() {
             <p>
               Tombol export akan nonaktif saat file sedang disiapkan agar tidak
               terjadi download ganda.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-[var(--sakuin-border)] bg-zinc-50 p-4 text-sm leading-6 text-zinc-700">
+          <div className="flex items-start gap-3">
+            <Download className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              Di aplikasi Android, file export disimpan lewat Download Manager
+              ke folder <span className="font-black">Download/Sakuin</span> dan
+              akan muncul di notifikasi download.
             </p>
           </div>
         </div>
