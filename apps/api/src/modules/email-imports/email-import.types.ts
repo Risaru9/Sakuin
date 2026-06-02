@@ -28,6 +28,20 @@ export type ImportEmailInput = {
   autoImport?: boolean;
 };
 
+export type GmailSyncInput = {
+  connectionId?: string;
+  maxMessages?: number;
+};
+
+export type GmailSyncResponse = {
+  scanned: number;
+  processed: number;
+  imported: number;
+  needsReview: number;
+  duplicate: number;
+  ignored: number;
+};
+
 export type EmailConnectionResponse = {
   id: string;
   provider: string;
@@ -35,6 +49,7 @@ export type EmailConnectionResponse = {
   status: string;
   detectedProviders: string[];
   lastSyncedAt: string | null;
+  tokenExpiresAt: string | null;
   createdAt: string;
 };
 

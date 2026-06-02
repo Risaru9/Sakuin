@@ -33,6 +33,7 @@ const envSchema = z.object({
   GMAIL_CLIENT_ID: z.string().optional(),
   GMAIL_CLIENT_SECRET: z.string().optional(),
   GMAIL_REDIRECT_URI: z.string().optional(),
+  EMAIL_TOKEN_ENCRYPTION_KEY: z.string().optional(),
 
   SMTP_HOST: z.string().default("smtp.gmail.com"),
   SMTP_PORT: z.coerce.number().int().positive().default(465),

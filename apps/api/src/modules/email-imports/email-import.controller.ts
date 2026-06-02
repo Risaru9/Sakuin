@@ -1,14 +1,18 @@
 import type { Context } from "hono";
 import type { AppEnv } from "../../types/app.js";
+import { env } from "../../config/env.js";
 import { successResponse } from "../../utils/api-response.js";
 import { HttpError } from "../../utils/http-error.js";
-import type { ImportEmailInput } from "./email-import.types.js";
+import type { GmailSyncInput, ImportEmailInput } from "./email-import.types.js";
 import {
   approveEmailImport,
+  disconnectGmailConnection,
   getEmailImportOverview,
   getGmailAuthUrl,
+  handleGmailOAuthCallback,
   ignoreEmailImport,
-  importEmailTransaction
+  importEmailTransaction,
+  syncGmailTransactions
 } from "./email-import.service.js";
 
 function getAuthenticatedUserId(c: Context<AppEnv>) {
@@ -33,6 +37,44 @@ export async function getGmailAuthUrlController(c: Context<AppEnv>) {
   const result = await getGmailAuthUrl(userId);
 
   return successResponse(c, "URL koneksi Gmail berhasil dibuat", result);
+}
+
+export async function gmailOAuthCallbackController(c: Context<AppEnv>) {
+  const query = c.get("validatedQuery") as { code: string; state: string };
+
+  try {
+    await handleGmailOAuthCallback(query.code, query.state);
+
+    return c.redirect(
+      `${env.FRONTEND_URL}/dashboard?emailImport=connected`,
+      302
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Koneksi Gmail gagal";
+    const params = new URLSearchParams({
+      emailImport: "error",
+      message
+    });
+
+    return c.redirect(`${env.FRONTEND_URL}/dashboard?${params.toString()}`, 302);
+  }
+}
+
+export async function syncGmailController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const input = c.get("validatedJson") as GmailSyncInput;
+  const result = await syncGmailTransactions(userId, input);
+
+  return successResponse(c, "Sinkronisasi Gmail berhasil", result);
+}
+
+export async function disconnectGmailController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const param = c.get("validatedParam") as { id: string };
+  const result = await disconnectGmailConnection(userId, param.id);
+
+  return successResponse(c, "Koneksi Gmail berhasil diputus", result);
 }
 
 export async function importEmailController(c: Context<AppEnv>) {

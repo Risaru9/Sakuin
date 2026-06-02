@@ -7,6 +7,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Unplug,
   XCircle
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -14,10 +15,12 @@ import { queryKeys } from "../../lib/query-keys";
 import { formatDate, formatRupiah, getErrorMessage } from "../dashboard/dashboard-utils";
 import {
   approveEmailImport,
+  disconnectGmail,
   getEmailImportOverview,
   getGmailAuthUrl,
   ignoreEmailImport,
   importEmail,
+  syncGmail,
   type EmailTransactionImport
 } from "./email-import.service";
 
@@ -55,6 +58,7 @@ export function EmailDetectionCard() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.emailImports.overview,
@@ -99,6 +103,30 @@ export function EmailDetectionCard() {
       if (result.authUrl) {
         window.location.href = result.authUrl;
       }
+    }
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: syncGmail,
+    onSuccess: async (result) => {
+      setSyncMessage(
+        `${result.processed} email diproses, ${result.imported} tercatat, ${result.needsReview} perlu review.`
+      );
+      await refreshAfterImport();
+    },
+    onError: (error) => {
+      setSyncMessage(getErrorMessage(error));
+    }
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: disconnectGmail,
+    onSuccess: async () => {
+      setSyncMessage("Koneksi Gmail diputus.");
+      await refreshAfterImport();
+    },
+    onError: (error) => {
+      setSyncMessage(getErrorMessage(error));
     }
   });
 
@@ -165,19 +193,74 @@ export function EmailDetectionCard() {
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
           <p className="text-[11px] font-semibold leading-5 text-zinc-600">
-            Koneksi Gmail production disiapkan lewat OAuth. Selama consent Gmail belum aktif, form uji di bawah memakai pipeline parser yang sama agar format bank/e-wallet bisa divalidasi dulu.
+            Gmail memakai izin baca terbatas. Email yang cocok akan diproses ke transaksi, sedangkan hasil ambigu masuk review.
           </p>
         </div>
-        <Button
-          className="mt-3 w-full rounded-xl"
-          disabled={!overview?.gmailConfigured || gmailMutation.isPending}
-          onClick={() => gmailMutation.mutate()}
-          size="sm"
-          type="button"
-        >
-          <Sparkles className="h-4 w-4" />
-          {overview?.gmailConfigured ? "Hubungkan Gmail" : "Gmail OAuth belum dikonfigurasi"}
-        </Button>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <Button
+            className="rounded-xl"
+            disabled={!overview?.gmailConfigured || gmailMutation.isPending}
+            onClick={() => gmailMutation.mutate()}
+            size="sm"
+            type="button"
+          >
+            <Sparkles className="h-4 w-4" />
+            {overview?.gmailConfigured ? "Hubungkan Gmail" : "OAuth belum aktif"}
+          </Button>
+          <Button
+            className="rounded-xl"
+            disabled={
+              !overview?.connections.length ||
+              syncMutation.isPending ||
+              !overview?.gmailConfigured
+            }
+            isLoading={syncMutation.isPending}
+            onClick={() => syncMutation.mutate({ maxMessages: 10 })}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Sinkronkan
+          </Button>
+        </div>
+
+        {syncMessage ? (
+          <p className="mt-2 rounded-xl bg-white px-3 py-2 text-[11px] font-bold text-zinc-600 ring-1 ring-slate-100">
+            {syncMessage}
+          </p>
+        ) : null}
+
+        {(overview?.connections ?? []).length > 0 ? (
+          <div className="mt-3 grid gap-2">
+            {overview?.connections.map((connection) => (
+              <div
+                className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-100"
+                key={connection.id}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-black text-[var(--sakuin-text)]">
+                    {connection.emailAddress}
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-bold text-zinc-500">
+                    {connection.lastSyncedAt
+                      ? `Sync ${formatDate(connection.lastSyncedAt)}`
+                      : "Belum pernah sync"}
+                  </p>
+                </div>
+                <button
+                  className="sakuin-press flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
+                  disabled={disconnectMutation.isPending}
+                  onClick={() => disconnectMutation.mutate(connection.id)}
+                  type="button"
+                >
+                  <Unplug className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <form className="mt-4 grid gap-2" onSubmit={handleImportSubmit}>

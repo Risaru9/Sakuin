@@ -4,12 +4,20 @@ import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import {
   approveEmailImportController,
+  disconnectGmailController,
+  gmailOAuthCallbackController,
   getEmailImportOverviewController,
   getGmailAuthUrlController,
   ignoreEmailImportController,
-  importEmailController
+  importEmailController,
+  syncGmailController
 } from "./email-import.controller.js";
-import { importEmailSchema, importIdParamSchema } from "./email-import.schema.js";
+import {
+  gmailCallbackSchema,
+  gmailSyncSchema,
+  importEmailSchema,
+  importIdParamSchema
+} from "./email-import.schema.js";
 
 export const emailImportRoutes = new Hono<AppEnv>();
 
@@ -23,6 +31,26 @@ emailImportRoutes.get(
   "/gmail/auth-url",
   authMiddleware,
   getGmailAuthUrlController
+);
+
+emailImportRoutes.get(
+  "/gmail/callback",
+  validateRequest("query", gmailCallbackSchema),
+  gmailOAuthCallbackController
+);
+
+emailImportRoutes.post(
+  "/gmail/sync",
+  authMiddleware,
+  validateRequest("json", gmailSyncSchema),
+  syncGmailController
+);
+
+emailImportRoutes.post(
+  "/gmail/connections/:id/disconnect",
+  authMiddleware,
+  validateRequest("param", importIdParamSchema),
+  disconnectGmailController
 );
 
 emailImportRoutes.post(

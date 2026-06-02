@@ -18,3 +18,13 @@ export const importEmailSchema = z.object({
 export const importIdParamSchema = z.object({
   id: z.string().trim().min(1, "ID import wajib diisi")
 });
+
+export const gmailCallbackSchema = z.object({
+  code: z.string().trim().min(1, "Kode OAuth wajib diisi"),
+  state: z.string().trim().min(1, "State OAuth wajib diisi")
+});
+
+export const gmailSyncSchema = z.object({
+  connectionId: optionalStringSchema,
+  maxMessages: z.coerce.number().int().min(1).max(25).optional().default(10)
+});

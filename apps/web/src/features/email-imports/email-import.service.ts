@@ -9,6 +9,7 @@ export type EmailConnection = {
   status: string;
   detectedProviders: string[];
   lastSyncedAt: string | null;
+  tokenExpiresAt: string | null;
   createdAt: string;
 };
 
@@ -55,6 +56,20 @@ export type ImportEmailInput = {
   autoImport?: boolean;
 };
 
+export type GmailSyncInput = {
+  connectionId?: string;
+  maxMessages?: number;
+};
+
+export type GmailSyncResult = {
+  scanned: number;
+  processed: number;
+  imported: number;
+  needsReview: number;
+  duplicate: number;
+  ignored: number;
+};
+
 export function getEmailImportOverview() {
   return apiRequest<EmailImportOverview>("/api/email-imports/overview");
 }
@@ -62,6 +77,22 @@ export function getEmailImportOverview() {
 export function getGmailAuthUrl() {
   return apiRequest<{ configured: boolean; authUrl: string | null }>(
     "/api/email-imports/gmail/auth-url"
+  );
+}
+
+export function syncGmail(input: GmailSyncInput = {}) {
+  return apiRequest<GmailSyncResult>("/api/email-imports/gmail/sync", {
+    method: "POST",
+    body: input
+  });
+}
+
+export function disconnectGmail(connectionId: string) {
+  return apiRequest<EmailConnection>(
+    `/api/email-imports/gmail/connections/${connectionId}/disconnect`,
+    {
+      method: "POST"
+    }
   );
 }
 

@@ -1,4 +1,12 @@
-import { randomUUID } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual
+} from "node:crypto";
 import type { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
@@ -11,12 +19,19 @@ import {
 } from "./email-import.parser.js";
 import type {
   EmailConnectionResponse,
+  GmailSyncInput,
+  GmailSyncResponse,
   EmailTransactionImportResponse,
   ImportEmailInput,
   ParsedEmailTransaction
 } from "./email-import.types.js";
 
 const AUTO_IMPORT_CONFIDENCE = 0.78;
+const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GMAIL_API_BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me";
+const GMAIL_SEARCH_QUERY =
+  'newer_than:30d ("Rp" OR "IDR" OR transaksi OR transfer OR QRIS OR pembayaran)';
 
 const importInclude = {
   emailConnection: {
@@ -52,6 +67,7 @@ function mapConnection(connection: Prisma.EmailConnectionGetPayload<{}>): EmailC
     status: connection.status,
     detectedProviders: safeJsonArray(connection.detectedProviders),
     lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
+    tokenExpiresAt: connection.accessTokenExpiresAt?.toISOString() ?? null,
     createdAt: connection.createdAt.toISOString()
   };
 }
@@ -78,6 +94,200 @@ function mapImport(record: ImportWithRelations): EmailTransactionImportResponse 
     snippet: record.snippet,
     createdAt: record.createdAt.toISOString()
   };
+}
+
+function isGmailConfigured() {
+  return Boolean(
+    env.GMAIL_CLIENT_ID &&
+      env.GMAIL_CLIENT_SECRET &&
+      env.GMAIL_REDIRECT_URI &&
+      env.EMAIL_TOKEN_ENCRYPTION_KEY
+  );
+}
+
+function getEncryptionKey() {
+  if (!env.EMAIL_TOKEN_ENCRYPTION_KEY) {
+    throw new HttpError("EMAIL_TOKEN_ENCRYPTION_KEY belum dikonfigurasi", 500);
+  }
+
+  return createHash("sha256").update(env.EMAIL_TOKEN_ENCRYPTION_KEY).digest();
+}
+
+function encryptToken(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getEncryptionKey(), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(value, "utf8"),
+    cipher.final()
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return [
+    iv.toString("base64url"),
+    tag.toString("base64url"),
+    encrypted.toString("base64url")
+  ].join(".");
+}
+
+function decryptToken(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const [ivText, tagText, encryptedText] = value.split(".");
+  if (!ivText || !tagText || !encryptedText) {
+    throw new HttpError("Token Gmail tersimpan tidak valid", 500);
+  }
+
+  const decipher = createDecipheriv(
+    "aes-256-gcm",
+    getEncryptionKey(),
+    Buffer.from(ivText, "base64url")
+  );
+  decipher.setAuthTag(Buffer.from(tagText, "base64url"));
+
+  return Buffer.concat([
+    decipher.update(Buffer.from(encryptedText, "base64url")),
+    decipher.final()
+  ]).toString("utf8");
+}
+
+function signOAuthState(payload: { userId: string; nonce: string; exp: number }) {
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = createHmac("sha256", env.JWT_SECRET)
+    .update(encodedPayload)
+    .digest("base64url");
+
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifyOAuthState(state: string) {
+  const [encodedPayload, signature] = state.split(".");
+  if (!encodedPayload || !signature) {
+    throw new HttpError("State OAuth tidak valid", 400);
+  }
+
+  const expectedSignature = createHmac("sha256", env.JWT_SECRET)
+    .update(encodedPayload)
+    .digest("base64url");
+  const providedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    throw new HttpError("State OAuth tidak valid", 400);
+  }
+
+  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as {
+    userId?: string;
+    exp?: number;
+  };
+
+  if (!payload.userId || !payload.exp || payload.exp < Date.now()) {
+    throw new HttpError("State OAuth sudah kedaluwarsa", 400);
+  }
+
+  return {
+    userId: payload.userId
+  };
+}
+
+async function postForm<T>(url: string, body: Record<string, string>) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(body)
+  });
+
+  if (!response.ok) {
+    throw new HttpError(`Gagal memproses OAuth Gmail (${response.status})`, 502);
+  }
+
+  return (await response.json()) as T;
+}
+
+async function gmailFetch<T>(accessToken: string, path: string) {
+  const response = await fetch(`${GMAIL_API_BASE_URL}${path}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new HttpError(`Gmail API gagal (${response.status})`, 502);
+  }
+
+  return (await response.json()) as T;
+}
+
+type GmailTokenResponse = {
+  access_token: string;
+  expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+};
+
+type GmailProfileResponse = {
+  emailAddress: string;
+  historyId?: string;
+};
+
+type GmailListResponse = {
+  messages?: Array<{ id: string; threadId?: string }>;
+};
+
+type GmailMessageResponse = {
+  id: string;
+  snippet?: string;
+  internalDate?: string;
+  payload?: {
+    headers?: Array<{ name: string; value: string }>;
+    body?: { data?: string };
+    parts?: GmailMessageResponse["payload"][];
+  };
+};
+
+function getHeader(message: GmailMessageResponse, name: string) {
+  return (
+    message.payload?.headers?.find(
+      (header) => header.name.toLowerCase() === name.toLowerCase()
+    )?.value ?? null
+  );
+}
+
+function decodeGmailBody(data: string | undefined) {
+  if (!data) {
+    return "";
+  }
+
+  return Buffer.from(data, "base64url").toString("utf8");
+}
+
+function extractMessageBody(payload: GmailMessageResponse["payload"]): string {
+  if (!payload) {
+    return "";
+  }
+
+  const directBody = decodeGmailBody(payload.body?.data);
+  const childBodies = (payload.parts ?? [])
+    .map((part) => extractMessageBody(part))
+    .filter(Boolean);
+
+  return [directBody, ...childBodies].filter(Boolean).join("\n").trim();
+}
+
+function getTokenExpiry(expiresIn?: number) {
+  const seconds = expiresIn ?? 3600;
+  return new Date(Date.now() + Math.max(seconds - 60, 60) * 1000);
 }
 
 function getSnippet(input: ImportEmailInput) {
@@ -301,7 +511,7 @@ export async function getEmailImportOverview(userId: string) {
   ]);
 
   return {
-    gmailConfigured: Boolean(env.GMAIL_CLIENT_ID && env.GMAIL_CLIENT_SECRET),
+    gmailConfigured: isGmailConfigured(),
     connections: connections.map(mapConnection),
     recentImports: imports.map(mapImport),
     stats: {
@@ -314,21 +524,25 @@ export async function getEmailImportOverview(userId: string) {
 }
 
 export async function getGmailAuthUrl(userId: string) {
-  if (!env.GMAIL_CLIENT_ID || !env.GMAIL_REDIRECT_URI) {
+  if (!isGmailConfigured() || !env.GMAIL_CLIENT_ID || !env.GMAIL_REDIRECT_URI) {
     return {
       configured: false,
       authUrl: null
     };
   }
 
-  const state = Buffer.from(JSON.stringify({ userId, nonce: randomUUID() })).toString("base64url");
+  const state = signOAuthState({
+    userId,
+    nonce: randomUUID(),
+    exp: Date.now() + 15 * 60 * 1000
+  });
   const params = new URLSearchParams({
     client_id: env.GMAIL_CLIENT_ID,
     redirect_uri: env.GMAIL_REDIRECT_URI,
     response_type: "code",
     access_type: "offline",
     prompt: "consent",
-    scope: "https://www.googleapis.com/auth/gmail.readonly",
+    scope: GMAIL_SCOPE,
     state
   });
 
@@ -336,6 +550,293 @@ export async function getGmailAuthUrl(userId: string) {
     configured: true,
     authUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
+}
+
+export async function handleGmailOAuthCallback(code: string, state: string) {
+  if (
+    !isGmailConfigured() ||
+    !env.GMAIL_CLIENT_ID ||
+    !env.GMAIL_CLIENT_SECRET ||
+    !env.GMAIL_REDIRECT_URI
+  ) {
+    throw new HttpError("OAuth Gmail belum dikonfigurasi lengkap", 500);
+  }
+
+  const { userId } = verifyOAuthState(state);
+  const token = await postForm<GmailTokenResponse>(GMAIL_TOKEN_URL, {
+    code,
+    client_id: env.GMAIL_CLIENT_ID,
+    client_secret: env.GMAIL_CLIENT_SECRET,
+    redirect_uri: env.GMAIL_REDIRECT_URI,
+    grant_type: "authorization_code"
+  });
+
+  const profile = await gmailFetch<GmailProfileResponse>(
+    token.access_token,
+    "/profile"
+  );
+  const emailAddress = profile.emailAddress.trim().toLowerCase();
+  const existingConnection = await prisma.emailConnection.findUnique({
+    where: {
+      userId_provider_emailAddress: {
+        userId,
+        provider: "gmail",
+        emailAddress
+      }
+    }
+  });
+
+  const encryptedRefreshToken =
+    token.refresh_token ?? decryptToken(existingConnection?.encryptedRefreshToken);
+
+  if (!encryptedRefreshToken) {
+    throw new HttpError(
+      "Refresh token Gmail tidak diterima. Coba hubungkan ulang dengan consent penuh.",
+      400
+    );
+  }
+
+  const connection = await prisma.emailConnection.upsert({
+    where: {
+      userId_provider_emailAddress: {
+        userId,
+        provider: "gmail",
+        emailAddress
+      }
+    },
+    update: {
+      providerAccountId: emailAddress,
+      encryptedAccessToken: encryptToken(token.access_token),
+      encryptedRefreshToken: token.refresh_token
+        ? encryptToken(token.refresh_token)
+        : existingConnection?.encryptedRefreshToken,
+      accessTokenExpiresAt: getTokenExpiry(token.expires_in),
+      scopes: (token.scope ?? GMAIL_SCOPE).split(/\s+/).filter(Boolean),
+      status: "active",
+      historyId: profile.historyId ?? existingConnection?.historyId ?? null,
+      lastSyncedAt: existingConnection?.lastSyncedAt ?? null
+    },
+    create: {
+      userId,
+      provider: "gmail",
+      emailAddress,
+      providerAccountId: emailAddress,
+      encryptedAccessToken: encryptToken(token.access_token),
+      encryptedRefreshToken: encryptToken(encryptedRefreshToken),
+      accessTokenExpiresAt: getTokenExpiry(token.expires_in),
+      scopes: (token.scope ?? GMAIL_SCOPE).split(/\s+/).filter(Boolean),
+      status: "active",
+      historyId: profile.historyId ?? null
+    }
+  });
+
+  return mapConnection(connection);
+}
+
+async function refreshGmailAccessToken(connection: {
+  id: string;
+  encryptedAccessToken: string | null;
+  encryptedRefreshToken: string | null;
+  accessTokenExpiresAt: Date | null;
+}) {
+  const existingToken = decryptToken(connection.encryptedAccessToken);
+  if (
+    existingToken &&
+    connection.accessTokenExpiresAt &&
+    connection.accessTokenExpiresAt.getTime() > Date.now() + 60_000
+  ) {
+    return existingToken;
+  }
+
+  if (
+    !env.GMAIL_CLIENT_ID ||
+    !env.GMAIL_CLIENT_SECRET ||
+    !connection.encryptedRefreshToken
+  ) {
+    throw new HttpError("Koneksi Gmail belum lengkap", 400);
+  }
+
+  const refreshToken = decryptToken(connection.encryptedRefreshToken);
+  if (!refreshToken) {
+    throw new HttpError("Refresh token Gmail tidak ditemukan", 400);
+  }
+
+  const token = await postForm<GmailTokenResponse>(GMAIL_TOKEN_URL, {
+    client_id: env.GMAIL_CLIENT_ID,
+    client_secret: env.GMAIL_CLIENT_SECRET,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token"
+  });
+
+  await prisma.emailConnection.update({
+    where: {
+      id: connection.id
+    },
+    data: {
+      encryptedAccessToken: encryptToken(token.access_token),
+      accessTokenExpiresAt: getTokenExpiry(token.expires_in),
+      status: "active"
+    }
+  });
+
+  return token.access_token;
+}
+
+async function syncOneGmailConnection(
+  userId: string,
+  connection: {
+    id: string;
+    emailAddress: string;
+    encryptedAccessToken: string | null;
+    encryptedRefreshToken: string | null;
+    accessTokenExpiresAt: Date | null;
+  },
+  maxMessages: number
+) {
+  const accessToken = await refreshGmailAccessToken(connection);
+  const list = await gmailFetch<GmailListResponse>(
+    accessToken,
+    `/messages?${new URLSearchParams({
+      q: GMAIL_SEARCH_QUERY,
+      maxResults: String(maxMessages)
+    }).toString()}`
+  );
+  const messages = list.messages ?? [];
+  const result: GmailSyncResponse = {
+    scanned: messages.length,
+    processed: 0,
+    imported: 0,
+    needsReview: 0,
+    duplicate: 0,
+    ignored: 0
+  };
+
+  for (const messageSummary of messages) {
+    const message = await gmailFetch<GmailMessageResponse>(
+      accessToken,
+      `/messages/${messageSummary.id}?${new URLSearchParams({
+        format: "full"
+      }).toString()}`
+    );
+    const body = extractMessageBody(message.payload) || message.snippet || "";
+    if (body.trim().length < 10) {
+      continue;
+    }
+
+    const imported = await importEmailTransaction(userId, {
+      emailAddress: connection.emailAddress,
+      from: getHeader(message, "From") ?? undefined,
+      subject: getHeader(message, "Subject") ?? undefined,
+      body,
+      messageId: message.id,
+      receivedAt: message.internalDate
+        ? new Date(Number(message.internalDate))
+        : undefined,
+      autoImport: true
+    });
+
+    result.processed += 1;
+    if (imported.status === "imported") result.imported += 1;
+    if (imported.status === "needs_review") result.needsReview += 1;
+    if (imported.status === "duplicate") result.duplicate += 1;
+    if (imported.status === "ignored") result.ignored += 1;
+  }
+
+  await prisma.emailConnection.update({
+    where: {
+      id: connection.id
+    },
+    data: {
+      lastSyncedAt: new Date(),
+      status: "active"
+    }
+  });
+
+  return result;
+}
+
+export async function syncGmailTransactions(
+  userId: string,
+  input: GmailSyncInput = {}
+) {
+  const connections = await prisma.emailConnection.findMany({
+    where: {
+      userId,
+      provider: "gmail",
+      status: "active",
+      encryptedRefreshToken: {
+        not: null
+      },
+      ...(input.connectionId ? { id: input.connectionId } : {})
+    },
+    select: {
+      id: true,
+      emailAddress: true,
+      encryptedAccessToken: true,
+      encryptedRefreshToken: true,
+      accessTokenExpiresAt: true
+    }
+  });
+
+  if (connections.length === 0) {
+    throw new HttpError("Belum ada koneksi Gmail aktif", 400);
+  }
+
+  const summary: GmailSyncResponse = {
+    scanned: 0,
+    processed: 0,
+    imported: 0,
+    needsReview: 0,
+    duplicate: 0,
+    ignored: 0
+  };
+
+  for (const connection of connections) {
+    const result = await syncOneGmailConnection(
+      userId,
+      connection,
+      input.maxMessages ?? 10
+    );
+    summary.scanned += result.scanned;
+    summary.processed += result.processed;
+    summary.imported += result.imported;
+    summary.needsReview += result.needsReview;
+    summary.duplicate += result.duplicate;
+    summary.ignored += result.ignored;
+  }
+
+  return summary;
+}
+
+export async function disconnectGmailConnection(userId: string, connectionId: string) {
+  const connection = await prisma.emailConnection.findFirst({
+    where: {
+      id: connectionId,
+      userId,
+      provider: "gmail"
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!connection) {
+    throw new HttpError("Koneksi Gmail tidak ditemukan", 404);
+  }
+
+  const updated = await prisma.emailConnection.update({
+    where: {
+      id: connection.id
+    },
+    data: {
+      status: "disconnected",
+      encryptedAccessToken: null,
+      encryptedRefreshToken: null,
+      accessTokenExpiresAt: null
+    }
+  });
+
+  return mapConnection(updated);
 }
 
 export async function importEmailTransaction(userId: string, input: ImportEmailInput) {

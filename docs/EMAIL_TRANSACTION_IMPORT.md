@@ -91,17 +91,62 @@ Semua endpoint membutuhkan autentikasi.
 | `POST` | `/api/email-imports/imports/:id/approve` | Menyetujui import review agar menjadi transaksi. |
 | `POST` | `/api/email-imports/imports/:id/ignore` | Mengabaikan import review. |
 
-## Konfigurasi Gmail OAuth
+## Konfigurasi Gmail OAuth Production
 
 Tambahkan environment variable berikut di backend:
 
 ```env
 GMAIL_CLIENT_ID=
 GMAIL_CLIENT_SECRET=
-GMAIL_REDIRECT_URI=
+GMAIL_REDIRECT_URI=https://sakuin-api.vercel.app/api/email-imports/gmail/callback
+EMAIL_TOKEN_ENCRYPTION_KEY=
 ```
 
-Catatan: implementasi saat ini sudah menyiapkan URL consent Gmail dan pipeline import. Untuk mode production penuh, langkah berikutnya adalah menambahkan callback OAuth, penyimpanan token secara terenkripsi, job sinkronisasi Gmail, dan pembatasan scope agar hanya membaca email transaksi yang relevan.
+`EMAIL_TOKEN_ENCRYPTION_KEY` dipakai untuk mengenkripsi access token dan refresh token Gmail. Isi dengan string rahasia panjang minimal 32 karakter. Jangan gunakan nilai yang sama dengan password biasa dan jangan dibagikan ke frontend.
+
+Langkah yang perlu dilakukan di Google Cloud:
+
+1. Buka Google Cloud Console.
+2. Buat atau pilih project Sakuin.
+3. Aktifkan Gmail API.
+4. Buka OAuth consent screen.
+5. Pilih user type sesuai target rilis.
+6. Tambahkan scope Gmail readonly: `https://www.googleapis.com/auth/gmail.readonly`.
+7. Buat credential `OAuth client ID` dengan tipe `Web application`.
+8. Tambahkan Authorized redirect URI:
+
+   `https://sakuin-api.vercel.app/api/email-imports/gmail/callback`
+
+9. Salin `Client ID` ke `GMAIL_CLIENT_ID`.
+10. Salin `Client secret` ke `GMAIL_CLIENT_SECRET`.
+11. Redeploy backend.
+
+Catatan Google: refresh token untuk akses server-side membutuhkan authorization code flow dengan `access_type=offline`. Sakuin sudah mengirim parameter tersebut saat membuat URL consent Gmail.
+
+Referensi resmi:
+
+- Google OAuth 2.0 Web Server Applications: https://developers.google.com/identity/protocols/oauth2/web-server
+- Gmail API Authorization: https://developers.google.com/workspace/gmail/api/auth/web-server
+
+## Sinkronisasi Gmail
+
+Setelah user menekan `Hubungkan Gmail`, Google akan redirect ke callback backend. Backend akan:
+
+1. Memverifikasi signed OAuth state.
+2. Menukar authorization code menjadi access token dan refresh token.
+3. Membaca profile Gmail untuk mendapatkan email address.
+4. Menyimpan token secara terenkripsi.
+5. Mengembalikan user ke Dashboard.
+
+User kemudian bisa menekan `Sinkronkan` di tab `Deteksi`. Backend akan membaca email Gmail terbaru dengan query transaksi, mengambil body email, lalu menjalankan pipeline parser yang sama dengan import manual.
+
+Endpoint sinkronisasi:
+
+| Method | Endpoint | Fungsi |
+| --- | --- | --- |
+| `GET` | `/api/email-imports/gmail/callback` | Callback Google OAuth. |
+| `POST` | `/api/email-imports/gmail/sync` | Sinkronisasi email Gmail aktif. |
+| `POST` | `/api/email-imports/gmail/connections/:id/disconnect` | Putus koneksi Gmail dan hapus token. |
 
 ## File Implementasi
 
@@ -114,6 +159,6 @@ Catatan: implementasi saat ini sudah menyiapkan URL consent Gmail dan pipeline i
 
 ## Batasan Saat Ini
 
-Fitur ini sudah bisa memproses email lewat endpoint manual dan mencatat transaksi otomatis jika datanya lengkap. Koneksi Gmail production masih membutuhkan implementasi callback OAuth dan worker sinkronisasi setelah kredensial Google Cloud siap.
+Fitur ini sudah bisa memproses email manual, menghubungkan Gmail lewat OAuth, menyimpan token terenkripsi, dan menjalankan sinkronisasi Gmail manual dari tab `Deteksi`.
 
-Tahap ini sengaja dibuat sebagai fondasi aman agar parser, kategori, deduplikasi, UI review, dan integrasi transaksi bisa diuji dulu sebelum mengaktifkan akses Gmail otomatis.
+Yang belum dibuat adalah worker otomatis terjadwal. Untuk saat ini user menekan `Sinkronkan` secara manual. Setelah kredensial Google Cloud aktif dan format parser cukup stabil, worker bisa ditambahkan agar sinkronisasi berjalan otomatis beberapa kali sehari.

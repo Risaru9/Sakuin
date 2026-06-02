@@ -126,6 +126,7 @@ model EmailConnection {
   providerAccountId     String?
   encryptedAccessToken  String?
   encryptedRefreshToken String?
+  accessTokenExpiresAt  DateTime?
   scopes                Json?
   status                String   @default("active")
   historyId             String?
