@@ -79,7 +79,7 @@ public class MainActivity extends BridgeActivity {
                 }
 
                 @JavascriptInterface
-                public String requestPinWidget() {
+                public String requestPinWidget(String size) {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                         return "UNSUPPORTED_ANDROID_VERSION";
                     }
@@ -89,8 +89,9 @@ public class MainActivity extends BridgeActivity {
                         return "UNSUPPORTED_LAUNCHER";
                     }
 
-                    ComponentName widgetComponent = new ComponentName(MainActivity.this, SakuinFinanceWidgetProvider.class);
-                    Intent pinnedIntent = new Intent(MainActivity.this, SakuinFinanceWidgetProvider.class);
+                    Class<?> providerClass = getWidgetProviderClass(size);
+                    ComponentName widgetComponent = new ComponentName(MainActivity.this, providerClass);
+                    Intent pinnedIntent = new Intent(MainActivity.this, providerClass);
                     pinnedIntent.setAction(SakuinFinanceWidgetProvider.ACTION_PINNED);
                     PendingIntent successCallback = PendingIntent.getBroadcast(
                             MainActivity.this,
@@ -100,6 +101,11 @@ public class MainActivity extends BridgeActivity {
 
                     boolean requested = appWidgetManager.requestPinAppWidget(widgetComponent, null, successCallback);
                     return requested ? "REQUESTED" : "FAILED";
+                }
+
+                @JavascriptInterface
+                public String requestPinWidget() {
+                    return requestPinWidget("medium");
                 }
 
                 @JavascriptInterface
@@ -125,14 +131,39 @@ public class MainActivity extends BridgeActivity {
 
     private void triggerWidgetUpdate() {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-        ComponentName widgetComponent = new ComponentName(this, SakuinFinanceWidgetProvider.class);
+        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetProvider.class);
+        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetSmallProvider.class);
+        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetLargeProvider.class);
+        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetExtraProvider.class);
+    }
+
+    private void triggerWidgetUpdate(AppWidgetManager appWidgetManager, Class<?> providerClass) {
+        ComponentName widgetComponent = new ComponentName(this, providerClass);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent);
-        if (appWidgetIds != null && appWidgetIds.length > 0) {
-            Intent updateIntent = new Intent(this, SakuinFinanceWidgetProvider.class);
-            updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-            updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
-            sendBroadcast(updateIntent);
+        if (appWidgetIds == null || appWidgetIds.length == 0) {
+            return;
         }
+
+        Intent updateIntent = new Intent(this, providerClass);
+        updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
+        sendBroadcast(updateIntent);
+    }
+
+    private Class<?> getWidgetProviderClass(String size) {
+        if ("small".equals(size)) {
+            return SakuinFinanceWidgetSmallProvider.class;
+        }
+
+        if ("large".equals(size)) {
+            return SakuinFinanceWidgetLargeProvider.class;
+        }
+
+        if ("xl".equals(size) || "extra".equals(size)) {
+            return SakuinFinanceWidgetExtraProvider.class;
+        }
+
+        return SakuinFinanceWidgetProvider.class;
     }
 
     private void handleWidgetIntent(Intent intent) {

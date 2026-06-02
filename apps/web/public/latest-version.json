@@ -1,14 +1,14 @@
 {
-  "latestVersionCode": 11,
-  "latestVersionName": "1.6.4",
+  "latestVersionCode": 12,
+  "latestVersionName": "1.6.5",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Widget layar utama Android memakai desain baru yang sama dengan preview aplikasi.",
-    "Maskot widget ditampilkan di sisi kanan bawah dengan warna status hemat, waspada, dan boros.",
-    "Kartu pemasukan dan pengeluaran widget ditumpuk agar rapi di ruang launcher.",
-    "Status widget dibuat lebih ringkas untuk ukuran sedang dan tetap informatif untuk ukuran besar."
+    "Menambahkan pilihan widget fixed size: kecil, ringkasan, insight, dan dashboard mini.",
+    "Galeri widget Android sekarang menampilkan preview layout, bukan hanya logo aplikasi.",
+    "Tombol Tambahkan Widget di aplikasi memasang ukuran sesuai pilihan user.",
+    "Desain setiap widget tetap mengikuti card finansial terbaru dengan penyesuaian ruang."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-06-02T00:20:00.000Z"
+  "publishedAt": "2026-06-02T01:10:00.000Z"
 }

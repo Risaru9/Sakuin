@@ -365,7 +365,7 @@ function WidgetInfoModal({
     }
 
     try {
-      const result = androidWidgetBridge.requestPinWidget();
+      const result = androidWidgetBridge.requestPinWidget(selectedSize);
       if (result === "REQUESTED") {
         setPinStatus("requested");
         return;

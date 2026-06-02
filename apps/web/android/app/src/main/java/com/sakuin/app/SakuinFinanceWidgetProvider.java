@@ -57,7 +57,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 || Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-            ComponentName thisAppWidget = new ComponentName(context.getPackageName(), SakuinFinanceWidgetProvider.class.getName());
+            ComponentName thisAppWidget = new ComponentName(context, getProviderClass());
             int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget);
             
             // Only manually call our new async update logic for these custom/system actions
@@ -82,8 +82,8 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         context.startActivity(homeIntent);
     }
 
-    private static void updateAppWidgetSync(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sakuin_finance_widget);
+    protected void updateAppWidgetSync(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+        RemoteViews views = new RemoteViews(context.getPackageName(), getLayoutResource());
         WidgetSize widgetSize = getWidgetSize(appWidgetManager, appWidgetId);
         applyResponsiveLayout(views, widgetSize);
 
@@ -97,7 +97,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_status_row, configPendingIntent);
 
         // Setup refresh button click
-        Intent refreshIntent = new Intent(context, SakuinFinanceWidgetProvider.class);
+        Intent refreshIntent = new Intent(context, getProviderClass());
         refreshIntent.setAction(ACTION_REFRESH);
         PendingIntent refreshPendingIntent = PendingIntent.getBroadcast(
                 context, 1, refreshIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -234,7 +234,24 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private static WidgetSize getWidgetSize(AppWidgetManager appWidgetManager, int appWidgetId) {
+    protected int getLayoutResource() {
+        return R.layout.sakuin_finance_widget_medium;
+    }
+
+    protected Class<?> getProviderClass() {
+        return SakuinFinanceWidgetProvider.class;
+    }
+
+    protected WidgetSize getFixedWidgetSize() {
+        return WidgetSize.MEDIUM;
+    }
+
+    private WidgetSize getWidgetSize(AppWidgetManager appWidgetManager, int appWidgetId) {
+        WidgetSize fixedWidgetSize = getFixedWidgetSize();
+        if (fixedWidgetSize != null) {
+            return fixedWidgetSize;
+        }
+
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
         int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180);
         int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110);
@@ -343,7 +360,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         views.setTextColor(R.id.widget_balance, android.graphics.Color.WHITE);
     }
 
-    private enum WidgetSize {
+    protected enum WidgetSize {
         SMALL,
         MEDIUM,
         LARGE,
