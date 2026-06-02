@@ -65,7 +65,6 @@ import { FinancialRhythmCard } from "./dashboard-rhythm-card";
 import { DashboardGoalsCard } from "./dashboard-goals-card";
 import { FinancialCheckupCard } from "./dashboard-checkup-card";
 import { DailyReviewCard, TodayViewCard } from "./dashboard-daily-cards";
-import { EmailDetectionCard } from "../email-imports/EmailDetectionCard";
 
 const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
@@ -84,13 +83,12 @@ export function DashboardPage() {
   const [dashboardPriorityGoalId, setDashboardPriorityGoalIdState] =
     useState<string | null>(() => getDashboardPriorityGoalId());
   const [activeMobileTab, setActiveMobileTab] = useState<
-    "overview" | "transactions" | "stats" | "email"
+    "overview" | "transactions" | "stats"
   >("overview");
   const mobileTabItems = [
     { id: "overview", label: "Ringkasan" },
     { id: "transactions", label: "Transaksi" },
-    { id: "stats", label: "Ritme" },
-    { id: "email", label: "Deteksi" }
+    { id: "stats", label: "Ritme" }
   ] as const;
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
@@ -555,8 +553,6 @@ const profileQuery = useQuery({
                 summary={summary}
               />
 
-              <EmailDetectionCard />
-
               <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
                 <div className="mb-4">
                   <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
@@ -708,7 +704,6 @@ const profileQuery = useQuery({
                 />
               ) : null}
 
-              {activeMobileTab === "email" ? <EmailDetectionCard /> : null}
             </div>
           </div>
 

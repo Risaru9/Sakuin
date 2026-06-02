@@ -1112,12 +1112,12 @@ function EmailImportCallbackPage() {
         </div>
 
         <h1 className="mt-5 text-2xl font-black tracking-tight text-[var(--sakuin-text)]">
-          {isConnected ? "Gmail sudah terhubung" : "Koneksi Gmail belum selesai"}
+          Fitur deteksi email sedang dinonaktifkan
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
           {isConnected
-            ? "Koneksi Gmail berhasil disimpan. Buka aplikasi Sakuin, masuk ke Dashboard > Deteksi, lalu tekan Sinkronkan."
-            : message ?? "Silakan kembali ke aplikasi Sakuin dan coba hubungkan Gmail lagi."}
+            ? "Koneksi Gmail sudah tersimpan, tetapi tampilan dan sinkronisasi dari frontend sedang kami pause sampai fitur ini dikembangkan lagi."
+            : message ?? "Fitur ini sedang disembunyikan sementara dari aplikasi dan webapp."}
         </p>
 
         <div className="mt-6 grid gap-2">
@@ -1136,7 +1136,7 @@ function EmailImportCallbackPage() {
         </div>
 
         <p className="mt-4 text-xs font-bold leading-5 text-zinc-500">
-          Jika tombol aplikasi tidak bereaksi, APK yang dipakai belum mendukung callback Gmail terbaru. Update/install APK terbaru dulu.
+          Data dan backend fitur tetap disimpan agar bisa dilanjutkan lagi nanti.
         </p>
       </section>
     </main>
