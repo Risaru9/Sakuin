@@ -274,7 +274,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
     private static void applyResponsiveLayout(RemoteViews views, WidgetSize widgetSize) {
         boolean showAmounts = widgetSize != WidgetSize.SMALL;
         boolean showHeaderActions = widgetSize != WidgetSize.SMALL;
-        boolean showStatus = widgetSize != WidgetSize.SMALL;
+        boolean showStatus = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
         boolean showInsight = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
         boolean showRatio = showInsight;
         boolean showMascot = widgetSize != WidgetSize.SMALL;

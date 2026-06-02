@@ -234,6 +234,7 @@ function WidgetPreviewCard({
   const showMetrics = selectedSize !== "small";
   const showInsight = selectedSize === "large" || selectedSize === "xl";
   const showRatio = selectedSize === "xl";
+  const showStatusChip = selectedSize === "small";
 
   return (
     <div
@@ -304,11 +305,11 @@ function WidgetPreviewCard({
               </p>
               <p className="mt-1 truncate text-[11px] font-semibold text-white/86">{theme.note}</p>
             </div>
-          ) : (
+          ) : showStatusChip ? (
             <span className={["inline-flex rounded-xl px-3 py-1.5 text-xs font-black", theme.accentClass].join(" ")}>
               {theme.label}
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 

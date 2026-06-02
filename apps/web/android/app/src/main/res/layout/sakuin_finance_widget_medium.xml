@@ -7,11 +7,11 @@
 
     <ImageView
         android:id="@+id/widget_mascot"
-        android:layout_width="128dp"
-        android:layout_height="128dp"
+        android:layout_width="106dp"
+        android:layout_height="106dp"
         android:layout_gravity="end|bottom"
-        android:layout_marginEnd="-10dp"
-        android:layout_marginBottom="-20dp"
+        android:layout_marginEnd="-8dp"
+        android:layout_marginBottom="-18dp"
         android:alpha="0.96"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="10dp">
 
         <LinearLayout
             android:id="@+id/widget_header_area"
@@ -56,7 +56,7 @@
                     android:maxLines="1"
                     android:text="Rp -"
                     android:textColor="#FFFFFF"
-                    android:textSize="21sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -69,21 +69,21 @@
 
                 <ImageButton
                     android:id="@+id/widget_refresh_button"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:layout_marginEnd="6dp"
                     android:background="@drawable/sakuin_widget_icon_button"
                     android:contentDescription="Reload saldo widget"
-                    android:padding="9dp"
+                    android:padding="8dp"
                     android:src="@drawable/ic_widget_refresh" />
 
                 <ImageButton
                     android:id="@+id/widget_quick_add_button"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/sakuin_widget_icon_button"
                     android:contentDescription="Tambah transaksi cepat"
-                    android:padding="9dp"
+                    android:padding="8dp"
                     android:src="@drawable/ic_widget_plus" />
             </LinearLayout>
         </LinearLayout>
@@ -92,9 +92,9 @@
             android:id="@+id/widget_amount_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:orientation="vertical"
-            android:paddingEnd="118dp">
+            android:paddingEnd="100dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -102,12 +102,15 @@
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:paddingStart="7dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="6dp">
 
                 <ImageView
-                    android:layout_width="23dp"
-                    android:layout_height="23dp"
-                    android:layout_marginEnd="6dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="5dp"
                     android:contentDescription="@null"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_widget_income" />
@@ -121,9 +124,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Pemasukan"
+                        android:text="Masuk"
                         android:textColor="#CCFFFFFF"
-                        android:textSize="9sp"
+                        android:textSize="8sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -134,7 +137,7 @@
                         android:maxLines="1"
                         android:text="Rp -"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -142,16 +145,19 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:paddingStart="7dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="6dp">
 
                 <ImageView
-                    android:layout_width="23dp"
-                    android:layout_height="23dp"
-                    android:layout_marginEnd="6dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="5dp"
                     android:contentDescription="@null"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_widget_expense" />
@@ -165,9 +171,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Pengeluaran"
+                        android:text="Keluar"
                         android:textColor="#CCFFFFFF"
-                        android:textSize="9sp"
+                        android:textSize="8sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -178,7 +184,7 @@
                         android:maxLines="1"
                         android:text="Rp -"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>

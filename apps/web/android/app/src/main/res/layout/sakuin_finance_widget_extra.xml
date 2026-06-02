@@ -7,11 +7,11 @@
 
     <ImageView
         android:id="@+id/widget_mascot"
-        android:layout_width="156dp"
-        android:layout_height="156dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:layout_gravity="end|bottom"
         android:layout_marginEnd="-10dp"
-        android:layout_marginBottom="-20dp"
+        android:layout_marginBottom="-18dp"
         android:alpha="0.96"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="13dp">
 
         <LinearLayout
             android:id="@+id/widget_header_area"
@@ -56,7 +56,7 @@
                     android:maxLines="1"
                     android:text="Rp -"
                     android:textColor="#FFFFFF"
-                    android:textSize="24sp"
+                    android:textSize="23sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -92,19 +92,20 @@
             android:id="@+id/widget_amount_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:paddingEnd="132dp">
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:paddingEnd="130dp">
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="1"
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:paddingStart="9dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="9dp"
+                android:paddingBottom="7dp">
 
                 <ImageView
                     android:layout_width="23dp"
@@ -125,7 +126,7 @@
                         android:layout_height="wrap_content"
                         android:text="Pemasukan"
                         android:textColor="#CCFFFFFF"
-                        android:textSize="9sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -136,20 +137,22 @@
                         android:maxLines="1"
                         android:text="Rp -"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_weight="1"
+                android:layout_marginTop="7dp"
                 android:background="@drawable/sakuin_widget_metric_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:paddingStart="9dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="9dp"
+                android:paddingBottom="7dp">
 
                 <ImageView
                     android:layout_width="23dp"
@@ -170,7 +173,7 @@
                         android:layout_height="wrap_content"
                         android:text="Pengeluaran"
                         android:textColor="#CCFFFFFF"
-                        android:textSize="9sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -181,7 +184,7 @@
                         android:maxLines="1"
                         android:text="Rp -"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -191,11 +194,11 @@
             android:id="@+id/widget_status_row"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:layout_weight="1"
             android:gravity="bottom"
             android:orientation="vertical"
-            android:paddingEnd="132dp">
+            android:paddingEnd="130dp">
 
             <LinearLayout
                 android:id="@+id/widget_status_panel"
@@ -203,7 +206,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/sakuin_widget_insight_panel"
                 android:orientation="vertical"
-                android:padding="10dp">
+                android:padding="9dp">
 
                 <TextView
                     android:id="@+id/widget_status_headline"
