@@ -146,6 +146,29 @@ Untuk APK Android, callback Gmail memakai deep link:
 
 Karena itu perubahan intent `email-import` membutuhkan build APK baru. Jika user masih memakai APK lama, callback bisa jatuh ke fallback web dashboard di Chrome dan terlihat seperti masuk ke halaman login web.
 
+## Troubleshooting OAuth Gmail
+
+### Koneksi Gmail gagal: Gmail API 403
+
+Jika callback menampilkan error `Gmail API gagal (403)`, penyebab paling umum adalah Gmail API belum aktif di Google Cloud project yang sama dengan `GMAIL_CLIENT_ID`.
+
+Perbaikan:
+
+1. Buka Google Cloud Console.
+2. Pilih project yang memiliki OAuth Client ID Sakuin.
+3. Masuk ke `APIs & Services` > `Library`.
+4. Cari `Gmail API`.
+5. Klik `Enable`.
+6. Tunggu 1-5 menit.
+7. Coba hubungkan Gmail ulang dari Sakuin.
+
+Jika Gmail API sudah aktif tetapi masih 403, cek:
+
+- Email tester sudah masuk OAuth consent screen jika app masih mode testing.
+- Scope `https://www.googleapis.com/auth/gmail.readonly` ada di OAuth consent screen.
+- User menyetujui izin Gmail saat consent.
+- `GMAIL_CLIENT_ID` dan `GMAIL_CLIENT_SECRET` berasal dari project Google Cloud yang sama.
+
 Endpoint sinkronisasi:
 
 | Method | Endpoint | Fungsi |

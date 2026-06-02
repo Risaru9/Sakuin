@@ -15,6 +15,15 @@ import {
   syncGmailTransactions
 } from "./email-import.service.js";
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildGmailCallbackHtml({
   status,
   message
@@ -33,6 +42,13 @@ function buildGmailCallbackHtml({
     webUrl.searchParams.set("message", message);
   }
 
+  const title =
+    status === "connected" ? "Gmail terhubung" : "Koneksi Gmail gagal";
+  const description =
+    status === "connected"
+      ? "Kami sedang mengembalikan kamu ke aplikasi Sakuin."
+      : message ?? "Silakan kembali ke Sakuin dan coba lagi.";
+
   return `<!doctype html>
 <html lang="id">
   <head>
@@ -42,7 +58,7 @@ function buildGmailCallbackHtml({
     <style>
       body {
         align-items: center;
-        background: #f7f9fc;
+        background: linear-gradient(180deg, #f7f9fc 0%, #eef5ff 100%);
         color: #111827;
         display: flex;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -59,9 +75,12 @@ function buildGmailCallbackHtml({
         max-width: 420px;
         padding: 24px;
         text-align: center;
+        width: 100%;
       }
       h1 {
         font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 0;
         margin: 0 0 10px;
       }
       p {
@@ -82,13 +101,19 @@ function buildGmailCallbackHtml({
         padding: 0 18px;
         text-decoration: none;
       }
+      .hint {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 14px;
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>${status === "connected" ? "Gmail terhubung" : "Koneksi Gmail gagal"}</h1>
-      <p>${status === "connected" ? "Kami sedang mengembalikan kamu ke aplikasi Sakuin." : message ?? "Silakan kembali ke Sakuin dan coba lagi."}</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p>${escapeHtml(description)}</p>
       <a href="${appUrl.toString()}">Kembali ke aplikasi</a>
+      <p class="hint">Jika aplikasi tidak terbuka otomatis, tekan tombol di atas.</p>
     </main>
     <script>
       const appUrl = ${JSON.stringify(appUrl.toString())};

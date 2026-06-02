@@ -57,7 +57,7 @@ type PrismaExecutor = typeof prisma | Prisma.TransactionClient;
 type HttpResponseLike = {
   ok: boolean;
   status: number;
-  json: () => Promise<unknown>;
+  text: () => Promise<string>;
 };
 
 function safeJsonArray(value: Prisma.JsonValue | null | undefined) {
@@ -212,11 +212,7 @@ async function postForm<T>(url: string, body: Record<string, string>) {
     body: new URLSearchParams(body)
   })) as unknown as HttpResponseLike;
 
-  if (!response.ok) {
-    throw new HttpError(`Gagal memproses OAuth Gmail (${response.status})`, 502);
-  }
-
-  return (await response.json()) as T;
+  return parseGoogleResponse<T>(response, "OAuth Gmail");
 }
 
 async function gmailFetch<T>(accessToken: string, path: string) {
@@ -227,11 +223,89 @@ async function gmailFetch<T>(accessToken: string, path: string) {
     }
   })) as unknown as HttpResponseLike;
 
-  if (!response.ok) {
-    throw new HttpError(`Gmail API gagal (${response.status})`, 502);
+  return parseGoogleResponse<T>(response, "Gmail API");
+}
+
+function parseJsonBody(body: string) {
+  if (!body.trim()) {
+    return null;
   }
 
-  return (await response.json()) as T;
+  try {
+    return JSON.parse(body) as {
+      error?: {
+        code?: number;
+        message?: string;
+        status?: string;
+        details?: Array<{
+          reason?: string;
+          metadata?: Record<string, string>;
+        }>;
+      };
+      error_description?: string;
+      error_uri?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getGoogleErrorMessage(context: string, status: number, body: string) {
+  const parsed = parseJsonBody(body);
+  const googleMessage =
+    parsed?.error?.message ?? parsed?.error_description ?? body;
+  const reason =
+    parsed?.error?.details?.find((detail) => detail.reason)?.reason ??
+    parsed?.error?.status;
+  const normalizedMessage = googleMessage.toLowerCase();
+
+  if (
+    status === 403 &&
+    (normalizedMessage.includes("api has not been used") ||
+      normalizedMessage.includes("disabled") ||
+      reason === "SERVICE_DISABLED")
+  ) {
+    return "Gmail API belum aktif di Google Cloud project yang dipakai OAuth Sakuin. Aktifkan Gmail API, tunggu beberapa menit, lalu coba hubungkan lagi.";
+  }
+
+  if (
+    status === 403 &&
+    (normalizedMessage.includes("insufficient authentication scopes") ||
+      normalizedMessage.includes("insufficient permission") ||
+      reason === "ACCESS_TOKEN_SCOPE_INSUFFICIENT")
+  ) {
+    return "Izin Gmail yang diberikan belum cukup. Putuskan koneksi Gmail jika sudah ada, lalu hubungkan ulang dan pastikan izin membaca Gmail disetujui.";
+  }
+
+  if (status === 401) {
+    return "Token Gmail tidak valid atau sudah dicabut. Hubungkan Gmail ulang dari tab Deteksi.";
+  }
+
+  const compactMessage = googleMessage.replace(/\s+/g, " ").trim();
+  return compactMessage
+    ? `${context} gagal (${status}): ${compactMessage.slice(0, 220)}`
+    : `${context} gagal (${status})`;
+}
+
+async function parseGoogleResponse<T>(
+  response: HttpResponseLike,
+  context: string
+) {
+  const body = await response.text();
+
+  if (!response.ok) {
+    throw new HttpError(
+      getGoogleErrorMessage(context, response.status, body),
+      502
+    );
+  }
+
+  const parsed = parseJsonBody(body);
+  if (!parsed) {
+    throw new HttpError(`${context} mengembalikan response tidak valid`, 502);
+  }
+
+  return parsed as T;
 }
 
 type GmailTokenResponse = {
