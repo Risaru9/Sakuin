@@ -12,6 +12,7 @@ import {
   handleGmailOAuthCallback,
   ignoreEmailImport,
   importEmailTransaction,
+  runGmailAutoSync,
   syncGmailTransactions
 } from "./email-import.service.js";
 
@@ -34,7 +35,7 @@ function buildGmailCallbackHtml({
   const appUrl = new URL("com.sakuin.app://email-import");
   appUrl.searchParams.set("status", status);
 
-  const webUrl = new URL("/dashboard", env.FRONTEND_URL);
+  const webUrl = new URL("/email-import/callback", env.FRONTEND_URL);
   webUrl.searchParams.set("emailImport", status);
 
   if (message) {
@@ -113,6 +114,9 @@ function buildGmailCallbackHtml({
       <h1>${escapeHtml(title)}</h1>
       <p>${escapeHtml(description)}</p>
       <a href="${appUrl.toString()}">Kembali ke aplikasi</a>
+      <p class="hint">
+        <a href="${webUrl.toString()}" style="background:#ffffff;color:#2563eb;border:1px solid #dbe4f0;margin-top:10px;">Lihat status koneksi</a>
+      </p>
       <p class="hint">Jika aplikasi tidak terbuka otomatis, tekan tombol di atas.</p>
     </main>
     <script>
@@ -135,6 +139,18 @@ function getAuthenticatedUserId(c: Context<AppEnv>) {
   }
 
   return userId;
+}
+
+function assertCronAuthorized(c: Context<AppEnv>) {
+  if (!env.CRON_SECRET) {
+    throw new HttpError("CRON_SECRET belum dikonfigurasi", 503);
+  }
+
+  const authorization = c.req.header("Authorization");
+
+  if (authorization !== `Bearer ${env.CRON_SECRET}`) {
+    throw new HttpError("Cron tidak terotorisasi", 401);
+  }
 }
 
 export async function getEmailImportOverviewController(c: Context<AppEnv>) {
@@ -172,6 +188,14 @@ export async function syncGmailController(c: Context<AppEnv>) {
   const result = await syncGmailTransactions(userId, input);
 
   return successResponse(c, "Sinkronisasi Gmail berhasil", result);
+}
+
+export async function autoSyncGmailController(c: Context<AppEnv>) {
+  assertCronAuthorized(c);
+
+  const result = await runGmailAutoSync();
+
+  return successResponse(c, "Auto-sync Gmail berhasil dijalankan", result);
 }
 
 export async function disconnectGmailController(c: Context<AppEnv>) {

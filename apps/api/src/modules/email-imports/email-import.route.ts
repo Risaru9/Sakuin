@@ -4,6 +4,7 @@ import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import {
   approveEmailImportController,
+  autoSyncGmailController,
   disconnectGmailController,
   gmailOAuthCallbackController,
   getEmailImportOverviewController,
@@ -44,6 +45,11 @@ emailImportRoutes.post(
   authMiddleware,
   validateRequest("json", gmailSyncSchema),
   syncGmailController
+);
+
+emailImportRoutes.get(
+  "/gmail/auto-sync",
+  autoSyncGmailController
 );
 
 emailImportRoutes.post(

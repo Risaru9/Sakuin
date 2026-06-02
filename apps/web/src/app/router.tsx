@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { createBrowserRouter, Link, Navigate } from "react-router-dom";
+import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -1086,6 +1086,63 @@ function AccountDeletionPage() {
   );
 }
 
+function EmailImportCallbackPage() {
+  const [searchParams] = useSearchParams();
+  const status = searchParams.get("emailImport") ?? searchParams.get("status");
+  const message = searchParams.get("message");
+  const isConnected = status === "connected";
+  const appUrl = `com.sakuin.app://email-import?status=${encodeURIComponent(
+    isConnected ? "connected" : "error"
+  )}${message ? `&message=${encodeURIComponent(message)}` : ""}`;
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4 py-8 text-[var(--sakuin-text)]">
+      <section className="w-full max-w-md rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 text-center shadow-[0_22px_55px_rgba(37,99,235,0.14)] sm:p-7">
+        <div
+          className={[
+            "mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white",
+            isConnected ? "bg-emerald-600" : "bg-rose-600"
+          ].join(" ")}
+        >
+          {isConnected ? (
+            <CheckCircle2 className="h-7 w-7" />
+          ) : (
+            <ExternalLink className="h-7 w-7" />
+          )}
+        </div>
+
+        <h1 className="mt-5 text-2xl font-black tracking-tight text-[var(--sakuin-text)]">
+          {isConnected ? "Gmail sudah terhubung" : "Koneksi Gmail belum selesai"}
+        </h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
+          {isConnected
+            ? "Koneksi Gmail berhasil disimpan. Buka aplikasi Sakuin, masuk ke Dashboard > Deteksi, lalu tekan Sinkronkan."
+            : message ?? "Silakan kembali ke aplikasi Sakuin dan coba hubungkan Gmail lagi."}
+        </p>
+
+        <div className="mt-6 grid gap-2">
+          <a
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-primary)]"
+            href={appUrl}
+          >
+            Buka aplikasi Sakuin
+          </a>
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+            to="/dashboard"
+          >
+            Buka Dashboard Web
+          </Link>
+        </div>
+
+        <p className="mt-4 text-xs font-bold leading-5 text-zinc-500">
+          Jika tombol aplikasi tidak bereaksi, APK yang dipakai belum mendukung callback Gmail terbaru. Update/install APK terbaru dulu.
+        </p>
+      </section>
+    </main>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -1106,6 +1163,10 @@ export const router = createBrowserRouter([
   {
     path: "/account-deletion",
     element: <AccountDeletionPage />
+  },
+  {
+    path: "/email-import/callback",
+    element: <EmailImportCallbackPage />
   },
   {
     path: "/login",

@@ -42,6 +42,16 @@ export type GmailSyncResponse = {
   ignored: number;
 };
 
+export type GmailAutoSyncResponse = GmailSyncResponse & {
+  connections: number;
+  failed: number;
+  errors: Array<{
+    connectionId: string;
+    emailAddress: string;
+    message: string;
+  }>;
+};
+
 export type EmailConnectionResponse = {
   id: string;
   provider: string;

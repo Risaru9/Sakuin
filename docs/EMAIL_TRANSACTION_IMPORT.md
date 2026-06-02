@@ -138,7 +138,7 @@ Setelah user menekan `Hubungkan Gmail`, Google akan redirect ke callback backend
 4. Menyimpan token secara terenkripsi.
 5. Mengembalikan user ke Dashboard.
 
-User kemudian bisa menekan `Sinkronkan` di tab `Deteksi`. Backend akan membaca email Gmail terbaru dengan query transaksi, mengambil body email, lalu menjalankan pipeline parser yang sama dengan import manual.
+User kemudian bisa menekan `Sinkronkan` di tab `Deteksi` untuk tes langsung. Backend juga menjalankan auto-sync terjadwal agar koneksi Gmail aktif diproses berkala tanpa user menekan tombol terus-menerus.
 
 Untuk APK Android, callback Gmail memakai deep link:
 
@@ -175,6 +175,7 @@ Endpoint sinkronisasi:
 | --- | --- | --- |
 | `GET` | `/api/email-imports/gmail/callback` | Callback Google OAuth. |
 | `POST` | `/api/email-imports/gmail/sync` | Sinkronisasi email Gmail aktif. |
+| `GET` | `/api/email-imports/gmail/auto-sync` | Cron auto-sync semua koneksi Gmail aktif. |
 | `POST` | `/api/email-imports/gmail/connections/:id/disconnect` | Putus koneksi Gmail dan hapus token. |
 
 ## File Implementasi
@@ -188,6 +189,6 @@ Endpoint sinkronisasi:
 
 ## Batasan Saat Ini
 
-Fitur ini sudah bisa memproses email manual, menghubungkan Gmail lewat OAuth, menyimpan token terenkripsi, dan menjalankan sinkronisasi Gmail manual dari tab `Deteksi`.
+Fitur ini sudah bisa memproses email manual, menghubungkan Gmail lewat OAuth, menyimpan token terenkripsi, menjalankan sinkronisasi manual dari tab `Deteksi`, dan menjalankan auto-sync berkala lewat Vercel Cron.
 
-Yang belum dibuat adalah worker otomatis terjadwal. Untuk saat ini user menekan `Sinkronkan` secara manual. Setelah kredensial Google Cloud aktif dan format parser cukup stabil, worker bisa ditambahkan agar sinkronisasi berjalan otomatis beberapa kali sehari.
+Auto-sync membutuhkan `CRON_SECRET` aktif di Vercel karena endpoint cron menolak request tanpa `Authorization: Bearer CRON_SECRET`.

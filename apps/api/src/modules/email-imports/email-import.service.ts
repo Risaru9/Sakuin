@@ -19,6 +19,7 @@ import {
 } from "./email-import.parser.js";
 import type {
   EmailConnectionResponse,
+  GmailAutoSyncResponse,
   GmailSyncInput,
   GmailSyncResponse,
   EmailTransactionImportResponse,
@@ -882,6 +883,67 @@ export async function syncGmailTransactions(
     summary.needsReview += result.needsReview;
     summary.duplicate += result.duplicate;
     summary.ignored += result.ignored;
+  }
+
+  return summary;
+}
+
+export async function runGmailAutoSync() {
+  const connections = await prisma.emailConnection.findMany({
+    where: {
+      provider: "gmail",
+      status: "active",
+      encryptedRefreshToken: {
+        not: null
+      }
+    },
+    select: {
+      id: true,
+      userId: true,
+      emailAddress: true,
+      encryptedAccessToken: true,
+      encryptedRefreshToken: true,
+      accessTokenExpiresAt: true
+    },
+    orderBy: {
+      lastSyncedAt: "asc"
+    },
+    take: 50
+  });
+
+  const summary: GmailAutoSyncResponse = {
+    connections: connections.length,
+    failed: 0,
+    scanned: 0,
+    processed: 0,
+    imported: 0,
+    needsReview: 0,
+    duplicate: 0,
+    ignored: 0,
+    errors: []
+  };
+
+  for (const connection of connections) {
+    try {
+      const result = await syncOneGmailConnection(
+        connection.userId,
+        connection,
+        10
+      );
+      summary.scanned += result.scanned;
+      summary.processed += result.processed;
+      summary.imported += result.imported;
+      summary.needsReview += result.needsReview;
+      summary.duplicate += result.duplicate;
+      summary.ignored += result.ignored;
+    } catch (error) {
+      summary.failed += 1;
+      summary.errors.push({
+        connectionId: connection.id,
+        emailAddress: connection.emailAddress,
+        message: error instanceof Error ? error.message : "Auto-sync Gmail gagal"
+      });
+    }
   }
 
   return summary;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -56,6 +57,7 @@ function formatProvider(importItem: EmailTransactionImport) {
 
 export function EmailDetectionCard() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [emailAddress, setEmailAddress] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -138,6 +140,9 @@ export function EmailDetectionCard() {
   });
 
   const overview = overviewQuery.data;
+  const hasConnectedGmail = (overview?.connections ?? []).some(
+    (connection) => connection.status === "active"
+  );
 
   useEffect(() => {
     function handleEmailImportReturned() {
@@ -151,6 +156,27 @@ export function EmailDetectionCard() {
       window.removeEventListener("sakuin:email-import-returned", handleEmailImportReturned);
     };
   }, []);
+
+  useEffect(() => {
+    const emailImportStatus = searchParams.get("emailImport");
+    const emailImportMessage = searchParams.get("message");
+
+    if (!emailImportStatus) {
+      return;
+    }
+
+    if (emailImportStatus === "connected") {
+      setSyncMessage("Gmail terhubung. Tekan Sinkronkan untuk membaca email transaksi terbaru.");
+      void refreshAfterImport();
+    } else if (emailImportStatus === "error") {
+      setSyncMessage(emailImportMessage ?? "Koneksi Gmail gagal. Coba hubungkan ulang.");
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("emailImport");
+    next.delete("message");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   function handleImportSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -215,6 +241,19 @@ export function EmailDetectionCard() {
           <p className="text-[11px] font-semibold leading-5 text-zinc-600">
             Gmail memakai izin baca terbatas. Email yang cocok akan diproses ke transaksi, sedangkan hasil ambigu masuk review.
           </p>
+        </div>
+
+        <div
+          className={[
+            "mt-3 rounded-2xl px-3 py-2 text-xs font-black ring-1",
+            hasConnectedGmail
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+              : "bg-amber-50 text-amber-800 ring-amber-200"
+          ].join(" ")}
+        >
+          {hasConnectedGmail
+            ? "Status: Gmail aktif. Tekan Sinkronkan untuk mengambil transaksi terbaru."
+            : "Status: Gmail belum terhubung."}
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
