@@ -54,6 +54,11 @@ type ImportWithRelations = Prisma.EmailTransactionImportGetPayload<{
   include: typeof importInclude;
 }>;
 type PrismaExecutor = typeof prisma | Prisma.TransactionClient;
+type HttpResponseLike = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
 
 function safeJsonArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -199,13 +204,13 @@ function verifyOAuthState(state: string) {
 }
 
 async function postForm<T>(url: string, body: Record<string, string>) {
-  const response = await fetch(url, {
+  const response = (await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: new URLSearchParams(body)
-  });
+  })) as unknown as HttpResponseLike;
 
   if (!response.ok) {
     throw new HttpError(`Gagal memproses OAuth Gmail (${response.status})`, 502);
@@ -215,12 +220,12 @@ async function postForm<T>(url: string, body: Record<string, string>) {
 }
 
 async function gmailFetch<T>(accessToken: string, path: string) {
-  const response = await fetch(`${GMAIL_API_BASE_URL}${path}`, {
+  const response = (await fetch(`${GMAIL_API_BASE_URL}${path}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json"
     }
-  });
+  })) as unknown as HttpResponseLike;
 
   if (!response.ok) {
     throw new HttpError(`Gmail API gagal (${response.status})`, 502);
