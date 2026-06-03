@@ -291,7 +291,7 @@ export function DashboardPage() {
   const latestDashboardYear =
     availableDashboardYears[0] ?? new Date().getFullYear();
   const dashboardPeriodLabel =
-    summary?.period.label ??
+    summary?.period?.label ??
     getDashboardPeriodLabel(selectedDashboardMonth, selectedDashboardYear);
   const isDashboardPeriodFiltered =
     selectedDashboardMonth !== "all" || selectedDashboardYear !== "all";

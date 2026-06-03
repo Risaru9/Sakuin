@@ -1,5 +1,11 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Link,
+  Navigate,
+  useRouteError,
+  useSearchParams
+} from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -123,6 +129,42 @@ function LoadingScreen() {
 
 function PageSuspense({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
+}
+
+function RouteErrorFallback() {
+  const error = useRouteError();
+
+  console.error("[RouteErrorFallback] Terjadi error route:", error);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4 py-8 text-[var(--sakuin-text)]">
+      <section className="w-full max-w-md rounded-3xl border border-[var(--sakuin-border)] bg-white p-6 text-center shadow-[0_22px_55px_rgba(37,99,235,0.14)] sm:p-7">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100">
+          <RefreshCcw className="h-7 w-7" />
+        </div>
+        <h1 className="mt-5 text-xl font-black tracking-tight text-[var(--sakuin-text)]">
+          Sakuin perlu dimuat ulang
+        </h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
+          Ada bagian aplikasi yang belum terbaca sempurna. Muat ulang halaman
+          untuk mengambil versi terbaru.
+        </p>
+        <button
+          className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-primary)]"
+          onClick={() => window.location.reload()}
+          type="button"
+        >
+          Muat Ulang
+        </button>
+        <Link
+          className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+          to="/dashboard"
+        >
+          Kembali ke Dashboard
+        </Link>
+      </section>
+    </main>
+  );
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -1143,7 +1185,7 @@ function EmailImportCallbackPage() {
   );
 }
 
-export const router = createBrowserRouter([
+const routes = [
   {
     path: "/",
     element: (
@@ -1259,4 +1301,11 @@ export const router = createBrowserRouter([
     path: "*",
     element: <Navigate to="/" replace />
   },
-]);
+] satisfies Parameters<typeof createBrowserRouter>[0];
+
+export const router = createBrowserRouter(
+  routes.map((route) => ({
+    errorElement: <RouteErrorFallback />,
+    ...route
+  }))
+);
