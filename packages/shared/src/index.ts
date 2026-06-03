@@ -385,6 +385,16 @@ export type HabitSummaryResult = {
 };
 
 export type SummaryResponse = {
+  period: {
+    month: number | null;
+    year: number | null;
+    label: string;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  availablePeriods: {
+    years: number[];
+  };
   totalIncome: SummaryAmount;
   totalExpense: SummaryAmount;
   balance: SummaryAmount;

@@ -121,6 +121,16 @@ type SummaryHabitData = {
 };
 
 type SummaryData = {
+  period: {
+    month: number | null;
+    year: number | null;
+    label: string;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  availablePeriods: {
+    years: number[];
+  };
   totalIncome: string;
   totalExpense: string;
   balance: string;
@@ -193,10 +203,17 @@ const userB = {
   password: "Password123"
 };
 
+const periodUser = {
+  name: "Summary Period Test User",
+  email: `summary-period-user-${testRunId}@example.com`,
+  password: "Password123"
+};
+
 let tokenA = "";
 let tokenB = "";
 let userAId = "";
 let userBId = "";
+let periodUserId = "";
 
 async function parseJson<T>(response: Response) {
   return (await response.json()) as ApiResponse<T>;
@@ -338,7 +355,7 @@ afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
       id: {
-        in: [userAId, userBId].filter(Boolean)
+        in: [userAId, userBId, periodUserId].filter(Boolean)
       }
     }
   });
@@ -550,6 +567,61 @@ describe("Summary API", () => {
     expect(currentMonthTrend?.income).toBe("1000000.00");
     expect(currentMonthTrend?.expense).toBe("250000.00");
     expect(currentMonthTrend?.balance).toBe("750000.00");
+  }, 20000);
+
+  it("GET /api/summary dapat difilter berdasarkan bulan dan tahun", async () => {
+    const auth = await registerUser(periodUser);
+    periodUserId = auth.user.id;
+
+    await createTransaction(auth.token, {
+      type: "INCOME",
+      amount: "700000",
+      categoryId: "cat_income_salary",
+      date: "2025-03-05T08:00:00.000Z",
+      note: "Gaji Maret"
+    });
+
+    await createTransaction(auth.token, {
+      type: "EXPENSE",
+      amount: "200000",
+      categoryId: "cat_expense_food",
+      date: "2025-03-10T08:00:00.000Z",
+      note: "Makan Maret"
+    });
+
+    await createTransaction(auth.token, {
+      type: "INCOME",
+      amount: "1000000",
+      categoryId: "cat_income_salary",
+      date: "2025-04-01T08:00:00.000Z",
+      note: "Gaji April"
+    });
+
+    const response = await app.request("/api/summary?month=3&year=2025", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    });
+
+    const body = await parseJson<SummaryData>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.period).toMatchObject({
+      month: 3,
+      year: 2025,
+      label: "Maret 2025"
+    });
+    expect(body.data.availablePeriods.years).toContain(2025);
+    expect(body.data.totalIncome).toBe("700000.00");
+    expect(body.data.totalExpense).toBe("200000.00");
+    expect(body.data.balance).toBe("500000.00");
+    expect(body.data.transactionCount).toBe(2);
+    expect(body.data.recentTransactions).toHaveLength(2);
+    expect(body.data.recentTransactions.map((item) => item.note)).not.toContain(
+      "Gaji April"
+    );
   }, 20000);
 
   it("GET /api/summary gagal tanpa token", async () => {

@@ -5,6 +5,7 @@ import { buildFinancialCheckup } from "../finance/financial-checkup.js";
 import { runDueRecurringRules } from "../recurring/recurring.service.js";
 import type {
   CategorySummaryItem,
+  GetSummaryQuery,
   MonthlyTrendItem,
   RecentTransaction,
   SummaryResponse
@@ -59,6 +60,20 @@ function getMonthKey(date: Date) {
 }
 
 const SUMMARY_MONTHLY_TREND_MONTHS = 12;
+const SUMMARY_MONTH_NAMES = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember"
+];
 
 function getLastMonths(currentDate: Date, monthCount: number) {
   const months: {
@@ -85,6 +100,50 @@ function getLastMonths(currentDate: Date, monthCount: number) {
   }
 
   return months;
+}
+
+function getPeriodDateRange(query: GetSummaryQuery, currentDate: Date) {
+  if (!query.month && !query.year) {
+    return null;
+  }
+
+  const year = query.year ?? currentDate.getFullYear();
+
+  if (query.month) {
+    return {
+      month: query.month,
+      year,
+      label: `${SUMMARY_MONTH_NAMES[query.month - 1]} ${year}`,
+      startDate: new Date(year, query.month - 1, 1, 0, 0, 0, 0),
+      endDate: new Date(year, query.month, 0, 23, 59, 59, 999)
+    };
+  }
+
+  return {
+    month: null,
+    year,
+    label: `Tahun ${year}`,
+    startDate: new Date(year, 0, 1, 0, 0, 0, 0),
+    endDate: new Date(year, 11, 31, 23, 59, 59, 999)
+  };
+}
+
+function buildPeriodWhere(
+  userId: string,
+  period: ReturnType<typeof getPeriodDateRange>
+) {
+  const where: Prisma.TransactionWhereInput = {
+    userId
+  };
+
+  if (period) {
+    where.date = {
+      gte: period.startDate,
+      lte: period.endDate
+    };
+  }
+
+  return where;
 }
 
 function mapRecentTransaction(
@@ -177,7 +236,10 @@ function buildCategorySummaryItems(input: {
   });
 }
 
-export async function getSummary(userId: string): Promise<SummaryResponse> {
+export async function getSummary(
+  userId: string,
+  query: GetSummaryQuery = {}
+): Promise<SummaryResponse> {
   const now = new Date();
   
   // Run recurring rules with error handling - don't let it break summary
@@ -192,6 +254,8 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   const startOfCurrentMonth = getStartOfMonth(now);
   const endOfCurrentMonth = getEndOfMonth(now);
   const monthlyTrendMonths = getLastMonths(now, SUMMARY_MONTHLY_TREND_MONTHS);
+  const selectedPeriod = getPeriodDateRange(query, now);
+  const selectedPeriodWhere = buildPeriodWhere(userId, selectedPeriod);
 
   // Get AI financial context with error handling.
   const aiFinancialContextPromise = getAiFinancialContext(userId, now).catch((error) => {
@@ -207,7 +271,8 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     transactionCount,
     recentTransactions,
     categoryAggregates,
-    monthlyTransactions
+    monthlyTransactions,
+    transactionDateRows
   ] = await prisma.$transaction([
     prisma.user.findUnique({
       where: {
@@ -220,9 +285,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
 
     prisma.transaction.groupBy({
       by: ["type"],
-      where: {
-        userId
-      },
+      where: selectedPeriodWhere,
       orderBy: {
         type: "asc"
       },
@@ -249,15 +312,11 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
     }),
 
     prisma.transaction.count({
-      where: {
-        userId
-      }
+      where: selectedPeriodWhere
     }),
 
     prisma.transaction.findMany({
-      where: {
-        userId
-      },
+      where: selectedPeriodWhere,
       include: {
         category: {
           select: {
@@ -282,9 +341,7 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
 
     prisma.transaction.groupBy({
       by: ["categoryId", "type"],
-      where: {
-        userId
-      },
+      where: selectedPeriodWhere,
       orderBy: [
         {
           categoryId: "asc"
@@ -314,6 +371,18 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
         amount: true,
         date: true
       }
+    }),
+
+    prisma.transaction.findMany({
+      where: {
+        userId
+      },
+      select: {
+        date: true
+      },
+      orderBy: {
+        date: "desc"
+      }
     })
   ]);
 
@@ -341,6 +410,13 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   const categoriesById = new Map(
     categories.map((category) => [category.id, category])
   );
+
+  const availableYears = [
+    ...new Set([
+      now.getFullYear(),
+      ...transactionDateRows.map((row) => row.date.getFullYear())
+    ])
+  ].sort((firstYear, secondYear) => secondYear - firstYear);
 
   const totalAmountByType = buildAmountByTypeMap(totalAmountByTypeRows);
   const currentMonthAmountByType = buildAmountByTypeMap(
@@ -482,6 +558,16 @@ export async function getSummary(userId: string): Promise<SummaryResponse> {
   }
   
   return {
+    period: {
+      month: selectedPeriod?.month ?? null,
+      year: selectedPeriod?.year ?? null,
+      label: selectedPeriod?.label ?? "Semua waktu",
+      startDate: selectedPeriod?.startDate.toISOString() ?? null,
+      endDate: selectedPeriod?.endDate.toISOString() ?? null
+    },
+    availablePeriods: {
+      years: availableYears
+    },
     totalIncome: decimalToString(totalIncome),
     totalExpense: decimalToString(totalExpense),
     balance: decimalToString(balance),

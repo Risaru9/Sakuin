@@ -7,6 +7,16 @@ const referenceDate = new Date("2026-05-27T10:00:00.000Z");
 
 function createSummary(): SummaryData {
   return {
+    period: {
+      month: null,
+      year: null,
+      label: "Semua waktu",
+      startDate: null,
+      endDate: null
+    },
+    availablePeriods: {
+      years: [2026]
+    },
     totalIncome: "3000000.00",
     totalExpense: "500000.00",
     balance: "2500000.00",

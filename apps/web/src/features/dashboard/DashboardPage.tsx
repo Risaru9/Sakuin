@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
+  CalendarDays,
   ChevronDown,
   CheckCircle2,
   Download,
@@ -69,6 +70,68 @@ import { DailyReviewCard, TodayViewCard } from "./dashboard-daily-cards";
 const DASHBOARD_SUMMARY_STALE_TIME = 60_000;
 const DASHBOARD_GOALS_STALE_TIME = 60_000;
 const DASHBOARD_PROFILE_STALE_TIME = 5 * 60_000;
+const DASHBOARD_MONTH_OPTIONS = [
+  { value: 1, label: "Januari" },
+  { value: 2, label: "Februari" },
+  { value: 3, label: "Maret" },
+  { value: 4, label: "April" },
+  { value: 5, label: "Mei" },
+  { value: 6, label: "Juni" },
+  { value: 7, label: "Juli" },
+  { value: 8, label: "Agustus" },
+  { value: 9, label: "September" },
+  { value: 10, label: "Oktober" },
+  { value: 11, label: "November" },
+  { value: 12, label: "Desember" }
+] as const;
+
+type DashboardPeriodMonth =
+  | (typeof DASHBOARD_MONTH_OPTIONS)[number]["value"]
+  | "all";
+type DashboardPeriodYear = number | "all";
+
+function parseDashboardMonth(value: string | null): DashboardPeriodMonth {
+  const numericValue = Number(value);
+
+  if (DASHBOARD_MONTH_OPTIONS.some((month) => month.value === numericValue)) {
+    return numericValue as DashboardPeriodMonth;
+  }
+
+  return "all";
+}
+
+function parseDashboardYear(value: string | null): DashboardPeriodYear {
+  const numericValue = Number(value);
+
+  if (
+    Number.isInteger(numericValue) &&
+    numericValue >= 1900 &&
+    numericValue <= 9999
+  ) {
+    return numericValue;
+  }
+
+  return "all";
+}
+
+function getDashboardPeriodLabel(
+  month: DashboardPeriodMonth,
+  year: DashboardPeriodYear
+) {
+  if (month !== "all" && year !== "all") {
+    const monthLabel =
+      DASHBOARD_MONTH_OPTIONS.find((option) => option.value === month)?.label ??
+      "Bulan";
+
+    return `${monthLabel} ${year}`;
+  }
+
+  if (year !== "all") {
+    return `Tahun ${year}`;
+  }
+
+  return "Semua waktu";
+}
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -93,10 +156,21 @@ export function DashboardPage() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
+  const [isDashboardPeriodOpen, setIsDashboardPeriodOpen] = useState(false);
   const [quickTransactionInitialText, setQuickTransactionInitialText] = useState("");
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
     string | null
   >(null);
+
+  const selectedDashboardMonth = useMemo(
+    () => parseDashboardMonth(searchParams.get("dashboardMonth")),
+    [searchParams]
+  );
+
+  const selectedDashboardYear = useMemo(
+    () => parseDashboardYear(searchParams.get("dashboardYear")),
+    [searchParams]
+  );
 
   const selectedStatsRange = useMemo<StatsRange>(() => {
     const value = searchParams.get("statsRange");
@@ -153,30 +227,77 @@ export function DashboardPage() {
     setSearchParams(next, { replace: true });
   }
 
-    const summaryQuery = useQuery({
-  queryKey: queryKeys.summary,
-  queryFn: getSummary,
-  staleTime: DASHBOARD_SUMMARY_STALE_TIME,
-  refetchOnWindowFocus: false
-});
+  const summaryParams = useMemo(
+    () => ({
+      month:
+        selectedDashboardMonth === "all" ? undefined : selectedDashboardMonth,
+      year: selectedDashboardYear === "all" ? undefined : selectedDashboardYear
+    }),
+    [selectedDashboardMonth, selectedDashboardYear]
+  );
 
-const goalsQuery = useQuery({
-  queryKey: queryKeys.goals,
-  queryFn: getGoals,
-  staleTime: DASHBOARD_GOALS_STALE_TIME,
-  refetchOnWindowFocus: false
-});
+  function updateDashboardPeriod(nextValues: {
+    month?: DashboardPeriodMonth;
+    year?: DashboardPeriodYear;
+  }) {
+    const next = new URLSearchParams(searchParams);
+    const nextMonth = nextValues.month ?? selectedDashboardMonth;
+    const nextYear = nextValues.year ?? selectedDashboardYear;
 
-const profileQuery = useQuery({
-  queryKey: queryKeys.profile,
-  queryFn: getUserProfile,
-  staleTime: DASHBOARD_PROFILE_STALE_TIME,
-  refetchOnWindowFocus: false
-});
+    if (nextMonth === "all") {
+      next.delete("dashboardMonth");
+    } else {
+      next.set("dashboardMonth", String(nextMonth));
+    }
+
+    if (nextYear === "all") {
+      next.delete("dashboardYear");
+    } else {
+      next.set("dashboardYear", String(nextYear));
+    }
+
+    setSearchParams(next, { replace: true });
+  }
+
+  const summaryQuery = useQuery({
+    queryKey: [...queryKeys.summary, summaryParams],
+    queryFn: () => getSummary(summaryParams),
+    staleTime: DASHBOARD_SUMMARY_STALE_TIME,
+    refetchOnWindowFocus: false
+  });
+
+  const goalsQuery = useQuery({
+    queryKey: queryKeys.goals,
+    queryFn: getGoals,
+    staleTime: DASHBOARD_GOALS_STALE_TIME,
+    refetchOnWindowFocus: false
+  });
+
+  const profileQuery = useQuery({
+    queryKey: queryKeys.profile,
+    queryFn: getUserProfile,
+    staleTime: DASHBOARD_PROFILE_STALE_TIME,
+    refetchOnWindowFocus: false
+  });
 
   const summary = summaryQuery.data ?? null;
   const goals = goalsQuery.data ?? [];
   const profile = profileQuery.data ?? null;
+  const availableDashboardYears =
+    summary?.availablePeriods?.years &&
+    summary.availablePeriods.years.length > 0
+      ? summary.availablePeriods.years
+      : [new Date().getFullYear()];
+  const latestDashboardYear =
+    availableDashboardYears[0] ?? new Date().getFullYear();
+  const dashboardPeriodLabel =
+    summary?.period.label ??
+    getDashboardPeriodLabel(selectedDashboardMonth, selectedDashboardYear);
+  const isDashboardPeriodFiltered =
+    selectedDashboardMonth !== "all" || selectedDashboardYear !== "all";
+  const summaryBalanceLabel = isDashboardPeriodFiltered
+    ? "Saldo Periode"
+    : "Total Saldo Aktif";
 
   const isLoadingSummary = summaryQuery.isLoading && !summaryQuery.data;
   const isLoadingGoals = goalsQuery.isLoading && !goalsQuery.data;
@@ -413,36 +534,138 @@ const profileQuery = useQuery({
               <div className="sakuin-enter relative overflow-hidden rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-primary)] to-[var(--sakuin-secondary)] p-4 text-white shadow-[0_22px_55px_rgba(37,99,235,0.18)] sm:p-8">
                 <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/15 animate-[sakuinFloat_7s_ease-in-out_infinite]" />
                 <div aria-hidden="true" className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full border border-white/15 animate-[sakuinFloat_8s_ease-in-out_infinite]" />
-                <div className="relative flex items-start justify-between gap-4">
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white/85 sm:text-sm">
-                      Total Saldo Aktif
+                      {summaryBalanceLabel}
                     </p>
                     <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
                       {formatRupiah(summary?.balance)}
                     </p>
                     <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
                       {summary?.isBelowSafeLimit
-                        ? "Saldo kamu sedang di bawah batas aman."
-                        : "Saldo kamu masih berada di atas batas aman."}
+                        ? "Saldo periode ini sedang di bawah batas aman."
+                        : "Saldo periode ini masih berada di atas batas aman."}
                     </p>
                   </div>
 
-                  <div
-                    className={
-                      summary?.isBelowSafeLimit
-                        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
-                        : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
-                    }
-                  >
-                    {summary?.isBelowSafeLimit ? (
-                      <AlertTriangle className="sakuin-icon-shake h-3.5 w-3.5" />
-                    ) : (
-                      <CheckCircle2 className="sakuin-icon-bounce h-3.5 w-3.5" />
-                    )}
-                    {summary?.isBelowSafeLimit ? "Waspada" : "Aman"}
+                  <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 text-xs font-black text-white shadow-sm backdrop-blur">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        {dashboardPeriodLabel}
+                      </span>
+
+                      <div
+                        className={
+                          summary?.isBelowSafeLimit
+                            ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
+                            : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
+                        }
+                      >
+                        {summary?.isBelowSafeLimit ? (
+                          <AlertTriangle className="sakuin-icon-shake h-3.5 w-3.5" />
+                        ) : (
+                          <CheckCircle2 className="sakuin-icon-bounce h-3.5 w-3.5" />
+                        )}
+                        {summary?.isBelowSafeLimit ? "Waspada" : "Aman"}
+                      </div>
+                    </div>
+
+                    <button
+                      aria-expanded={isDashboardPeriodOpen}
+                      className="sakuin-ripple sakuin-press inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-white/25 sm:w-auto"
+                      onClick={() =>
+                        setIsDashboardPeriodOpen((current) => !current)
+                      }
+                      type="button"
+                    >
+                      <CalendarDays className="h-4 w-4 text-[var(--sakuin-primary)]" />
+                      Periode
+                      <ChevronDown
+                        className={[
+                          "h-4 w-4 transition-transform duration-300 motion-reduce:transition-none",
+                          isDashboardPeriodOpen ? "rotate-180" : "rotate-0"
+                        ].join(" ")}
+                      />
+                    </button>
                   </div>
                 </div>
+
+                {isDashboardPeriodOpen ? (
+                  <div className="sakuin-enter relative mt-4 rounded-2xl bg-white/12 p-3 ring-1 ring-white/20 backdrop-blur sm:mt-5">
+                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+                      <label className="block">
+                        <span className="mb-1 block text-[11px] font-black uppercase text-white/75">
+                          Bulan
+                        </span>
+                        <select
+                          className="min-h-11 w-full rounded-xl border border-white/25 bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-white/25"
+                          onChange={(event) => {
+                            const nextMonth =
+                              event.target.value === "all"
+                                ? "all"
+                                : (Number(event.target.value) as DashboardPeriodMonth);
+
+                            updateDashboardPeriod({
+                              month: nextMonth,
+                              year:
+                                nextMonth === "all"
+                                  ? selectedDashboardYear
+                                  : selectedDashboardYear === "all"
+                                    ? latestDashboardYear
+                                    : selectedDashboardYear
+                            });
+                          }}
+                          value={selectedDashboardMonth}
+                        >
+                          <option value="all">Semua bulan</option>
+                          {DASHBOARD_MONTH_OPTIONS.map((month) => (
+                            <option key={month.value} value={month.value}>
+                              {month.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1 block text-[11px] font-black uppercase text-white/75">
+                          Tahun
+                        </span>
+                        <select
+                          className="min-h-11 w-full rounded-xl border border-white/25 bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-white/25"
+                          onChange={(event) => {
+                            const nextYear =
+                              event.target.value === "all"
+                                ? "all"
+                                : Number(event.target.value);
+
+                            updateDashboardPeriod({
+                              month:
+                                nextYear === "all"
+                                  ? "all"
+                                  : selectedDashboardMonth,
+                              year: nextYear
+                            });
+                          }}
+                          value={selectedDashboardYear}
+                        >
+                          <option value="all">Semua tahun</option>
+                          {availableDashboardYears.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <p className="mt-2 text-xs font-semibold leading-5 text-white/80">
+                      Pilih tahun untuk melihat satu tahun penuh, atau pilih
+                      bulan dan tahun untuk fokus ke bulan tertentu.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="relative mt-5 grid grid-cols-2 gap-2.5 border-t border-white/25 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
                   <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
@@ -595,10 +818,10 @@ const profileQuery = useQuery({
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-500">
-                          Income Bulan Ini
+                          Pemasukan Periode
                         </p>
                         <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(summary?.incomeThisMonth)}
+                          {formatRupiah(summary?.totalIncome)}
                         </p>
                       </div>
                     </div>
@@ -609,10 +832,10 @@ const profileQuery = useQuery({
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-500">
-                          Expense Bulan Ini
+                          Pengeluaran Periode
                         </p>
                         <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(summary?.expenseThisMonth)}
+                          {formatRupiah(summary?.totalExpense)}
                         </p>
                       </div>
                     </div>
@@ -716,10 +939,10 @@ const profileQuery = useQuery({
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-zinc-500">
-                    Income Bulan Ini
+                    Pemasukan Periode
                   </p>
                   <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(summary?.incomeThisMonth)}
+                    {formatRupiah(summary?.totalIncome)}
                   </p>
                 </div>
               </div>
@@ -730,10 +953,10 @@ const profileQuery = useQuery({
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-zinc-500">
-                    Expense Bulan Ini
+                    Pengeluaran Periode
                   </p>
                   <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(summary?.expenseThisMonth)}
+                    {formatRupiah(summary?.totalExpense)}
                   </p>
                 </div>
               </div>

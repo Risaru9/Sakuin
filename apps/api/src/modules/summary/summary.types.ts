@@ -6,12 +6,25 @@ import type {
   CategorySummaryItem,
   MonthlyTrendItem
 } from "@sakuin/shared";
+import type { z } from "zod";
+import type { getSummaryQuerySchema } from "./summary.schema.js";
 
 export type SummaryAmount = string;
+export type GetSummaryQuery = z.infer<typeof getSummaryQuerySchema>;
 
 export type { RecentTransaction, CategorySummaryItem, MonthlyTrendItem };
 
 export type SummaryResponse = {
+  period: {
+    month: number | null;
+    year: number | null;
+    label: string;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  availablePeriods: {
+    years: number[];
+  };
   totalIncome: SummaryAmount;
   totalExpense: SummaryAmount;
   balance: SummaryAmount;
