@@ -49,7 +49,8 @@ import {
 } from "../../lib/pwa";
 import {
   formatRupiah,
-  getErrorMessage
+  getErrorMessage,
+  toNumber
 } from "./dashboard-utils";
 import {
   SummarySkeleton,
@@ -448,6 +449,16 @@ export function DashboardPage() {
     : isCurrentMonthDashboardPeriod
       ? "Sisa Uang Bulan Ini"
       : "Sisa Uang Periode";
+  const dashboardNetBalance = toNumber(dashboardTotals.balance);
+  const hasDashboardDeficit = dashboardNetBalance < 0;
+  const displayedRemainingBalance = hasDashboardDeficit
+    ? 0
+    : dashboardNetBalance;
+  const dashboardDeficitAmount = Math.abs(
+    Math.min(0, dashboardNetBalance)
+  );
+  const isDashboardBalanceAtRisk =
+    hasDashboardDeficit || Boolean(summary?.isBelowSafeLimit);
 
   const isLoadingPeriodTransactions =
     Boolean(dashboardPeriodRange) &&
@@ -695,10 +706,12 @@ export function DashboardPage() {
                       {summaryBalanceLabel}
                     </p>
                     <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
-                      {formatRupiah(dashboardTotals.balance)}
+                      {formatRupiah(displayedRemainingBalance)}
                     </p>
                     <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
-                      {summary?.isBelowSafeLimit
+                      {hasDashboardDeficit
+                        ? `Defisit ${formatRupiah(dashboardDeficitAmount)}. Pengeluaran periode ini lebih besar dari pemasukan.`
+                        : summary?.isBelowSafeLimit
                         ? "Sisa uang pada periode ini sedang di bawah batas aman."
                         : "Sisa uang pada periode ini masih berada di atas batas aman."}
                     </p>
@@ -713,17 +726,17 @@ export function DashboardPage() {
 
                       <div
                         className={
-                          summary?.isBelowSafeLimit
+                          isDashboardBalanceAtRisk
                             ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
                             : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
                         }
                       >
-                        {summary?.isBelowSafeLimit ? (
+                        {isDashboardBalanceAtRisk ? (
                           <AlertTriangle className="sakuin-icon-shake h-3.5 w-3.5" />
                         ) : (
                           <CheckCircle2 className="sakuin-icon-bounce h-3.5 w-3.5" />
                         )}
-                        {summary?.isBelowSafeLimit ? "Waspada" : "Aman"}
+                        {isDashboardBalanceAtRisk ? "Waspada" : "Aman"}
                       </div>
                     </div>
 
@@ -851,6 +864,21 @@ export function DashboardPage() {
                     </p>
                   </div>
                 </div>
+
+                {hasDashboardDeficit ? (
+                  <div className="relative mt-3 rounded-2xl border border-white/25 bg-white/12 p-3 ring-1 ring-white/15">
+                    <p className="text-[11px] font-black uppercase text-white/70">
+                      Net periode
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white sm:text-base">
+                      -{formatRupiah(dashboardDeficitAmount)}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-white/80">
+                      Ini bukan sisa uang, tapi selisih minus agar kamu tahu
+                      pengeluaran periode ini sudah melewati pemasukan.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="mt-3 sm:hidden">
                   <button
