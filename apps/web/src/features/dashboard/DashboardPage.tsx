@@ -90,17 +90,31 @@ type DashboardPeriodMonth =
   | "all";
 type DashboardPeriodYear = number | "all";
 
-function parseDashboardMonth(value: string | null): DashboardPeriodMonth {
+function parseDashboardMonth(
+  value: string | null,
+  fallbackMonth: DashboardPeriodMonth
+): DashboardPeriodMonth {
+  if (value === "all") {
+    return "all";
+  }
+
   const numericValue = Number(value);
 
   if (DASHBOARD_MONTH_OPTIONS.some((month) => month.value === numericValue)) {
     return numericValue as DashboardPeriodMonth;
   }
 
-  return "all";
+  return fallbackMonth;
 }
 
-function parseDashboardYear(value: string | null): DashboardPeriodYear {
+function parseDashboardYear(
+  value: string | null,
+  fallbackYear: DashboardPeriodYear
+): DashboardPeriodYear {
+  if (value === "all") {
+    return "all";
+  }
+
   const numericValue = Number(value);
 
   if (
@@ -111,7 +125,7 @@ function parseDashboardYear(value: string | null): DashboardPeriodYear {
     return numericValue;
   }
 
-  return "all";
+  return fallbackYear;
 }
 
 function getDashboardPeriodLabel(
@@ -161,15 +175,34 @@ export function DashboardPage() {
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
     string | null
   >(null);
+  const [currentDashboardDate, setCurrentDashboardDate] = useState(
+    () => new Date()
+  );
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setCurrentDashboardDate(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(timerId);
+  }, []);
 
   const selectedDashboardMonth = useMemo(
-    () => parseDashboardMonth(searchParams.get("dashboardMonth")),
-    [searchParams]
+    () =>
+      parseDashboardMonth(
+        searchParams.get("dashboardMonth"),
+        (currentDashboardDate.getMonth() + 1) as DashboardPeriodMonth
+      ),
+    [currentDashboardDate, searchParams]
   );
 
   const selectedDashboardYear = useMemo(
-    () => parseDashboardYear(searchParams.get("dashboardYear")),
-    [searchParams]
+    () =>
+      parseDashboardYear(
+        searchParams.get("dashboardYear"),
+        currentDashboardDate.getFullYear()
+      ),
+    [currentDashboardDate, searchParams]
   );
 
   const selectedStatsRange = useMemo<StatsRange>(() => {
@@ -244,17 +277,8 @@ export function DashboardPage() {
     const nextMonth = nextValues.month ?? selectedDashboardMonth;
     const nextYear = nextValues.year ?? selectedDashboardYear;
 
-    if (nextMonth === "all") {
-      next.delete("dashboardMonth");
-    } else {
-      next.set("dashboardMonth", String(nextMonth));
-    }
-
-    if (nextYear === "all") {
-      next.delete("dashboardYear");
-    } else {
-      next.set("dashboardYear", String(nextYear));
-    }
+    next.set("dashboardMonth", String(nextMonth));
+    next.set("dashboardYear", String(nextYear));
 
     setSearchParams(next, { replace: true });
   }
@@ -293,11 +317,16 @@ export function DashboardPage() {
   const dashboardPeriodLabel =
     summary?.period?.label ??
     getDashboardPeriodLabel(selectedDashboardMonth, selectedDashboardYear);
-  const isDashboardPeriodFiltered =
-    selectedDashboardMonth !== "all" || selectedDashboardYear !== "all";
-  const summaryBalanceLabel = isDashboardPeriodFiltered
-    ? "Saldo Periode"
-    : "Total Saldo Aktif";
+  const isAllTimeDashboardPeriod =
+    selectedDashboardMonth === "all" && selectedDashboardYear === "all";
+  const isCurrentMonthDashboardPeriod =
+    selectedDashboardMonth === currentDashboardDate.getMonth() + 1 &&
+    selectedDashboardYear === currentDashboardDate.getFullYear();
+  const summaryBalanceLabel = isAllTimeDashboardPeriod
+    ? "Total Saldo Semua Waktu"
+    : isCurrentMonthDashboardPeriod
+      ? "Sisa Uang Bulan Ini"
+      : "Sisa Uang Periode";
 
   const isLoadingSummary = summaryQuery.isLoading && !summaryQuery.data;
   const isLoadingGoals = goalsQuery.isLoading && !goalsQuery.data;
@@ -544,8 +573,8 @@ export function DashboardPage() {
                     </p>
                     <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
                       {summary?.isBelowSafeLimit
-                        ? "Saldo periode ini sedang di bawah batas aman."
-                        : "Saldo periode ini masih berada di atas batas aman."}
+                        ? "Sisa uang pada periode ini sedang di bawah batas aman."
+                        : "Sisa uang pada periode ini masih berada di atas batas aman."}
                     </p>
                   </div>
 
@@ -661,8 +690,9 @@ export function DashboardPage() {
                     </div>
 
                     <p className="mt-2 text-xs font-semibold leading-5 text-white/80">
-                      Pilih tahun untuk melihat satu tahun penuh, atau pilih
-                      bulan dan tahun untuk fokus ke bulan tertentu.
+                      Tanpa filter manual, dashboard otomatis mengikuti bulan
+                      berjalan. Pilih Semua bulan dan Semua tahun untuk melihat
+                      total seluruh transaksi.
                     </p>
                   </div>
                 ) : null}
@@ -884,10 +914,10 @@ export function DashboardPage() {
                     <div className="mb-4 flex items-center justify-between gap-2">
                       <div>
                         <h2 className="text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          Transaksi Terbaru (Semua)
+                          Transaksi Terbaru
                         </h2>
                         <p className="mt-1 text-xs font-medium text-zinc-600 sm:text-sm">
-                          Aktivitas terakhir dari akunmu secara keseluruhan.
+                          Aktivitas terakhir pada periode dashboard.
                         </p>
                       </div>
 
