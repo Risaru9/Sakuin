@@ -38,6 +38,8 @@ import type {
 } from "../summary/summary.types";
 import { AddTransactionModal } from "../transactions/AddTransactionModal";
 import { QuickTransactionModal } from "../transactions/QuickTransactionModal";
+import { getTransactions } from "../transactions/transaction.service";
+import type { Transaction } from "../transactions/transaction.types";
 import { getUserProfile } from "../profile/profile.service";
 import { completeRemoteDailyReview } from "../reminders/reminder.service";
 import {
@@ -145,6 +147,86 @@ function getDashboardPeriodLabel(
   }
 
   return "Semua waktu";
+}
+
+function getDashboardPeriodRange(
+  month: DashboardPeriodMonth,
+  year: DashboardPeriodYear
+) {
+  if (month === "all" && year === "all") {
+    return null;
+  }
+
+  if (year === "all") {
+    return null;
+  }
+
+  if (month === "all") {
+    return {
+      startDate: new Date(year, 0, 1, 0, 0, 0, 0).toISOString(),
+      endDate: new Date(year, 11, 31, 23, 59, 59, 999).toISOString()
+    };
+  }
+
+  return {
+    startDate: new Date(year, month - 1, 1, 0, 0, 0, 0).toISOString(),
+    endDate: new Date(year, month, 0, 23, 59, 59, 999).toISOString()
+  };
+}
+
+async function getAllTransactionsForPeriod(input: {
+  startDate: string;
+  endDate: string;
+}) {
+  const allTransactions: Transaction[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await getTransactions({
+      page,
+      limit: 100,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      sort: "date_desc"
+    });
+
+    allTransactions.push(...response.items);
+    totalPages = response.pagination?.totalPages ?? response.meta?.totalPages ?? 1;
+    page += 1;
+  } while (page <= totalPages);
+
+  return allTransactions;
+}
+
+function buildPeriodDashboardMetrics(transactions: Transaction[]) {
+  const totals = transactions.reduce(
+    (current, transaction) => {
+      const amount = Number(transaction.amount ?? 0);
+
+      if (transaction.type === "INCOME") {
+        current.income += Number.isFinite(amount) ? amount : 0;
+      }
+
+      if (transaction.type === "EXPENSE") {
+        current.expense += Number.isFinite(amount) ? amount : 0;
+      }
+
+      return current;
+    },
+    {
+      income: 0,
+      expense: 0
+    }
+  );
+
+  return {
+    totalIncome: totals.income.toFixed(2),
+    totalExpense: totals.expense.toFixed(2),
+    balance: (totals.income - totals.expense).toFixed(2),
+    transactionCount: transactions.length,
+    recentTransactions: transactions.slice(0, 5)
+  };
 }
 
 export function DashboardPage() {
@@ -269,6 +351,12 @@ export function DashboardPage() {
     [selectedDashboardMonth, selectedDashboardYear]
   );
 
+  const dashboardPeriodRange = useMemo(
+    () =>
+      getDashboardPeriodRange(selectedDashboardMonth, selectedDashboardYear),
+    [selectedDashboardMonth, selectedDashboardYear]
+  );
+
   function updateDashboardPeriod(nextValues: {
     month?: DashboardPeriodMonth;
     year?: DashboardPeriodYear;
@@ -290,6 +378,25 @@ export function DashboardPage() {
     refetchOnWindowFocus: false
   });
 
+  const periodTransactionsQuery = useQuery({
+    enabled: Boolean(dashboardPeriodRange),
+    queryKey: [
+      ...queryKeys.transactions.all,
+      "dashboard-period",
+      dashboardPeriodRange?.startDate,
+      dashboardPeriodRange?.endDate
+    ],
+    queryFn: () => {
+      if (!dashboardPeriodRange) {
+        return [];
+      }
+
+      return getAllTransactionsForPeriod(dashboardPeriodRange);
+    },
+    staleTime: DASHBOARD_SUMMARY_STALE_TIME,
+    refetchOnWindowFocus: false
+  });
+
   const goalsQuery = useQuery({
     queryKey: queryKeys.goals,
     queryFn: getGoals,
@@ -307,6 +414,20 @@ export function DashboardPage() {
   const summary = summaryQuery.data ?? null;
   const goals = goalsQuery.data ?? [];
   const profile = profileQuery.data ?? null;
+  const periodDashboardMetrics = useMemo(
+    () =>
+      dashboardPeriodRange
+        ? buildPeriodDashboardMetrics(periodTransactionsQuery.data ?? [])
+        : null,
+    [dashboardPeriodRange, periodTransactionsQuery.data]
+  );
+  const dashboardTotals = periodDashboardMetrics ?? {
+    totalIncome: summary?.totalIncome ?? "0.00",
+    totalExpense: summary?.totalExpense ?? "0.00",
+    balance: summary?.balance ?? "0.00",
+    transactionCount: summary?.transactionCount ?? 0,
+    recentTransactions: summary?.recentTransactions ?? []
+  };
   const availableDashboardYears =
     summary?.availablePeriods?.years &&
     summary.availablePeriods.years.length > 0
@@ -328,7 +449,12 @@ export function DashboardPage() {
       ? "Sisa Uang Bulan Ini"
       : "Sisa Uang Periode";
 
-  const isLoadingSummary = summaryQuery.isLoading && !summaryQuery.data;
+  const isLoadingPeriodTransactions =
+    Boolean(dashboardPeriodRange) &&
+    periodTransactionsQuery.isLoading &&
+    !periodTransactionsQuery.data;
+  const isLoadingSummary =
+    (summaryQuery.isLoading && !summaryQuery.data) || isLoadingPeriodTransactions;
   const isLoadingGoals = goalsQuery.isLoading && !goalsQuery.data;
 
   const summaryError =
@@ -569,7 +695,7 @@ export function DashboardPage() {
                       {summaryBalanceLabel}
                     </p>
                     <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
-                      {formatRupiah(summary?.balance)}
+                      {formatRupiah(dashboardTotals.balance)}
                     </p>
                     <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
                       {summary?.isBelowSafeLimit
@@ -703,7 +829,7 @@ export function DashboardPage() {
                       Pemasukan
                     </p>
                     <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                      {formatRupiah(summary?.totalIncome)}
+                      {formatRupiah(dashboardTotals.totalIncome)}
                     </p>
                   </div>
 
@@ -712,7 +838,7 @@ export function DashboardPage() {
                       Pengeluaran
                     </p>
                     <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                      {formatRupiah(summary?.totalExpense)}
+                      {formatRupiah(dashboardTotals.totalExpense)}
                     </p>
                   </div>
 
@@ -817,8 +943,8 @@ export function DashboardPage() {
                 </div>
 
                 <div className="grid gap-3">
-                  {(summary?.recentTransactions ?? []).length > 0 ? (
-                    summary?.recentTransactions.map((transaction) => (
+                  {dashboardTotals.recentTransactions.length > 0 ? (
+                    dashboardTotals.recentTransactions.map((transaction) => (
                       <TransactionItem
                         key={transaction.id}
                         transaction={transaction}
@@ -851,7 +977,7 @@ export function DashboardPage() {
                           Pemasukan Periode
                         </p>
                         <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(summary?.totalIncome)}
+                          {formatRupiah(dashboardTotals.totalIncome)}
                         </p>
                       </div>
                     </div>
@@ -865,7 +991,7 @@ export function DashboardPage() {
                           Pengeluaran Periode
                         </p>
                         <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(summary?.totalExpense)}
+                          {formatRupiah(dashboardTotals.totalExpense)}
                         </p>
                       </div>
                     </div>
@@ -879,7 +1005,7 @@ export function DashboardPage() {
                           Total Transaksi
                         </p>
                         <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {summary?.transactionCount ?? 0}{" "}
+                          {dashboardTotals.transactionCount}{" "}
                           <span className="text-sm font-semibold text-slate-500">
                             kali
                           </span>
@@ -930,8 +1056,8 @@ export function DashboardPage() {
                     </div>
 
                     <div className="grid gap-3">
-                      {(summary?.recentTransactions ?? []).length > 0 ? (
-                        summary?.recentTransactions.slice(0, 5).map((transaction) => (
+                      {dashboardTotals.recentTransactions.length > 0 ? (
+                        dashboardTotals.recentTransactions.map((transaction) => (
                           <TransactionItem
                             key={transaction.id}
                             transaction={transaction}
@@ -972,7 +1098,7 @@ export function DashboardPage() {
                     Pemasukan Periode
                   </p>
                   <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(summary?.totalIncome)}
+                    {formatRupiah(dashboardTotals.totalIncome)}
                   </p>
                 </div>
               </div>
@@ -986,7 +1112,7 @@ export function DashboardPage() {
                     Pengeluaran Periode
                   </p>
                   <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(summary?.totalExpense)}
+                    {formatRupiah(dashboardTotals.totalExpense)}
                   </p>
                 </div>
               </div>
@@ -1000,7 +1126,7 @@ export function DashboardPage() {
                     Total Transaksi
                   </p>
                   <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {summary?.transactionCount ?? 0}{" "}
+                    {dashboardTotals.transactionCount}{" "}
                     <span className="text-sm font-semibold text-slate-500">
                       kali
                     </span>
