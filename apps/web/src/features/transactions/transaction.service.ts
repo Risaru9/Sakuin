@@ -33,6 +33,49 @@ function setOptionalSearchParam(
   }
 }
 
+function isNetworkFailure(error: unknown) {
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /failed to fetch|networkerror|network request failed|load failed/i.test(
+    error.message
+  );
+}
+
+function toOfflineTransaction(input: CreateTransactionInput): Transaction {
+  const offlineTx = addToOfflineQueue(input);
+
+  return {
+    id: offlineTx.offlineId,
+    categoryId: input.categoryId,
+    type: input.type,
+    amount: input.amount,
+    note: input.note ?? null,
+    date: input.date,
+    category: {
+      id: input.categoryId,
+      name: "Transaksi Offline",
+      type: input.type,
+      icon: null,
+      color: null,
+      isDefault: false
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function dispatchTransactionAdded() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("sakuin:transaction-added"));
+  }
+}
+
 export function getTransactions(params: GetTransactionsParams = {}) {
   const searchParams = new URLSearchParams();
 
@@ -59,79 +102,52 @@ export function getTransactions(params: GetTransactionsParams = {}) {
 
 export async function createTransaction(input: CreateTransactionInput) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    const offlineTx = addToOfflineQueue(input);
-    const mockTx: Transaction = {
-      id: offlineTx.offlineId,
-      categoryId: input.categoryId,
-      type: input.type,
-      amount: input.amount,
-      note: input.note ?? null,
-      date: input.date,
-      category: {
-        id: input.categoryId,
-        name: "Transaksi Offline",
-        type: input.type,
-        icon: null,
-        color: null,
-        isDefault: false
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("sakuin:transaction-added"));
-    }
+    const mockTx = toOfflineTransaction(input);
+    dispatchTransactionAdded();
     return mockTx;
   }
 
-  const result = await apiRequest<Transaction>("/api/transactions", {
-    method: "POST",
-    body: input
-  });
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("sakuin:transaction-added"));
+  try {
+    const result = await apiRequest<Transaction>("/api/transactions", {
+      method: "POST",
+      body: input
+    });
+    dispatchTransactionAdded();
+    return result;
+  } catch (error) {
+    if (!isNetworkFailure(error)) {
+      throw error;
+    }
+
+    const mockTx = toOfflineTransaction(input);
+    dispatchTransactionAdded();
+    return mockTx;
   }
-  return result;
 }
 
 export async function createTransactionsBulk(input: CreateTransactionsBulkInput) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    const mockTransactions: Transaction[] = [];
-    for (const tx of input.transactions) {
-      const offlineTx = addToOfflineQueue(tx);
-      mockTransactions.push({
-        id: offlineTx.offlineId,
-        categoryId: tx.categoryId,
-        type: tx.type,
-        amount: tx.amount,
-        note: tx.note ?? null,
-        date: tx.date,
-        category: {
-          id: tx.categoryId,
-          name: "Transaksi Offline",
-          type: tx.type,
-          icon: null,
-          color: null,
-          isDefault: false
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    }
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("sakuin:transaction-added"));
-    }
+    const mockTransactions = input.transactions.map(toOfflineTransaction);
+    dispatchTransactionAdded();
     return mockTransactions;
   }
 
-  const result = await apiRequest<Transaction[]>("/api/transactions/bulk", {
-    method: "POST",
-    body: input
-  });
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("sakuin:transaction-added"));
+  try {
+    const result = await apiRequest<Transaction[]>("/api/transactions/bulk", {
+      method: "POST",
+      body: input
+    });
+    dispatchTransactionAdded();
+    return result;
+  } catch (error) {
+    if (!isNetworkFailure(error)) {
+      throw error;
+    }
+
+    const mockTransactions = input.transactions.map(toOfflineTransaction);
+    dispatchTransactionAdded();
+    return mockTransactions;
   }
-  return result;
 }
 
 export function updateTransaction(

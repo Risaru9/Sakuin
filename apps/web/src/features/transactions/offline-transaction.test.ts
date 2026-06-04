@@ -78,6 +78,51 @@ describe("Offline Transaction Handling", () => {
     expect(result.category.name).toBe("Transaksi Offline");
   });
 
+  it("should queue single transaction when online request fails because of network", async () => {
+    vi.stubGlobal("navigator", { onLine: true });
+    vi.mocked(apiRequest).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    const input = {
+      categoryId: "cat-1",
+      amount: "10000",
+      type: "EXPENSE" as const,
+      note: "Makan siang",
+      date: "2026-05-27T00:00:00.000Z",
+    };
+
+    const result = await createTransaction(input);
+
+    expect(apiRequest).toHaveBeenCalledWith("/api/transactions", {
+      method: "POST",
+      body: input,
+    });
+
+    const queue = getOfflineQueue();
+    expect(queue).toHaveLength(1);
+    expect(queue[0].amount).toBe("10000");
+    expect(result.id).toBe(queue[0].offlineId);
+    expect(result.category.name).toBe("Transaksi Offline");
+  });
+
+  it("should not queue transaction when API returns a validation error", async () => {
+    vi.stubGlobal("navigator", { onLine: true });
+    vi.mocked(apiRequest).mockRejectedValueOnce(
+      new Error("Kategori tidak ditemukan atau tidak sesuai dengan tipe transaksi")
+    );
+
+    const input = {
+      categoryId: "category-tidak-valid",
+      amount: "10000",
+      type: "EXPENSE" as const,
+      date: "2026-05-27T00:00:00.000Z",
+    };
+
+    await expect(createTransaction(input)).rejects.toThrow(
+      "Kategori tidak ditemukan"
+    );
+    expect(getOfflineQueue()).toHaveLength(0);
+  });
+
   it("should save bulk transactions to offline queue when offline", async () => {
     vi.stubGlobal("navigator", { onLine: false });
 
@@ -108,6 +153,41 @@ describe("Offline Transaction Handling", () => {
     expect(queue[1].amount).toBe("25000");
 
     expect(result.length).toBe(2);
+    expect(result[0].id).toBe(queue[0].offlineId);
+    expect(result[1].id).toBe(queue[1].offlineId);
+  });
+
+  it("should queue bulk transactions when online request fails because of network", async () => {
+    vi.stubGlobal("navigator", { onLine: true });
+    vi.mocked(apiRequest).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    const input = {
+      transactions: [
+        {
+          categoryId: "cat-1",
+          amount: "10000",
+          type: "EXPENSE" as const,
+          date: "2026-05-27T00:00:00.000Z",
+        },
+        {
+          categoryId: "cat-2",
+          amount: "25000",
+          type: "INCOME" as const,
+          date: "2026-05-27T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const result = await createTransactionsBulk(input);
+
+    expect(apiRequest).toHaveBeenCalledWith("/api/transactions/bulk", {
+      method: "POST",
+      body: input,
+    });
+
+    const queue = getOfflineQueue();
+    expect(queue).toHaveLength(2);
+    expect(result).toHaveLength(2);
     expect(result[0].id).toBe(queue[0].offlineId);
     expect(result[1].id).toBe(queue[1].offlineId);
   });

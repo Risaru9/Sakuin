@@ -486,8 +486,6 @@ export function QuickTransactionModal({
           addTransactionsToSummaryCache(queryClient, optimisticTransactions);
         }
 
-        onClose();
-
         return {
           previousTransactionQueries,
           previousSummary,
@@ -531,6 +529,7 @@ export function QuickTransactionModal({
         void onSuccess();
 
         resetModal();
+        onClose();
       },
 
            onError: (caughtError, _items, context) => {
@@ -707,7 +706,6 @@ export function QuickTransactionModal({
     }));
 
     setError(null);
-    onClose();
 
     saveDraftsMutation.mutate(submittedDrafts);
   }
