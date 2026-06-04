@@ -24,8 +24,16 @@ export type TransactionListCacheSnapshot = Array<
   [QueryKey, TransactionListResponse | undefined]
 >;
 
+const transactionListQueryKey = [...queryKeys.transactions.all, "list"] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTransactionListResponse(
+  data: unknown
+): data is TransactionListResponse {
+  return isRecord(data) && Array.isArray(data.items);
 }
 
 function toNumber(value: string | number | null | undefined) {
@@ -730,14 +738,14 @@ function updateTransactionListCaches(
   ) => TransactionListResponse
 ) {
   const transactionQueries = queryClient.getQueryCache().findAll({
-    queryKey: queryKeys.transactions.all
+    queryKey: transactionListQueryKey
   });
 
   for (const query of transactionQueries) {
     queryClient.setQueryData<TransactionListResponse>(
       query.queryKey,
       (currentData) => {
-        if (!currentData) {
+        if (!isTransactionListResponse(currentData)) {
           return currentData;
         }
 
@@ -751,7 +759,7 @@ export function getTransactionListCacheSnapshot(
   queryClient: QueryClient
 ): TransactionListCacheSnapshot {
   return queryClient.getQueriesData<TransactionListResponse>({
-    queryKey: queryKeys.transactions.all
+    queryKey: transactionListQueryKey
   });
 }
 
