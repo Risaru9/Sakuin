@@ -2,7 +2,9 @@ import type { ApiRequestOptions, ApiResponse } from "../types/api";
 import {
   getActiveAccountScope,
   getStoredToken,
-  removeStoredToken
+  removeCachedUser,
+  removeStoredToken,
+  syncTokenToServiceWorker
 } from "./auth-storage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
@@ -34,10 +36,24 @@ export function buildUrl(path: string) {
 
 function handleUnauthorized() {
   removeStoredToken();
+  removeCachedUser();
+  syncTokenToServiceWorker(null);
+  window.dispatchEvent(new Event("sakuin:session-expired"));
   const currentPath = window.location.pathname;
   if (currentPath !== "/login") {
     window.location.replace("/login?expired=true");
   }
+}
+
+function isMissingSessionUser<T>(
+  response: Response,
+  result: ApiResponse<T>
+) {
+  return (
+    response.status === 404 &&
+    result.success === false &&
+    result.message === "User tidak ditemukan"
+  );
 }
 
 export async function apiRequest<T>(
@@ -109,7 +125,7 @@ export async function apiRequest<T>(
 
   const result = (await response.json()) as ApiResponse<T>;
 
-  if (response.status === 401) {
+  if (response.status === 401 || isMissingSessionUser(response, result)) {
     handleUnauthorized();
     const errMessage = result.success === false ? result.message : undefined;
     const errErrors = result.success === false ? result.errors : undefined;

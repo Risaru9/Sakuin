@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest, buildUrl } from "./api-client";
-import { setCachedUser } from "./auth-storage";
+import { getStoredToken, setCachedUser, setStoredToken } from "./auth-storage";
 
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL || "https://sakuin-api.vercel.app";
@@ -56,9 +56,47 @@ describe("api-client URL builder", () => {
       balance: "10000"
     });
   });
+
+  it("menghapus sesi ketika token merujuk ke user yang sudah tidak ada", async () => {
+    window.history.replaceState({}, "", "/login");
+    setStoredToken("stale-token");
+    setCachedUser({
+      id: "deleted-user",
+      name: "Deleted User",
+      email: "deleted@example.com",
+      safeBalanceLimit: "0"
+    });
+    const sessionExpiredListener = vi.fn();
+    window.addEventListener("sakuin:session-expired", sessionExpiredListener);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            message: "User tidak ditemukan",
+            data: null
+          }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+      )
+    );
+
+    await expect(apiRequest("/api/accounts")).rejects.toThrow(
+      "User tidak ditemukan"
+    );
+
+    expect(getStoredToken()).toBeNull();
+    expect(sessionExpiredListener).toHaveBeenCalledOnce();
+    window.removeEventListener("sakuin:session-expired", sessionExpiredListener);
+  });
 });
 
 afterEach(() => {
+  window.history.replaceState({}, "", "/");
   localStorage.clear();
   vi.unstubAllGlobals();
 });

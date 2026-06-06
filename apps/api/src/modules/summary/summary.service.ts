@@ -1,5 +1,6 @@
 import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
+import { HttpError } from "../../utils/http-error.js";
 import { getAiFinancialContext } from "../ai/ai-financial-context.js";
 import { buildFinancialCheckup } from "../finance/financial-checkup.js";
 import { runDueRecurringRules } from "../recurring/recurring.service.js";
@@ -257,12 +258,18 @@ export async function getSummary(
   const selectedPeriod = getPeriodDateRange(query, now);
   const selectedPeriodWhere = buildPeriodWhere(userId, selectedPeriod);
 
-  // Get AI financial context with error handling.
-  const aiFinancialContextPromise = getAiFinancialContext(userId, now).catch((error) => {
-    console.error("[Summary] Error getting AI financial context");
-    // Re-throw to handle it later with fallback
-    throw error;
-  });
+  // Attach both handlers immediately so a fast AI-context failure cannot become
+  // an unhandled rejection while the main summary transaction is still running.
+  const aiFinancialContextPromise = getAiFinancialContext(userId, now).then(
+    (context) => ({
+      ok: true as const,
+      context
+    }),
+    (error: unknown) => ({
+      ok: false as const,
+      error
+    })
+  );
 
   const [
     user,
@@ -386,6 +393,10 @@ export async function getSummary(
     })
   ]);
 
+  if (!user) {
+    throw new HttpError("User tidak ditemukan", 404);
+  }
+
   const categoryIds = [
     ...new Set(categoryAggregates.map((aggregate) => aggregate.categoryId))
   ];
@@ -500,7 +511,13 @@ export async function getSummary(
   let habit = null;
   
   try {
-    aiFinancialContext = await aiFinancialContextPromise;
+    const aiFinancialContextResult = await aiFinancialContextPromise;
+
+    if (!aiFinancialContextResult.ok) {
+      throw aiFinancialContextResult.error;
+    }
+
+    aiFinancialContext = aiFinancialContextResult.context;
     financialCheckup = buildFinancialCheckup(aiFinancialContext);
     safeToSpend = aiFinancialContext.safeToSpend;
     habit = aiFinancialContext.habit ?? null;

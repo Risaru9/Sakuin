@@ -25,6 +25,7 @@ import {
   getCategories
 } from "../categories/category.service";
 import type { Category } from "../categories/category.types";
+import { getAccounts } from "../accounts/account.service";
 import { createTransaction } from "./transaction.service";
 import type {
   CreateTransactionInput,
@@ -59,6 +60,7 @@ type AddTransactionModalProps = {
 type TransactionFormState = {
   type: TransactionType;
   amount: string;
+  accountId: string;
   categoryId: string;
   date: string;
   note: string;
@@ -75,6 +77,7 @@ function getInitialForm(): TransactionFormState {
   return {
     type: "EXPENSE",
     amount: "",
+    accountId: "",
     categoryId: "",
     date: getTodayInputValue(),
     note: "",
@@ -228,8 +231,15 @@ export function AddTransactionModal({
     enabled: open,
     staleTime: 5 * 60_000
   });
+  const accountsQuery = useQuery({
+    queryKey: queryKeys.accounts,
+    queryFn: getAccounts,
+    enabled: open,
+    staleTime: 60_000
+  });
 
   const categories = categoriesQuery.data ?? [];
+  const accounts = accountsQuery.data ?? [];
   const isLoadingCategories =
     categoriesQuery.isLoading && !categoriesQuery.data;
 
@@ -331,11 +341,11 @@ export function AddTransactionModal({
       resetForm();
       onClose();
 
-    return {
-      optimisticTransactionId: optimisticTransaction?.id ?? null,
-      previousTransactionQueries,
-      previousSummary
-    };
+      return {
+        optimisticTransactionId: optimisticTransaction?.id ?? null,
+        previousTransactionQueries,
+        previousSummary
+      };
     },
     onSuccess: ({ transaction, createdCategory }, _variables, context) => {
       if (context?.optimisticTransactionId) {
@@ -351,6 +361,9 @@ export function AddTransactionModal({
 
       markTransactionDerivedDataStale(queryClient, {
         includeCategories: Boolean(createdCategory)
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.accounts
       });
 
       addToast({
@@ -446,6 +459,11 @@ export function AddTransactionModal({
       return;
     }
 
+    if (!form.accountId) {
+      setError("Rekening transaksi wajib dipilih.");
+      return;
+    }
+
     if (!form.date) {
       setError("Tanggal transaksi wajib diisi.");
       return;
@@ -476,6 +494,7 @@ export function AddTransactionModal({
     const input: CreateTransactionInput = {
       type: form.type,
       amount: form.amount.trim(),
+      accountId: form.accountId,
       categoryId: form.categoryId,
       date: toIsoDate(form.date),
       note: form.note.trim() || undefined
@@ -502,6 +521,17 @@ export function AddTransactionModal({
       amountInputRef.current?.focus();
     }, 80);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || accounts.length === 0 || form.accountId) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      accountId: accounts[0]?.id ?? ""
+    }));
+  }, [open, accounts, form.accountId]);
 
   useEffect(() => {
     if (!open || categories.length === 0 || form.categoryId) {
@@ -657,6 +687,35 @@ export function AddTransactionModal({
           <p className="-mt-2 text-xs font-medium text-[var(--sakuin-muted)]">
             Maksimal nominal transaksi adalah {MAX_TRANSACTION_AMOUNT_LABEL}.
           </p>
+
+          <label className="block w-full">
+            <span className="mb-2 block text-sm font-semibold text-[var(--sakuin-text)]">
+              Rekening
+            </span>
+            <select
+              className="min-h-11 w-full rounded-[1.25rem] border border-[var(--sakuin-border)] bg-white px-3.5 py-2.5 text-sm text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-ink)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/40 disabled:bg-[var(--sakuin-surface-soft)]"
+              disabled={accountsQuery.isLoading || accounts.length === 0}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  accountId: event.target.value
+                }))
+              }
+              value={form.accountId}
+            >
+              {accountsQuery.isLoading ? (
+                <option value="">Mengambil rekening...</option>
+              ) : null}
+              {!accountsQuery.isLoading && accounts.length === 0 ? (
+                <option value="">Rekening belum tersedia</option>
+              ) : null}
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label className="block w-full">
             <span className="mb-2 block text-sm font-semibold text-[var(--sakuin-text)]">

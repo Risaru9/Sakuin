@@ -11,6 +11,7 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "validate": "pnpm safety:production && pnpm typecheck && pnpm test && pnpm --filter @sakuin/shared build && pnpm --filter @sakuin/web build && pnpm --filter @sakuin/api exec prisma validate && pnpm --filter @sakuin/api exec tsc -p tsconfig.json",
     "safety:production": "node scripts/production-safety-check.mjs",
     "smoke:production": "node scripts/production-smoke-check.mjs",
     "smoke:production:v1": "node scripts/production-smoke-check.mjs --require-api-v1"

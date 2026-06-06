@@ -140,6 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    function handleSessionExpired() {
+      setUser(null);
+      setIsInitializing(false);
+    }
+
+    window.addEventListener("sakuin:session-expired", handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(
+        "sakuin:session-expired",
+        handleSessionExpired
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user || !isNativePlatform()) return;
 
     async function evaluateHabitReminder() {

@@ -13,6 +13,14 @@ enum TransactionType {
   EXPENSE
 }
 
+enum AccountType {
+  CASH
+  BANK
+  E_WALLET
+  SAVINGS
+  OTHER
+}
+
 model User {
   id                   String         @id @default(cuid())
   name                 String
@@ -22,6 +30,8 @@ model User {
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
   transactions         Transaction[]
+  accounts             Account[]
+  accountTransfers     AccountTransfer[]
   goals                Goal[]
   categories           Category[]
   auditLogs            AuditLog[]
@@ -55,12 +65,14 @@ model OauthAccount {
 model Transaction {
   id          String          @id @default(cuid())
   userId      String
+  accountId   String?
   categoryId  String
   type        TransactionType
   amount      Decimal         @db.Decimal(18, 2)
   note        String?
   date        DateTime
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account     Account?        @relation(fields: [accountId], references: [id], onDelete: Restrict)
   category    Category        @relation(fields: [categoryId], references: [id])
   recurringRuns RecurringRuleRun[]
   emailImport  EmailTransactionImport?
@@ -69,7 +81,47 @@ model Transaction {
 
   @@index([userId, date])
   @@index([userId, type])
+  @@index([accountId, date])
   @@index([categoryId])
+}
+
+model Account {
+  id                String            @id @default(cuid())
+  userId            String
+  name              String
+  type              AccountType
+  initialBalance    Decimal           @default(0) @db.Decimal(18, 2)
+  icon              String?
+  color             String?
+  isArchived        Boolean           @default(false)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  outgoingTransfers AccountTransfer[] @relation("TransferFromAccount")
+  incomingTransfers AccountTransfer[] @relation("TransferToAccount")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, isArchived])
+}
+
+model AccountTransfer {
+  id            String   @id @default(cuid())
+  userId        String
+  fromAccountId String
+  toAccountId   String
+  amount        Decimal  @db.Decimal(18, 2)
+  note          String?
+  date          DateTime
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount   Account  @relation("TransferFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount     Account  @relation("TransferToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([fromAccountId, date])
+  @@index([toAccountId, date])
 }
 
 model Goal {

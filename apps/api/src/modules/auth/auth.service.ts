@@ -176,7 +176,15 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     data: {
       name: input.name,
       email: input.email,
-      passwordHash
+      passwordHash,
+      accounts: {
+        create: {
+          name: "Dompet Utama",
+          type: "CASH",
+          icon: "wallet",
+          color: "#2563eb"
+        }
+      }
     },
     select: {
       id: true,
@@ -282,6 +290,14 @@ export async function loginWithGoogle(
         create: {
           provider: GOOGLE_PROVIDER,
           providerAccountId: identity.providerAccountId
+        }
+      },
+      accounts: {
+        create: {
+          name: "Dompet Utama",
+          type: "CASH",
+          icon: "wallet",
+          color: "#2563eb"
         }
       }
     },

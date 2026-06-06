@@ -50,6 +50,7 @@ const optionalStringSchema = z.preprocess(
 export const createTransactionSchema = z.object({
   type: transactionTypeSchema,
   amount: amountSchema,
+  accountId: z.string().trim().min(1, "Rekening tidak valid").optional(),
   categoryId: z.string().trim().min(1, "Category wajib diisi"),
   date: requiredDateSchema,
   note: z
@@ -71,6 +72,7 @@ export const updateTransactionSchema = z
   .object({
     type: transactionTypeSchema.optional(),
     amount: amountSchema.optional(),
+    accountId: z.string().trim().min(1, "Rekening tidak valid").optional(),
     categoryId: z.string().trim().min(1, "Category wajib diisi").optional(),
     date: requiredDateSchema.optional(),
     note: z
@@ -94,6 +96,7 @@ export const getTransactionsQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10),
     type: transactionTypeSchema.optional(),
+    accountId: optionalStringSchema,
     categoryId: optionalStringSchema,
     search: optionalStringSchema,
     startDate: optionalDateSchema,

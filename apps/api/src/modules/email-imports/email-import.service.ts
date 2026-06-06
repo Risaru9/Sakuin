@@ -12,6 +12,7 @@ import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
 import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
+import { resolveOwnedAccountId } from "../accounts/account.service.js";
 import {
   createEmailFingerprint,
   createTransactionFingerprint,
@@ -575,10 +576,12 @@ async function createTransactionFromImport({
     parsed.financialProvider,
     parsed.type
   );
+  const accountId = await resolveOwnedAccountId(db, userId);
 
   const transaction = await db.transaction.create({
     data: {
       userId,
+      accountId,
       categoryId,
       type: parsed.type,
       amount: parsed.amount,

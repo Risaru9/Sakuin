@@ -624,6 +624,33 @@ describe("Summary API", () => {
     );
   }, 20000);
 
+  it("GET /api/summary menolak token milik user yang sudah dihapus tanpa menjatuhkan API", async () => {
+    const deletedUser = await registerUser({
+      name: "Deleted Summary User",
+      email: `summary-deleted-user-${testRunId}@example.com`,
+      password: "Password123"
+    });
+
+    await prisma.user.delete({
+      where: {
+        id: deletedUser.user.id
+      }
+    });
+
+    const response = await app.request("/api/summary", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${deletedUser.token}`
+      }
+    });
+
+    const body = await parseJson(response);
+
+    expect(response.status).toBe(404);
+    expect(body.success).toBe(false);
+    expect(body.message).toBe("User tidak ditemukan");
+  });
+
   it("GET /api/summary gagal tanpa token", async () => {
     const response = await app.request("/api/summary", {
       method: "GET"

@@ -13,6 +13,7 @@ import { aiRoutes } from "./ai/ai.routes.js";
 import { reminderRoutes } from "./reminders/reminder.route.js";
 import { recurringRoutes } from "./recurring/recurring.route.js";
 import { emailImportRoutes } from "./email-imports/email-import.route.js";
+import { accountRoutes } from "./accounts/account.route.js";
 
 export const apiRoutes = new Hono<AppEnv>();
 
@@ -49,3 +50,4 @@ apiRoutes.route("/ai", aiRoutes);
 apiRoutes.route("/reminders", reminderRoutes);
 apiRoutes.route("/recurring", recurringRoutes);
 apiRoutes.route("/email-imports", emailImportRoutes);
+apiRoutes.route("/accounts", accountRoutes);

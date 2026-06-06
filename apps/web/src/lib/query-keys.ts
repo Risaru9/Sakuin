@@ -5,6 +5,8 @@ export const queryKeys = {
   goals: ["goals"] as const,
   profile: ["profile"] as const,
   categories: ["categories"] as const,
+  accounts: ["accounts"] as const,
+  accountTransfers: ["accounts", "transfers"] as const,
   recurring: ["recurring"] as const,
   emailImports: {
     overview: ["email-imports", "overview"] as const

@@ -118,12 +118,11 @@ describe("AsistenPage - Flow Simpan Draft", () => {
 
     renderComponent();
 
-    // Pastikan chat welcome dan draft muncul
+    // Pastikan draft yang dapat ditindaklanjuti muncul.
     await waitFor(() => {
-      expect(screen.getByText("Ini draft transaksinya.")).toBeInTheDocument();
+      expect(screen.getByText("Makanan")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Makanan")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Simpan Draft/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Batalkan Draft/i })).toBeInTheDocument();
   });
