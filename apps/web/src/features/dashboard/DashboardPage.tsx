@@ -252,7 +252,6 @@ export function DashboardPage() {
   ] as const;
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
-  const [isSummaryActionOpen, setIsSummaryActionOpen] = useState(false);
   const [isDashboardPeriodOpen, setIsDashboardPeriodOpen] = useState(false);
   const [quickTransactionInitialText, setQuickTransactionInitialText] = useState("");
   const [dailyReviewCompletedDate, setDailyReviewCompletedDate] = useState<
@@ -693,82 +692,86 @@ export function DashboardPage() {
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-5">
           <div className="space-y-4 sm:space-y-5">
-            {/* Kartu biru utama (saldo + aksi) - tidak diubah */}
+            {/* Ringkasan finansial utama */}
             {isLoadingSummary ? (
               <SummarySkeleton />
             ) : (
-              <div className="sakuin-enter relative overflow-hidden rounded-3xl border border-transparent bg-gradient-to-br from-[var(--sakuin-primary)] to-[var(--sakuin-secondary)] p-4 text-white shadow-[0_22px_55px_rgba(37,99,235,0.18)] sm:p-8">
-                <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/15 animate-[sakuinFloat_7s_ease-in-out_infinite]" />
-                <div aria-hidden="true" className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full border border-white/15 animate-[sakuinFloat_8s_ease-in-out_infinite]" />
-                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <section className="sakuin-enter rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-5">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white/85 sm:text-sm">
-                      {summaryBalanceLabel}
-                    </p>
-                    <p className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
-                      {formatRupiah(displayedRemainingBalance)}
-                    </p>
-                    <p className="mt-2 max-w-xl text-xs leading-5 text-white/85 sm:text-sm sm:leading-6">
-                      {hasDashboardDeficit
-                        ? `Defisit ${formatRupiah(dashboardDeficitAmount)}. Pengeluaran periode ini lebih besar dari pemasukan.`
-                        : summary?.isBelowSafeLimit
-                        ? "Sisa uang pada periode ini sedang di bawah batas aman."
-                        : "Sisa uang pada periode ini masih berada di atas batas aman."}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                      <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 text-xs font-black text-white shadow-sm backdrop-blur">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        {dashboardPeriodLabel}
-                      </span>
-
-                      <div
-                        className={
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">
+                        {summaryBalanceLabel}
+                      </p>
+                      <span
+                        className={[
+                          "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black ring-1",
                           isDashboardBalanceAtRisk
-                            ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
-                            : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--sakuin-border)] bg-white px-3 py-1.5 text-xs font-black text-[var(--sakuin-text)]"
-                        }
+                            ? "bg-amber-50 text-amber-700 ring-amber-200"
+                            : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                        ].join(" ")}
                       >
                         {isDashboardBalanceAtRisk ? (
-                          <AlertTriangle className="sakuin-icon-shake h-3.5 w-3.5" />
+                          <AlertTriangle className="sakuin-icon-shake h-3 w-3" />
                         ) : (
-                          <CheckCircle2 className="sakuin-icon-bounce h-3.5 w-3.5" />
+                          <CheckCircle2 className="sakuin-icon-bounce h-3 w-3" />
                         )}
                         {isDashboardBalanceAtRisk ? "Waspada" : "Aman"}
-                      </div>
+                      </span>
                     </div>
-
-                    <button
-                      aria-expanded={isDashboardPeriodOpen}
-                      className="sakuin-ripple sakuin-press inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-white/25 sm:w-auto"
-                      onClick={() =>
-                        setIsDashboardPeriodOpen((current) => !current)
-                      }
-                      type="button"
-                    >
-                      <CalendarDays className="h-4 w-4 text-[var(--sakuin-primary)]" />
-                      Periode
-                      <ChevronDown
-                        className={[
-                          "h-4 w-4 transition-transform duration-300 motion-reduce:transition-none",
-                          isDashboardPeriodOpen ? "rotate-180" : "rotate-0"
-                        ].join(" ")}
-                      />
-                    </button>
                   </div>
+
+                  <button
+                    aria-expanded={isDashboardPeriodOpen}
+                    className="sakuin-press flex min-h-9 shrink-0 items-center gap-2 rounded-xl bg-[var(--sakuin-primary-soft)] px-2.5 text-left ring-1 ring-[var(--sakuin-border)] transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-[var(--sakuin-focus)]/20 sm:min-h-10 sm:px-3"
+                    onClick={() =>
+                      setIsDashboardPeriodOpen((current) => !current)
+                    }
+                    type="button"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[var(--sakuin-primary)]" />
+                    <span className="min-w-0">
+                      <span className="hidden text-[9px] font-bold uppercase tracking-wide text-zinc-500 sm:block">
+                        Periode
+                      </span>
+                      <span className="block max-w-24 truncate text-[11px] font-black text-[var(--sakuin-text)] sm:max-w-36">
+                        {dashboardPeriodLabel}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={[
+                        "h-3.5 w-3.5 shrink-0 text-[var(--sakuin-primary)] transition-transform duration-300 motion-reduce:transition-none",
+                        isDashboardPeriodOpen ? "rotate-180" : "rotate-0"
+                      ].join(" ")}
+                    />
+                  </button>
                 </div>
 
+                <p className="mt-3 truncate text-[2rem] font-black leading-none tracking-[-0.04em] text-[var(--sakuin-text)] sm:text-[2.6rem]">
+                  {formatRupiah(displayedRemainingBalance)}
+                </p>
+                <p
+                  className={[
+                    "mt-2 max-w-2xl text-xs font-semibold leading-5",
+                    hasDashboardDeficit ? "text-rose-600" : "text-zinc-500"
+                  ].join(" ")}
+                >
+                  {hasDashboardDeficit
+                    ? `Defisit ${formatRupiah(dashboardDeficitAmount)}. Pengeluaran lebih besar dari pemasukan.`
+                    : summary?.isBelowSafeLimit
+                      ? "Saldo berada di bawah batas aman yang kamu tentukan."
+                      : "Saldo masih berada di atas batas aman."}
+                </p>
+
                 {isDashboardPeriodOpen ? (
-                  <div className="sakuin-enter relative mt-4 rounded-2xl bg-white/12 p-3 ring-1 ring-white/20 backdrop-blur sm:mt-5">
-                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+                  <div className="sakuin-enter mt-3 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 ring-1 ring-[var(--sakuin-border)]">
+                    <div className="grid gap-2 sm:grid-cols-2">
                       <label className="block">
-                        <span className="mb-1 block text-[11px] font-black uppercase text-white/75">
+                        <span className="mb-1 block text-[11px] font-black uppercase text-zinc-500">
                           Bulan
                         </span>
                         <select
-                          className="min-h-11 w-full rounded-xl border border-white/25 bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-white/25"
+                          className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-[var(--sakuin-focus)]/20"
                           onChange={(event) => {
                             const nextMonth =
                               event.target.value === "all"
@@ -797,11 +800,11 @@ export function DashboardPage() {
                       </label>
 
                       <label className="block">
-                        <span className="mb-1 block text-[11px] font-black uppercase text-white/75">
+                        <span className="mb-1 block text-[11px] font-black uppercase text-zinc-500">
                           Tahun
                         </span>
                         <select
-                          className="min-h-11 w-full rounded-xl border border-white/25 bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-white/25"
+                          className="min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-black text-[var(--sakuin-text)] shadow-sm outline-none transition focus:ring-4 focus:ring-[var(--sakuin-focus)]/20"
                           onChange={(event) => {
                             const nextYear =
                               event.target.value === "all"
@@ -828,107 +831,53 @@ export function DashboardPage() {
                       </label>
                     </div>
 
-                    <p className="mt-2 text-xs font-semibold leading-5 text-white/80">
-                      Tanpa filter manual, dashboard otomatis mengikuti bulan
-                      berjalan. Pilih Semua bulan dan Semua tahun untuk melihat
-                      total seluruh transaksi.
+                    <p className="mt-2 text-[11px] font-medium leading-4 text-zinc-500">
+                      Pilih semua bulan dan tahun untuk menampilkan seluruh transaksi.
                     </p>
                   </div>
                 ) : null}
 
-                <div className="relative mt-5 grid grid-cols-2 gap-2.5 border-t border-white/25 pt-4 sm:mt-8 sm:grid-cols-3 sm:gap-4 sm:pt-6">
-                  <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-zinc-500">
-                      Pemasukan
-                    </p>
-                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[var(--sakuin-border)] pt-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpCircle className="h-4 w-4 shrink-0 text-[var(--sakuin-green)]" />
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                        Pemasukan
+                      </p>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-black text-[var(--sakuin-text)] sm:text-base">
                       {formatRupiah(dashboardTotals.totalIncome)}
                     </p>
                   </div>
 
-                  <div className="sakuin-card-lift sakuin-stagger-enter rounded-2xl border border-white/20 bg-white/95 p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-zinc-500">
-                      Pengeluaran
-                    </p>
-                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
+                  <div className="min-w-0 border-l border-[var(--sakuin-border)] pl-3">
+                    <div className="flex items-center gap-2">
+                      <ArrowDownCircle className="h-4 w-4 shrink-0 text-[var(--sakuin-red)]" />
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                        Pengeluaran
+                      </p>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-black text-[var(--sakuin-text)] sm:text-base">
                       {formatRupiah(dashboardTotals.totalExpense)}
                     </p>
                   </div>
-
-                  <div className="sakuin-card-lift sakuin-stagger-enter col-span-2 rounded-2xl border border-white/20 bg-white/95 p-3 sm:col-span-1 sm:p-4">
-                    <p className="text-xs font-semibold text-zinc-500">
-                      Batas Aman
-                    </p>
-                    <p className="mt-1.5 text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                      {formatRupiah(summary?.safeBalanceLimit)}
-                    </p>
-                  </div>
                 </div>
 
-                {hasDashboardDeficit ? (
-                  <div className="relative mt-3 rounded-2xl border border-white/25 bg-white/12 p-3 ring-1 ring-white/15">
-                    <p className="text-[11px] font-black uppercase text-white/70">
-                      Net periode
-                    </p>
-                    <p className="mt-1 text-sm font-black text-white sm:text-base">
-                      -{formatRupiah(dashboardDeficitAmount)}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-white/80">
-                      Ini bukan sisa uang, tapi selisih minus agar kamu tahu
-                      pengeluaran periode ini sudah melewati pemasukan.
-                    </p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--sakuin-border)] pt-3 text-[11px] font-semibold text-zinc-500">
+                  <div className="inline-flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-[var(--sakuin-primary)]" />
+                    <span>
+                      {dashboardTotals.transactionCount} transaksi
+                    </span>
                   </div>
-                ) : null}
-
-                <div className="mt-3 sm:hidden">
-                  <button
-                    aria-expanded={isSummaryActionOpen}
-                    className="sakuin-ripple sakuin-press flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/12 px-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/18 focus:outline-none focus:ring-4 focus:ring-white/25"
-                    onClick={() =>
-                      setIsSummaryActionOpen((current) => !current)
-                    }
-                    type="button"
-                  >
-                    <span>Aksi dashboard</span>
-                    <ChevronDown
-                      className={[
-                        "h-4 w-4 transition-transform duration-300 motion-reduce:transition-none",
-                        isSummaryActionOpen ? "rotate-180" : "rotate-0"
-                      ].join(" ")}
-                    />
-                  </button>
-
-                  {isSummaryActionOpen ? (
-                    <div className="sakuin-enter mt-2 grid gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15">
-                      <button
-                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
-                        onClick={() => setIsQuickTransactionOpen(true)}
-                        type="button"
-                      >
-                        <MessageSquare className="sakuin-icon-bounce h-4 w-4" />
-                        Catat Cepat
-                      </button>
-
-                      <button
-                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-gray-100"
-                        onClick={() => setIsAddTransactionOpen(true)}
-                        type="button"
-                      >
-                        <Plus className="sakuin-icon-bounce h-4 w-4" />
-                        Tambah Manual
-                      </button>
-
-                      <Link
-                        className="sakuin-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl !bg-[var(--sakuin-secondary)] text-sm font-black !text-white shadow-sm ring-1 ring-white/40 transition hover:!bg-[var(--sakuin-primary)] focus:outline-none focus:ring-4 focus:ring-white/25"
-                        to="/export"
-                      >
-                        <Download className="sakuin-icon-shake h-4 w-4" />
-                        Export Laporan
-                      </Link>
-                    </div>
-                  ) : null}
+                  <div className="inline-flex items-center gap-1.5">
+                    <PiggyBank className="h-3.5 w-3.5 text-[var(--sakuin-primary)]" />
+                    <span>
+                      Batas aman {formatRupiah(summary?.safeBalanceLimit)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Tab ringkas untuk mobile agar tidak perlu scroll panjang */}
@@ -994,55 +943,6 @@ export function DashboardPage() {
             >
               {activeMobileTab === "overview" ? (
                 <>
-                  {/* Ringkasan cepat: income, expense, total transaksi */}
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
-                        <ArrowUpCircle className="sakuin-icon-bounce h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-zinc-500">
-                          Pemasukan Periode
-                        </p>
-                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(dashboardTotals.totalIncome)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11">
-                        <ArrowDownCircle className="sakuin-icon-bounce h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-zinc-500">
-                          Pengeluaran Periode
-                        </p>
-                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {formatRupiah(dashboardTotals.totalExpense)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="sakuin-card-lift sakuin-stagger-enter flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-primary)]/15 sm:h-11 sm:w-11">
-                        <Activity className="sakuin-icon-bounce h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-zinc-500">
-                          Total Transaksi
-                        </p>
-                        <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                          {dashboardTotals.transactionCount}{" "}
-                          <span className="text-sm font-semibold text-slate-500">
-                            kali
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-
                   <FinancialCheckupCard
                     financialCheckup={summary?.financialCheckup}
                     isLoading={isLoadingSummary}
@@ -1115,54 +1015,6 @@ export function DashboardPage() {
           </div>
 
           <aside className="space-y-4 sm:space-y-5">
-            {/* Grid highlight disembunyikan di mobile karena sudah muncul di tab Ringkasan */}
-            <div className="hidden grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid:grid-cols-1">
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-green-soft)] text-[var(--sakuin-green)] ring-1 ring-[var(--sakuin-green)]/15 sm:h-11 sm:w-11">
-                  <ArrowUpCircle className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-500">
-                    Pemasukan Periode
-                  </p>
-                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(dashboardTotals.totalIncome)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-red-soft)] text-[var(--sakuin-red)] ring-1 ring-[var(--sakuin-red)]/15 sm:h-11 sm:w-11">
-                  <ArrowDownCircle className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-500">
-                    Pengeluaran Periode
-                  </p>
-                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {formatRupiah(dashboardTotals.totalExpense)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:gap-4 sm:p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-primary)]/15 sm:h-11 sm:w-11">
-                  <Activity className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-500">
-                    Total Transaksi
-                  </p>
-                  <p className="mt-1 truncate text-base font-black text-[var(--sakuin-text)] sm:text-lg">
-                    {dashboardTotals.transactionCount}{" "}
-                    <span className="text-sm font-semibold text-slate-500">
-                      kali
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Kartu insight utama tetap ada di desktop, dipindah ke tab Ringkasan di mobile */}
             <div className="hidden xl:block">
               <FinancialCheckupCard

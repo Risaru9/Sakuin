@@ -14,9 +14,9 @@ import {
 
 export function SummarySkeleton() {
   return (
-    <div className="flex min-h-[11rem] items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 text-[var(--sakuin-text)] shadow-sm sm:min-h-[16rem] sm:p-8">
+    <div className="flex min-h-[12rem] items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 text-[var(--sakuin-text)] shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-5">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-[var(--sakuin-text)]" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--sakuin-primary)]" />
         <p className="text-sm font-semibold text-zinc-600">
           Memuat ringkasan keuangan...
         </p>
