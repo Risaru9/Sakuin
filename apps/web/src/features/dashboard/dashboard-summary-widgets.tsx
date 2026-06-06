@@ -14,10 +14,10 @@ import {
 
 export function SummarySkeleton() {
   return (
-    <div className="flex min-h-[12rem] items-center justify-center rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 text-[var(--sakuin-text)] shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-5">
+    <div className="flex min-h-[12rem] items-center justify-center rounded-3xl border border-blue-400/25 bg-gradient-to-br from-[#173ea5] via-[var(--sakuin-primary)] to-[#3182f6] p-4 text-white shadow-[0_20px_48px_rgba(37,99,235,0.24)] sm:p-5">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-[var(--sakuin-primary)]" />
-        <p className="text-sm font-semibold text-zinc-600">
+        <Loader2 className="h-5 w-5 animate-spin text-white" />
+        <p className="text-sm font-semibold text-white/75">
           Memuat ringkasan keuangan...
         </p>
       </div>
