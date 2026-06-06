@@ -16,7 +16,7 @@
     },
     {
       "path": "/api/email-imports/gmail/auto-sync",
-      "schedule": "0 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
