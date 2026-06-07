@@ -1,19 +1,19 @@
 # Deteksi Transaksi dari Email
 
-Dokumen ini menjelaskan rancangan dan implementasi awal fitur deteksi transaksi dari email bank/e-wallet di Sakuin.
+Dokumen ini menjelaskan fitur otomasi transaksi m-banking dari email resmi bank di Sakuin.
 
 ## Tujuan Fitur
 
-Fitur ini membantu user mencatat transaksi dari notifikasi email bank atau e-wallet dengan proses seminimal mungkin. User cukup menghubungkan Gmail atau memproses email transaksi, lalu Sakuin mendeteksi nominal, jenis transaksi, bank/e-wallet, tanggal, merchant, dan referensi transaksi.
+Fitur ini membantu user mencatat transaksi dari notifikasi email bank dengan proses seminimal mungkin. User cukup menghubungkan Gmail, lalu Sakuin mendeteksi nominal, jenis transaksi, bank, tanggal, merchant, dan referensi transaksi.
 
 Jika data email cukup lengkap, transaksi langsung dicatat ke menu Transaksi dan ikut memengaruhi Dashboard. Jika data belum cukup yakin, transaksi masuk ke daftar review agar user bisa menyetujui atau mengabaikannya.
 
 ## Alur Untuk User
 
-1. User membuka Dashboard.
-2. User masuk ke tab `Deteksi`.
-3. User menghubungkan Gmail ketika OAuth sudah dikonfigurasi, atau memakai form uji parser untuk memvalidasi format email.
-4. Sakuin membaca notifikasi bank/e-wallet yang relevan.
+1. User membuka `Profile` lalu memilih menu `Otomasi`.
+2. User menekan `Hubungkan Gmail`.
+3. Google meminta izin baca Gmail.
+4. Sakuin membaca notifikasi transaksi dari domain resmi bank yang relevan.
 5. Transaksi dengan confidence tinggi langsung dicatat.
 6. Transaksi yang ambigu masuk ke status `Review`.
 7. User dapat menekan `Setujui` agar transaksi dicatat, atau `Abaikan` jika bukan transaksi yang perlu masuk Sakuin.
@@ -22,26 +22,26 @@ Jika data email cukup lengkap, transaksi langsung dicatat ke menu Transaksi dan 
 
 Arsitektur fitur ini fleksibel untuk dua pola:
 
-- Satu email untuk banyak bank/e-wallet.
-- Banyak email, masing-masing untuk bank/e-wallet yang berbeda.
+- Satu email untuk banyak rekening bank.
+- Banyak email, masing-masing untuk bank yang berbeda.
 
-Setiap email disimpan sebagai `EmailConnection`. Sakuin juga menyimpan daftar provider yang pernah terdeteksi dari email tersebut, misalnya `BCA`, `BRI`, `DANA`, atau `SeaBank`.
+Setiap email disimpan sebagai `EmailConnection`. Sakuin juga menyimpan daftar bank yang pernah terdeteksi dari email tersebut, misalnya `BCA`, `BRI`, `BNI`, atau `SeaBank`.
 
 Contoh:
 
 | Email | Provider yang terdeteksi |
 | --- | --- |
-| utama@gmail.com | BCA, DANA, GoPay |
+| utama@gmail.com | BCA, BRI, BNI |
 | bank-bca@gmail.com | BCA |
 | seabank@gmail.com | SeaBank |
 
-Dengan model ini user tidak perlu memilih bank secara manual. Untuk sinkronisasi Gmail otomatis, provider hanya dianggap valid jika email berasal dari pengirim resmi bank/e-wallet. Mention seperti `BCA`, `BRI`, atau `transfer` di subject/body email promosi tidak cukup untuk disimpan sebagai deteksi transaksi.
+Dengan model ini user tidak perlu memilih bank secara manual. Provider hanya dianggap valid jika email berasal dari domain resmi bank. Mention seperti `BCA`, `BRI`, atau `transfer` di subject/body email promosi tidak cukup untuk disimpan sebagai deteksi transaksi.
 
 ## Cara Sakuin Mencatat Transaksi
 
 Parser membaca beberapa informasi utama:
 
-- Bank/e-wallet: contoh `BCA`, `BRI`, `Mandiri`, `SeaBank`, `DANA`, `GoPay`, `OVO`, `ShopeePay`.
+- Bank: `BCA`, `BRI`, `BNI`, `Mandiri`, `BSI`, `CIMB Niaga`, `Permata`, `BTN`, `Danamon`, `OCBC`, `Bank Jago`, `SeaBank`, dan `Maybank`.
 - Jenis transaksi: `INCOME` atau `EXPENSE`.
 - Nominal: format `Rp` atau `IDR`.
 - Metode: contoh `Transfer`, `QRIS`, `Debit`, `Top Up`, `Cashback`, `Refund`.
@@ -49,17 +49,17 @@ Parser membaca beberapa informasi utama:
 - Referensi transaksi jika ada.
 - Tanggal transaksi.
 
-Kategori yang dibuat tidak generik. Sakuin membuat kategori seperti:
+Sakuin memakai rekening bank yang namanya sudah cocok. Jika belum ada, rekening bertipe `BANK` dibuat otomatis dengan saldo awal nol. Kategori yang dibuat juga spesifik:
 
-- `Transfer BCA`
-- `Transfer DANA`
-- `Transfer SeaBank`
+- `M-Banking BCA`
+- `M-Banking BRI`
+- `M-Banking SeaBank`
 
 Catatan transaksi juga membawa detail tambahan, misalnya:
 
-`QRIS DANA - KOPI SENJA Ref DN98765 via wallet@gmail.com`
+`QRIS BRI - KOPI SENJA Ref BRI98765 via utama@gmail.com`
 
-Dengan begitu user bisa melihat bank/e-wallet, metode, merchant, referensi, dan sumber email tanpa harus menebak dari kategori umum.
+Dengan begitu user bisa melihat bank, metode, merchant, referensi, dan sumber email tanpa harus menebak dari kategori umum.
 
 ## Status Import
 
@@ -77,7 +77,7 @@ Sakuin memakai dua fingerprint:
 - `emailFingerprint`: mencegah email yang sama diproses berulang.
 - `transactionFingerprint`: mencegah transaksi yang sama tercatat dua kali dari email berbeda.
 
-`transactionFingerprint` dibuat dari user, jenis transaksi, nominal, merchant, dan bucket waktu 5 menit. Ini membantu kasus user menerima notifikasi dari beberapa email untuk transaksi yang sama.
+`transactionFingerprint` dibuat dari user, bank, jenis transaksi, nominal, merchant, referensi, dan bucket waktu 5 menit. Ini membantu kasus user menerima notifikasi dari beberapa email untuk transaksi yang sama.
 
 ## Endpoint API
 
@@ -136,14 +136,15 @@ Setelah user menekan `Hubungkan Gmail`, Google akan redirect ke callback backend
 2. Menukar authorization code menjadi access token dan refresh token.
 3. Membaca profile Gmail untuk mendapatkan email address.
 4. Menyimpan token secara terenkripsi.
-5. Mengembalikan user ke Dashboard.
+5. Menjalankan sinkronisasi awal secara aman.
+6. Mengembalikan user ke menu `Profile > Otomasi`.
 
-User kemudian bisa menekan `Sinkronkan` di tab `Deteksi` untuk tes langsung. Backend juga menjalankan auto-sync terjadwal agar koneksi Gmail aktif diproses berkala tanpa user menekan tombol terus-menerus.
+User kemudian bisa menekan `Sinkronkan` untuk mengambil email terbaru. Backend juga menjalankan auto-sync sekali sehari agar koneksi Gmail aktif diproses tanpa user menekan tombol terus-menerus.
 
 Aturan sinkronisasi Gmail dibuat konservatif:
 
-- Gmail search hanya mengambil kandidat dari domain/sender bank dan e-wallet yang dikenal.
-- Email otomatis diabaikan jika pengirimnya bukan sumber resmi bank/e-wallet.
+- Gmail search hanya mengambil kandidat dari domain bank yang dikenal.
+- Email otomatis diabaikan jika pengirimnya bukan sumber resmi bank.
 - Email otomatis diabaikan jika tidak memiliki nominal, jenis transaksi, tanggal eksplisit, atau sinyal berhasil/sukses.
 - Email bertanggal masa depan tidak dicatat otomatis.
 - Email ambigu dari sumber resmi masuk review, bukan langsung menjadi transaksi.
@@ -193,12 +194,14 @@ Endpoint sinkronisasi:
 - Backend model Prisma: `apps/api/prisma/schema.prisma`
 - Migration: `apps/api/prisma/migrations/20260602020500_add_email_transaction_imports/migration.sql`
 - Backend module: `apps/api/src/modules/email-imports`
-- Frontend tab dashboard: `apps/web/src/features/email-imports`
-- Integrasi dashboard: `apps/web/src/features/dashboard/DashboardPage.tsx`
+- Frontend otomasi: `apps/web/src/features/email-imports`
+- Integrasi profile: `apps/web/src/features/profile/ProfilePage.tsx`
 - Test parser: `apps/api/tests/email-import-parser.test.ts`
 
 ## Batasan Saat Ini
 
-Fitur ini sudah bisa memproses email manual, menghubungkan Gmail lewat OAuth, menyimpan token terenkripsi, menjalankan sinkronisasi manual dari tab `Deteksi`, dan menjalankan auto-sync berkala lewat Vercel Cron.
+Fitur ini sudah bisa menghubungkan Gmail lewat OAuth, menyimpan token terenkripsi, mengenali rekening bank, menjalankan sinkronisasi awal dan manual, serta menjalankan auto-sync harian lewat Vercel Cron.
+
+Saldo rekening otomatis merupakan saldo berdasarkan transaksi yang sudah tercatat di Sakuin, bukan saldo real-time dari bank. Gmail readonly tidak memberikan akses ke saldo rekening.
 
 Auto-sync membutuhkan `CRON_SECRET` aktif di Vercel karena endpoint cron menolak request tanpa `Authorization: Bearer CRON_SECRET`.

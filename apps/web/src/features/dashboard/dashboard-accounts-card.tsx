@@ -251,7 +251,7 @@ export function DashboardAccountsCard({
             </h2>
           </div>
           <p className="mt-1 text-xs font-medium text-slate-500">
-            Saldo nyata di bank, tunai, dan e-wallet.
+            Saldo berdasarkan transaksi yang sudah tercatat.
           </p>
         </div>
         <div className="text-right">

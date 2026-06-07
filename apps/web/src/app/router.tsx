@@ -1154,12 +1154,12 @@ function EmailImportCallbackPage() {
         </div>
 
         <h1 className="mt-5 text-2xl font-black tracking-tight text-[var(--sakuin-text)]">
-          Fitur deteksi email sedang dinonaktifkan
+          {isConnected ? "Gmail berhasil terhubung" : "Koneksi Gmail gagal"}
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
           {isConnected
-            ? "Koneksi Gmail sudah tersimpan, tetapi tampilan dan sinkronisasi dari frontend sedang kami pause sampai fitur ini dikembangkan lagi."
-            : message ?? "Fitur ini sedang disembunyikan sementara dari aplikasi dan webapp."}
+            ? "Sakuin siap mendeteksi email transaksi m-banking dan memetakannya ke rekening bank yang sesuai."
+            : message ?? "Kembali ke Sakuin lalu coba hubungkan Gmail kembali."}
         </p>
 
         <div className="mt-6 grid gap-2">
@@ -1171,9 +1171,9 @@ function EmailImportCallbackPage() {
           </a>
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-            to="/dashboard"
+            to="/profile?section=automation"
           >
-            Buka Dashboard Web
+            Buka Otomasi M-Banking
           </Link>
         </div>
 

@@ -20,22 +20,38 @@ describe("email transaction parser", () => {
     expect(parsed.confidence).toBeGreaterThanOrEqual(0.8);
   });
 
-  it("mendeteksi pembayaran QRIS sebagai pengeluaran e-wallet", () => {
+  it("mendeteksi pembayaran QRIS sebagai pengeluaran m-banking", () => {
     const parsed = parseEmailTransaction({
-      emailAddress: "wallet@gmail.com",
-      from: "notification@dana.id",
+      emailAddress: "utama@gmail.com",
+      from: "notifikasi@bri.co.id",
       subject: "Pembayaran QRIS berhasil",
       body:
-        "DANA: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2026-06-01 08:15. ID Transaksi: DN98765"
+        "BRImo: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2026-06-01 08:15. ID Transaksi: BRI98765"
     });
 
-    expect(parsed.financialProvider).toBe("DANA");
+    expect(parsed.financialProvider).toBe("BRI");
     expect(parsed.type).toBe("EXPENSE");
     expect(parsed.amount).toBe("25000");
     expect(parsed.merchant).toContain("KOPI SENJA");
     expect(parsed.method).toBe("QRIS");
-    expect(parsed.reference).toBe("DN98765");
+    expect(parsed.reference).toBe("BRI98765");
     expect(parsed.isTrustedFinancialSender).toBe(true);
+  });
+
+  it("mengenali email resmi BNI sebagai transaksi m-banking", () => {
+    const parsed = parseEmailTransaction({
+      emailAddress: "utama@gmail.com",
+      from: "BNI Notification <transaction@bni.co.id>",
+      subject: "Notifikasi transaksi debit BNI",
+      body:
+        "Transaksi debit sebesar IDR 125.000 berhasil pada 06 Jun 2026 10:15 di TOKO MAJU. No. Transaksi: BNI202606061"
+    });
+
+    expect(parsed.financialProvider).toBe("BNI");
+    expect(parsed.type).toBe("EXPENSE");
+    expect(parsed.amount).toBe("125000");
+    expect(parsed.isTrustedFinancialSender).toBe(true);
+    expect(parsed.isLikelyFinancialEmail).toBe(true);
   });
 
   it("menolak email non-finansial walaupun mengandung kata transfer dan Rp", () => {
@@ -65,16 +81,30 @@ describe("email transaction parser", () => {
     expect(parsed.financialProvider).toBe("BCA");
     expect(parsed.isTrustedFinancialSender).toBe(false);
     expect(parsed.isLikelyFinancialEmail).toBe(false);
-    expect(parsed.warnings).toContain("Pengirim email belum termasuk sumber resmi bank/e-wallet.");
+    expect(parsed.warnings).toContain("Pengirim email belum termasuk sumber resmi bank.");
+  });
+
+  it("tidak mempercayai domain tiruan yang hanya menyerupai domain resmi bank", () => {
+    const parsed = parseEmailTransaction({
+      emailAddress: "utama@gmail.com",
+      from: "notifikasi@evilbri.co.id",
+      subject: "Pembayaran BRImo berhasil",
+      body:
+        "Pembayaran QRIS sebesar Rp25.000 berhasil pada 2026-06-01 08:15. ID Transaksi: PALSU123"
+    });
+
+    expect(parsed.financialProvider).toBe("BRI");
+    expect(parsed.isTrustedFinancialSender).toBe(false);
+    expect(parsed.warnings).toContain("Pengirim email belum termasuk sumber resmi bank.");
   });
 
   it("menandai tanggal masa depan sebagai warning", () => {
     const parsed = parseEmailTransaction({
-      emailAddress: "wallet@gmail.com",
-      from: "notification@dana.id",
+      emailAddress: "utama@gmail.com",
+      from: "notification@bri.co.id",
       subject: "Pembayaran QRIS berhasil",
       body:
-        "DANA: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2099-06-04 08:15. ID Transaksi: DN98765"
+        "BRImo: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2099-06-04 08:15. ID Transaksi: BRI98765"
     });
 
     expect(parsed.isLikelyFinancialEmail).toBe(true);

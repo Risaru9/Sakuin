@@ -7,12 +7,11 @@ import {
   randomUUID,
   timingSafeEqual
 } from "node:crypto";
-import type { Prisma, TransactionType } from "@prisma/client";
+import { AccountType, Prisma, type TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
 import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
-import { resolveOwnedAccountId } from "../accounts/account.service.js";
 import {
   createEmailFingerprint,
   createTransactionFingerprint,
@@ -35,7 +34,39 @@ const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API_BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me";
 const GMAIL_SEARCH_QUERY =
-  'newer_than:14d ({from:bca.co.id from:klikbca.com from:bri.co.id from:brimo from:bankmandiri.co.id from:mandiri.co.id from:seabank.co.id from:dana.id from:gopay from:gojek.com from:goto from:ovo.id from:shopee.co.id from:shopeepay} ("Rp" OR "IDR") (qris OR pembayaran OR "transfer masuk" OR "transfer keluar" OR debit OR kredit OR "top up" OR refund OR cashback OR berhasil OR sukses))';
+  'newer_than:30d ({from:bca.co.id from:klikbca.com from:bri.co.id from:bni.co.id from:bankmandiri.co.id from:mandiri.co.id from:bankbsi.co.id from:cimbniaga.co.id from:permatabank.com from:btn.co.id from:danamon.co.id from:ocbc.id from:ocbcnisp.com from:jago.com from:seabank.co.id from:maybank.co.id} ("Rp" OR "IDR") (qris OR pembayaran OR "transfer masuk" OR "transfer keluar" OR debit OR kredit OR "top up" OR refund OR cashback OR berhasil OR sukses))';
+
+const bankAccountColors: Record<string, string> = {
+  BCA: "#0066ae",
+  BRI: "#00529c",
+  BNI: "#f15a23",
+  Mandiri: "#003d79",
+  BSI: "#00a39d",
+  "CIMB Niaga": "#9b1b30",
+  Permata: "#5f2c82",
+  BTN: "#005ca9",
+  Danamon: "#f7a600",
+  OCBC: "#d71920",
+  "Bank Jago": "#f15a24",
+  SeaBank: "#ee4d2d",
+  Maybank: "#ffcc00"
+};
+
+const bankAccountAliases: Record<string, string[]> = {
+  BCA: ["BCA", "Bank BCA"],
+  BRI: ["BRI", "Bank BRI", "BRImo"],
+  BNI: ["BNI", "Bank BNI", "Wondr"],
+  Mandiri: ["Mandiri", "Bank Mandiri", "Livin", "Livin' by Mandiri"],
+  BSI: ["BSI", "Bank BSI", "Bank Syariah Indonesia"],
+  "CIMB Niaga": ["CIMB Niaga", "Bank CIMB Niaga", "OCTO Mobile"],
+  Permata: ["Permata", "PermataBank", "Bank Permata"],
+  BTN: ["BTN", "Bank BTN"],
+  Danamon: ["Danamon", "Bank Danamon", "D-Bank PRO"],
+  OCBC: ["OCBC", "OCBC NISP", "Bank OCBC"],
+  "Bank Jago": ["Bank Jago", "Jago"],
+  SeaBank: ["SeaBank", "Bank SeaBank"],
+  Maybank: ["Maybank", "Bank Maybank"]
+};
 
 const importInclude = {
   emailConnection: {
@@ -45,6 +76,12 @@ const importInclude = {
   },
   transaction: {
     include: {
+      account: {
+        select: {
+          id: true,
+          name: true
+        }
+      },
       category: {
         select: {
           name: true
@@ -97,6 +134,8 @@ function mapImport(record: ImportWithRelations): EmailTransactionImportResponse 
     status: record.status as EmailTransactionImportResponse["status"],
     statusReason: record.statusReason,
     transactionId: record.transactionId,
+    accountId: record.transaction?.account?.id ?? null,
+    accountName: record.transaction?.account?.name ?? null,
     categoryName: record.transaction?.category.name ?? null,
     note: record.transaction?.note ?? null,
     rawSubject: record.rawSubject,
@@ -379,7 +418,7 @@ function getSnippet(input: ImportEmailInput) {
 }
 
 function getCategoryName(provider: string) {
-  return `Transfer ${provider || "Tidak Dikenal"}`;
+  return `M-Banking ${provider || "Tidak Dikenal"}`;
 }
 
 function getCategoryStyle(type: TransactionType) {
@@ -395,13 +434,14 @@ async function ensureTransferCategory(
   type: TransactionType
 ) {
   const name = getCategoryName(provider);
+  const legacyName = `Transfer ${provider}`;
   const existingCategory = await db.category.findFirst({
     where: {
       userId,
-      name: {
-        equals: name,
-        mode: "insensitive"
-      },
+      OR: [
+        { name: { equals: name, mode: "insensitive" } },
+        { name: { equals: legacyName, mode: "insensitive" } }
+      ],
       type
     },
     select: {
@@ -429,6 +469,74 @@ async function ensureTransferCategory(
   });
 
   return category.id;
+}
+
+async function ensureBankAccount(
+  db: PrismaExecutor,
+  userId: string,
+  provider: string
+) {
+  const aliases = bankAccountAliases[provider] ?? [provider];
+  const existing = await db.account.findFirst({
+    where: {
+      userId,
+      isArchived: false,
+      OR: aliases.map((name) => ({
+        name: {
+          equals: name,
+          mode: "insensitive" as const
+        }
+      }))
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (existing) {
+    return existing.id;
+  }
+
+  try {
+    const account = await db.account.create({
+      data: {
+        userId,
+        name: provider,
+        type: AccountType.BANK,
+        icon: "landmark",
+        color: bankAccountColors[provider] ?? "#2563eb"
+      },
+      select: {
+        id: true
+      }
+    });
+
+    return account.id;
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const racedAccount = await db.account.findFirst({
+        where: {
+          userId,
+          name: {
+            equals: provider,
+            mode: "insensitive"
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (racedAccount) {
+        return racedAccount.id;
+      }
+    }
+
+    throw error;
+  }
 }
 
 function buildTransactionNote(parsed: ParsedEmailTransaction, input: ImportEmailInput) {
@@ -576,7 +684,11 @@ async function createTransactionFromImport({
     parsed.financialProvider,
     parsed.type
   );
-  const accountId = await resolveOwnedAccountId(db, userId);
+  const accountId = await ensureBankAccount(
+    db,
+    userId,
+    parsed.financialProvider
+  );
 
   const transaction = await db.transaction.create({
     data: {
@@ -769,6 +881,20 @@ export async function handleGmailOAuthCallback(code: string, state: string) {
       historyId: profile.historyId ?? null
     }
   });
+
+  try {
+    await syncOneGmailConnection(userId, connection, 25);
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        event: "gmail.initial_sync_failed",
+        connectionId: connection.id,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        timestamp: new Date().toISOString()
+      })
+    );
+  }
 
   return mapConnection(connection);
 }

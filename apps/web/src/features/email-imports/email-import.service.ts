@@ -28,6 +28,8 @@ export type EmailTransactionImport = {
   status: EmailImportStatus;
   statusReason: string | null;
   transactionId: string | null;
+  accountId: string | null;
+  accountName: string | null;
   categoryName: string | null;
   note: string | null;
   rawSubject: string | null;

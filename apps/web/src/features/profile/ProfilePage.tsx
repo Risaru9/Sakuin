@@ -58,6 +58,7 @@ import {
 } from "../recurring/recurring.service";
 import { RecurringRuleManager } from "../recurring/RecurringRuleManager";
 import type { RecurringRule } from "../recurring/recurring.types";
+import { EmailDetectionCard } from "../email-imports/EmailDetectionCard";
 import { getUserProfile, updateUserProfile } from "./profile.service";
 import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
 
@@ -702,11 +703,11 @@ export function ProfilePage() {
     },
     {
       id: "automation",
-      label: "Auto Recurring",
+      label: "Otomasi",
       description:
         recurringRules.length > 0
-          ? `${recurringActiveCount}/${recurringRules.length} rule aktif`
-          : "Belum ada rule",
+          ? `M-Banking + ${recurringActiveCount} rule aktif`
+          : "M-Banking & recurring",
       icon: Repeat2
     },
     {
@@ -971,16 +972,19 @@ export function ProfilePage() {
             ) : null}
 
             {activeSection === "automation" ? (
-              <RecurringRuleManager
-                categories={categories}
-                isLoading={isLoadingRecurring || categoriesQuery.isLoading}
-                onCreateRule={handleCreateRecurringRule}
-                onDeleteRule={handleDeleteRecurringRule}
-                onToggleRule={handleToggleRecurringRule}
-                pendingRuleId={pendingRecurringRuleId}
-                recurringRules={recurringRules}
-                title="Auto Recurring + Review Ringan"
-              />
+              <div className="grid gap-5">
+                <EmailDetectionCard />
+                <RecurringRuleManager
+                  categories={categories}
+                  isLoading={isLoadingRecurring || categoriesQuery.isLoading}
+                  onCreateRule={handleCreateRecurringRule}
+                  onDeleteRule={handleDeleteRecurringRule}
+                  onToggleRule={handleToggleRecurringRule}
+                  pendingRuleId={pendingRecurringRuleId}
+                  recurringRules={recurringRules}
+                  title="Auto Recurring + Review Ringan"
+                />
+              </div>
             ) : null}
 
             {activeSection === "notifications" ? (

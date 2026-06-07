@@ -93,6 +93,29 @@ describe("email import service", () => {
     ).resolves.toBe(0);
   });
 
+  it("tidak mengimpor transaksi dari domain bank tiruan", async () => {
+    const user = await createTestUser("spoofed-bank-domain");
+
+    const imported = await importEmailTransaction(user.id, {
+      emailAddress: "utama@gmail.com",
+      from: "notifikasi@evilbri.co.id",
+      subject: "Pembayaran BRImo berhasil",
+      body:
+        "Pembayaran QRIS sebesar Rp25.000 berhasil pada 2026-06-01 08:15. ID Transaksi: PALSU123",
+      messageId: "spoofed-bri-domain",
+      autoImport: true
+    });
+
+    expect(imported).toBeNull();
+    await expect(
+      prisma.transaction.count({
+        where: {
+          userId: user.id
+        }
+      })
+    ).resolves.toBe(0);
+  });
+
   it("mencatat otomatis transaksi lengkap dari pengirim resmi", async () => {
     const user = await createTestUser("trusted-auto-sync");
 
@@ -109,10 +132,54 @@ describe("email import service", () => {
     expect(imported?.status).toBe("imported");
     expect(imported?.financialProvider).toBe("BCA");
     expect(imported?.amount).toBe("350000");
+    expect(imported?.accountName).toBe("BCA");
     await expect(
       prisma.transaction.count({
         where: {
           userId: user.id
+        }
+      })
+    ).resolves.toBe(1);
+    await expect(
+      prisma.account.count({
+        where: {
+          userId: user.id,
+          name: "BCA",
+          type: "BANK"
+        }
+      })
+    ).resolves.toBe(1);
+  });
+
+  it("memakai ulang rekening bank yang sudah ada tanpa membuat duplikat", async () => {
+    const user = await createTestUser("existing-bank-account");
+    const account = await prisma.account.create({
+      data: {
+        userId: user.id,
+        name: "Bank BRI",
+        type: "BANK",
+        initialBalance: "500000"
+      }
+    });
+
+    const imported = await importEmailTransaction(user.id, {
+      emailAddress: "utama@gmail.com",
+      from: "notifikasi@bri.co.id",
+      subject: "Pembayaran QRIS berhasil",
+      body:
+        "BRImo: Pembayaran QRIS di KOPI SENJA sebesar Rp25.000 berhasil pada 2026-06-01 08:15. ID Transaksi: BRI98765",
+      messageId: "bri-existing-account",
+      autoImport: true
+    });
+
+    expect(imported?.status).toBe("imported");
+    expect(imported?.accountId).toBe(account.id);
+    expect(imported?.accountName).toBe("Bank BRI");
+    await expect(
+      prisma.account.count({
+        where: {
+          userId: user.id,
+          name: "Bank BRI"
         }
       })
     ).resolves.toBe(1);

@@ -9,54 +9,98 @@ type ProviderRule = {
   trustedSenders: RegExp[];
 };
 
+function trustedDomain(domain: string) {
+  const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(
+    `@(?:[a-z0-9-]+\\.)*${escapedDomain}(?![a-z0-9.-])`,
+    "i"
+  );
+}
+
 const providerRules: ProviderRule[] = [
   {
     id: "BCA",
     label: "BCA",
     patterns: [/\bbca\b/i, /klikbca/i, /mybca/i],
-    trustedSenders: [/@[^@\s>]*bca\.co\.id\b/i, /@[^@\s>]*klikbca\.com\b/i]
+    trustedSenders: [trustedDomain("bca.co.id"), trustedDomain("klikbca.com")]
   },
   {
     id: "BRI",
     label: "BRI",
     patterns: [/\bbri\b/i, /brimo/i, /\bbank rakyat indonesia\b/i],
-    trustedSenders: [/@[^@\s>]*bri\.co\.id\b/i, /@[^@\s>]*brimo\./i]
+    trustedSenders: [trustedDomain("bri.co.id")]
+  },
+  {
+    id: "BNI",
+    label: "BNI",
+    patterns: [/\bbni\b/i, /wondr\s+by\s+bni/i, /\bbank negara indonesia\b/i],
+    trustedSenders: [trustedDomain("bni.co.id")]
   },
   {
     id: "Mandiri",
     label: "Mandiri",
     patterns: [/\bmandiri\b/i, /livin/i],
-    trustedSenders: [/@[^@\s>]*bankmandiri\.co\.id\b/i, /@[^@\s>]*mandiri\.co\.id\b/i]
+    trustedSenders: [
+      trustedDomain("bankmandiri.co.id"),
+      trustedDomain("mandiri.co.id")
+    ]
+  },
+  {
+    id: "BSI",
+    label: "BSI",
+    patterns: [/\bbsi\b/i, /byond/i, /\bbank syariah indonesia\b/i],
+    trustedSenders: [trustedDomain("bankbsi.co.id")]
+  },
+  {
+    id: "CIMB_NIAGA",
+    label: "CIMB Niaga",
+    patterns: [/cimb\s*niaga/i, /octo\s*(?:mobile|clicks)/i],
+    trustedSenders: [trustedDomain("cimbniaga.co.id")]
+  },
+  {
+    id: "PERMATA",
+    label: "Permata",
+    patterns: [/permata(?:bank|mobile)?/i],
+    trustedSenders: [trustedDomain("permatabank.com")]
+  },
+  {
+    id: "BTN",
+    label: "BTN",
+    patterns: [/\bbtn\b/i, /bal[eé]\s+by\s+btn/i, /\bbank tabungan negara\b/i],
+    trustedSenders: [trustedDomain("btn.co.id")]
+  },
+  {
+    id: "DANAMON",
+    label: "Danamon",
+    patterns: [/danamon/i, /d-bank\s*pro/i],
+    trustedSenders: [trustedDomain("danamon.co.id")]
+  },
+  {
+    id: "OCBC",
+    label: "OCBC",
+    patterns: [/\bocbc\b/i, /ocbc\s*nisp/i],
+    trustedSenders: [
+      trustedDomain("ocbc.id"),
+      trustedDomain("ocbcnisp.com")
+    ]
+  },
+  {
+    id: "JAGO",
+    label: "Bank Jago",
+    patterns: [/\bbank jago\b/i, /\bjago\b/i],
+    trustedSenders: [trustedDomain("jago.com")]
   },
   {
     id: "SeaBank",
     label: "SeaBank",
     patterns: [/seabank/i],
-    trustedSenders: [/@[^@\s>]*seabank\.co\.id\b/i]
+    trustedSenders: [trustedDomain("seabank.co.id")]
   },
   {
-    id: "DANA",
-    label: "DANA",
-    patterns: [/\bdana\b/i],
-    trustedSenders: [/@[^@\s>]*dana\.id\b/i]
-  },
-  {
-    id: "GoPay",
-    label: "GoPay",
-    patterns: [/gopay/i, /gojek/i],
-    trustedSenders: [/@[^@\s>]*gopay\./i, /@[^@\s>]*gojek\.com\b/i, /@[^@\s>]*goto\./i]
-  },
-  {
-    id: "OVO",
-    label: "OVO",
-    patterns: [/\bovo\b/i],
-    trustedSenders: [/@[^@\s>]*ovo\.id\b/i]
-  },
-  {
-    id: "ShopeePay",
-    label: "ShopeePay",
-    patterns: [/shopeepay/i],
-    trustedSenders: [/@[^@\s>]*shopee\.co\.id\b/i, /@[^@\s>]*shopeepay\./i]
+    id: "MAYBANK",
+    label: "Maybank",
+    patterns: [/maybank/i, /m2u/i],
+    trustedSenders: [trustedDomain("maybank.co.id")]
   }
 ];
 
@@ -351,11 +395,11 @@ export function parseEmailTransaction(input: ImportEmailInput): ParsedEmailTrans
   const warnings: string[] = [];
   if (!parsed.amount) warnings.push("Nominal tidak terdeteksi.");
   if (!parsed.type) warnings.push("Jenis pemasukan/pengeluaran belum jelas.");
-  if (parsed.financialProvider === "Tidak Dikenal") warnings.push("Bank/e-wallet belum dikenali.");
+  if (parsed.financialProvider === "Tidak Dikenal") warnings.push("Bank belum dikenali.");
   if (!parsed.occurredAt) warnings.push("Tanggal transaksi tidak terdeteksi.");
   if (parsed.occurredAt && isFutureDate(parsed.occurredAt)) warnings.push("Tanggal transaksi berada di masa depan.");
   if (!parsed.isLikelyFinancialEmail) warnings.push("Email tidak memiliki sinyal transaksi finansial yang cukup kuat.");
-  if (!parsed.isTrustedFinancialSender) warnings.push("Pengirim email belum termasuk sumber resmi bank/e-wallet.");
+  if (!parsed.isTrustedFinancialSender) warnings.push("Pengirim email belum termasuk sumber resmi bank.");
 
   return {
     ...parsed,
@@ -389,8 +433,10 @@ export function createTransactionFingerprint(userId: string, parsed: ParsedEmail
   return createHashValue(
     [
       userId,
+      parsed.financialProvider.toLowerCase(),
       parsed.type ?? "unknown-type",
       parsed.amount ?? "unknown-amount",
+      parsed.reference?.toLowerCase() ?? "unknown-reference",
       parsed.merchant?.toLowerCase() ?? "unknown-merchant",
       timeBucket
     ].join("|")

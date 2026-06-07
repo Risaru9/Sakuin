@@ -5,8 +5,8 @@ import { Capacitor } from "@capacitor/core";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
+  Building2,
   CheckCircle2,
-  Eraser,
   Mail,
   RefreshCw,
   ShieldCheck,
@@ -19,15 +19,29 @@ import { queryKeys } from "../../lib/query-keys";
 import { formatDate, formatRupiah, getErrorMessage } from "../dashboard/dashboard-utils";
 import {
   approveEmailImport,
-  cleanupEmailImports,
   disconnectGmail,
   getEmailImportOverview,
   getGmailAuthUrl,
   ignoreEmailImport,
-  importEmail,
   syncGmail,
   type EmailTransactionImport
 } from "./email-import.service";
+
+const supportedBanks = [
+  "BCA",
+  "BRI",
+  "BNI",
+  "Mandiri",
+  "BSI",
+  "CIMB Niaga",
+  "Permata",
+  "BTN",
+  "Danamon",
+  "OCBC",
+  "Bank Jago",
+  "SeaBank",
+  "Maybank"
+];
 
 function getStatusBadge(importItem: EmailTransactionImport) {
   if (importItem.status === "imported") {
@@ -54,7 +68,7 @@ function getStatusLabel(status: EmailTransactionImport["status"]) {
 
 function formatProvider(importItem: EmailTransactionImport) {
   const provider = importItem.financialProvider || "Tidak dikenal";
-  return `Transfer ${provider}`;
+  return `M-Banking ${provider}`;
 }
 
 function formatDetectionTitle(importItem: EmailTransactionImport) {
@@ -69,10 +83,6 @@ function formatDetectionTitle(importItem: EmailTransactionImport) {
 export function EmailDetectionCard() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [emailAddress, setEmailAddress] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const overviewQuery = useQuery({
@@ -84,26 +94,11 @@ export function EmailDetectionCard() {
   async function refreshAfterImport() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.emailImports.overview }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts }),
       queryClient.invalidateQueries({ queryKey: queryKeys.summary }),
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all })
     ]);
   }
-
-  const importMutation = useMutation({
-    mutationFn: importEmail,
-    onSuccess: async (result) => {
-      setFormError(null);
-      setSubject("");
-      setBody("");
-      if (!result) {
-        setSyncMessage("Email diabaikan karena belum terlihat sebagai transaksi finansial yang jelas.");
-      }
-      await refreshAfterImport();
-    },
-    onError: (error) => {
-      setFormError(getErrorMessage(error));
-    }
-  });
 
   const approveMutation = useMutation({
     mutationFn: approveEmailImport,
@@ -153,19 +148,6 @@ export function EmailDetectionCard() {
     }
   });
 
-  const cleanupMutation = useMutation({
-    mutationFn: cleanupEmailImports,
-    onSuccess: async (result) => {
-      setSyncMessage(
-        `${result.deletedTransactions} transaksi salah dibersihkan, ${result.ignoredImports} deteksi ditandai diabaikan.`
-      );
-      await refreshAfterImport();
-    },
-    onError: (error) => {
-      setSyncMessage(getErrorMessage(error));
-    }
-  });
-
   const overview = overviewQuery.data;
   const hasConnectedGmail = (overview?.connections ?? []).some(
     (connection) => connection.status === "active"
@@ -173,7 +155,7 @@ export function EmailDetectionCard() {
 
   useEffect(() => {
     function handleEmailImportReturned() {
-      setSyncMessage("Gmail terhubung. Tekan Sinkronkan untuk membaca email transaksi terbaru.");
+      setSyncMessage("Gmail terhubung. Sinkronkan untuk mendeteksi transaksi m-banking terbaru.");
       void refreshAfterImport();
     }
 
@@ -193,7 +175,7 @@ export function EmailDetectionCard() {
     }
 
     if (emailImportStatus === "connected") {
-      setSyncMessage("Gmail terhubung. Tekan Sinkronkan untuk membaca email transaksi terbaru.");
+      setSyncMessage("Gmail terhubung. Sinkronkan untuk mendeteksi transaksi m-banking terbaru.");
       void refreshAfterImport();
     } else if (emailImportStatus === "error") {
       setSyncMessage(emailImportMessage ?? "Koneksi Gmail gagal. Coba hubungkan ulang.");
@@ -205,23 +187,8 @@ export function EmailDetectionCard() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  function handleImportSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!body.trim()) {
-      setFormError("Isi email wajib diisi.");
-      return;
-    }
-
-    importMutation.mutate({
-      emailAddress: emailAddress.trim() || undefined,
-      subject: subject.trim() || undefined,
-      body,
-      autoImport: true
-    });
-  }
-
   return (
-    <section className="sakuin-card-lift rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-6">
+    <section className="sakuin-card-lift rounded-3xl border border-blue-100 bg-gradient-to-b from-blue-50 to-white p-4 shadow-sm sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)]">
@@ -229,10 +196,10 @@ export function EmailDetectionCard() {
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-black text-[var(--sakuin-text)]">
-              Deteksi Email Transaksi
+              Otomasi M-Banking
             </h2>
             <p className="mt-1 text-xs font-semibold leading-5 text-zinc-500">
-              Sakuin membaca notifikasi bank/e-wallet, lalu mencatat transaksi dengan kategori detail seperti Transfer BCA.
+              Hubungkan Gmail sekali. Sakuin mengenali email resmi bank, membuat rekening bank otomatis, dan mencatat transaksinya.
             </p>
           </div>
         </div>
@@ -246,7 +213,7 @@ export function EmailDetectionCard() {
         </button>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
           ["Tercatat", overview?.stats.imported ?? 0, "text-emerald-700"],
           ["Review", overview?.stats.needsReview ?? 0, "text-blue-700"],
@@ -266,7 +233,7 @@ export function EmailDetectionCard() {
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
           <p className="text-[11px] font-semibold leading-5 text-zinc-600">
-            Gmail memakai izin baca terbatas. Email yang cocok akan diproses ke transaksi, sedangkan hasil ambigu masuk review.
+            Gmail hanya diberi izin baca. Sakuin memproses email transaksi dari domain resmi bank; hasil ambigu masuk review dan email lain diabaikan.
           </p>
         </div>
 
@@ -279,11 +246,11 @@ export function EmailDetectionCard() {
           ].join(" ")}
         >
           {hasConnectedGmail
-            ? "Status: Gmail aktif. Tekan Sinkronkan untuk mengambil transaksi terbaru."
+            ? "Aktif: transaksi bank baru akan dipetakan otomatis ke rekening yang sesuai."
             : "Status: Gmail belum terhubung."}
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <Button
             className="rounded-xl"
             disabled={!overview?.gmailConfigured || gmailMutation.isPending}
@@ -302,25 +269,13 @@ export function EmailDetectionCard() {
               !overview?.gmailConfigured
             }
             isLoading={syncMutation.isPending}
-            onClick={() => syncMutation.mutate({ maxMessages: 10 })}
+            onClick={() => syncMutation.mutate({ maxMessages: 25 })}
             size="sm"
             type="button"
             variant="secondary"
           >
             <RefreshCw className="h-4 w-4" />
             Sinkronkan
-          </Button>
-          <Button
-            className="rounded-xl sm:col-span-2"
-            disabled={cleanupMutation.isPending}
-            isLoading={cleanupMutation.isPending}
-            onClick={() => cleanupMutation.mutate()}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
-            <Eraser className="h-4 w-4" />
-            Bersihkan deteksi salah
           </Button>
         </div>
 
@@ -346,6 +301,11 @@ export function EmailDetectionCard() {
                       ? `Sync ${formatDate(connection.lastSyncedAt)}`
                       : "Belum pernah sync"}
                   </p>
+                  {connection.detectedProviders.length > 0 ? (
+                    <p className="mt-1 text-[10px] font-black text-blue-700">
+                      Bank terdeteksi: {connection.detectedProviders.join(", ")}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   className="sakuin-press flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
@@ -361,34 +321,27 @@ export function EmailDetectionCard() {
         ) : null}
       </div>
 
-      <form className="mt-4 grid gap-2" onSubmit={handleImportSubmit}>
-        <input
-          className="min-h-11 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/20"
-          onChange={(event) => setEmailAddress(event.target.value)}
-          placeholder="Email sumber, contoh: utama@gmail.com"
-          value={emailAddress}
-        />
-        <input
-          className="min-h-11 rounded-2xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-semibold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/20"
-          onChange={(event) => setSubject(event.target.value)}
-          placeholder="Subject email transaksi"
-          value={subject}
-        />
-        <textarea
-          className="min-h-28 resize-y rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 text-sm font-semibold leading-6 text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/20"
-          onChange={(event) => setBody(event.target.value)}
-          placeholder="Tempel isi email transaksi bank/e-wallet untuk uji deteksi..."
-          value={body}
-        />
-        {formError ? (
-          <p className="rounded-2xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">
-            {formError}
+      <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-3">
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-[var(--sakuin-primary)]" />
+          <p className="text-xs font-black text-[var(--sakuin-text)]">
+            Bank yang didukung
           </p>
-        ) : null}
-        <Button className="rounded-xl" isLoading={importMutation.isPending} size="sm" type="submit">
-          Proses Email
-        </Button>
-      </form>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {supportedBanks.map((bank) => (
+            <span
+              className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700 ring-1 ring-blue-100"
+              key={bank}
+            >
+              {bank}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] font-semibold leading-5 text-zinc-500">
+          Sinkronisasi otomatis berjalan sekali sehari. Tombol Sinkronkan dapat digunakan kapan saja untuk mengambil email terbaru.
+        </p>
+      </div>
 
       <div className="mt-5 grid gap-3">
         <div className="flex items-center justify-between gap-2">
@@ -420,6 +373,11 @@ export function EmailDetectionCard() {
                     {item.method ?? "Email"} | {item.occurredAt ? formatDate(item.occurredAt) : "Tanggal belum jelas"}
                     {item.emailAddress ? ` | ${item.emailAddress}` : ""}
                   </p>
+                  {item.accountName ? (
+                    <p className="mt-1 text-[11px] font-black text-blue-700">
+                      Masuk ke rekening {item.accountName}
+                    </p>
+                  ) : null}
                 </div>
                 <span className={["shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ring-1", getStatusBadge(item)].join(" ")}>
                   {getStatusLabel(item.status)}
