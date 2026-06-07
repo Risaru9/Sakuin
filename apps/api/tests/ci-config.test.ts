@@ -18,5 +18,9 @@ describe("CI test configuration", () => {
     expect(packageJson.scripts?.["test:ci"]).toContain("--maxWorkers=1");
     expect(workflow).toContain("pnpm --filter @sakuin/api test:ci");
     expect(workflow).not.toContain("pnpm --filter @sakuin/api test\n");
+
+    const jobTimeout = workflow.match(/timeout-minutes:\s*(\d+)/);
+    expect(jobTimeout).not.toBeNull();
+    expect(Number(jobTimeout?.[1])).toBeGreaterThanOrEqual(35);
   });
 });

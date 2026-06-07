@@ -12,7 +12,9 @@ jobs:
   validate:
     name: Validate Sakuin
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # API integration tests run serially against the remote test database.
+    # Keep enough job headroom without relaxing the 20-second per-test timeout.
+    timeout-minutes: 40
 
     env:
       NODE_ENV: test
