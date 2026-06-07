@@ -101,7 +101,9 @@ jobs:
         run: pnpm --filter @sakuin/api typecheck
 
       - name: Backend test
-        run: pnpm --filter @sakuin/api test
+        # Integration tests share one remote CI database. Running files serially
+        # avoids connection contention and non-deterministic query timeouts.
+        run: pnpm --filter @sakuin/api test:ci
 
       - name: Backend build
         run: pnpm --filter @sakuin/api build
