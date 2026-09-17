@@ -6,6 +6,13 @@ import {
   setupInstallPromptCapture
 } from "./lib/pwa";
 import { syncTokenToServiceWorker } from "./lib/auth-storage";
+import "@fontsource/fredoka/latin-500.css";
+import "@fontsource/fredoka/latin-600.css";
+import "@fontsource/fredoka/latin-700.css";
+import "@fontsource/nunito/latin-600.css";
+import "@fontsource/nunito/latin-700.css";
+import "@fontsource/nunito/latin-800.css";
+import "@fontsource/nunito/latin-900.css";
 import "./index.css";
 
 setupInstallPromptCapture();

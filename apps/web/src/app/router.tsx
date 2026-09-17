@@ -107,6 +107,15 @@ const AsistenPage = lazy(() =>
   }))
 );
 
+// Development-only component preview; the ternary lets the production build drop the chunk.
+const SakuPlaygroundPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/SakuPlaygroundPage").then((module) => ({
+        default: module.SakuPlaygroundPage
+      }))
+    )
+  : null;
+
 function LoadingScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4">
@@ -1296,6 +1305,19 @@ const routes = [
       </ProtectedRoute>
     )
   },
+
+  ...(SakuPlaygroundPage
+    ? [
+        {
+          path: "/dev/saku",
+          element: (
+            <PageSuspense>
+              <SakuPlaygroundPage />
+            </PageSuspense>
+          )
+        }
+      ]
+    : []),
 
   {
     path: "*",

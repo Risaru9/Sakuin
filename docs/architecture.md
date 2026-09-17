@@ -37,6 +37,16 @@ Frontend code is organized by feature under `apps/web/src/features`.
 
 Page files should not keep long formatter, validator, storage, or business-rule helper blocks. Those helpers should be extracted and tested near the feature.
 
+#### Saku cartoon design system (redesign in progress)
+
+The cartoon redesign lives next to the old styles until every screen is migrated.
+
+- Tokens: `apps/web/src/styles/saku-theme.css` defines Tailwind theme values (`bg-saku-bg`, `text-saku-ink`, `font-saku-head`, `shadow-saku`, `animate-saku-bob`) and the ink outline utilities (`saku-line`, `saku-line-thin`, `saku-press`). Animations stop under `prefers-reduced-motion`.
+- Fonts: Fredoka (headings, numbers) and Nunito (body) are bundled from `@fontsource` in `main.tsx`. The web CSP only allows self-hosted fonts, so do not link Google Fonts.
+- Components: `apps/web/src/components/saku` (mascot, sticker button/chip/card/switch, segmented control, bottom sheet, category badge). New or migrated screens use these instead of `components/ui`.
+- Preview: in development, `/dev/saku` renders every component. The route and its chunk are excluded from production builds.
+- Global resets in `index.css` stay inside `@layer base`. Unlayered rules override Tailwind utilities.
+
 ### Shared
 
 `packages/shared` contains contracts that must stay synchronized between API and web.
