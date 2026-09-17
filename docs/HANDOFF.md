@@ -947,11 +947,11 @@ Setelah itu user membuat database test terpisah di Supabase.
 CI juga harus memakai secrets test.
 ```
 
+Sejak September 2026, CI tidak lagi memakai project Supabase test (project itu ter-pause karena tidak aktif sehingga CI gagal). CI sekarang memakai service container `postgres:17-alpine` per job dan menjalankan `prisma migrate deploy`. Secret `CI_DATABASE_URL` dan `CI_DIRECT_URL` tidak dipakai lagi.
+
 CI secrets:
 
 ```env
-CI_DATABASE_URL="postgresql://..."
-CI_DIRECT_URL="postgresql://..."
 CI_JWT_SECRET="minimum_32_characters_secret"
 ```
 

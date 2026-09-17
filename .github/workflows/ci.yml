@@ -12,15 +12,32 @@ jobs:
   validate:
     name: Validate Sakuin
     runs-on: ubuntu-latest
-    # API integration tests run serially against the remote test database.
+    # API integration tests run serially against a throwaway Postgres service.
     # Keep enough job headroom without relaxing the 20-second per-test timeout.
     timeout-minutes: 40
+
+    # A per-job database cannot be paused, shared or pointed at production,
+    # unlike the remote Supabase test project CI used before.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: sakuin
+          POSTGRES_PASSWORD: sakuin
+          POSTGRES_DB: sakuin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sakuin -d sakuin_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     env:
       NODE_ENV: test
       PORT: 5000
-      DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.CI_DIRECT_URL }}
+      DATABASE_URL: postgresql://sakuin:sakuin@localhost:5432/sakuin_test
+      DIRECT_URL: postgresql://sakuin:sakuin@localhost:5432/sakuin_test
       JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
       FRONTEND_URL: http://localhost:3000
       VITE_API_BASE_URL: http://127.0.0.1:5000
@@ -35,16 +52,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          if [ -z "${DATABASE_URL:-}" ]; then
-            echo "CI_DATABASE_URL is missing. Configure it in GitHub Actions secrets."
-            exit 1
-          fi
-
-          if [ -z "${DIRECT_URL:-}" ]; then
-            echo "CI_DIRECT_URL is missing. Configure it in GitHub Actions secrets."
-            exit 1
-          fi
 
           if [ "${SAKUIN_DATABASE_TARGET:-}" != "test" ]; then
             echo "SAKUIN_DATABASE_TARGET must be test in CI."
@@ -84,8 +91,8 @@ jobs:
       - name: Production safety check
         run: pnpm safety:production
 
-      - name: Sync CI database schema
-        run: pnpm --filter @sakuin/api exec prisma db push --skip-generate
+      - name: Apply database migrations
+        run: pnpm --filter @sakuin/api exec prisma migrate deploy
 
       - name: Shared typecheck
         run: pnpm --filter @sakuin/shared typecheck
@@ -103,8 +110,8 @@ jobs:
         run: pnpm --filter @sakuin/api typecheck
 
       - name: Backend test
-        # Integration tests share one remote CI database. Running files serially
-        # avoids connection contention and non-deterministic query timeouts.
+        # Integration tests share one CI database. Running files serially keeps
+        # their cleanup from racing each other.
         run: pnpm --filter @sakuin/api test:ci
 
       - name: Backend build

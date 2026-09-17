@@ -2428,11 +2428,11 @@ VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 
 CI harus memakai database test, bukan production database.
 
-Secrets CI:
+CI memakai database Postgres sementara (service container `postgres:17-alpine`) yang dibuat dan dibuang di setiap job, lalu menerapkan migration dengan `prisma migrate deploy`. `DATABASE_URL` dan `DIRECT_URL` di workflow menunjuk ke container itu, sehingga secret `CI_DATABASE_URL` dan `CI_DIRECT_URL` tidak dipakai lagi.
+
+Secret CI yang masih dipakai:
 
 ```env
-CI_DATABASE_URL="postgresql://..."
-CI_DIRECT_URL="postgresql://..."
 CI_JWT_SECRET="minimum_32_characters_secret"
 ```
 
