@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+// Release signing comes from environment variables (CI) or android/keystore.properties (local).
+// Neither the keystore nor its passwords may be committed; see docs/APK_UPDATE_FLOW.md.
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file("keystore.properties")
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { stream -> signingProperties.load(stream) }
+}
+def signingValue = { String envName, String propertyName ->
+    System.getenv(envName) ?: signingProperties.getProperty(propertyName)
+}
+def releaseStoreFile = signingValue("SIGNING_STORE_FILE", "storeFile")
+def releaseStorePassword = signingValue("SIGNING_STORE_PASSWORD", "storePassword")
+def releaseKeyAlias = signingValue("SIGNING_KEY_ALIAS", "keyAlias")
+def releaseKeyPassword = signingValue("SIGNING_KEY_PASSWORD", "keyPassword")
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace "com.sakuin.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -17,16 +33,22 @@ android {
         }
     }
     signingConfigs {
-        release {
-            storeFile file("release.keystore")
-            storePassword "sakuin123"
-            keyAlias "sakuin"
-            keyPassword "sakuin123"
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("Release signing is not configured; building an unsigned release APK.")
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

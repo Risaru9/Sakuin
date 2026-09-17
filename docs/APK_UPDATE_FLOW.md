@@ -119,13 +119,19 @@ Output APK release akan berada di:
 
 Secara default, Gradle akan membangun unsigned APK. Agar bisa dijalankan di perangkat user, APK harus di-sign.
 
+Keystore dan password-nya **tidak boleh** masuk repo; `.gitignore` sudah memblokir `*.keystore`, `*.jks`, dan `apps/web/android/keystore.properties`. Keystore lama (`release.keystore` dengan password tertulis di `build.gradle`) sudah bocor di repo publik, sehingga diganti pada September 2026. APK yang ditandatangani kunci baru tidak bisa dipasang sebagai update di atas APK lama, jadi pengguna perlu uninstall lalu install ulang sekali.
+
 ### Setup Signing Lokal
-1. Taruh file `release.keystore` Anda ke dalam direktori `apps/web/android/app/`.
-2. Tentukan environment variables di terminal komputer sebelum melakukan build:
-   * `SIGNING_STORE_PASSWORD`
-   * `SIGNING_KEY_ALIAS`
-   * `SIGNING_KEY_PASSWORD`
-3. Jalankan `gradlew.bat assembleRelease`. Gradle otomatis mendeteksi keberadaan file keystore dan menyematkan signature. Output file akan bernama `app-release.apk`.
+1. Simpan keystore di luar repo, misalnya `C:\Users\<nama>\sakuin-signing\sakuin-release.keystore`, dan buat cadangannya di tempat aman. Kalau keystore hilang, update APK tidak bisa dipasang di atas versi yang sudah terpasang.
+2. Buat `apps/web/android/keystore.properties` (sudah di-ignore):
+   ```properties
+   storeFile=C:/Users/<nama>/sakuin-signing/sakuin-release.keystore
+   storePassword=...
+   keyAlias=sakuin-release
+   keyPassword=...
+   ```
+   Sebagai alternatif, isi environment variable `SIGNING_STORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, dan `SIGNING_KEY_PASSWORD`. Kalau keduanya ada, environment variable yang dipakai.
+3. Jalankan `gradlew.bat assembleRelease` dengan JDK 17. Hasilnya `app-release.apk`. Kalau konfigurasi signing tidak ditemukan, Gradle memberi peringatan dan menghasilkan `app-release-unsigned.apk`.
 
 ---
 
@@ -135,12 +141,12 @@ Pipeline telah diatur di [.github/workflows/build-apk.yml](file:///d:/sakuin/.gi
 
 ### Konfigurasi Secrets di Repository GitHub:
 Untuk menghasilkan APK yang ter-sign secara otomatis, Anda harus menambahkan secrets berikut di repositori GitHub Anda:
-1. `ANDROID_KEYSTORE_BASE64`: File keystore `release.keystore` yang di-encode ke Base64 (jalankan `base64 release.keystore` untuk mendapatkan string-nya).
-2. `SIGNING_STORE_PASSWORD`: Password keystore.
-3. `SIGNING_KEY_ALIAS`: Alias key di dalam keystore.
-4. `SIGNING_KEY_PASSWORD`: Password key.
+1. `ANDROID_KEYSTORE_BASE64`: isi keystore dalam Base64 (`base64 -w0 sakuin-release.keystore`).
+2. `SIGNING_STORE_PASSWORD`: password keystore.
+3. `SIGNING_KEY_ALIAS`: alias key di dalam keystore (`sakuin-release`).
+4. `SIGNING_KEY_PASSWORD`: password key.
 
-Jika secrets tidak diatur, workflow akan berjalan sukses tetapi hanya menghasilkan **unsigned APK** sebagai artifact cadangan.
+Workflow men-decode keystore ke folder sementara runner dan menghapusnya setelah build. Jika secrets tidak diatur, workflow tetap berjalan tetapi hanya menghasilkan **unsigned APK** (dengan peringatan) sebagai artifact.
 
 ---
 
