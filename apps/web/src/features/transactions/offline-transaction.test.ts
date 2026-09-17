@@ -3,6 +3,7 @@ import { createTransaction, createTransactionsBulk } from "./transaction.service
 import {
   getOfflineQueue,
   hasLegacyOfflineQueue,
+  removeFromOfflineQueue,
   saveOfflineQueue,
   syncOfflineTransactions
 } from "../../lib/offline-queue";
@@ -245,6 +246,60 @@ describe("Offline Transaction Handling", () => {
 
     // Pastikan queue dikosongkan setelah sukses sinkronisasi
     expect(getOfflineQueue().length).toBe(0);
+  });
+
+  it("keeps the chosen account when syncing offline transactions", async () => {
+    saveOfflineQueue([
+      {
+        categoryId: "cat-1",
+        accountId: "account-bca",
+        amount: "10000",
+        type: "EXPENSE" as const,
+        date: "2026-05-27T00:00:00.000Z",
+        offlineId: "offline-1",
+        queuedAt: new Date().toISOString(),
+        ownerScope: "user-a"
+      }
+    ]);
+    vi.mocked(apiRequest).mockResolvedValueOnce({ success: true });
+
+    await syncOfflineTransactions();
+
+    expect(apiRequest).toHaveBeenCalledWith("/api/transactions/bulk", {
+      method: "POST",
+      body: {
+        transactions: [
+          expect.objectContaining({ categoryId: "cat-1", accountId: "account-bca" })
+        ]
+      }
+    });
+  });
+
+  it("removes a single queued transaction when the user undoes it", () => {
+    saveOfflineQueue([
+      {
+        categoryId: "cat-1",
+        amount: "10000",
+        type: "EXPENSE" as const,
+        date: "2026-05-27T00:00:00.000Z",
+        offlineId: "offline-keep",
+        queuedAt: new Date().toISOString(),
+        ownerScope: "user-a"
+      },
+      {
+        categoryId: "cat-2",
+        amount: "5000",
+        type: "EXPENSE" as const,
+        date: "2026-05-27T00:00:00.000Z",
+        offlineId: "offline-undo",
+        queuedAt: new Date().toISOString(),
+        ownerScope: "user-a"
+      }
+    ]);
+
+    expect(removeFromOfflineQueue("offline-undo")).toBe(true);
+    expect(removeFromOfflineQueue("offline-missing")).toBe(false);
+    expect(getOfflineQueue().map((transaction) => transaction.offlineId)).toEqual(["offline-keep"]);
   });
 
   it("should not sync offline transactions owned by another account", async () => {

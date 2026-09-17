@@ -128,7 +128,7 @@ export function FloatingAssistantButton() {
         <PortalLayer>
           <div
             aria-hidden="true"
-            className="sakuin-assistant-zoom-layer fixed bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] right-4 z-[360] h-14 w-14 rounded-full bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] lg:bottom-6 lg:right-6"
+            className="sakuin-assistant-zoom-layer fixed bottom-[calc(var(--sakuin-mobile-nav-height)+var(--sakuin-composer-space,0rem)+1rem)] right-4 z-[360] h-14 w-14 rounded-full bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] lg:bottom-6 lg:right-6"
           />
         </PortalLayer>
       ) : null}
@@ -163,7 +163,7 @@ export function FloatingAssistantButton() {
       <button
         aria-label="Buka Asisten Sakuin"
         className={[
-          "sakuin-floating-assistant sakuin-press sakuin-pulse-ring bottom-[calc(var(--sakuin-mobile-nav-height)+1rem)] left-auto right-4 z-[65] inline-flex h-12 w-12 items-center justify-center overflow-visible rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6",
+          "sakuin-floating-assistant sakuin-press sakuin-pulse-ring bottom-[calc(var(--sakuin-mobile-nav-height)+var(--sakuin-composer-space,0rem)+1rem)] left-auto right-4 z-[65] inline-flex h-12 w-12 items-center justify-center overflow-visible rounded-full border border-white/90 bg-gradient-to-br from-sky-400 via-blue-500 to-[var(--sakuin-primary)] text-white shadow-[0_18px_38px_rgba(59,130,246,0.34)] transition duration-200 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_22px_42px_rgba(59,130,246,0.42)] focus:outline-none focus:ring-4 focus:ring-sky-300/35 active:translate-y-0.5 active:scale-95 motion-safe:animate-[sakuinFloat_3.6s_ease-in-out_infinite] motion-reduce:transition-none lg:bottom-6 lg:right-6",
           isLaunchingAssistant ? "sakuin-assistant-button-pop" : ""
         ].join(" ")}
         disabled={isLaunchingAssistant}

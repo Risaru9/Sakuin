@@ -11,6 +11,9 @@ import {
   StickerChip,
   StickerSwitch
 } from "../../components/saku";
+import { queryClient } from "../../lib/query-client";
+import { queryKeys } from "../../lib/query-keys";
+import { QuickComposer } from "../quick-composer/QuickComposer";
 
 // Development-only page (registered under /dev/saku when import.meta.env.DEV) for reviewing
 // the Saku cartoon components in isolation while screens are being migrated.
@@ -27,6 +30,50 @@ const CATEGORY_ICONS = [
   "gift",
   "plus-circle"
 ];
+
+const SAMPLE_CATEGORIES = [
+  ["Gaji", "INCOME", "wallet"],
+  ["Bonus", "INCOME", "gift"],
+  ["Pemasukan Lainnya", "INCOME", "plus-circle"],
+  ["Makanan", "EXPENSE", "utensils"],
+  ["Transportasi", "EXPENSE", "car"],
+  ["Belanja", "EXPENSE", "shopping-bag"],
+  ["Pendidikan", "EXPENSE", "book-open"],
+  ["Kesehatan", "EXPENSE", "heart-pulse"],
+  ["Tagihan", "EXPENSE", "receipt"],
+  ["Pengeluaran Lainnya", "EXPENSE", "minus-circle"]
+].map(([name, type, icon], index) => ({
+  id: `sample-category-${index}`,
+  name,
+  type,
+  icon,
+  color: null,
+  isDefault: true,
+  limit: null
+}));
+
+const SAMPLE_ACCOUNTS = ["Dompet Utama", "BCA", "GoPay"].map((name, index) => ({
+  id: `sample-account-${index}`,
+  name,
+  type: index === 0 ? "CASH" : "BANK",
+  icon: null,
+  color: null,
+  initialBalance: "0",
+  balance: "0",
+  transactionCount: 0,
+  isArchived: false,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z"
+}));
+
+// Sample reference data so the composer works here without an API or login (dev only).
+if (!queryClient.getQueryData(queryKeys.categories)) {
+  queryClient.setQueryData(queryKeys.categories, SAMPLE_CATEGORIES);
+}
+
+if (!queryClient.getQueryData(queryKeys.accounts)) {
+  queryClient.setQueryData(queryKeys.accounts, SAMPLE_ACCOUNTS);
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -136,6 +183,16 @@ export function SakuPlaygroundPage() {
             Buka popup detail
           </StickerButton>
         </Section>
+
+        <Section title="Kolom catat (data contoh)">
+          <p className="px-1 text-xs font-bold text-saku-muted">
+            Ketik misalnya "kopi susu 18rb". Menyimpan butuh API dan login, jadi di halaman ini
+            akan gagal dengan pesan error.
+          </p>
+        </Section>
+        <div className="sticky bottom-4 z-40 mt-4">
+          <QuickComposer />
+        </div>
       </div>
 
       <BottomSheet

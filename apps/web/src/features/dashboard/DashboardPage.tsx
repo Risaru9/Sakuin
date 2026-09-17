@@ -374,7 +374,11 @@ export function DashboardPage() {
 
   return (
     <>
-      <AppShell profileName={displayedName} profileEmail={displayedEmail}>
+      <AppShell
+        profileName={displayedName}
+        profileEmail={displayedEmail}
+        showQuickComposer
+      >
         <header className="mb-4 flex items-center justify-between gap-3 sm:mb-7 sm:gap-4">
           <div className="min-w-0">
             <p className="text-sm font-black text-zinc-500">

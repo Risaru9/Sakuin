@@ -1,6 +1,7 @@
 export { BottomSheet } from "./bottom-sheet";
 export { CategoryBadge, getCategoryVisual, type CategoryVisual } from "./category-badge";
 export { SakuMascot, SakuSparkle, type SakuMood } from "./saku-mascot";
+export { SakuSnackbar } from "./saku-snackbar";
 export { SegmentedControl, type SegmentedOption } from "./segmented-control";
 export {
   StickerButton,

@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, type CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
@@ -15,6 +15,7 @@ import {
   MobileMainActionMenu
 } from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
+import { QuickComposer } from "../../features/quick-composer/QuickComposer";
 import {
   getOfflineQueue,
   hasLegacyOfflineQueue,
@@ -25,7 +26,12 @@ type AppShellProps = {
   children: ReactNode;
   profileName?: string;
   profileEmail?: string;
+  /** Docks the "kolom catat" at the bottom of the page. */
+  showQuickComposer?: boolean;
 };
+
+// Room the docked composer takes above the mobile nav; floating buttons move up by this much.
+const QUICK_COMPOSER_SPACE = "4.5rem";
 
 const primaryNavigationItems = [
   {
@@ -139,7 +145,8 @@ function MobileNavigationLink({
 export function AppShell({
   children,
   profileName,
-  profileEmail
+  profileEmail,
+  showQuickComposer = false
 }: AppShellProps) {
   const location = useLocation();
   const { user } = useAuth();
@@ -221,6 +228,11 @@ export function AppShell({
           ? "pb-[var(--sakuin-mobile-content-bottom)]"
           : "pb-0"
       ].join(" ")}
+      style={
+        showQuickComposer
+          ? ({ "--sakuin-composer-space": QUICK_COMPOSER_SPACE } as CSSProperties)
+          : undefined
+      }
     >
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-screen border-r border-[var(--sakuin-border)] bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(15,23,42,0.03)] lg:flex lg:flex-col">
@@ -283,6 +295,11 @@ export function AppShell({
             </div>
           )}
           {children}
+          {showQuickComposer ? (
+            <div className="sticky bottom-[calc(var(--sakuin-mobile-nav-height)+0.5rem)] z-40 mt-6 lg:bottom-6 lg:mr-16">
+              <QuickComposer />
+            </div>
+          ) : null}
         </section>
       </div>
 

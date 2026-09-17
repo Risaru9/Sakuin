@@ -65,6 +65,25 @@ export function addToOfflineQueue(transaction: CreateTransactionInput) {
   return newTx;
 }
 
+/** Removes a not-yet-synced transaction, e.g. when the user taps "Batalkan". */
+export function removeFromOfflineQueue(offlineId: string) {
+  const ownerScope = getActiveAccountScope();
+
+  if (!ownerScope) {
+    return false;
+  }
+
+  const queue = getOfflineQueue(ownerScope);
+  const nextQueue = queue.filter((transaction) => transaction.offlineId !== offlineId);
+
+  if (nextQueue.length === queue.length) {
+    return false;
+  }
+
+  saveOfflineQueue(nextQueue, ownerScope);
+  return true;
+}
+
 export async function syncOfflineTransactions(): Promise<boolean> {
   const ownerScope = getActiveAccountScope();
 
@@ -80,8 +99,9 @@ export async function syncOfflineTransactions(): Promise<boolean> {
   
   try {
     const payload = {
-      transactions: queue.map(({ categoryId, amount, type, note, date }) => ({
+      transactions: queue.map(({ categoryId, accountId, amount, type, note, date }) => ({
         categoryId,
+        accountId,
         amount,
         type,
         note,
