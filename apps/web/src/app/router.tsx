@@ -70,15 +70,33 @@ const ResetPasswordPage = lazy(() =>
   }))
 );
 
-const DashboardPage = lazy(() =>
-  import("../features/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage
+const BerandaPage = lazy(() =>
+  import("../features/beranda/BerandaPage").then((module) => ({
+    default: module.BerandaPage
   }))
 );
 
-const TransactionsPage = lazy(() =>
-  import("../features/transactions/TransactionsPage").then((module) => ({
-    default: module.TransactionsPage
+const SearchPage = lazy(() =>
+  import("../features/beranda/SearchPage").then((module) => ({
+    default: module.SearchPage
+  }))
+);
+
+const LaporanPage = lazy(() =>
+  import("../features/laporan/LaporanPage").then((module) => ({
+    default: module.LaporanPage
+  }))
+);
+
+const LainnyaPage = lazy(() =>
+  import("../features/lainnya/LainnyaPage").then((module) => ({
+    default: module.LainnyaPage
+  }))
+);
+
+const RekeningPage = lazy(() =>
+  import("../features/lainnya/RekeningPage").then((module) => ({
+    default: module.RekeningPage
   }))
 );
 
@@ -107,11 +125,27 @@ const AsistenPage = lazy(() =>
   }))
 );
 
-// Development-only component preview; the ternary lets the production build drop the chunk.
+// Development-only previews; the ternaries let the production build drop the chunks.
 const SakuPlaygroundPage = import.meta.env.DEV
   ? lazy(() =>
       import("../features/dev/SakuPlaygroundPage").then((module) => ({
         default: module.SakuPlaygroundPage
+      }))
+    )
+  : null;
+
+const BerandaPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.BerandaPreviewPage
+      }))
+    )
+  : null;
+
+const SearchPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.SearchPreviewPage
       }))
     )
   : null;
@@ -169,7 +203,7 @@ function RouteErrorFallback() {
           className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
           to="/dashboard"
         >
-          Kembali ke Dashboard
+          Kembali ke Catatan
         </Link>
       </section>
     </main>
@@ -1259,7 +1293,39 @@ const routes = [
     path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <DashboardPage />
+        <BerandaPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/cari",
+    element: (
+      <ProtectedRoute>
+        <SearchPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/laporan",
+    element: (
+      <ProtectedRoute>
+        <LaporanPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya",
+    element: (
+      <ProtectedRoute>
+        <LainnyaPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/rekening",
+    element: (
+      <ProtectedRoute>
+        <RekeningPage />
       </ProtectedRoute>
     )
   },
@@ -1274,12 +1340,9 @@ const routes = [
     )
   },
   {
+    // The transaction list now lives on Beranda; keep old links and bookmarks working.
     path: "/transactions",
-    element: (
-      <ProtectedRoute>
-        <TransactionsPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/dashboard" replace />
   },
   {
     path: "/goals",
@@ -1306,13 +1369,29 @@ const routes = [
     )
   },
 
-  ...(SakuPlaygroundPage
+  ...(SakuPlaygroundPage && BerandaPreviewPage && SearchPreviewPage
     ? [
         {
           path: "/dev/saku",
           element: (
             <PageSuspense>
               <SakuPlaygroundPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/beranda",
+          element: (
+            <PageSuspense>
+              <BerandaPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/cari",
+          element: (
+            <PageSuspense>
+              <SearchPreviewPage />
             </PageSuspense>
           )
         }

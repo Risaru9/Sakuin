@@ -4,6 +4,9 @@ import { X } from "lucide-react";
 import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
 import { cn } from "../../lib/cn";
 
+// Open sheets, oldest first; only the top one reacts to Escape when sheets are stacked.
+const openSheetIds: string[] = [];
+
 type BottomSheetProps = {
   open: boolean;
   onClose: () => void;
@@ -43,9 +46,10 @@ export function BottomSheet({
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
     sheetRef.current?.focus();
+    openSheetIds.push(titleId);
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && openSheetIds[openSheetIds.length - 1] === titleId) {
         event.stopPropagation();
         onCloseRef.current();
       }
@@ -55,9 +59,13 @@ export function BottomSheet({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      const stackIndex = openSheetIds.lastIndexOf(titleId);
+      if (stackIndex !== -1) {
+        openSheetIds.splice(stackIndex, 1);
+      }
       previouslyFocused?.focus?.();
     };
-  }, [open]);
+  }, [open, titleId]);
 
   if (!open || typeof document === "undefined") {
     return null;

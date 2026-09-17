@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { showSnack } from "../../components/saku";
 import { useToast } from "../../components/toast/ToastProvider";
 import { ApiClientError } from "../../lib/api-client";
 import { removeFromOfflineQueue } from "../../lib/offline-queue";
 import { queryKeys } from "../../lib/query-keys";
-import { getAccounts } from "../accounts/account.service";
-import { getCategories } from "../categories/category.service";
+import { markTodayReviewed } from "../reminders/daily-review-completion";
 import { buildOptimisticTransactionsFromDrafts } from "../transactions/optimistic-drafts";
 import type { QuickTransactionDraft } from "../transactions/quick-transaction-parser";
 import {
@@ -22,6 +22,7 @@ import {
 import { getTodayInputValue } from "../transactions/transaction-date";
 import { createTransactionsBulk, deleteTransaction } from "../transactions/transaction.service";
 import type { Transaction, TransactionType } from "../transactions/transaction.types";
+import { useReferenceData } from "../transactions/use-reference-data";
 import {
   buildComposerGuess,
   formatAmount,
@@ -30,19 +31,15 @@ import {
   type ComposerOverrides
 } from "./composer-logic";
 
-const SNACK_DURATION_MS = 5_000;
-const REFERENCE_STALE_TIME = 5 * 60_000;
-
 export type ComposerHint = {
   message: string;
   canRetry: boolean;
 };
 
-export type ComposerSnack = {
+type SavedMessage = {
   title: string;
   detail: string;
   offline: boolean;
-  transactions: Transaction[];
 };
 
 type SaveVariables = {
@@ -55,15 +52,14 @@ function isOfflineTransaction(transaction: Transaction) {
   return transaction.id.startsWith("offline-");
 }
 
-function buildSnack(saved: Transaction[], drafts: QuickTransactionDraft[]): ComposerSnack {
+function buildSavedMessage(saved: Transaction[], drafts: QuickTransactionDraft[]): SavedMessage {
   const offline = saved.some(isOfflineTransaction);
 
   if (offline) {
     return {
       title: "Tersimpan di HP dulu",
       detail: "Otomatis dikirim begitu ada sinyal.",
-      offline,
-      transactions: saved
+      offline
     };
   }
 
@@ -73,8 +69,7 @@ function buildSnack(saved: Transaction[], drafts: QuickTransactionDraft[]): Comp
     return {
       title: `Yay, ${drafts.length} transaksi tercatat!`,
       detail: `Total ${formatAmount(total)}`,
-      offline,
-      transactions: saved
+      offline
     };
   }
 
@@ -83,8 +78,7 @@ function buildSnack(saved: Transaction[], drafts: QuickTransactionDraft[]): Comp
   return {
     title: `Yay, ${draft.note.toLowerCase()} tercatat!`,
     detail: `${draft.categoryName} · ${formatSignedAmount(draft.amount, draft.type)}`,
-    offline,
-    transactions: saved
+    offline
   };
 }
 
@@ -100,28 +94,13 @@ export function useQuickComposer() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
 
-  const categoriesQuery = useQuery({
-    queryKey: queryKeys.categories,
-    queryFn: () => getCategories(),
-    staleTime: REFERENCE_STALE_TIME
-  });
-  const accountsQuery = useQuery({
-    queryKey: queryKeys.accounts,
-    queryFn: getAccounts,
-    staleTime: REFERENCE_STALE_TIME
-  });
+  const { categories, accounts, categoriesQuery } = useReferenceData();
 
   const [text, setText] = useState("");
   const [overrides, setOverrides] = useState<ComposerOverrides>({});
   const [hint, setHint] = useState<ComposerHint | null>(null);
-  const [snack, setSnack] = useState<ComposerSnack | null>(null);
 
   const todayKey = getTodayInputValue();
-  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
-  const accounts = useMemo(
-    () => (accountsQuery.data ?? []).filter((account) => !account.isArchived),
-    [accountsQuery.data]
-  );
 
   const guess = useMemo(
     () => buildComposerGuess({ input: text, categories, todayKey, overrides }),
@@ -131,16 +110,6 @@ export function useQuickComposer() {
   // The API files transactions without an account under the first (default) account.
   const selectedAccount =
     accounts.find((account) => account.id === overrides.accountId) ?? accounts[0] ?? null;
-
-  useEffect(() => {
-    if (!snack) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => setSnack(null), SNACK_DURATION_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [snack]);
 
   const saveMutation = useMutation({
     mutationFn: ({ drafts, accountId }: SaveVariables) =>
@@ -172,7 +141,20 @@ export function useQuickComposer() {
       addTransactionsToListCaches(queryClient, saved);
       addTransactionsToSummaryCache(queryClient, saved);
       markTransactionDerivedDataStale(queryClient);
-      setSnack(buildSnack(saved, drafts));
+
+      const message = buildSavedMessage(saved, drafts);
+
+      if (!message.offline) {
+        markTodayReviewed();
+      }
+
+      showSnack({
+        ...message,
+        mood: message.offline ? "worried" : "wow",
+        actionLabel: "Batalkan",
+        onAction: () => undoMutation.mutate(saved),
+        highlightIds: saved.map((transaction) => transaction.id)
+      });
     },
 
     onError: (error, { sourceText }, context) => {
@@ -200,8 +182,6 @@ export function useQuickComposer() {
     },
 
     onMutate: (transactions) => {
-      setSnack(null);
-
       for (const transaction of transactions) {
         removeTransactionFromListCaches(queryClient, transaction.id);
         removeTransactionFromSummaryCache(queryClient, transaction);
@@ -221,10 +201,10 @@ export function useQuickComposer() {
     }
   });
 
-  function changeText(value: string) {
+  const changeText = useCallback((value: string) => {
     setText(value);
     setHint(null);
-  }
+  }, []);
 
   function updateOverrides(patch: ComposerOverrides) {
     setOverrides((current) => ({ ...current, ...patch }));
@@ -268,12 +248,6 @@ export function useQuickComposer() {
     return true;
   }
 
-  function undo() {
-    if (snack) {
-      undoMutation.mutate(snack.transactions);
-    }
-  }
-
   return {
     text,
     changeText,
@@ -287,9 +261,6 @@ export function useQuickComposer() {
     updateOverrides,
     toggleType,
     submit,
-    snack,
-    undo,
-    isUndoing: undoMutation.isPending,
     retryCategories: () => void categoriesQuery.refetch()
   };
 }

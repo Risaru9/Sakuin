@@ -533,8 +533,7 @@ uang dari orang tua 500000
 Status:
 
 ```txt
-[✓] Tersedia dari Dashboard
-[✓] Tersedia dari TransactionsPage
+[✓] Tersedia dari kolom catat di Beranda (sejak redesign September 2026, menggantikan modal Catat Cepat)
 [✓] Bisa input banyak transaksi sekaligus
 [✓] Parser rule-based
 [✓] Parser mengenali income/expense pola umum
@@ -1840,10 +1839,9 @@ Frontend transaction performance:
 
 ```txt
 apps/web/src/features/transactions/transaction-cache.ts
-apps/web/src/features/transactions/AddTransactionModal.tsx
-apps/web/src/features/transactions/EditTransactionModal.tsx
-apps/web/src/features/transactions/QuickTransactionModal.tsx
-apps/web/src/features/transactions/TransactionsPage.tsx
+apps/web/src/features/quick-composer/use-quick-composer.ts
+apps/web/src/features/beranda/use-transaction-actions.ts
+apps/web/src/features/beranda/beranda-data.ts
 apps/web/src/features/transactions/transaction.service.ts
 apps/web/src/features/transactions/transaction.types.ts
 ```
@@ -1851,7 +1849,8 @@ apps/web/src/features/transactions/transaction.types.ts
 Dashboard performance:
 
 ```txt
-apps/web/src/features/dashboard/DashboardPage.tsx
+apps/web/src/features/beranda/BerandaPage.tsx
+apps/web/src/features/laporan/LaporanPage.tsx
 apps/web/src/features/summary/summary.service.ts
 apps/web/src/features/summary/summary.types.ts
 ```

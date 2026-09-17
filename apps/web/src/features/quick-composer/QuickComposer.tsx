@@ -1,13 +1,14 @@
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw, Wallet } from "lucide-react";
 import {
   CategoryBadge,
   SakuMascot,
-  SakuSnackbar,
+  SakuSnackHost,
   StickerChip
 } from "../../components/saku";
 import { cn } from "../../lib/cn";
 import { describeDateKey, formatAmount, formatSignedAmount } from "./composer-logic";
+import { subscribeComposerFocus, takeComposerFocusRequest } from "./composer-bridge";
 import { ComposerDetailSheet } from "./ComposerDetailSheet";
 import { useQuickComposer } from "./use-quick-composer";
 
@@ -22,9 +23,29 @@ type QuickComposerProps = {
 export function QuickComposer({ className }: QuickComposerProps) {
   const composer = useQuickComposer();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const hintId = useId();
-  const { guess, snack } = composer;
+  const { guess, changeText } = composer;
+
+  useEffect(() => {
+    function handleFocusRequest() {
+      const request = takeComposerFocusRequest();
+
+      if (!request) {
+        return;
+      }
+
+      if (request.text !== undefined) {
+        changeText(request.text);
+      }
+
+      inputRef.current?.focus();
+    }
+
+    handleFocusRequest();
+    return subscribeComposerFocus(handleFocusRequest);
+  }, [changeText]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,16 +60,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {snack ? (
-        <SakuSnackbar
-          actionDisabled={composer.isUndoing}
-          actionLabel="Batalkan"
-          detail={snack.detail}
-          mood={snack.offline ? "worried" : "wow"}
-          onAction={composer.undo}
-          title={snack.title}
-        />
-      ) : null}
+      <SakuSnackHost />
 
       {composer.hint ? (
         <p
@@ -145,6 +157,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
           Catat transaksi, misalnya kopi 18rb
         </label>
         <input
+          ref={inputRef}
           aria-describedby={composer.hint ? hintId : undefined}
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent text-[15px] font-extrabold text-saku-ink outline-none placeholder:font-bold placeholder:text-saku-muted"

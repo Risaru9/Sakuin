@@ -143,6 +143,46 @@ describe("BottomSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
+  it("hanya menutup sheet paling atas saat Escape ditekan pada sheet bertumpuk", async () => {
+    const user = userEvent.setup();
+    const closeOuter = vi.fn();
+    const closeInner = vi.fn();
+
+    function Stacked() {
+      const [innerOpen, setInnerOpen] = useState(false);
+
+      return (
+        <BottomSheet onClose={closeOuter} open title="Ubah catatan">
+          <button onClick={() => setInnerOpen(true)} type="button">
+            Tambah
+          </button>
+          <BottomSheet
+            onClose={() => {
+              closeInner();
+              setInnerOpen(false);
+            }}
+            open={innerOpen}
+            title="Kategori baru"
+          >
+            Form
+          </BottomSheet>
+        </BottomSheet>
+      );
+    }
+
+    render(<Stacked />);
+    await user.click(screen.getByRole("button", { name: "Tambah" }));
+    expect(screen.getByRole("dialog", { name: "Kategori baru" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(closeInner).toHaveBeenCalledTimes(1);
+    expect(closeOuter).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog", { name: "Kategori baru" })).not.toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(closeOuter).toHaveBeenCalledTimes(1);
+  });
+
   it("mengunci scroll halaman selama terbuka", () => {
     const { rerender } = render(
       <BottomSheet onClose={() => undefined} open title="Detail">

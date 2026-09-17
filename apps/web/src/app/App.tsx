@@ -138,7 +138,9 @@ export function App() {
             // Ignore jika browser eksternal sudah tertutup.
           }
 
-          void router.navigate(`/dashboard?${params.toString()}`);
+          // The Gmail card that reads this status lives in Profile > Otomasi.
+          params.set("section", "automation");
+          void router.navigate(`/profile?${params.toString()}`);
           window.dispatchEvent(new Event("sakuin:email-import-returned"));
           return;
         }

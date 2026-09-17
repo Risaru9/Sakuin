@@ -1,7 +1,20 @@
 export { BottomSheet } from "./bottom-sheet";
-export { CategoryBadge, getCategoryVisual, type CategoryVisual } from "./category-badge";
+export {
+  CATEGORY_ICON_CHOICES,
+  CategoryBadge,
+  getCategoryVisual,
+  type CategoryVisual
+} from "./category-badge";
 export { SakuMascot, SakuSparkle, type SakuMood } from "./saku-mascot";
 export { SakuSnackbar } from "./saku-snackbar";
+export { SakuSnackHost } from "./saku-snack-host";
+export {
+  dismissSnack,
+  showSnack,
+  SNACK_DURATION_MS,
+  useSakuSnack,
+  type SakuSnack
+} from "./snack-store";
 export { SegmentedControl, type SegmentedOption } from "./segmented-control";
 export {
   StickerButton,

@@ -1,13 +1,24 @@
 import {
+  Banknote,
   BookOpen,
+  Briefcase,
   Car,
   CircleMinus,
   CirclePlus,
+  Coffee,
   Ellipsis,
+  Gamepad2,
   Gift,
   HeartPulse,
+  House,
+  PawPrint,
+  PiggyBank,
+  Plane,
   Receipt,
+  Shirt,
   ShoppingBag,
+  Smartphone,
+  TrendingUp,
   Utensils,
   Wallet,
   type LucideIcon
@@ -29,6 +40,7 @@ const FALLBACK_VISUAL: CategoryVisual = {
 };
 
 // Keyed by the `icon` value stored on categories (see apps/api default-categories.ts).
+// Keys other than the defaults are the ones offered when creating a category.
 const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   utensils: { Icon: Utensils, background: "#ffe3bd", foreground: "#b45309" },
   car: { Icon: Car, background: "#d6e4ff", foreground: "#2b63e0" },
@@ -39,8 +51,43 @@ const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   "minus-circle": { Icon: CircleMinus, background: "#ebe8f2", foreground: "#4b4666" },
   wallet: { Icon: Wallet, background: "#d4f5e0", foreground: "#15803d" },
   gift: { Icon: Gift, background: "#fff0b3", foreground: "#8a6100" },
-  "plus-circle": { Icon: CirclePlus, background: "#d4f5e0", foreground: "#15803d" }
+  "plus-circle": { Icon: CirclePlus, background: "#d4f5e0", foreground: "#15803d" },
+  coffee: { Icon: Coffee, background: "#f3e1cf", foreground: "#8a4b16" },
+  shirt: { Icon: Shirt, background: "#dff3ff", foreground: "#0b6b99" },
+  house: { Icon: House, background: "#ffe1dc", foreground: "#b42318" },
+  smartphone: { Icon: Smartphone, background: "#dde8ff", foreground: "#1f4fb8" },
+  plane: { Icon: Plane, background: "#d6f3f7", foreground: "#0e7490" },
+  "gamepad-2": { Icon: Gamepad2, background: "#e7ddff", foreground: "#5b21b6" },
+  "paw-print": { Icon: PawPrint, background: "#fde7c8", foreground: "#9a4d00" },
+  banknote: { Icon: Banknote, background: "#d4f5e0", foreground: "#15803d" },
+  briefcase: { Icon: Briefcase, background: "#e4e1ee", foreground: "#3f3a5a" },
+  "trending-up": { Icon: TrendingUp, background: "#ccf1ea", foreground: "#0f766e" },
+  "piggy-bank": { Icon: PiggyBank, background: "#ffd6e6", foreground: "#be185d" },
+  ellipsis: FALLBACK_VISUAL
 };
+
+/** Icon keys offered in "Kategori baru", per transaction type. */
+export const CATEGORY_ICON_CHOICES = {
+  EXPENSE: [
+    "utensils",
+    "coffee",
+    "car",
+    "shopping-bag",
+    "shirt",
+    "receipt",
+    "house",
+    "heart-pulse",
+    "book-open",
+    "smartphone",
+    "gamepad-2",
+    "paw-print",
+    "plane",
+    "gift",
+    "piggy-bank",
+    "ellipsis"
+  ],
+  INCOME: ["wallet", "banknote", "briefcase", "trending-up", "gift", "piggy-bank", "plus-circle", "ellipsis"]
+} as const;
 
 export function getCategoryVisual(icon?: string | null): CategoryVisual {
   if (!icon) {
