@@ -189,7 +189,7 @@ export function LainnyaPage() {
       tint: "#e7ddff",
       title: "Transaksi berulang",
       subtitle: "Tagihan dan pemasukan rutin",
-      to: "/profile?section=automation"
+      to: "/lainnya/berulang"
     }
   ];
 
@@ -208,7 +208,7 @@ export function LainnyaPage() {
       subtitle: reminder.enabled
         ? `Setiap hari pukul ${String(reminder.eveningHour).padStart(2, "0")}.00`
         : "Belum aktif",
-      to: "/profile?section=notifications"
+      to: "/lainnya/pengingat"
     },
     {
       icon: Mail,

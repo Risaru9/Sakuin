@@ -2,8 +2,10 @@ import type { ComponentType } from "react";
 import { useParams } from "react-router-dom";
 import { BerandaPage } from "../beranda/BerandaPage";
 import { SearchPage } from "../beranda/SearchPage";
+import { BerulangPage } from "../lainnya/BerulangPage";
 import { KategoriPage } from "../lainnya/KategoriPage";
 import { LainnyaPage } from "../lainnya/LainnyaPage";
+import { PengingatPage } from "../lainnya/PengingatPage";
 import { RekeningPage } from "../lainnya/RekeningPage";
 import { TargetPage } from "../lainnya/TargetPage";
 import { LaporanPage } from "../laporan/LaporanPage";
@@ -33,7 +35,9 @@ export function LainnyaPreviewPage() {
 const LAINNYA_SECTIONS: Record<string, ComponentType> = {
   rekening: RekeningPage,
   kategori: KategoriPage,
-  target: TargetPage
+  target: TargetPage,
+  berulang: BerulangPage,
+  pengingat: PengingatPage
 };
 
 export function LainnyaSectionPreviewPage() {

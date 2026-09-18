@@ -9,6 +9,7 @@
 import type { AccountTransfer, FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
 import type { Goal } from "../goals/goal.types";
+import type { RecurringRule } from "../recurring/recurring.types";
 import type { Transaction } from "../transactions/transaction.types";
 
 type Scenario = { empty: boolean; slow: boolean; failList: boolean };
@@ -120,6 +121,62 @@ export function installFakeApi() {
   function daysFromNowIso(days: number) {
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
   }
+
+  function nextDate(daysAhead: number) {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead).toISOString();
+  }
+
+  function categorySummary(categoryId: string) {
+    const category = categories.find((item) => item.id === categoryId) ?? categories[0];
+    return { id: category.id, name: category.name, type: category.type, icon: category.icon, color: category.color };
+  }
+
+  function toRule(input: Partial<RecurringRule> & { id: string; categoryId: string; amount: string }): RecurringRule {
+    const now = new Date().toISOString();
+    const category = categorySummary(input.categoryId);
+
+    return {
+      type: category.type,
+      note: null,
+      frequency: "MONTHLY",
+      interval: 1,
+      dayOfMonth: 1,
+      dayOfWeek: null,
+      startDate: now,
+      endDate: null,
+      nextRunAt: nextDate(14),
+      autoPost: true,
+      isActive: true,
+      lastRunAt: null,
+      createdAt: now,
+      updatedAt: now,
+      ...input,
+      category
+    };
+  }
+
+  let rules: RecurringRule[] = scenario.empty
+    ? []
+    : [
+        toRule({ id: "dev-rule-net", categoryId: "cat-tagihan", amount: "350000", note: "Internet rumah", dayOfMonth: 5, nextRunAt: nextDate(17) }),
+        toRule({ id: "dev-rule-kos", categoryId: "cat-tagihan", amount: "900000", note: "Kos", dayOfMonth: 1, nextRunAt: nextDate(13) }),
+        toRule({ id: "dev-rule-adik", categoryId: "cat-keluar-lain", amount: "100000", note: "Uang saku adik", frequency: "WEEKLY", dayOfMonth: null, dayOfWeek: 1, nextRunAt: nextDate(3) }),
+        toRule({ id: "dev-rule-gaji", categoryId: "cat-gaji", amount: "3000000", note: "Gaji", dayOfMonth: 1, nextRunAt: nextDate(13) }),
+        toRule({ id: "dev-rule-musik", categoryId: "cat-keluar-lain", amount: "55000", note: "Langganan musik", dayOfMonth: 20, isActive: false })
+      ];
+
+  let reminderSettings = {
+    enabled: false,
+    frequency: "EVENING" as const,
+    eveningHour: 20,
+    quietStartHour: 21,
+    quietEndHour: 7,
+    maxPerDay: 1,
+    timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+    dailyReviewCompletedDate: null,
+    hasActiveSubscription: false
+  };
 
   let goals: Goal[] = scenario.empty
     ? []
@@ -518,6 +575,44 @@ export function installFakeApi() {
 
     if (method === "GET" && path === "/api/summary") {
       return respond(200, buildSummary(url));
+    }
+
+    if (method === "GET" && path === "/api/recurring") {
+      return respond(200, rules);
+    }
+
+    if (method === "POST" && path === "/api/recurring") {
+      const input = body as Partial<RecurringRule> & { categoryId: string; amount: string };
+      const created = toRule({ ...input, id: `dev-rule-${nextId++}`, nextRunAt: nextDate(7) });
+      rules = [...rules, created];
+      return respond(201, created);
+    }
+
+    const ruleMatch = path.match(/^\/api\/recurring\/([^/]+)$/);
+    const rule = ruleMatch ? rules.find((item) => item.id === ruleMatch[1]) : undefined;
+
+    if (ruleMatch && !rule) {
+      return respond(404, null, "Recurring rule tidak ditemukan");
+    }
+
+    if (rule && method === "PUT") {
+      const patch = body as Partial<RecurringRule>;
+      const next = toRule({ ...rule, ...patch, id: rule.id, categoryId: patch.categoryId ?? rule.categoryId, amount: patch.amount ?? rule.amount });
+      rules = rules.map((item) => (item.id === rule.id ? next : item));
+      return respond(200, next);
+    }
+
+    if (rule && method === "DELETE") {
+      rules = rules.filter((item) => item.id !== rule.id);
+      return respond(200, rule);
+    }
+
+    if (path === "/api/reminders/settings") {
+      if (method === "PUT") {
+        reminderSettings = { ...reminderSettings, ...(body as object) };
+      }
+
+      return respond(200, reminderSettings);
     }
 
     if (method === "GET" && path === "/api/goals") {

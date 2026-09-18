@@ -106,6 +106,18 @@ const KategoriPage = lazy(() =>
   }))
 );
 
+const BerulangPage = lazy(() =>
+  import("../features/lainnya/BerulangPage").then((module) => ({
+    default: module.BerulangPage
+  }))
+);
+
+const PengingatPage = lazy(() =>
+  import("../features/lainnya/PengingatPage").then((module) => ({
+    default: module.PengingatPage
+  }))
+);
+
 const TargetPage = lazy(() =>
   import("../features/lainnya/TargetPage").then((module) => ({
     default: module.TargetPage
@@ -1364,6 +1376,22 @@ const routes = [
     element: (
       <ProtectedRoute>
         <TargetPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/berulang",
+    element: (
+      <ProtectedRoute>
+        <BerulangPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/pengingat",
+    element: (
+      <ProtectedRoute>
+        <PengingatPage />
       </ProtectedRoute>
     )
   },
