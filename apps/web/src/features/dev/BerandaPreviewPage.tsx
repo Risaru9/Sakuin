@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { useParams } from "react-router-dom";
+import { AsistenPage } from "../ai/pages/AsistenPage";
 import { BerandaPage } from "../beranda/BerandaPage";
 import { SearchPage } from "../beranda/SearchPage";
 import { AkunPage } from "../lainnya/AkunPage";
@@ -41,7 +42,8 @@ const LAINNYA_SECTIONS: Record<string, ComponentType> = {
   berulang: BerulangPage,
   pengingat: PengingatPage,
   export: ExportPage,
-  akun: AkunPage
+  akun: AkunPage,
+  tanya: AsistenPage
 };
 
 export function LainnyaSectionPreviewPage() {

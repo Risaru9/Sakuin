@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { dismissSnack } from "../../components/saku";
 import { ToastProvider } from "../../components/toast/ToastProvider";
@@ -77,7 +78,9 @@ function renderComposer() {
   render(
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <QuickComposer />
+        <MemoryRouter>
+          <QuickComposer />
+        </MemoryRouter>
       </ToastProvider>
     </QueryClientProvider>
   );
@@ -102,6 +105,12 @@ describe("QuickComposer", () => {
 
   afterEach(() => {
     dismissSnack();
+  });
+
+  it("opens Tanya Saku from Saku's face", () => {
+    renderComposer();
+
+    expect(screen.getByRole("link", { name: "Tanya Saku" })).toHaveAttribute("href", "/asisten");
   });
 
   it("shows the guess while typing and saves on Enter", async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw, Wallet } from "lucide-react";
 import {
   CategoryBadge,
@@ -150,9 +151,15 @@ export function QuickComposer({ className }: QuickComposerProps) {
         className="saku-line flex h-14 items-center gap-2.5 rounded-full bg-saku-paper pr-[7px] pl-1.5 font-saku-body shadow-saku-sm"
         onSubmit={handleSubmit}
       >
-        <span className="saku-line-thin flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-saku-coin-soft">
+        {/* Tapping Saku opens the AI chat, "Tanya Saku". */}
+        <Link
+          aria-label="Tanya Saku"
+          className="saku-line-thin saku-press flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-saku-coin-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
+          title="Tanya Saku"
+          to="/asisten"
+        >
           <SakuMascot className="mt-1.5" mood={composer.hint ? "worried" : "happy"} size={38} />
-        </span>
+        </Link>
         <label className="sr-only" htmlFor={inputId}>
           Catat transaksi, misalnya kopi 18rb
         </label>
