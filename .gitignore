@@ -46,3 +46,11 @@ coverage/
 sakuin-transactions-*.json
 sakuin-transactions-*.csv
 sakuin-transactions-*.xlsx
+# Local AI tool attachments and screenshots (may contain personal data)
+.codex-remote-attachments/
+.codex-screenshots/
+
+# Android release signing (keys live outside the repo; see docs/APK_UPDATE_FLOW.md)
+*.keystore
+*.jks
+apps/web/android/keystore.properties

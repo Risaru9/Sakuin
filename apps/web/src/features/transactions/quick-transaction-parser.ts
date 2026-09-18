@@ -148,7 +148,16 @@ const categoryKeywordRules: Array<{
       "resto",
       "warung",
       "cafe",
-      "kafe"
+      "kafe",
+      "martabak",
+      "seblak",
+      "gorengan",
+      "roti",
+      "snack",
+      "camilan",
+      "boba",
+      "soto",
+      "sate"
     ]
   },
   {
@@ -186,8 +195,52 @@ const categoryKeywordRules: Array<{
       "skincare",
       "skin care",
       "sabun",
-      "parfum"
+      "parfum",
+      "kosmetik",
+      "makeup"
     ]
+  },
+  {
+    // Avoid bare "kos" and "air": they match "kosmetik", "ongkos", and "air mineral".
+    type: "EXPENSE",
+    categoryTargets: ["tagihan", "bill"],
+    keywords: [
+      "tagihan",
+      "listrik",
+      "token",
+      "pln",
+      "pulsa",
+      "kuota",
+      "paket data",
+      "wifi",
+      "internet",
+      "indihome",
+      "pdam",
+      "bpjs",
+      "kosan",
+      "kost",
+      "bayar kos",
+      "uang kos",
+      "cicilan"
+    ]
+  },
+  {
+    type: "EXPENSE",
+    categoryTargets: ["kesehatan", "health", "medis"],
+    keywords: [
+      "obat",
+      "dokter",
+      "apotek",
+      "klinik",
+      "rumah sakit",
+      "vitamin",
+      "puskesmas"
+    ]
+  },
+  {
+    type: "EXPENSE",
+    categoryTargets: ["pendidikan", "edukasi", "sekolah"],
+    keywords: ["buku", "kursus", "sekolah", "spp", "kuliah", "ukt", "seminar", "fotokopi"]
   },
   {
     type: "INCOME",
@@ -343,7 +396,8 @@ function normalizeCategoryName(value: string) {
 
 function splitInputIntoItems(input: string) {
   return input
-    .split(/\n|,|;/)
+    // A comma followed by a digit belongs to a number ("1,5jt"), not a list separator.
+    .split(/\n|;|,(?!\d)/)
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, MAX_DRAFT_ITEMS);
@@ -522,6 +576,24 @@ function parseAmountToken(
     return null;
   }
 
+  const suffixText = sourceText
+    .slice(tokenEndIndex, tokenEndIndex + 12)
+    .toLowerCase();
+  const multiplier = /^\s*(ribu|rb|k)\b/.test(suffixText)
+    ? 1_000
+    : /^\s*(juta|jt)\b/.test(suffixText)
+      ? 1_000_000
+      : 1;
+
+  // With a unit, "1.5jt" and "1,5jt" are decimals (1,5 juta), not thousand separators.
+  if (multiplier > 1 && /^\d+[.,]\d{1,2}$/.test(normalizedToken)) {
+    const decimalValue = Number(normalizedToken.replace(",", "."));
+
+    return Number.isFinite(decimalValue)
+      ? Math.round(decimalValue * multiplier * 100) / 100
+      : null;
+  }
+
   if (normalizedToken.includes(".") && normalizedToken.includes(",")) {
     normalizedToken = normalizedToken.replace(/\./g, "").replace(",", ".");
   } else if (normalizedToken.includes(",")) {
@@ -540,19 +612,7 @@ function parseAmountToken(
     return null;
   }
 
-  const suffixText = sourceText
-    .slice(tokenEndIndex, tokenEndIndex + 12)
-    .toLowerCase();
-
-  if (/^\s*(ribu|rb|k)\b/.test(suffixText)) {
-    return numberValue * 1_000;
-  }
-
-  if (/^\s*(juta|jt)\b/.test(suffixText)) {
-    return numberValue * 1_000_000;
-  }
-
-  return numberValue;
+  return Math.round(numberValue * multiplier * 100) / 100;
 }
 
 function extractAmount(sourceText: string) {
@@ -585,7 +645,10 @@ function cleanNote(
   tokenEndIndex: number
 ) {
   const beforeAmount = sourceText.slice(0, amountIndex);
-  const afterAmount = sourceText.slice(tokenEndIndex);
+  // Drop the unit glued to the amount ("35k", "18 rb") before cleaning the rest.
+  const afterAmount = sourceText
+    .slice(tokenEndIndex)
+    .replace(/^\s*(ribu|rb|k|juta|jt)\b/i, "");
   const rawNote = `${beforeAmount} ${afterAmount}`;
 
   const cleanedNote = rawNote

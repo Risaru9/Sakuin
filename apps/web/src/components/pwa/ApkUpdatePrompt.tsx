@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, Smartphone, X, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, X, Loader2 } from "lucide-react";
 import { apiRequest } from "../../lib/api-client";
+import { SakuMascot } from "../saku";
 import { useToast } from "../toast/ToastProvider";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -140,159 +141,91 @@ export function ApkUpdatePrompt() {
     return null;
   }
 
-  // Render modal backdrop fullscreen jika forceUpdate aktif
+  const notes = (
+    <ul className="mt-3 space-y-1.5">
+      {updateInfo.releaseNotes.map((note) => (
+        <li className="flex items-start gap-2 text-sm font-bold" key={note}>
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-saku-income" strokeWidth={2.6} />
+          <span>{note}</span>
+        </li>
+      ))}
+    </ul>
+  );
+  const downloadLink = updateInfo.apkDownloadUrl ? (
+    <a
+      aria-disabled={isDownloading}
+      className={`saku-line saku-press inline-flex min-h-13 flex-1 items-center justify-center gap-2 rounded-full bg-saku-accent px-5 font-saku-head text-lg font-semibold text-white shadow-saku ${
+        isDownloading ? "pointer-events-none cursor-wait opacity-70" : ""
+      }`}
+      href={updateInfo.apkDownloadUrl}
+      onClick={handleUpdate}
+      target="_system"
+    >
+      {isDownloading ? <Loader2 aria-hidden="true" className="size-5 animate-spin" /> : <Download aria-hidden="true" className="size-5" strokeWidth={2.6} />}
+      {isDownloading ? "Mengunduh..." : "Perbarui sekarang"}
+    </a>
+  ) : (
+    <p className="flex-1 rounded-2xl bg-saku-bg px-3 py-2.5 text-center text-sm font-bold text-saku-muted">
+      Unduhan belum tersedia untuk versi ini.
+    </p>
+  );
+
+  // A required update blocks the app until it is installed.
   if (updateInfo.forceUpdate) {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-        <section className="w-full max-w-sm overflow-hidden rounded-[2rem] border border-[var(--sakuin-border)] bg-white shadow-2xl">
-          <div className="h-1.5 w-full bg-rose-600" />
-          <div className="p-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-50 text-rose-600 shadow-sm">
-                <Smartphone className="h-8 w-8" />
-              </div>
-              <h2 className="mt-4 text-lg font-black text-rose-900">
-                Update Wajib Tersedia
-              </h2>
-              <p className="mt-1.5 text-xs font-semibold leading-relaxed text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full">
-                Versi Saat Ini: v{currentVersion.name} &rarr; Terbaru: v{updateInfo.latestVersionName}
-              </p>
-              <p className="mt-3 text-xs font-semibold leading-relaxed text-zinc-500">
-                Kamu harus memperbarui aplikasi ke versi terbaru untuk tetap dapat menggunakan Sakuin secara aman dan stabil.
-              </p>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-[var(--sakuin-border)] bg-zinc-50 p-3.5">
-              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Catatan Pembaruan:</p>
-              <ul className="mt-2 grid gap-1.5 text-left">
-                {updateInfo.releaseNotes.map((note) => (
-                  <li className="flex items-start gap-2 text-xs font-semibold leading-relaxed text-zinc-700" key={note}>
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" />
-                    <span>{note}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {updateInfo.apkDownloadUrl ? (
-              <a
-                href={updateInfo.apkDownloadUrl}
-                target="_system"
-                onClick={handleUpdate}
-                aria-disabled={isDownloading}
-                className={`mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-98 ${
-                  isDownloading ? "opacity-70 cursor-wait pointer-events-none" : ""
-                }`}
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    Sedang Mengunduh...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 text-white" />
-                    Perbarui Sekarang
-                  </>
-                )}
-              </a>
-            ) : (
-              <div className="mt-5 p-3 text-center text-xs font-semibold leading-relaxed text-rose-700 bg-rose-50 rounded-2xl border border-rose-100">
-                Pembaruan terdeteksi, tetapi tautan unduhan belum tersedia saat ini.
-              </div>
-            )}
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-saku-scrim p-4">
+        <section className="saku-line w-full max-w-sm rounded-saku-sheet bg-saku-paper p-5 font-saku-body text-saku-ink shadow-saku" role="alertdialog" aria-labelledby="apk-force-update-title">
+          <div className="flex flex-col items-center text-center">
+            <SakuMascot animated mood="wow" size={72} />
+            <h2 className="mt-2 font-saku-head text-2xl font-semibold" id="apk-force-update-title">
+              Perlu update dulu
+            </h2>
+            <p className="saku-line-hair mt-1.5 rounded-full bg-saku-coin-soft px-2.5 text-xs font-black">
+              v{currentVersion.name} → v{updateInfo.latestVersionName}
+            </p>
+            <p className="mt-2 text-sm font-bold text-saku-muted">
+              Versi ini sudah tidak didukung. Pasang versi terbaru supaya Sakuin tetap aman dan lancar.
+            </p>
           </div>
+          {notes}
+          <div className="mt-5 flex">{downloadLink}</div>
         </section>
       </div>
     );
   }
 
-  // Render bottom-right card floating jika normal update
   return (
-    <div className="fixed inset-x-0 bottom-[calc(var(--sakuin-mobile-nav-height)+0.75rem)] z-[270] px-4 lg:bottom-5 lg:left-auto lg:right-5 lg:max-w-sm lg:px-0">
-      <section className="overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
-        <div className="h-1.5 w-full bg-[var(--sakuin-primary)]" />
-        
-        <div className="p-5">
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-sm">
-              <Smartphone className="h-6 w-6" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-[var(--sakuin-text)]">
-                Update Aplikasi Sakuin (v{updateInfo.latestVersionName})
-              </h3>
-              <p className="mt-0.5 text-[10px] font-bold text-zinc-400">
-                Versi Saat Ini: v{currentVersion.name}
-              </p>
-              <p className="mt-1.5 text-xs font-semibold leading-relaxed text-zinc-500">
-                Versi APK terbaru sudah tersedia. Nikmati pembaruan fitur dan widget yang lebih lancar.
-              </p>
-            </div>
-
+    <div className="fixed inset-x-0 bottom-[calc(var(--sakuin-mobile-nav-height)+0.75rem)] z-[270] px-3 lg:right-5 lg:bottom-5 lg:left-auto lg:max-w-sm lg:px-0">
+      <section className="saku-line rounded-saku-card bg-saku-paper p-4 font-saku-body text-saku-ink shadow-saku motion-safe:animate-saku-rise">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="saku-line-thin flex size-11 shrink-0 items-end justify-center overflow-hidden rounded-full bg-saku-coin-soft">
+            <SakuMascot mood="wow" size={40} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-saku-head text-lg font-semibold">Ada versi baru! (v{updateInfo.latestVersionName})</h3>
+            <p className="text-xs font-bold text-saku-muted">Sekarang v{currentVersion.name}</p>
+          </div>
+          <button
+            aria-label="Tutup info update"
+            className="saku-line-thin flex size-9 shrink-0 items-center justify-center rounded-full bg-saku-paper focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
+            onClick={handleDismiss}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-4" strokeWidth={2.6} />
+          </button>
+        </div>
+        {notes}
+        <div className="mt-4 flex gap-2.5">
+          {updateInfo.apkDownloadUrl ? (
             <button
-              aria-label="Tutup info update"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
+              className="saku-line-thin min-h-13 rounded-full bg-saku-paper px-4 text-[15px] font-black"
               onClick={handleDismiss}
               type="button"
             >
-              <X className="h-4 w-4" />
+              Nanti
             </button>
-          </div>
-
-          <div className="mt-3.5 rounded-2xl border border-[var(--sakuin-border)] bg-zinc-50 p-3.5">
-            <p className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Catatan Pembaruan:</p>
-            <ul className="mt-2 grid gap-1.5">
-              {updateInfo.releaseNotes.map((note) => (
-                <li className="flex items-start gap-2 text-xs font-semibold leading-relaxed text-zinc-700" key={note}>
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {updateInfo.apkDownloadUrl ? (
-            <div className="mt-4 grid grid-cols-2 gap-2.5">
-              <a
-                href={updateInfo.apkDownloadUrl}
-                target="_system"
-                onClick={handleUpdate}
-                aria-disabled={isDownloading}
-                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white shadow-sm transition hover:opacity-90 ${
-                  isDownloading ? "opacity-70 cursor-wait pointer-events-none" : ""
-                }`}
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
-                ) : (
-                  <Download className="h-3.5 w-3.5 text-white" />
-                )}
-                {isDownloading ? "Mengunduh..." : "Perbarui"}
-              </a>
-              <button
-                onClick={handleDismiss}
-                className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
-                type="button"
-              >
-                Nanti
-              </button>
-            </div>
-          ) : (
-            <div className="mt-4 flex flex-col gap-2">
-              <div className="p-3 text-center text-xs font-semibold text-zinc-500 bg-zinc-50 rounded-xl">
-                Unduhan belum tersedia untuk versi ini.
-              </div>
-              <button
-                onClick={handleDismiss}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-zinc-100 px-4 text-xs font-black text-zinc-700 transition hover:bg-zinc-200"
-                type="button"
-              >
-                Tutup
-              </button>
-            </div>
-          )}
+          ) : null}
+          {downloadLink}
         </div>
       </section>
     </div>

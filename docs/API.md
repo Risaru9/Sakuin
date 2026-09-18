@@ -208,6 +208,15 @@ GET    /api/categories
 POST   /api/categories
 PUT    /api/categories/:id
 DELETE /api/categories/:id
+PUT    /api/categories/:id/limit
+
+GET    /api/accounts
+POST   /api/accounts
+PUT    /api/accounts/:id
+DELETE /api/accounts/:id
+POST   /api/accounts/:id/restore
+GET    /api/accounts/transfers
+POST   /api/accounts/transfers
 
 GET    /api/transactions
 POST   /api/transactions
@@ -950,6 +959,62 @@ category.updated
 
 ---
 
+## PUT `/api/categories/:id/limit`
+
+Mengatur atau menghapus batas bulanan (anggaran) sebuah kategori pengeluaran. Berlaku untuk kategori default maupun kategori custom milik user login.
+
+- Kategori default adalah baris global, jadi batasnya disimpan per user di tabel `CategoryBudget`. User lain tidak ikut terpengaruh.
+- Kategori custom menyimpan batas di kolom `Category.limit` seperti sebelumnya.
+- `GET /api/categories` mengembalikan `limit` milik user login untuk kedua jenis kategori.
+
+### Auth
+
+Wajib token.
+
+### Body
+
+```json
+{
+  "limit": 1200000
+}
+```
+
+`limit: null` menghapus batas. Nilai harus lebih dari 0.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Batas kategori berhasil disimpan",
+  "data": {
+    "id": "cat_expense_food",
+    "name": "Makanan",
+    "type": "EXPENSE",
+    "icon": "utensils",
+    "color": "#f97316",
+    "isDefault": true,
+    "limit": 1200000
+  }
+}
+```
+
+### Error
+
+```txt
+400 Batas bulanan hanya untuk kategori pengeluaran
+400 Validasi gagal (limit 0, negatif, atau bukan angka)
+404 Kategori tidak ditemukan (termasuk kategori custom milik user lain)
+```
+
+### Audit Event
+
+```txt
+category.updated (metadata: changedFields=limit, isDefaultCategory, hasLimit)
+```
+
+---
+
 ## DELETE `/api/categories/:id`
 
 Hapus custom category milik user login.
@@ -996,6 +1061,24 @@ Category milik user lain tidak bisa diakses.
 ```txt
 category.deleted
 ```
+
+---
+
+# 4a. Accounts API
+
+Rekening (tunai, bank, e-wallet, tabungan) milik user login. Saldo (`balance`) dihitung dari `initialBalance` ditambah pemasukan, dikurangi pengeluaran, dan ditambah/dikurangi pindah uang.
+
+| Method | Path | Keterangan |
+| --- | --- | --- |
+| GET | `/api/accounts` | Rekening aktif. Tambahkan `?includeArchived=true` untuk ikut menampilkan rekening yang diarsipkan (urutan: aktif dulu). |
+| POST | `/api/accounts` | Buat rekening. Maksimal 20 rekening aktif; nama harus unik per user. |
+| PUT | `/api/accounts/:id` | Ubah nama, jenis, warna, atau `initialBalance`. Aplikasi mengoreksi "saldo sekarang" dengan menggeser `initialBalance`. |
+| DELETE | `/api/accounts/:id` | Arsipkan (tidak menghapus). Riwayat tetap ada. Minimal satu rekening harus tetap aktif. |
+| POST | `/api/accounts/:id/restore` | Aktifkan lagi rekening yang diarsipkan. Ditolak (400) kalau sudah ada 20 rekening aktif. |
+| GET | `/api/accounts/transfers` | 50 pindah uang terakhir. |
+| POST | `/api/accounts/transfers` | Pindah uang antar-rekening aktif (`fromAccountId`, `toAccountId`, `amount`, `date`, `note`). Tidak dihitung sebagai pengeluaran. |
+
+Semua endpoint wajib token dan hanya menyentuh rekening milik user login (rekening user lain → 404).
 
 ---
 
@@ -2428,11 +2511,11 @@ VITE_GOOGLE_CLIENT_ID="google-client-id.apps.googleusercontent.com"
 
 CI harus memakai database test, bukan production database.
 
-Secrets CI:
+CI memakai database Postgres sementara (service container `postgres:17-alpine`) yang dibuat dan dibuang di setiap job, lalu menerapkan migration dengan `prisma migrate deploy`. `DATABASE_URL` dan `DIRECT_URL` di workflow menunjuk ke container itu, sehingga secret `CI_DATABASE_URL` dan `CI_DIRECT_URL` tidak dipakai lagi.
+
+Secret CI yang masih dipakai:
 
 ```env
-CI_DATABASE_URL="postgresql://..."
-CI_DIRECT_URL="postgresql://..."
 CI_JWT_SECRET="minimum_32_characters_secret"
 ```
 

@@ -62,6 +62,17 @@ export const updateCategorySchema = z
     "Minimal satu field harus diisi untuk update"
   );
 
+export const setCategoryLimitSchema = z.object({
+  limit: z.preprocess(
+    (value) => (value === "" ? null : value),
+    z
+      .number({ invalid_type_error: "Batas bulanan harus berupa angka" })
+      .positive("Batas bulanan harus lebih dari 0")
+      .max(999_999_999_999, "Batas bulanan terlalu besar")
+      .nullable()
+  )
+});
+
 export const categoryIdParamSchema = z.object({
   id: z.string().trim().min(1, "ID kategori wajib diisi")
 });

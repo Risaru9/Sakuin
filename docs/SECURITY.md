@@ -1436,11 +1436,9 @@ Jangan menghapus SAKUIN_DATABASE_TARGET.
 Jangan menghapus SAKUIN_PRODUCTION_DATABASE_PROJECT_REF.
 ```
 
-CI secrets harus memakai database test:
+CI memakai database Postgres sementara (service container) yang hanya hidup selama job berjalan, sehingga test tidak pernah menyentuh database Supabase mana pun. Secret CI yang masih dipakai:
 
 ```env
-CI_DATABASE_URL="postgresql://..."
-CI_DIRECT_URL="postgresql://..."
 CI_JWT_SECRET="minimum_32_characters_secret"
 ```
 

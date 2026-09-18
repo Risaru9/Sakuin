@@ -119,18 +119,8 @@ export function createWelcomeMessage(): AiChatMessage {
     id: "welcome-message",
     role: "assistant",
     content:
-      "Halo, saya Asisten Sakuin. Saya bisa membantu membaca pengeluaran, pemasukan, goals, dan kondisi keuanganmu di Sakuin.\n\nCatatan: saya hanya menjawab topik keuangan pribadi. Saya bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
+      "Halo, aku Saku! Tanya apa saja soal uangmu: pengeluaran, pemasukan, target, atau boleh tidaknya beli sesuatu. Aku jawab dari catatanmu di Sakuin.\n\nAku hanya membahas keuangan pribadi, dan bukan pengganti nasihat investasi, pinjaman, pajak, atau hukum.",
     intent: "FINANCIAL_SUMMARY",
-    cards: [
-      {
-        label: "Mode",
-        value: "Financial only"
-      },
-      {
-        label: "Status",
-        value: "Asisten aktif"
-      }
-    ],
     suggestions: SUGGESTED_PROMPTS,
     createdAt: new Date().toISOString()
   };
@@ -164,16 +154,30 @@ export function createAssistantMessage(
   };
 }
 
+const INTENT_LABELS: Record<string, string> = {
+  FINANCIAL_SUMMARY: "Ringkasan",
+  SPENDING_ANALYSIS: "Pengeluaran",
+  INCOME_ANALYSIS: "Pemasukan",
+  PERIOD_COMPARISON: "Perbandingan",
+  SAVING_ADVICE: "Tips hemat",
+  GOAL_ANALYSIS: "Target",
+  TRANSACTION_DRAFT: "Catat transaksi",
+  OUT_OF_SCOPE: "Di luar topik"
+};
+
 export function formatIntentLabel(intent?: string) {
   if (!intent) {
     return "";
   }
 
-  return intent
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return (
+    INTENT_LABELS[intent] ??
+    intent
+      .toLowerCase()
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+  );
 }
 
 export function formatDraftType(type: AiTransactionDraft["type"]) {

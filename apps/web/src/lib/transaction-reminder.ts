@@ -44,6 +44,10 @@ export const TRANSACTION_REMINDER_POLICY = {
   maxPerDay: 1
 };
 
+/** What the phone shows; the Pengingat page previews the same words. */
+export const TRANSACTION_REMINDER_TITLE = "Hari ini ada jajan yang belum dicatat?";
+export const TRANSACTION_REMINDER_BODY = "Ketuk untuk catat sebentar, cuma 3 detik.";
+
 export const DEFAULT_TRANSACTION_REMINDER_SETTINGS: TransactionReminderSettings = {
   enabled: false,
   frequency: TRANSACTION_REMINDER_POLICY.frequency,
@@ -507,8 +511,8 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
     await LocalNotifications.schedule({
       notifications: [
         {
-          title: "Sakuin",
-          body: "Jangan lupa catat transaksi hari ini agar ritme keuanganmu tetap terjaga.",
+          title: TRANSACTION_REMINDER_TITLE,
+          body: TRANSACTION_REMINDER_BODY,
           id: 1,
           schedule: { at: scheduleDate, repeats: true },
           smallIcon: "ic_stat_icon_config_sample", 
@@ -523,7 +527,7 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
 
 function buildTransactionReminderOptions(): ReminderNotificationOptions {
   return {
-    body: "Ada transaksi yang belum dicatat? Cek 30 detik supaya dashboard tetap akurat.",
+    body: TRANSACTION_REMINDER_BODY,
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",
     tag: "sakuin-transaction-reminder",
@@ -569,7 +573,7 @@ export function shouldSendTransactionReminder(input: {
 export async function sendTransactionReminder(
   userId: string | null | undefined
 ) {
-  const title = "Review transaksi hari ini";
+  const title = TRANSACTION_REMINDER_TITLE;
   const options = buildTransactionReminderOptions();
 
   if ("serviceWorker" in navigator) {

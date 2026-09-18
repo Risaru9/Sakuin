@@ -11,6 +11,11 @@ export function getAccounts() {
   return apiRequest<FinanceAccount[]>("/api/accounts");
 }
 
+/** Active accounts first, then the archived ones (which keep their history). */
+export function getAccountsWithArchived() {
+  return apiRequest<FinanceAccount[]>("/api/accounts?includeArchived=true");
+}
+
 export function createAccount(input: CreateAccountInput) {
   return apiRequest<FinanceAccount>("/api/accounts", {
     method: "POST",
@@ -22,6 +27,18 @@ export function updateAccount(accountId: string, input: UpdateAccountInput) {
   return apiRequest<FinanceAccount>(`/api/accounts/${accountId}`, {
     method: "PUT",
     body: input
+  });
+}
+
+export function archiveAccount(accountId: string) {
+  return apiRequest<FinanceAccount>(`/api/accounts/${accountId}`, {
+    method: "DELETE"
+  });
+}
+
+export function restoreAccount(accountId: string) {
+  return apiRequest<FinanceAccount>(`/api/accounts/${accountId}/restore`, {
+    method: "POST"
   });
 }
 

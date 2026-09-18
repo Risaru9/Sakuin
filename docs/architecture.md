@@ -37,6 +37,24 @@ Frontend code is organized by feature under `apps/web/src/features`.
 
 Page files should not keep long formatter, validator, storage, or business-rule helper blocks. Those helpers should be extracted and tested near the feature.
 
+#### Saku cartoon design system (redesign in progress)
+
+The cartoon redesign lives next to the old styles until every screen is migrated.
+
+- Tokens: `apps/web/src/styles/saku-theme.css` defines Tailwind theme values (`bg-saku-bg`, `text-saku-ink`, `font-saku-head`, `shadow-saku`, `animate-saku-bob`) and the ink outline utilities (`saku-line`, `saku-line-thin`, `saku-press`). Animations stop under `prefers-reduced-motion`.
+- Fonts: Fredoka (headings, numbers) and Nunito (body) are bundled from `@fontsource` in `main.tsx`. The web CSP only allows self-hosted fonts, so do not link Google Fonts.
+- Components: `apps/web/src/components/saku` (mascot, sticker button/chip/card/switch, segmented control, bottom sheet, category badge). New or migrated screens use these instead of `components/ui`.
+- Messages: `components/saku/snack-store.ts` holds one app-wide Saku message ("Kopi tercatat · Batalkan") that `SakuSnackHost` renders. Saving, editing and deleting all use it, so a new message replaces the old one. `highlightIds` marks the affected rows while the message is visible.
+- Bottom sheets can stack (for example "Kategori baru" on top of "Ubah catatan"); Escape closes only the top one. Keep a nested sheet outside any `<form>` of the sheet below it, because React bubbles portal events through the component tree.
+- Quick composer ("kolom catat"): `apps/web/src/features/quick-composer`. Pure guessing and override logic lives in `composer-logic.ts` on top of `quick-transaction-parser.ts`. Saves are optimistic through the shared transaction caches, fall back to the offline queue, mark today as reviewed for reminders, and can be undone from the message. Enable it per page with `<AppShell showQuickComposer>`. Other screens fill or focus it through `requestComposerFocus()` in `composer-bridge.ts`.
+- Navigation: three tabs in `AppShell`: Catatan (`/dashboard`, `/cari`), Laporan (`/laporan`) and Lainnya (`/lainnya` plus the older pages it links to). The old "+" menu, the floating assistant button and the old transaction modals are gone; `/transactions` redirects to Beranda.
+- Beranda (`features/beranda`): the chosen month (`?bulan=YYYY-MM`) loaded whole into the regular transaction list cache (`getMonthListParams`/`fetchWholeMonth`), so composer saves and edits appear without refetching. `buildMonthView` groups entries by local day, adds queued offline entries and computes the header totals. Rows open `EditTransactionSheet`; delete has no confirmation and is undone from the message. `SearchPage` (`/cari`) filters the same month data on the client.
+- Laporan (`features/laporan`, `/laporan?bulan=YYYY-MM&jenis=masuk`): the month's `GET /api/summary?month&year` drives the totals, the change from last month (from `monthlyTrend`) and the category shares. The stacked bar colours only the three biggest categories with a palette validated for colour-blind separation and folds the rest into a grey "Lainnya"; the legend always prints names, percentages and amounts. Budgets come from category limits and open `CategoryLimitSheet`.
+- Category limits: `PUT /api/categories/:id/limit` works for default categories too. Their limits are per user in the `CategoryBudget` table (a default category row is global); custom categories keep `Category.limit`.
+- Interim screens: `/lainnya/rekening` reuses the old account card until the redesigned Lainnya pages land. The Android home-screen widget picker (`features/android-widget`) opens from Lainnya only when `window.AndroidWidgetBridge` can pin widgets.
+- Preview: in development, `/dev/saku` renders every component, and `/dev/beranda`, `/dev/cari`, `/dev/laporan` and `/dev/lainnya` run the real screens against an in-memory API (`features/dev/dev-fake-api.ts`; add `?kosong=1`, `?lambat=1` or `?gagal=1` on first load). These routes and their chunks are excluded from production builds.
+- Global resets in `index.css` stay inside `@layer base`. Unlayered rules override Tailwind utilities. The unlayered mobile rule that forces inputs to 16px (to stop iOS zooming) also beats `text-*` classes, so larger inputs set `fontSize` inline.
+
 ### Shared
 
 `packages/shared` contains contracts that must stay synchronized between API and web.

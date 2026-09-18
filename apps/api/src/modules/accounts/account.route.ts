@@ -8,6 +8,7 @@ import {
   createAccountTransferController,
   getAccountsController,
   getAccountTransfersController,
+  restoreAccountController,
   updateAccountController
 } from "./account.controller.js";
 import {
@@ -45,4 +46,10 @@ accountRoutes.delete(
   authMiddleware,
   validateRequest("param", accountIdParamSchema),
   archiveAccountController
+);
+accountRoutes.post(
+  "/:id/restore",
+  authMiddleware,
+  validateRequest("param", accountIdParamSchema),
+  restoreAccountController
 );

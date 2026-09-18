@@ -159,6 +159,28 @@ async function createTransaction(
   };
 }
 
+function setLimit(token: string, categoryId: string, limit: number | null) {
+  return app.request(`/api/categories/${categoryId}/limit`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ limit })
+  });
+}
+
+async function getVisibleLimit(token: string, categoryId: string) {
+  const response = await app.request("/api/categories", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const body = await parseJson<Array<CategoryData & { limit: number | null }>>(response);
+
+  return body.data.find((category) => category.id === categoryId)?.limit;
+}
+
 beforeAll(async () => {
   await prisma.category.upsert({
     where: {
@@ -551,6 +573,77 @@ describe("Category API", () => {
     expect(response.status).toBe(404);
     expect(body.success).toBe(false);
     expect(body.message).toBe("Kategori tidak ditemukan atau tidak bisa diubah");
+  });
+
+  it("PUT /api/categories/:id/limit menyimpan batas kategori default hanya untuk user tersebut", async () => {
+    const auditEvents: AuditEvent[] = [];
+    setAuditEventSink((event) => {
+      auditEvents.push(event);
+    });
+
+    const response = await setLimit(tokenA, "cat_expense_food", 1200000);
+    const body = await parseJson<CategoryData & { limit: number | null }>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.data).toMatchObject({ id: "cat_expense_food", isDefault: true, limit: 1200000 });
+    expect(auditEvents[0]).toMatchObject({
+      eventType: "category.updated",
+      targetId: "cat_expense_food",
+      metadata: { changedFields: "limit", isDefaultCategory: true, hasLimit: true }
+    });
+
+    expect(await getVisibleLimit(tokenA, "cat_expense_food")).toBe(1200000);
+    expect(await getVisibleLimit(tokenB, "cat_expense_food")).toBeNull();
+
+    const defaultRow = await prisma.category.findUnique({
+      where: { id: "cat_expense_food" },
+      select: { limit: true }
+    });
+    expect(defaultRow?.limit).toBeNull();
+  });
+
+  it("PUT /api/categories/:id/limit mengubah lalu menghapus batas kategori default", async () => {
+    expect((await setLimit(tokenA, "cat_expense_food", 1500000)).status).toBe(200);
+    expect(await getVisibleLimit(tokenA, "cat_expense_food")).toBe(1500000);
+
+    const response = await setLimit(tokenA, "cat_expense_food", null);
+    const body = await parseJson<CategoryData & { limit: number | null }>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.data.limit).toBeNull();
+    expect(await getVisibleLimit(tokenA, "cat_expense_food")).toBeNull();
+    expect(
+      await prisma.categoryBudget.count({ where: { userId: userAId, categoryId: "cat_expense_food" } })
+    ).toBe(0);
+  });
+
+  it("PUT /api/categories/:id/limit menyimpan batas kategori custom milik sendiri", async () => {
+    const response = await setLimit(tokenA, userACategoryId, 400000);
+    const body = await parseJson<CategoryData & { limit: number | null }>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.data.limit).toBe(400000);
+    expect(await getVisibleLimit(tokenA, userACategoryId)).toBe(400000);
+  });
+
+  it("PUT /api/categories/:id/limit menolak kategori pemasukan, kategori user lain, dan nominal tidak valid", async () => {
+    const income = await setLimit(tokenA, "cat_income_salary", 100000);
+    expect(income.status).toBe(400);
+    expect((await parseJson(income)).message).toBe("Batas bulanan hanya untuk kategori pengeluaran");
+
+    const otherUser = await setLimit(tokenA, userBCategoryId, 100000);
+    expect(otherUser.status).toBe(404);
+    expect((await parseJson(otherUser)).message).toBe("Kategori tidak ditemukan");
+
+    expect((await setLimit(tokenA, "cat_expense_food", 0)).status).toBe(400);
+    expect((await setLimit(tokenA, "cat_expense_food", -5000)).status).toBe(400);
+
+    const withoutToken = await app.request("/api/categories/cat_expense_food/limit", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ limit: 100000 })
+    });
+    expect(withoutToken.status).toBe(401);
   });
 
   it("PUT /api/categories/:id gagal mengubah type jika category sudah dipakai transaksi", async () => {

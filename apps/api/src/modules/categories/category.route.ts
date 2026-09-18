@@ -6,12 +6,14 @@ import {
   createCategoryController,
   deleteCategoryController,
   getCategoriesController,
+  setCategoryLimitController,
   updateCategoryController
 } from "./category.controller.js";
 import {
   categoryIdParamSchema,
   createCategorySchema,
   getCategoriesQuerySchema,
+  setCategoryLimitSchema,
   updateCategorySchema
 } from "./category.schema.js";
 
@@ -37,6 +39,15 @@ categoryRoutes.put(
   validateRequest("param", categoryIdParamSchema),
   validateRequest("json", updateCategorySchema),
   updateCategoryController
+);
+
+// Works for default categories too; the limit is stored per user.
+categoryRoutes.put(
+  "/:id/limit",
+  authMiddleware,
+  validateRequest("param", categoryIdParamSchema),
+  validateRequest("json", setCategoryLimitSchema),
+  setCategoryLimitController
 );
 
 categoryRoutes.delete(

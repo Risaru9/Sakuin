@@ -442,11 +442,9 @@ Jika transaksi mulai terasa lambat lagi, cek file:
 
 ```txt
 apps/web/src/features/transactions/transaction-cache.ts
-apps/web/src/features/dashboard/DashboardPage.tsx
-apps/web/src/features/transactions/TransactionsPage.tsx
-apps/web/src/features/transactions/AddTransactionModal.tsx
-apps/web/src/features/transactions/EditTransactionModal.tsx
-apps/web/src/features/transactions/QuickTransactionModal.tsx
+apps/web/src/features/beranda/BerandaPage.tsx
+apps/web/src/features/beranda/use-transaction-actions.ts
+apps/web/src/features/quick-composer/use-quick-composer.ts
 ```
 
 Hal yang perlu dicek:

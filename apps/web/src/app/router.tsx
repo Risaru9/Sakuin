@@ -7,38 +7,34 @@ import {
   useSearchParams
 } from "react-router-dom";
 import {
-  ArrowRight,
   CheckCircle2,
   Download,
   ExternalLink,
   Loader2,
   Mail,
-  MessageSquare,
   MoreVertical,
   RefreshCcw,
   ShieldCheck,
   Share2,
-  Smartphone,
-  Tags,
-  Target,
-  WalletCards
+  Smartphone
 } from "lucide-react";
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
-import { buttonClassName } from "../components/ui/button";
 import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import { useAuth } from "../features/auth/auth-context";
 
-const FEEDBACK_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSfr2eAUDvktXBFQwBo8SkB--6AWi0K9ooIeilwLUZIVxoZLbg/viewform?usp=dialog";
-
-const FEEDBACK_QR_IMAGE_PATH = "/image/feedback-sakuin.png";
 const SUPPORT_EMAIL = "sakuinofficial@gmail.com";
 const ACCOUNT_DELETION_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
   "Request hapus akun Sakuin"
 )}&body=${encodeURIComponent(
   "Halo Sakuin,\n\nSaya ingin mengajukan penghapusan akun Sakuin.\n\nEmail akun Sakuin:\nAlasan opsional:\n\nSaya memahami bahwa tim Sakuin perlu memverifikasi kepemilikan akun sebelum menghapus data."
 )}`;
+
+const LandingPage = lazy(() =>
+  import("../features/landing/LandingPage").then((module) => ({
+    default: module.LandingPage
+  }))
+);
 
 const LoginPage = lazy(() =>
   import("../features/auth/pages/LoginPage").then((module) => ({
@@ -70,26 +66,68 @@ const ResetPasswordPage = lazy(() =>
   }))
 );
 
-const DashboardPage = lazy(() =>
-  import("../features/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage
+const BerandaPage = lazy(() =>
+  import("../features/beranda/BerandaPage").then((module) => ({
+    default: module.BerandaPage
   }))
 );
 
-const TransactionsPage = lazy(() =>
-  import("../features/transactions/TransactionsPage").then((module) => ({
-    default: module.TransactionsPage
+const SearchPage = lazy(() =>
+  import("../features/beranda/SearchPage").then((module) => ({
+    default: module.SearchPage
   }))
 );
 
-const GoalsPage = lazy(() =>
-  import("../features/goals/GoalsPage").then((module) => ({
-    default: module.GoalsPage
+const LaporanPage = lazy(() =>
+  import("../features/laporan/LaporanPage").then((module) => ({
+    default: module.LaporanPage
+  }))
+);
+
+const LainnyaPage = lazy(() =>
+  import("../features/lainnya/LainnyaPage").then((module) => ({
+    default: module.LainnyaPage
+  }))
+);
+
+const RekeningPage = lazy(() =>
+  import("../features/lainnya/RekeningPage").then((module) => ({
+    default: module.RekeningPage
+  }))
+);
+
+const KategoriPage = lazy(() =>
+  import("../features/lainnya/KategoriPage").then((module) => ({
+    default: module.KategoriPage
+  }))
+);
+
+const BerulangPage = lazy(() =>
+  import("../features/lainnya/BerulangPage").then((module) => ({
+    default: module.BerulangPage
+  }))
+);
+
+const PengingatPage = lazy(() =>
+  import("../features/lainnya/PengingatPage").then((module) => ({
+    default: module.PengingatPage
+  }))
+);
+
+const AkunPage = lazy(() =>
+  import("../features/lainnya/AkunPage").then((module) => ({
+    default: module.AkunPage
+  }))
+);
+
+const TargetPage = lazy(() =>
+  import("../features/lainnya/TargetPage").then((module) => ({
+    default: module.TargetPage
   }))
 );
 
 const ExportPage = lazy(() =>
-  import("../features/export/ExportPage").then((module) => ({
+  import("../features/lainnya/ExportPage").then((module) => ({
     default: module.ExportPage
   }))
 );
@@ -106,6 +144,55 @@ const AsistenPage = lazy(() =>
     default: module.AsistenPage
   }))
 );
+
+// Development-only previews; the ternaries let the production build drop the chunks.
+const SakuPlaygroundPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/SakuPlaygroundPage").then((module) => ({
+        default: module.SakuPlaygroundPage
+      }))
+    )
+  : null;
+
+const BerandaPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.BerandaPreviewPage
+      }))
+    )
+  : null;
+
+const SearchPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.SearchPreviewPage
+      }))
+    )
+  : null;
+
+const LaporanPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LaporanPreviewPage
+      }))
+    )
+  : null;
+
+const LainnyaPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LainnyaPreviewPage
+      }))
+    )
+  : null;
+
+const LainnyaSectionPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LainnyaSectionPreviewPage
+      }))
+    )
+  : null;
 
 function LoadingScreen() {
   return (
@@ -160,7 +247,7 @@ function RouteErrorFallback() {
           className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
           to="/dashboard"
         >
-          Kembali ke Dashboard
+          Kembali ke Catatan
         </Link>
       </section>
     </main>
@@ -193,479 +280,6 @@ function GuestRoute({ children }: { children: ReactNode }) {
   }
 
   return <PageSuspense>{children}</PageSuspense>;
-}
-
-function HomePage() {
-  const featureCards = [
-    {
-      icon: WalletCards,
-      title: "Catat transaksi",
-      description:
-        "Input pemasukan dan pengeluaran harian tanpa spreadsheet manual."
-    },
-    {
-      icon: Tags,
-      title: "Rapikan kategori",
-      description:
-        "Pisahkan uang makan, transport, hiburan, tabungan, dan kebutuhan lain."
-    },
-    {
-      icon: Target,
-      title: "Pantau target",
-      description:
-        "Lihat progress tabungan supaya tujuan finansial tidak cuma jadi niat."
-    },
-    {
-      icon: Download,
-      title: "Export laporan",
-      description:
-        "Unduh data saat kamu butuh arsip, audit pribadi, atau analisis lanjutan."
-    }
-  ];
-
-  const usageSteps = [
-    {
-      title: "Buat akun atau login",
-      description:
-        "Mulai dari akun pribadi agar data keuanganmu tersimpan terpisah dan aman."
-    },
-    {
-      title: "Catat uang masuk dan keluar",
-      description:
-        "Masukkan nominal, kategori, tanggal, dan catatan singkat saat transaksi terjadi."
-    },
-    {
-      title: "Baca ringkasan harian",
-      description:
-        "Gunakan dashboard untuk melihat saldo, pemasukan, pengeluaran, dan tren."
-    },
-    {
-      title: "Perbaiki kebiasaan",
-      description:
-        "Review pola pengeluaran, set target tabungan, lalu ambil keputusan lebih sadar."
-    }
-  ];
-
-  const benefits = [
-    "Tidak perlu mengingat transaksi dari kepala.",
-    "Lebih cepat sadar saat pengeluaran mulai bocor.",
-    "Target tabungan terlihat jelas dan mudah dipantau.",
-    "Data bisa diekspor saat kamu butuh laporan."
-  ];
-
-  return (
-    <main className="min-h-screen bg-white text-[var(--sakuin-text)] selection:bg-[var(--sakuin-primary-soft)]">
-      <section className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        <header className="sticky top-4 z-50 flex items-center justify-between rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 py-3 shadow-sm sm:px-5">
-          <Link className="min-w-0" to="/">
-            <SakuinIdentityLogo />
-          </Link>
-          <div className="flex shrink-0 items-center gap-2.5">
-            <Link
-              className={buttonClassName({
-                variant: "ghost",
-                size: "sm",
-                className: "hidden font-semibold !text-[var(--sakuin-text)] hover:!bg-[var(--sakuin-primary-soft)] sm:inline-flex"
-              })}
-              to="/privacy"
-            >
-              Privasi
-            </Link>
-            <Link
-              className={buttonClassName({
-                variant: "ghost",
-                size: "sm",
-                className: "hidden font-semibold !text-[var(--sakuin-text)] hover:!bg-[var(--sakuin-primary-soft)] sm:inline-flex"
-              })}
-              to="/login"
-            >
-              Login
-            </Link>
-            <Link
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-5 text-sm font-semibold !text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sakuin-focus)]"
-              to="/register"
-            >
-              <span>Daftar</span>
-              <ArrowRight className="ml-2 h-4 w-4 !text-white" />
-            </Link>
-          </div>
-        </header>
-
-        <section className="grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-14">
-          <div className="flex flex-col items-start">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary-soft)] px-3.5 py-1.5 text-xs font-bold text-[var(--sakuin-text)]">
-              <ShieldCheck className="h-4 w-4" />
-              Catat uang pribadi dengan lebih sadar
-            </div>
-
-            <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-5xl lg:text-6xl xl:text-[4rem] xl:leading-[1.05]">
-              Sakuin membantu kamu tahu uangmu pergi ke mana.
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-700 sm:text-lg">
-              Sakuin adalah web app pengelola keuangan pribadi untuk mencatat
-              pemasukan, pengeluaran, kategori, dan target tabungan. Tujuannya
-              sederhana: membantu kamu membangun kebiasaan finansial yang rapi
-              tanpa proses yang rumit.
-            </p>
-
-            <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-6 text-base font-bold !text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] sm:w-auto"
-                to="/register"
-              >
-                <span>Mulai catat sekarang</span>
-                <ArrowRight className="ml-2 h-4 w-4 !text-white" />
-              </Link>
-              <Link
-                className={buttonClassName({
-                  variant: "secondary",
-                  size: "lg",
-                  className:
-                    "min-h-12 w-full rounded-xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-6 text-base font-bold !text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:w-auto"
-                })}
-                to="/login"
-              >
-                Masuk akun
-              </Link>
-              <div className="w-full sm:w-auto">
-                <a
-                  href="/downloads/sakuin.apk"
-                  download="sakuin.apk"
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50 sm:w-auto"
-                >
-                  <Download className="h-5 w-5" />
-                  <span>Download Aplikasi</span>
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-[var(--sakuin-text)]">30 detik</p>
-                <p className="mt-1 text-sm font-medium text-zinc-600">
-                  Cukup untuk review transaksi harian.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-4 shadow-sm">
-                <p className="text-2xl font-black text-[var(--sakuin-text)]">4 fitur</p>
-                <p className="mt-1 text-sm font-medium text-zinc-700">
-                  Transaksi, kategori, goals, export.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-[var(--sakuin-text)]">Mobile</p>
-                <p className="mt-1 text-sm font-medium text-zinc-600">
-                  Nyaman dipakai dari HP sehari-hari.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mx-auto w-full max-w-md lg:ml-auto lg:max-w-lg">
-            <div className="rounded-3xl border border-[var(--sakuin-secondary)] bg-white p-4 shadow-[0_24px_60px_rgba(37,99,235,0.16)] sm:p-5">
-              <div className="rounded-2xl bg-[var(--sakuin-secondary)] p-5 text-white sm:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-medium text-zinc-400">Saldo bulan ini</p>
-                    <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Rp 7.500.000</p>
-                  </div>
-                  <span className="rounded-full bg-[var(--sakuin-primary)] px-2.5 py-1 text-xs font-bold text-white">
-                    Terkontrol
-                  </span>
-                </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                    <p className="text-xs font-medium text-zinc-400">Masuk</p>
-                    <p className="mt-0.5 text-sm font-black text-white">+ Rp 10 jt</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                    <p className="text-xs font-medium text-zinc-400">Keluar</p>
-                    <p className="mt-0.5 text-sm font-black text-white">- Rp 2,5 jt</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-4">
-                  <p className="text-xs font-bold uppercase text-zinc-500">Goals aktif</p>
-                  <p className="mt-0.5 text-xl font-black text-slate-900">3</p>
-                </div>
-                <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-4">
-                  <p className="text-xs font-bold uppercase text-zinc-500">Export</p>
-                  <p className="mt-0.5 text-xl font-black text-slate-900">3 Jenis</p>
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-2xl border border-[var(--sakuin-border)] bg-white p-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white">
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-[var(--sakuin-text)]">Dibangun dari feedback</p>
-                    <p className="mt-0.5 text-xs font-medium leading-relaxed text-zinc-600">
-                      Masukan user dipakai untuk menentukan fitur berikutnya.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-y border-[var(--sakuin-secondary)] bg-[var(--sakuin-secondary)] py-12 text-white sm:py-16">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
-            <div>
-              <p className="text-sm font-bold uppercase text-white">
-                Apa itu Sakuin?
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                Tempat sederhana untuk mencatat dan memahami keuangan pribadi.
-              </h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                "Bukan aplikasi akuntansi rumit.",
-                "Bukan spreadsheet yang harus dirapikan manual.",
-                "Bukan sekadar catatan, tapi bahan evaluasi."
-              ].map((item) => (
-                <div
-                  className="rounded-2xl border border-white/15 bg-white/5 p-5"
-                  key={item}
-                >
-                  <p className="text-sm font-semibold leading-6 text-zinc-100">
-                    {item}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-14 sm:py-18">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
-            <div>
-              <p className="text-sm font-bold uppercase text-zinc-500">
-                Cara menggunakan
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-4xl">
-                Alurnya dibuat untuk kebiasaan harian, bukan pekerjaan tambahan.
-              </h2>
-              <p className="mt-4 text-base leading-7 text-zinc-600">
-                Kamu cukup mencatat transaksi, membaca ringkasan, lalu melakukan
-                evaluasi kecil. Semakin rutin dipakai, semakin jelas pola uangmu.
-              </p>
-            </div>
-
-            <div className="grid gap-3">
-              {usageSteps.map((step, index) => (
-                <div
-                  className="grid grid-cols-[3rem_1fr] gap-4 rounded-2xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm"
-                  key={step.title}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-base font-black text-white">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-[var(--sakuin-text)]">
-                      {step.title}
-                    </h3>
-                    <p className="mt-1 text-sm leading-6 text-zinc-600">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-12 sm:py-16">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center justify-center rounded-full bg-[var(--sakuin-primary-soft)] px-3 py-1 text-xs font-bold uppercase text-[var(--sakuin-text)]">
-              Fungsi utama
-            </span>
-            <h2 className="mt-4 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
-              Fitur yang fokus pada masalah nyata user.
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 sm:text-base">
-              Tidak dibuat untuk terlihat ramai. Setiap fitur membantu kamu
-              mencatat, memahami, atau mengevaluasi uang pribadi.
-            </p>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {featureCards.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm"
-                  key={feature.title}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--sakuin-primary)] text-white">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-4 text-base font-black text-[var(--sakuin-text)]">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    {feature.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="py-12 sm:py-16">
-          <div className="grid grid-cols-1 gap-6 rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-            <div>
-              <p className="text-sm font-bold uppercase text-white/80">
-                Keuntungan untuk user
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-white">
-                Yang berubah bukan cuma catatan, tapi cara melihat uang.
-              </h2>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {benefits.map((benefit) => (
-                <div
-                  className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-4"
-                  key={benefit}
-                >
-                  <div className="flex gap-3">
-                    <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--sakuin-secondary)]" />
-                    <p className="text-sm font-semibold leading-6 text-[var(--sakuin-text)]">
-                      {benefit}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="feedback" className="py-12 sm:py-16">
-          <div className="grid grid-cols-1 gap-8 rounded-3xl border border-[var(--sakuin-border)] bg-zinc-50 p-5 shadow-sm sm:p-8 lg:grid-cols-[1fr_0.8fr] lg:items-center lg:gap-12">
-            <div>
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
-                <MessageSquare className="h-6 w-6" />
-              </div>
-              <h2 className="mt-4 text-2xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-3xl">
-                Punya saran, keluhan, atau ide fitur?
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-zinc-600 sm:text-base">
-                Sakuin terus dikembangkan berdasarkan kebutuhan nyata pengguna.
-                Feedback kamu membantu menentukan fitur mana yang paling layak
-                diprioritaskan berikutnya.
-              </p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <a
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-6 text-base font-bold !text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] sm:w-auto"
-                  href={FEEDBACK_FORM_URL}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <span className="text-white">Isi Form Feedback</span>
-                  <ExternalLink className="ml-2 h-4 w-4 !text-white" />
-                </a>
-                <Link
-                  className={buttonClassName({
-                    variant: "secondary",
-                    size: "lg",
-                    className:
-                      "min-h-12 w-full rounded-xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-6 font-bold !text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:w-auto"
-                  })}
-                  to="/register"
-                >
-                  Coba Sakuin
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5 text-center sm:p-6">
-              <div className="mx-auto max-w-[14rem] rounded-xl border border-[var(--sakuin-border)] bg-white p-3">
-                <img
-                  alt="QR Code Form Feedback Sakuin"
-                  className="mx-auto aspect-square w-full object-contain"
-                  loading="lazy"
-                  src={FEEDBACK_QR_IMAGE_PATH}
-                />
-              </div>
-              <h3 className="mt-4 text-sm font-black text-[var(--sakuin-text)]">
-                Scan QR untuk memberi feedback
-              </h3>
-              <p className="mx-auto mt-1 max-w-[16rem] text-xs font-medium text-zinc-600">
-                Arahkan kamera HP ke QR code, atau klik tombol di atas.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="pb-16 pt-8 text-center">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-[var(--sakuin-border)] bg-white p-8 shadow-sm sm:p-12">
-            <h2 className="text-3xl font-black tracking-tight text-[var(--sakuin-text)] sm:text-4xl">
-              Mulai pahami keuanganmu dari transaksi hari ini.
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-zinc-600 sm:text-base">
-              Tidak perlu menunggu akhir bulan. Catat sedikit demi sedikit,
-              lalu biarkan datanya membantu kamu mengambil keputusan.
-            </p>
-
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-6 text-base font-bold !text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)] sm:w-auto"
-                to="/register"
-              >
-                <span>Buat akun gratis</span>
-                <ArrowRight className="ml-2 h-4 w-4 !text-white" />
-              </Link>
-
-              <Link
-                className={buttonClassName({
-                  variant: "secondary",
-                  size: "lg",
-                  className:
-                    "min-h-12 w-full rounded-xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] px-6 font-bold !text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] sm:w-auto"
-                })}
-                to="/login"
-              >
-                Login
-              </Link>
-
-              <div className="w-full sm:w-auto">
-                <a
-                  href="/downloads/sakuin.apk"
-                  download="sakuin.apk"
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50 sm:w-auto"
-                >
-                  <Download className="h-5 w-5" />
-                  <span>Download Aplikasi</span>
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-zinc-500">
-              <Link className="hover:text-[var(--sakuin-text)]" to="/privacy">
-                Kebijakan Privasi
-              </Link>
-              <span aria-hidden="true">.</span>
-              <Link className="hover:text-[var(--sakuin-text)]" to="/account-deletion">
-                Hapus Akun
-              </Link>
-              <span aria-hidden="true">.</span>
-              <Link className="hover:text-[var(--sakuin-text)]" to="/install">
-                Install Sakuin
-              </Link>
-            </div>
-          </div>
-        </section>
-      </section>
-    </main>
-  );
 }
 
 function InstallGuidePage() {
@@ -1185,12 +799,28 @@ function EmailImportCallbackPage() {
   );
 }
 
+// Old Profile links: only the Gmail section still lives there; the rest moved under Lainnya.
+function ProfileRedirect() {
+  const [searchParams] = useSearchParams();
+  const section = searchParams.get("section");
+
+  if (section === "automation") {
+    return (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    );
+  }
+
+  return <Navigate replace to={section === "notifications" ? "/lainnya/pengingat" : "/lainnya/akun"} />;
+}
+
 const routes = [
   {
     path: "/",
     element: (
       <GuestRoute>
-        <HomePage />
+        <LandingPage />
       </GuestRoute>
     )
   },
@@ -1250,7 +880,87 @@ const routes = [
     path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <DashboardPage />
+        <BerandaPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/cari",
+    element: (
+      <ProtectedRoute>
+        <SearchPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/laporan",
+    element: (
+      <ProtectedRoute>
+        <LaporanPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya",
+    element: (
+      <ProtectedRoute>
+        <LainnyaPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/rekening",
+    element: (
+      <ProtectedRoute>
+        <RekeningPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/target",
+    element: (
+      <ProtectedRoute>
+        <TargetPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/berulang",
+    element: (
+      <ProtectedRoute>
+        <BerulangPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/pengingat",
+    element: (
+      <ProtectedRoute>
+        <PengingatPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/export",
+    element: (
+      <ProtectedRoute>
+        <ExportPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/akun",
+    element: (
+      <ProtectedRoute>
+        <AkunPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/kategori",
+    element: (
+      <ProtectedRoute>
+        <KategoriPage />
       </ProtectedRoute>
     )
   },
@@ -1265,37 +975,80 @@ const routes = [
     )
   },
   {
+    // The transaction list now lives on Beranda; keep old links and bookmarks working.
     path: "/transactions",
-    element: (
-      <ProtectedRoute>
-        <TransactionsPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/dashboard" replace />
   },
   {
     path: "/goals",
-    element: (
-      <ProtectedRoute>
-        <GoalsPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/lainnya/target" replace />
   },
   {
     path: "/export",
-    element: (
-      <ProtectedRoute>
-        <ExportPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/lainnya/export" replace />
   },
   {
     path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    )
+    element: <ProfileRedirect />
   },
+
+  ...(SakuPlaygroundPage &&
+  BerandaPreviewPage &&
+  SearchPreviewPage &&
+  LaporanPreviewPage &&
+  LainnyaPreviewPage &&
+  LainnyaSectionPreviewPage
+    ? [
+        {
+          path: "/dev/saku",
+          element: (
+            <PageSuspense>
+              <SakuPlaygroundPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/beranda",
+          element: (
+            <PageSuspense>
+              <BerandaPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/cari",
+          element: (
+            <PageSuspense>
+              <SearchPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/laporan",
+          element: (
+            <PageSuspense>
+              <LaporanPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/lainnya",
+          element: (
+            <PageSuspense>
+              <LainnyaPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/lainnya/:section",
+          element: (
+            <PageSuspense>
+              <LainnyaSectionPreviewPage />
+            </PageSuspense>
+          )
+        }
+      ]
+    : []),
 
   {
     path: "*",

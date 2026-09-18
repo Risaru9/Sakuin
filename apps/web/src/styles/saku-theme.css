@@ -1,0 +1,168 @@
+/*
+ * Saku cartoon design system (redesign 2026).
+ * Tokens become Tailwind utilities, e.g. bg-saku-bg, text-saku-ink, font-saku-head,
+ * shadow-saku, animate-saku-bob. Existing screens keep using sakuin-color-palette.css
+ * until they are migrated.
+ */
+
+@theme {
+  --color-saku-bg: #fff7e8;
+  --color-saku-paper: #ffffff;
+  --color-saku-ink: #1d1a33;
+  --color-saku-muted: #625d78;
+  --color-saku-dash: #ecdcbc;
+  --color-saku-track: #f3e8d2;
+  --color-saku-accent: #2b63e0;
+  --color-saku-accent-soft: #dde8ff;
+  --color-saku-coin: #ffc83d;
+  --color-saku-coin-soft: #fff0c2;
+  --color-saku-income: #137a50;
+  --color-saku-income-soft: #d4f5e0;
+  --color-saku-watch: #ffc83d;
+  --color-saku-watch-text: #8a5a00;
+  --color-saku-over: #ff6b5b;
+  --color-saku-over-soft: #ffe1dc;
+  --color-saku-over-text: #c62828;
+  --color-saku-mascot: #74aaff;
+  --color-saku-cheek: #ff9fb2;
+  --color-saku-scrim: rgb(29 26 51 / 0.45);
+
+  --font-saku-head: "Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
+  --font-saku-body: "Nunito", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-saku-xs: 2px 2px 0 var(--color-saku-ink);
+  --shadow-saku-sm: 3px 3px 0 var(--color-saku-ink);
+  --shadow-saku: 4px 4px 0 var(--color-saku-ink);
+
+  --radius-saku-control: 16px;
+  --radius-saku-card: 22px;
+  --radius-saku-hero: 26px;
+  --radius-saku-sheet: 30px;
+
+  --animate-saku-bob: saku-bob 2.6s ease-in-out infinite;
+  --animate-saku-pop: saku-pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  --animate-saku-twinkle: saku-twinkle 2.2s ease-in-out infinite;
+  --animate-saku-wiggle: saku-wiggle 1.2s ease-in-out infinite;
+  --animate-saku-rise: saku-rise 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  --animate-saku-fade: saku-fade 0.2s ease-out both;
+
+  @keyframes saku-bob {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-3deg);
+    }
+
+    50% {
+      transform: translateY(-4px) rotate(3deg);
+    }
+  }
+
+  @keyframes saku-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    70% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes saku-twinkle {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.75);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes saku-wiggle {
+    0%,
+    100% {
+      transform: rotate(-7deg);
+    }
+
+    50% {
+      transform: rotate(7deg);
+    }
+  }
+
+  @keyframes saku-rise {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes saku-fade {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Thick cartoon ink outlines. */
+@utility saku-line {
+  border: 2.5px solid var(--color-saku-ink);
+}
+
+@utility saku-line-thin {
+  border: 2px solid var(--color-saku-ink);
+}
+
+@utility saku-line-hair {
+  border: 1.5px solid var(--color-saku-ink);
+}
+
+@utility saku-dash-bottom {
+  border-bottom: 2px dashed var(--color-saku-dash);
+}
+
+/* Pressed sticker: the offset shadow collapses, like pushing a real sticker. */
+@utility saku-press {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background-color 160ms ease;
+
+  &:active:not(:disabled) {
+    box-shadow: none;
+    transform: translate(2px, 2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-saku-bob,
+  .animate-saku-pop,
+  .animate-saku-twinkle,
+  .animate-saku-wiggle,
+  .animate-saku-rise,
+  .animate-saku-fade {
+    animation: none;
+  }
+
+  .saku-press,
+  .saku-press:active:not(:disabled) {
+    transform: none;
+    transition: none;
+  }
+}

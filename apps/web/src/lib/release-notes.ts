@@ -1,11 +1,12 @@
-export const SAKUIN_RELEASE_VERSION = "2026.05.27-mobile-app-readiness";
+export const SAKUIN_RELEASE_VERSION = "2026.09-saku-redesign";
 
-export const SAKUIN_RELEASE_TITLE = "Sakuin makin siap jadi aplikasi";
+export const SAKUIN_RELEASE_TITLE = "Halo, ini Sakuin yang baru!";
 
 export const SAKUIN_RELEASE_NOTES = [
-  "AI Assistant sekarang terasa seperti full room chat di mobile.",
-  "Pengingat transaksi sudah lebih jelas, bisa dites, dan tidak perlu install ulang.",
-  "PWA, install flow, dan kesiapan menuju Android/Play Store sudah dipoles."
+  "Catat cukup satu baris di bawah layar, misalnya \"kopi 18rb\", lalu Enter.",
+  "Menu bawah jadi tiga: Catatan, Laporan, dan Lainnya.",
+  "Rekening, kategori, target, dan pengingat sekarang ada di Lainnya.",
+  "Ketuk Saku di kolom catat untuk bertanya soal uangmu."
 ];
 
 const RELEASE_NOTES_STORAGE_KEY = "sakuin_seen_release_notes_version";

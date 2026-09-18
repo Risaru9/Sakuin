@@ -9,6 +9,7 @@ import {
   createAccountTransfer,
   getAccounts,
   getAccountTransfers,
+  restoreAccount,
   updateAccount
 } from "./account.service.js";
 import type {
@@ -29,7 +30,8 @@ function getAuthenticatedUserId(c: Context<AppEnv>) {
 }
 
 export async function getAccountsController(c: Context<AppEnv>) {
-  const accounts = await getAccounts(getAuthenticatedUserId(c));
+  const includeArchived = c.req.query("includeArchived") === "true";
+  const accounts = await getAccounts(getAuthenticatedUserId(c), includeArchived);
   return successResponse(c, "Daftar rekening berhasil diambil", accounts);
 }
 
@@ -66,6 +68,12 @@ export async function archiveAccountController(c: Context<AppEnv>) {
   const param = c.get("validatedParam") as AccountIdParam;
   const account = await archiveAccount(getAuthenticatedUserId(c), param.id);
   return successResponse(c, "Rekening berhasil diarsipkan", account);
+}
+
+export async function restoreAccountController(c: Context<AppEnv>) {
+  const param = c.get("validatedParam") as AccountIdParam;
+  const account = await restoreAccount(getAuthenticatedUserId(c), param.id);
+  return successResponse(c, "Rekening diaktifkan lagi", account);
 }
 
 export async function createAccountTransferController(c: Context<AppEnv>) {

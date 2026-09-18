@@ -1,20 +1,10 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  BarChart3,
-  Download,
-  Home,
-  Settings,
-  Target,
-  WifiOff
-} from "lucide-react";
+import { ChartPie, LayoutGrid, List, WifiOff, type LucideIcon } from "lucide-react";
 import { SakuinIdentityLogo } from "../brand/SakuinIdentityLogo";
-import {
-  DesktopMainActionMenu,
-  FloatingAssistantButton,
-  MobileMainActionMenu
-} from "./MobileQuickTransactionAction";
 import { useAuth } from "../../features/auth/auth-context";
+import { QuickComposer } from "../../features/quick-composer/QuickComposer";
+import { cn } from "../../lib/cn";
 import {
   getOfflineQueue,
   hasLegacyOfflineQueue,
@@ -25,111 +15,65 @@ type AppShellProps = {
   children: ReactNode;
   profileName?: string;
   profileEmail?: string;
+  /** Docks the "kolom catat" at the bottom of the page. */
+  showQuickComposer?: boolean;
+  /** Narrower side padding on phones for edge-to-edge Saku screens. */
+  bleed?: boolean;
+  /** Hide the bottom navigation, e.g. on full-screen sub pages such as search. */
+  mobileNav?: boolean;
+  /**
+   * "page": the screen shows its own offline indicator, so the banner only appears for the
+   * quarantined legacy queue, which needs the full explanation.
+   */
+  offlineNotice?: "banner" | "page";
 };
 
-const primaryNavigationItems = [
+type NavigationItem = {
+  label: string;
+  icon: LucideIcon;
+  to: string;
+  /** Other paths that belong to this tab. */
+  matches: string[];
+};
+
+const navigationItems: NavigationItem[] = [
+  { label: "Catatan", icon: List, to: "/dashboard", matches: ["/dashboard", "/cari"] },
+  { label: "Laporan", icon: ChartPie, to: "/laporan", matches: ["/laporan"] },
   {
-    label: "Home",
-    sidebarLabel: "Dashboard",
-    icon: Home,
-    to: "/dashboard"
-  },
-  {
-    label: "Transaksi",
-    sidebarLabel: "Transaksi",
-    icon: BarChart3,
-    to: "/transactions"
-  },
-  {
-    label: "Profile",
-    sidebarLabel: "Profile",
-    icon: Settings,
-    to: "/profile"
-  },
-  {
-    label: "Goals",
-    sidebarLabel: "Goals",
-    icon: Target,
-    to: "/goals"
-  },
-  {
-    label: "Export",
-    sidebarLabel: "Export",
-    icon: Download,
-    to: "/export"
+    label: "Lainnya",
+    icon: LayoutGrid,
+    to: "/lainnya",
+    // Screens reached from Lainnya keep that tab selected.
+    matches: ["/lainnya", "/profile", "/goals", "/export", "/asisten"]
   }
 ];
 
-const ASSISTANT_ROUTE = "/asisten";
-
-const desktopNavigationItems = [
-  primaryNavigationItems[0],
-  primaryNavigationItems[1],
-  primaryNavigationItems[3],
-  primaryNavigationItems[4],
-  primaryNavigationItems[2]
-];
-
-const leftMobileNavigationItems = [
-  primaryNavigationItems[0],
-  primaryNavigationItems[1]
-];
-
-const rightMobileNavigationItems = [
-  primaryNavigationItems[3],
-  primaryNavigationItems[2]
-];
-
-function isActivePath(currentPath: string, targetPath: string) {
-  if (targetPath === "/dashboard") {
-    return currentPath === "/" || currentPath === "/dashboard";
-  }
-
-  return currentPath.startsWith(targetPath);
+function isActiveItem(currentPath: string, item: NavigationItem) {
+  return item.matches.some((path) => currentPath === path || currentPath.startsWith(`${path}/`));
 }
 
-function MobileNavigationLink({
-  item,
-  currentPath
-}: {
-  item: (typeof primaryNavigationItems)[number];
-  currentPath: string;
-}) {
+function MobileNavigationLink({ item, active }: { item: NavigationItem; active: boolean }) {
   const Icon = item.icon;
-  const active = isActivePath(currentPath, item.to);
 
   return (
     <Link
       aria-current={active ? "page" : undefined}
-      className={
-        active
-          ? "sakuin-ripple relative flex min-h-14 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-1.5 py-2 text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)]"
-          : "sakuin-press flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-2 text-slate-500 transition hover:bg-[var(--sakuin-primary-soft)] active:bg-[var(--sakuin-primary-soft)] active:text-[var(--sakuin-primary)] motion-reduce:transition-none"
-      }
+      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
       to={item.to}
     >
-      {active ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-4 bottom-1 h-1 rounded-full bg-white/70 animate-[sakuinNavMarker_1.8s_ease-in-out_infinite]"
-        />
-      ) : null}
-      <Icon
-        aria-hidden="true"
-        className={
-          active
-            ? "sakuin-icon-bounce relative h-5 w-5 text-white"
-            : "sakuin-icon-bounce h-5 w-5 text-slate-500"
-        }
-      />
-
       <span
-        className={
-          active
-            ? "relative text-[10px] font-black text-white"
-            : "text-[10px] font-black text-slate-500"
-        }
+        className={cn(
+          "flex h-8 w-[60px] items-center justify-center rounded-full border-2",
+          active ? "border-saku-ink bg-saku-coin shadow-saku-xs" : "border-transparent"
+        )}
       >
+        <Icon
+          aria-hidden="true"
+          className={cn("size-[21px]", active ? "text-saku-ink" : "text-saku-muted")}
+          strokeWidth={2.4}
+        />
+      </span>
+      <span className={cn("text-xs font-black", active ? "text-saku-ink" : "text-saku-muted")}>
         {item.label}
       </span>
     </Link>
@@ -139,7 +83,11 @@ function MobileNavigationLink({
 export function AppShell({
   children,
   profileName,
-  profileEmail
+  profileEmail,
+  showQuickComposer = false,
+  bleed = false,
+  mobileNav = true,
+  offlineNotice = "banner"
 }: AppShellProps) {
   const location = useLocation();
   const { user } = useAuth();
@@ -190,15 +138,14 @@ export function AppShell({
 
   const displayedName = profileName ?? user?.name ?? "User";
   const displayedEmail = profileEmail ?? user?.email ?? "-";
-  const isAssistantRoute = isActivePath(location.pathname, ASSISTANT_ROUTE);
-  const shouldShowMobileNavigation = !isAssistantRoute;
+  const isAssistantRoute = location.pathname.startsWith("/asisten");
+  const shouldShowMobileNavigation = mobileNav && !isAssistantRoute;
 
   const showBanner =
-    isOffline ||
-    servedFromCache ||
-    offlineQueueLength > 0 ||
-    hasQuarantinedLegacyQueue;
-  
+    hasQuarantinedLegacyQueue ||
+    (offlineNotice === "banner" &&
+      (isOffline || servedFromCache || offlineQueueLength > 0));
+
   let bannerMessage = "";
   if (hasQuarantinedLegacyQueue) {
     bannerMessage =
@@ -215,99 +162,92 @@ export function AppShell({
 
   return (
     <main
-      className={[
-        "min-h-screen bg-[var(--sakuin-bg)] text-[var(--sakuin-text)] lg:pb-0",
-        shouldShowMobileNavigation
-          ? "pb-[var(--sakuin-mobile-content-bottom)]"
-          : "pb-0"
-      ].join(" ")}
+      className={cn(
+        "min-h-screen bg-saku-bg font-saku-body text-saku-ink lg:pb-0",
+        !shouldShowMobileNavigation
+          ? "pb-0"
+          : showQuickComposer
+            ? "pb-[var(--sakuin-mobile-nav-height)]"
+            : "pb-[var(--sakuin-mobile-content-bottom)]"
+      )}
     >
       <div className="mx-auto grid w-full max-w-[1440px] lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="sticky top-0 hidden h-screen border-r border-[var(--sakuin-border)] bg-white/95 px-5 py-6 shadow-[12px_0_35px_rgba(15,23,42,0.03)] lg:flex lg:flex-col">
+        <aside className="sticky top-0 hidden h-screen border-r-[2.5px] border-saku-ink bg-saku-paper px-5 py-6 lg:flex lg:flex-col">
           <Link
-            className="mb-8 rounded-2xl px-1 py-1 transition hover:bg-[var(--sakuin-primary-soft)]"
+            className="mb-8 rounded-2xl px-1 py-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
             to="/dashboard"
           >
             <SakuinIdentityLogo subtitle="Personal finance app" size="md" />
           </Link>
 
-          <nav className="grid content-start gap-1.5">
-            {desktopNavigationItems.map((item) => {
+          <nav aria-label="Navigasi utama" className="grid content-start gap-2">
+            {navigationItems.map((item) => {
               const Icon = item.icon;
-              const active = isActivePath(location.pathname, item.to);
+              const active = isActiveItem(location.pathname, item);
 
               return (
                 <Link
                   aria-current={active ? "page" : undefined}
-                  className={
+                  className={cn(
+                    "flex min-h-12 items-center gap-3 rounded-2xl border-2 px-3 text-[15px] font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30",
                     active
-                      ? "sakuin-ripple group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--sakuin-primary)] px-3 py-3 text-sm font-bold shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
-                      : "sakuin-press group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-zinc-600 transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--sakuin-primary-soft)] hover:text-[var(--sakuin-text)]"
-                  }
+                      ? "border-saku-ink bg-saku-coin text-saku-ink shadow-saku-xs"
+                      : "border-transparent text-saku-muted hover:bg-saku-bg hover:text-saku-ink"
+                  )}
                   key={item.to}
                   to={item.to}
                 >
-                  <span
-                    className={
-                      active
-                        ? "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--sakuin-primary)]"
-                        : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition group-hover:bg-white group-hover:text-[var(--sakuin-primary)]"
-                    }
-                  >
-                    <Icon className="sakuin-icon-bounce h-4.5 w-4.5" />
-                  </span>
-
-                  <span className={active ? "relative text-white" : "text-zinc-700"}>
-                    {item.sidebarLabel}
-                  </span>
+                  <Icon aria-hidden="true" className="size-5" strokeWidth={2.4} />
+                  {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-auto rounded-3xl border border-[var(--sakuin-border)] bg-[var(--sakuin-surface-soft)] p-4">
-            <p className="truncate text-sm font-black text-[var(--sakuin-text)]">
-              {displayedName}
-            </p>
-            <p className="mt-1 truncate text-xs font-medium text-zinc-500">
-              {displayedEmail}
-            </p>
+          <div className="saku-line-thin mt-auto rounded-saku-card bg-saku-bg p-4">
+            <p className="truncate text-sm font-black">{displayedName}</p>
+            <p className="mt-1 truncate text-xs font-bold text-saku-muted">{displayedEmail}</p>
           </div>
         </aside>
 
-        <section className="min-w-0 px-4 py-5 sm:px-8 sm:py-8">
+        <section
+          className={cn(
+            "min-w-0 pt-5 sm:px-8 sm:pt-8",
+            bleed ? "px-3" : "px-4",
+            // With the composer, the page fills the screen so the field stays just above the nav.
+            showQuickComposer
+              ? "flex min-h-[calc(100dvh-var(--sakuin-mobile-nav-height))] flex-col pb-2 lg:min-h-screen lg:pb-6"
+              : "pb-5 sm:pb-8"
+          )}
+        >
           {showBanner && (
             <div className="mb-6 flex items-center gap-3 rounded-[var(--sakuin-radius-card)] border border-amber-200 bg-amber-50/80 p-4 text-xs sm:text-sm font-bold text-amber-800 shadow-sm backdrop-blur-md">
               <WifiOff className="h-5 w-5 shrink-0 text-amber-600 animate-pulse" />
               <div>{bannerMessage}</div>
             </div>
           )}
-          {children}
+          {showQuickComposer ? (
+            <>
+              <div className="flex-1">{children}</div>
+              <div className="sticky bottom-[calc(var(--sakuin-mobile-nav-height)+0.5rem)] z-40 mx-auto mt-4 w-full max-w-xl lg:bottom-6">
+                <QuickComposer />
+              </div>
+            </>
+          ) : (
+            children
+          )}
         </section>
       </div>
-
-      <FloatingAssistantButton />
-      <DesktopMainActionMenu />
 
       {shouldShowMobileNavigation ? (
         <nav
           aria-label="Navigasi utama mobile"
-          className="fixed inset-x-0 bottom-0 z-50 min-h-[var(--sakuin-mobile-nav-height)] border-t border-[var(--sakuin-border)] bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-16px_40px_rgba(37,99,235,0.1)] backdrop-blur lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 min-h-[var(--sakuin-mobile-nav-height)] border-t-[2.5px] border-saku-ink bg-saku-paper px-3 pt-1.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] font-saku-body lg:hidden"
         >
-          <div className="mx-auto grid max-w-lg grid-cols-[1fr_1fr_4.75rem_1fr_1fr] items-end gap-1">
-            {leftMobileNavigationItems.map((item) => (
+          <div className="mx-auto grid max-w-lg grid-cols-3">
+            {navigationItems.map((item) => (
               <MobileNavigationLink
-                currentPath={location.pathname}
-                item={item}
-                key={item.to}
-              />
-            ))}
-
-            <MobileMainActionMenu />
-
-            {rightMobileNavigationItems.map((item) => (
-              <MobileNavigationLink
-                currentPath={location.pathname}
+                active={isActiveItem(location.pathname, item)}
                 item={item}
                 key={item.to}
               />
