@@ -8,6 +8,7 @@
 
 import type { AccountTransfer, FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
+import type { Goal } from "../goals/goal.types";
 import type { Transaction } from "../transactions/transaction.types";
 
 type Scenario = { empty: boolean; slow: boolean; failList: boolean };
@@ -115,6 +116,31 @@ export function installFakeApi() {
     }));
 
   let transfers: AccountTransfer[] = [];
+
+  function daysFromNowIso(days: number) {
+    return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+  }
+
+  let goals: Goal[] = scenario.empty
+    ? []
+    : [
+        ["dev-goal-laptop", "Laptop baru", 8_000_000, 3_200_000, daysFromNowIso(104)],
+        ["dev-goal-darurat", "Dana darurat", 5_000_000, 1_500_000, null],
+        ["dev-goal-konser", "Tiket konser", 750_000, 750_000, null]
+      ].map(([id, name, target, current, deadline]) => ({
+        id: String(id),
+        name: String(name),
+        targetAmount: String(target),
+        currentAmount: String(current),
+        deadline: deadline ? String(deadline) : null,
+        description: null,
+        history: [
+          { id: `${id}-h1`, amount: "500000", currentAmount: String(current), createdAt: daysFromNowIso(-17) },
+          { id: `${id}-h2`, amount: "250000", currentAmount: String(Number(current) - 500000), createdAt: daysFromNowIso(-34) }
+        ],
+        createdAt: daysFromNowIso(-60),
+        updatedAt: daysFromNowIso(-16)
+      }));
 
   function accountSummary(account: FinanceAccount) {
     return { id: account.id, name: account.name, type: account.type, icon: account.icon, color: account.color };
@@ -495,7 +521,65 @@ export function installFakeApi() {
     }
 
     if (method === "GET" && path === "/api/goals") {
-      return respond(200, []);
+      return respond(200, goals.map(({ history: _history, ...goal }) => goal));
+    }
+
+    if (method === "POST" && path === "/api/goals") {
+      const input = body as { name: string; targetAmount: string; currentAmount?: string; deadline?: string | null };
+      const now = new Date().toISOString();
+      const current = input.currentAmount ?? "0";
+      const created: Goal = {
+        id: `dev-goal-${nextId++}`,
+        name: input.name,
+        targetAmount: input.targetAmount,
+        currentAmount: current,
+        deadline: input.deadline ? new Date(input.deadline).toISOString() : null,
+        description: null,
+        history: Number(current) > 0 ? [{ id: `dev-gh-${nextId++}`, amount: current, currentAmount: current, createdAt: now }] : [],
+        createdAt: now,
+        updatedAt: now
+      };
+      goals.push(created);
+      return respond(201, created);
+    }
+
+    const goalMatch = path.match(/^\/api\/goals\/([^/]+)$/);
+    const goal = goalMatch ? goals.find((item) => item.id === goalMatch[1]) : undefined;
+
+    if (goalMatch && !goal) {
+      return respond(404, null, "Goal tidak ditemukan");
+    }
+
+    if (goal && method === "GET") {
+      return respond(200, goal);
+    }
+
+    if (goal && method === "PUT") {
+      const patch = body as Partial<Pick<Goal, "name" | "targetAmount" | "currentAmount" | "deadline">>;
+      const target = Number(patch.targetAmount ?? goal.targetAmount);
+      const current = Number(patch.currentAmount ?? goal.currentAmount);
+
+      if (current > target) {
+        return respond(400, null, "Jumlah terkumpul tidak boleh melebihi target");
+      }
+
+      const now = new Date().toISOString();
+      const diff = current - Number(goal.currentAmount);
+
+      if (diff !== 0) {
+        goal.history = [{ id: `dev-gh-${nextId++}`, amount: String(diff), currentAmount: String(current), createdAt: now }, ...(goal.history ?? [])];
+      }
+
+      Object.assign(goal, patch, {
+        deadline: patch.deadline === undefined ? goal.deadline : patch.deadline ? new Date(patch.deadline).toISOString() : null,
+        updatedAt: now
+      });
+      return respond(200, goal);
+    }
+
+    if (goal && method === "DELETE") {
+      goals = goals.filter((item) => item !== goal);
+      return respond(200, goal);
     }
 
     return respond(404, null, "Belum tersedia di pratinjau");

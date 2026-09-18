@@ -182,7 +182,7 @@ export function LainnyaPage() {
           ? `${runningGoals} target berjalan`
           : "Belum ada target berjalan"
         : "Kumpulkan uang untuk tujuanmu",
-      to: "/goals"
+      to: "/lainnya/target"
     },
     {
       icon: Repeat,

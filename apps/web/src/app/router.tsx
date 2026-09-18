@@ -106,9 +106,9 @@ const KategoriPage = lazy(() =>
   }))
 );
 
-const GoalsPage = lazy(() =>
-  import("../features/goals/GoalsPage").then((module) => ({
-    default: module.GoalsPage
+const TargetPage = lazy(() =>
+  import("../features/lainnya/TargetPage").then((module) => ({
+    default: module.TargetPage
   }))
 );
 
@@ -1360,6 +1360,14 @@ const routes = [
     )
   },
   {
+    path: "/lainnya/target",
+    element: (
+      <ProtectedRoute>
+        <TargetPage />
+      </ProtectedRoute>
+    )
+  },
+  {
     path: "/lainnya/kategori",
     element: (
       <ProtectedRoute>
@@ -1384,11 +1392,7 @@ const routes = [
   },
   {
     path: "/goals",
-    element: (
-      <ProtectedRoute>
-        <GoalsPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/lainnya/target" replace />
   },
   {
     path: "/export",

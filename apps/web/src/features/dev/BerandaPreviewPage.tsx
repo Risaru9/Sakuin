@@ -5,6 +5,7 @@ import { SearchPage } from "../beranda/SearchPage";
 import { KategoriPage } from "../lainnya/KategoriPage";
 import { LainnyaPage } from "../lainnya/LainnyaPage";
 import { RekeningPage } from "../lainnya/RekeningPage";
+import { TargetPage } from "../lainnya/TargetPage";
 import { LaporanPage } from "../laporan/LaporanPage";
 import { installFakeApi } from "./dev-fake-api";
 
@@ -31,7 +32,8 @@ export function LainnyaPreviewPage() {
 
 const LAINNYA_SECTIONS: Record<string, ComponentType> = {
   rekening: RekeningPage,
-  kategori: KategoriPage
+  kategori: KategoriPage,
+  target: TargetPage
 };
 
 export function LainnyaSectionPreviewPage() {
