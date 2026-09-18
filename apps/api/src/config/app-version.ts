@@ -1,12 +1,12 @@
 export const appVersionMetadata = {
-  latestVersionName: "1.6.8",
-  latestVersionCode: 15,
+  latestVersionName: "2.0.0",
+  latestVersionCode: 16,
   apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   releaseNotes: [
-    "Export CSV dan Excel di aplikasi Android sekarang memakai Download Manager native.",
-    "File export muncul di notifikasi download dan tersimpan di folder Download/Sakuin.",
-    "Aplikasi memberi arahan lokasi file setelah export berhasil."
+    "Tampilan baru Sakuin: catat satu baris, menu Catatan, Laporan, dan Lainnya.",
+    "Kunci keamanan aplikasi diganti. Hapus aplikasi Sakuin lama dulu, lalu pasang yang ini (cukup sekali).",
+    "Catatanmu tersimpan di server. Setelah dipasang, tinggal masuk lagi."
   ],
   forceUpdate: false,
-  publishedAt: "2026-06-02T10:55:00.000Z"
+  publishedAt: "2026-09-18T18:07:02.000Z"
 } as const;

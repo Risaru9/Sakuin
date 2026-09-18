@@ -52,21 +52,23 @@ export function GoogleAuthButton({
         
         let errorString = typeof error === 'object' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error);
         
-        // 12501 = Canceled by user
-        // 10 = Developer error / often happens when dialog is dismissed
-        if (errorString.includes("12501") || errorString.includes('"code":10') || errorString.toLowerCase().includes("cancel")) {
-          return; // Ignore gracefully
+        // 12501 = the user closed Google's account picker; nothing to report.
+        if (errorString.includes("12501") || errorString.toLowerCase().includes("cancel")) {
+          return;
         }
-
-        let errorMsg = "Login Google gagal. " + errorString;
-        onFailure(errorMsg);
+        // 10 = DEVELOPER_ERROR: Google does not know this app's signing key (SHA-1) yet.
+        if (errorString.includes('"code":10') || errorString.includes("DEVELOPER_ERROR")) {
+          onFailure("Login Google belum aktif di versi aplikasi ini (kode 10). Sementara masuk pakai email dan password, atau buka Sakuin di browser.");
+          return;
+        }
+        onFailure("Login Google gagal. " + errorString);
       }
     }
 
 
     return (
       <button
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] active:scale-[0.98]"
+        className="saku-line-thin saku-press flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full bg-saku-paper px-4 text-[15px] font-black text-saku-ink shadow-saku-xs disabled:opacity-60"
         type="button"
         disabled={disabled}
         onClick={handleNativeGoogleLogin}
