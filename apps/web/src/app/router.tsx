@@ -1276,6 +1276,22 @@ function EmailImportCallbackPage() {
   );
 }
 
+// Old Profile links: only the Gmail section still lives there; the rest moved under Lainnya.
+function ProfileRedirect() {
+  const [searchParams] = useSearchParams();
+  const section = searchParams.get("section");
+
+  if (section === "automation") {
+    return (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    );
+  }
+
+  return <Navigate replace to={section === "notifications" ? "/lainnya/pengingat" : "/lainnya/akun"} />;
+}
+
 const routes = [
   {
     path: "/",
@@ -1450,11 +1466,7 @@ const routes = [
   },
   {
     path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    )
+    element: <ProfileRedirect />
   },
 
   ...(SakuPlaygroundPage &&

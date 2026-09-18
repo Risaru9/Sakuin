@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
+import { SakuMascot } from "../saku";
 import { useAuth } from "../../features/auth/auth-context";
 import {
   hasSeenCurrentReleaseNotes,
@@ -44,55 +45,40 @@ export function AppReleaseNotesPrompt() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(var(--sakuin-mobile-nav-height)+0.75rem)] z-[270] px-4 lg:bottom-5 lg:left-auto lg:right-5 lg:max-w-sm lg:px-0">
-      <section className="overflow-hidden rounded-3xl border border-[var(--sakuin-border)] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.16)]">
-        <div className="h-1 w-full bg-[var(--sakuin-primary)]" />
-
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sakuin-secondary)] text-white">
-              <Sparkles className="h-5 w-5" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-[var(--sakuin-text)]">
-                {SAKUIN_RELEASE_TITLE}
-              </p>
-              <p className="mt-1 text-xs font-semibold leading-5 text-zinc-600">
-                Update fitur masuk otomatis dari Sakuin. Tidak perlu install
-                ulang.
-              </p>
-            </div>
-
-            <button
-              aria-label="Tutup info update Sakuin"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 transition hover:bg-zinc-200 hover:text-[var(--sakuin-text)]"
-              onClick={dismiss}
-              type="button"
-            >
-              <X className="h-4 w-4" />
-            </button>
+    <div className="fixed inset-x-0 bottom-[calc(var(--sakuin-mobile-nav-height)+0.75rem)] z-[270] px-3 lg:right-5 lg:bottom-5 lg:left-auto lg:max-w-sm lg:px-0">
+      <section className="saku-line rounded-saku-card bg-saku-paper p-4 font-saku-body text-saku-ink shadow-saku motion-safe:animate-saku-rise">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="saku-line-thin flex size-11 shrink-0 items-end justify-center overflow-hidden rounded-full bg-saku-coin-soft">
+            <SakuMascot mood="wow" size={40} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-saku-head text-lg font-semibold">{SAKUIN_RELEASE_TITLE}</p>
+            <p className="text-xs font-bold text-saku-muted">Pembaruan masuk otomatis, tidak perlu pasang ulang.</p>
           </div>
-
-          <div className="mt-4 grid gap-2">
-            {SAKUIN_RELEASE_NOTES.map((note) => (
-              <div className="flex items-start gap-2" key={note}>
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
-                <p className="text-xs font-semibold leading-5 text-zinc-700">
-                  {note}
-                </p>
-              </div>
-            ))}
-          </div>
-
           <button
-            className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-2xl bg-[var(--sakuin-secondary)] px-4 text-xs font-black text-white transition hover:bg-[var(--sakuin-secondary)]"
+            aria-label="Tutup info update Sakuin"
+            className="saku-line-thin flex size-9 shrink-0 items-center justify-center rounded-full bg-saku-paper focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
             onClick={dismiss}
             type="button"
           >
-            Mengerti
+            <X aria-hidden="true" className="size-4" strokeWidth={2.6} />
           </button>
         </div>
+        <ul className="mt-3 space-y-1.5">
+          {SAKUIN_RELEASE_NOTES.map((note) => (
+            <li className="flex items-start gap-2 text-sm font-bold" key={note}>
+              <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-saku-income" strokeWidth={2.6} />
+              {note}
+            </li>
+          ))}
+        </ul>
+        <button
+          className="saku-line-thin saku-press mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-saku-accent font-saku-head text-base font-semibold text-white shadow-saku-xs"
+          onClick={dismiss}
+          type="button"
+        >
+          Oke, mengerti
+        </button>
       </section>
     </div>
   );

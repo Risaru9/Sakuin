@@ -1,16 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BarChart3,
-  PiggyBank,
-  Sparkles
-} from "lucide-react";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
-import { SakuinIdentityLogo } from "../../../components/brand/SakuinIdentityLogo";
+import { LockKeyhole, Mail, UserRound } from "lucide-react";
+import { StickerButton } from "../../../components/saku";
 import { ApiClientError } from "../../../lib/api-client";
+import { AuthDivider, AuthField, AuthNotice, AuthScreen, PasswordChecklist } from "../components/AuthParts";
 import { GoogleAuthButton } from "../components/google-auth-button";
 import { useAuth } from "../auth-context";
 
@@ -29,29 +22,19 @@ function getErrorMessage(error: unknown) {
 export function RegisterPage() {
   const navigate = useNavigate();
   const { register, loginWithGoogle } = useAuth();
-
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: ""
-  });
-
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     setError(null);
     setIsSubmitting(true);
 
     try {
       await register(form);
-
-      navigate("/dashboard", {
-        replace: true
-      });
+      navigate("/dashboard", { replace: true });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -64,13 +47,8 @@ export function RegisterPage() {
     setIsGoogleSubmitting(true);
 
     try {
-      await loginWithGoogle({
-        credential
-      });
-
-      navigate("/dashboard", {
-        replace: true
-      });
+      await loginWithGoogle({ credential });
+      navigate("/dashboard", { replace: true });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -79,205 +57,74 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-white text-[var(--sakuin-text)] selection:bg-[var(--sakuin-primary-soft)]">
-      <section className="mx-auto flex min-h-[100dvh] w-full max-w-6xl items-center justify-center px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[0.9fr_1fr] lg:gap-12 lg:px-8">
-        <div className="w-full min-w-0 max-w-[28rem] py-4 lg:py-0">
-          <div className="mb-6 flex min-w-0 items-center justify-between gap-3 lg:hidden">
-            <Link
-              className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
-              to="/"
-            >
-              <SakuinIdentityLogo size="sm" />
-            </Link>
+    <AuthScreen
+      footer={
+        <>
+          Sudah punya akun?{" "}
+          <Link className="font-black text-saku-accent" to="/login">
+            Masuk
+          </Link>
+        </>
+      }
+      greeting="Halo! Aku Saku, teman catat uangmu."
+      subtitle="Gratis, cukup satu menit."
+      title="Buat akun"
+    >
+      {error ? <AuthNotice tone="error">{error}</AuthNotice> : null}
 
-            <Link
-              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-3.5 text-xs font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-              to="/"
-            >
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Beranda
-            </Link>
-          </div>
+      <GoogleAuthButton
+        disabled={isSubmitting || isGoogleSubmitting}
+        onCredential={handleGoogleCredential}
+        onFailure={setError}
+        text="signup_with"
+      />
 
-          <div className="w-full min-w-0 rounded-3xl border border-[var(--sakuin-border)] bg-white p-6 shadow-sm sm:p-10">
-            <div className="mb-8">
-              <p className="text-sm font-bold uppercase text-zinc-500">
-                Mulai sekarang
-              </p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-[var(--sakuin-text)]">
-                Buat akun
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
-                Daftar untuk mulai mencatat transaksi dan target tabunganmu.
-              </p>
-            </div>
+      <AuthDivider>atau pakai email</AuthDivider>
 
-            {error ? (
-              <div className="mb-6 break-words rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3.5 text-sm font-bold text-rose-700">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="mb-6 min-w-0">
-              <GoogleAuthButton
-                text="signup_with"
-                disabled={isSubmitting || isGoogleSubmitting}
-                onCredential={handleGoogleCredential}
-                onFailure={setError}
-              />
-            </div>
-
-            <div className="mb-6 flex min-w-0 items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="shrink-0 text-xs font-bold text-slate-400">
-                atau daftar dengan email
-              </span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
-
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              <Input
-                label="Nama"
-                name="name"
-                type="text"
-                autoComplete="name"
-                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
-                placeholder="Nama kamu"
-                value={form.name}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    name: event.target.value
-                  }))
-                }
-              />
-
-              <Input
-                label="Email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
-                placeholder="nama@email.com"
-                value={form.email}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    email: event.target.value
-                  }))
-                }
-              />
-
-              <Input
-                label="Password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                className="rounded-xl border-[var(--sakuin-border)] focus:border-[var(--sakuin-primary)] focus:ring-[var(--sakuin-focus)]/25"
-                placeholder="Password123"
-                value={form.password}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    password: event.target.value
-                  }))
-                }
-              />
-
-              <Button
-                className="mt-2 w-full rounded-xl bg-[var(--sakuin-secondary)] text-white hover:bg-[var(--sakuin-secondary)] focus-visible:ring-[var(--sakuin-focus)]"
-                type="submit"
-                size="lg"
-                isLoading={isSubmitting}
-                disabled={isGoogleSubmitting}
-              >
-                <span>Register</span>
-                {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
-              </Button>
-            </form>
-
-            <div className="mt-8 space-y-4 text-center text-sm font-medium text-zinc-600">
-              <p>
-                Sudah punya akun?{" "}
-                <Link
-                  className="font-bold text-[var(--sakuin-text)] transition hover:text-[var(--sakuin-primary)] hover:underline"
-                  to="/login"
-                >
-                  Login
-                </Link>
-              </p>
-
-              <p>
-                Ingin lihat halaman utama?{" "}
-                <Link
-                  className="font-bold text-[var(--sakuin-text)] transition hover:underline"
-                  to="/"
-                >
-                  Kembali ke Beranda
-                </Link>
-              </p>
-            </div>
-          </div>
+      <form className="space-y-3.5" onSubmit={handleSubmit}>
+        <AuthField
+          autoComplete="name"
+          icon={UserRound}
+          label="Nama"
+          name="name"
+          onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+          placeholder="Nama kamu"
+          value={form.name}
+        />
+        <AuthField
+          autoComplete="email"
+          icon={Mail}
+          label="Email"
+          name="email"
+          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+          placeholder="nama@email.com"
+          type="email"
+          value={form.email}
+        />
+        <div>
+          <AuthField
+            autoComplete="new-password"
+            icon={LockKeyhole}
+            label="Password"
+            name="password"
+            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder="Password"
+            type="password"
+            value={form.password}
+          />
+          <PasswordChecklist password={form.password} />
         </div>
-
-        <div className="hidden min-w-0 lg:block">
-          <div className="mb-8 flex flex-col items-start gap-4">
-            <Link
-              className="inline-flex min-w-0 items-center rounded-2xl transition hover:opacity-90"
-              to="/"
-            >
-              <SakuinIdentityLogo />
-            </Link>
-
-            <Link
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 py-2 text-xs font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-              to="/"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali ke Beranda
-            </Link>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-8 text-white shadow-[0_22px_55px_rgba(37,99,235,0.16)]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--sakuin-border)] bg-white px-3.5 py-1.5 text-xs font-bold text-[var(--sakuin-text)]">
-              <Sparkles className="h-4 w-4" />
-              Finance in your pocket
-            </div>
-
-            <h1 className="mt-6 max-w-xl text-5xl font-black leading-[1.05] tracking-tight text-white">
-              Bangun kebiasaan finansial yang lebih rapi.
-            </h1>
-
-            <p className="mt-5 max-w-lg text-lg leading-8 text-white/85">
-              Sakuin membantu kamu memahami arus uang, memantau target tabungan,
-              dan menjaga batas saldo aman.
-            </p>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
-                  <BarChart3 className="h-6 w-6" />
-                </div>
-                <p className="text-base font-bold text-[var(--sakuin-text)]">Dashboard ringkas</p>
-                <p className="mt-1 text-sm text-zinc-600">
-                  Lihat income, expense, balance, dan trend.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[var(--sakuin-border)] bg-white p-5">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] text-white">
-                  <PiggyBank className="h-6 w-6" />
-                </div>
-                <p className="text-base font-bold text-[var(--sakuin-text)]">Goals tabungan</p>
-                <p className="mt-1 text-sm text-zinc-600">
-                  Pantau progress target tabunganmu.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-    </main>
+        <StickerButton disabled={isGoogleSubmitting} fullWidth isLoading={isSubmitting} type="submit">
+          Buat akun
+        </StickerButton>
+        <p className="text-center text-xs font-bold text-saku-muted">
+          Dengan mendaftar, kamu setuju dengan{" "}
+          <Link className="font-black text-saku-accent" to="/privacy">
+            Kebijakan Privasi
+          </Link>
+          .
+        </p>
+      </form>
+    </AuthScreen>
   );
 }
