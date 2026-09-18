@@ -1,11 +1,15 @@
+import type { ComponentType } from "react";
+import { useParams } from "react-router-dom";
 import { BerandaPage } from "../beranda/BerandaPage";
 import { SearchPage } from "../beranda/SearchPage";
+import { KategoriPage } from "../lainnya/KategoriPage";
 import { LainnyaPage } from "../lainnya/LainnyaPage";
+import { RekeningPage } from "../lainnya/RekeningPage";
 import { LaporanPage } from "../laporan/LaporanPage";
 import { installFakeApi } from "./dev-fake-api";
 
-// Development-only (/dev/beranda, /dev/cari, /dev/laporan, /dev/lainnya): the real screens
-// backed by an in-memory API.
+// Development-only (/dev/beranda, /dev/cari, /dev/laporan, /dev/lainnya and its pages such as
+// /dev/lainnya/rekening): the real screens backed by an in-memory API.
 // Installed while this module loads so the very first queries already hit the fake server.
 installFakeApi();
 
@@ -23,4 +27,16 @@ export function LaporanPreviewPage() {
 
 export function LainnyaPreviewPage() {
   return <LainnyaPage />;
+}
+
+const LAINNYA_SECTIONS: Record<string, ComponentType> = {
+  rekening: RekeningPage,
+  kategori: KategoriPage
+};
+
+export function LainnyaSectionPreviewPage() {
+  const { section = "" } = useParams();
+  const Page = LAINNYA_SECTIONS[section];
+
+  return Page ? <Page /> : <p className="p-6 font-black">Belum ada pratinjau untuk "{section}".</p>;
 }

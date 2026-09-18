@@ -7,6 +7,7 @@ export const queryKeys = {
   categories: ["categories"] as const,
   accounts: ["accounts"] as const,
   accountTransfers: ["accounts", "transfers"] as const,
+  accountsWithArchived: ["accounts", "with-archived"] as const,
   recurring: ["recurring"] as const,
   emailImports: {
     overview: ["email-imports", "overview"] as const

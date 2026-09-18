@@ -188,6 +188,49 @@ describe("Account API", () => {
     expect(transferResponse.status).toBe(404);
   });
 
+  it("mengarsipkan, menampilkan arsip, lalu mengaktifkan lagi rekening", async () => {
+    const headers = {
+      Authorization: `Bearer ${userA.token}`
+    };
+
+    const archiveResponse = await app.request(`/api/accounts/${bankAccountA.id}`, {
+      method: "DELETE",
+      headers
+    });
+    expect(archiveResponse.status).toBe(200);
+
+    const activeAccounts = await getAccounts(userA.token);
+    expect(activeAccounts.some((account) => account.id === bankAccountA.id)).toBe(false);
+
+    const withArchivedResponse = await app.request("/api/accounts?includeArchived=true", {
+      headers
+    });
+    expect(withArchivedResponse.status).toBe(200);
+    const withArchived = (
+      await parseJson<Array<AccountData & { isArchived: boolean }>>(withArchivedResponse)
+    ).data;
+    const archivedBank = withArchived.find((account) => account.id === bankAccountA.id);
+    expect(archivedBank?.isArchived).toBe(true);
+    expect(archivedBank?.balance).toBe("350000");
+
+    const otherUserRestore = await app.request(`/api/accounts/${bankAccountA.id}/restore`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${userB.token}`
+      }
+    });
+    expect(otherUserRestore.status).toBe(404);
+
+    const restoreResponse = await app.request(`/api/accounts/${bankAccountA.id}/restore`, {
+      method: "POST",
+      headers
+    });
+    expect(restoreResponse.status).toBe(200);
+
+    const restoredAccounts = await getAccounts(userA.token);
+    expect(restoredAccounts.some((account) => account.id === bankAccountA.id)).toBe(true);
+  });
+
   it("mengembalikan 404 saat token merujuk ke user yang sudah tidak ada", async () => {
     const deletedUser = await registerUser("deleted");
 

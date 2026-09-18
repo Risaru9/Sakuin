@@ -100,6 +100,12 @@ const RekeningPage = lazy(() =>
   }))
 );
 
+const KategoriPage = lazy(() =>
+  import("../features/lainnya/KategoriPage").then((module) => ({
+    default: module.KategoriPage
+  }))
+);
+
 const GoalsPage = lazy(() =>
   import("../features/goals/GoalsPage").then((module) => ({
     default: module.GoalsPage
@@ -162,6 +168,14 @@ const LainnyaPreviewPage = import.meta.env.DEV
   ? lazy(() =>
       import("../features/dev/BerandaPreviewPage").then((module) => ({
         default: module.LainnyaPreviewPage
+      }))
+    )
+  : null;
+
+const LainnyaSectionPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LainnyaSectionPreviewPage
       }))
     )
   : null;
@@ -1345,6 +1359,14 @@ const routes = [
       </ProtectedRoute>
     )
   },
+  {
+    path: "/lainnya/kategori",
+    element: (
+      <ProtectedRoute>
+        <KategoriPage />
+      </ProtectedRoute>
+    )
+  },
     {
     path: "/asisten",
     element: (
@@ -1389,7 +1411,8 @@ const routes = [
   BerandaPreviewPage &&
   SearchPreviewPage &&
   LaporanPreviewPage &&
-  LainnyaPreviewPage
+  LainnyaPreviewPage &&
+  LainnyaSectionPreviewPage
     ? [
         {
           path: "/dev/saku",
@@ -1428,6 +1451,14 @@ const routes = [
           element: (
             <PageSuspense>
               <LainnyaPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/lainnya/:section",
+          element: (
+            <PageSuspense>
+              <LainnyaSectionPreviewPage />
             </PageSuspense>
           )
         }

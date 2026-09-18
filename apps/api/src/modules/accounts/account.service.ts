@@ -332,6 +332,36 @@ export async function archiveAccount(userId: string, accountId: string) {
   });
 }
 
+export async function restoreAccount(userId: string, accountId: string) {
+  const account = await getOwnedAccountOrThrow(userId, accountId, {
+    allowArchived: true
+  });
+
+  if (!account.isArchived) {
+    return account;
+  }
+
+  const activeAccountCount = await prisma.account.count({
+    where: {
+      userId,
+      isArchived: false
+    }
+  });
+
+  if (activeAccountCount >= MAX_ACTIVE_ACCOUNTS) {
+    throw new HttpError(`Maksimal ${MAX_ACTIVE_ACCOUNTS} rekening aktif`, 400);
+  }
+
+  return prisma.account.update({
+    where: {
+      id: account.id
+    },
+    data: {
+      isArchived: false
+    }
+  });
+}
+
 export async function createAccountTransfer(
   userId: string,
   input: CreateAccountTransferInput

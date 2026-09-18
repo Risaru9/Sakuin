@@ -208,6 +208,15 @@ GET    /api/categories
 POST   /api/categories
 PUT    /api/categories/:id
 DELETE /api/categories/:id
+PUT    /api/categories/:id/limit
+
+GET    /api/accounts
+POST   /api/accounts
+PUT    /api/accounts/:id
+DELETE /api/accounts/:id
+POST   /api/accounts/:id/restore
+GET    /api/accounts/transfers
+POST   /api/accounts/transfers
 
 GET    /api/transactions
 POST   /api/transactions
@@ -1052,6 +1061,24 @@ Category milik user lain tidak bisa diakses.
 ```txt
 category.deleted
 ```
+
+---
+
+# 4a. Accounts API
+
+Rekening (tunai, bank, e-wallet, tabungan) milik user login. Saldo (`balance`) dihitung dari `initialBalance` ditambah pemasukan, dikurangi pengeluaran, dan ditambah/dikurangi pindah uang.
+
+| Method | Path | Keterangan |
+| --- | --- | --- |
+| GET | `/api/accounts` | Rekening aktif. Tambahkan `?includeArchived=true` untuk ikut menampilkan rekening yang diarsipkan (urutan: aktif dulu). |
+| POST | `/api/accounts` | Buat rekening. Maksimal 20 rekening aktif; nama harus unik per user. |
+| PUT | `/api/accounts/:id` | Ubah nama, jenis, warna, atau `initialBalance`. Aplikasi mengoreksi "saldo sekarang" dengan menggeser `initialBalance`. |
+| DELETE | `/api/accounts/:id` | Arsipkan (tidak menghapus). Riwayat tetap ada. Minimal satu rekening harus tetap aktif. |
+| POST | `/api/accounts/:id/restore` | Aktifkan lagi rekening yang diarsipkan. Ditolak (400) kalau sudah ada 20 rekening aktif. |
+| GET | `/api/accounts/transfers` | 50 pindah uang terakhir. |
+| POST | `/api/accounts/transfers` | Pindah uang antar-rekening aktif (`fromAccountId`, `toAccountId`, `amount`, `date`, `note`). Tidak dihitung sebagai pengeluaran. |
+
+Semua endpoint wajib token dan hanya menyentuh rekening milik user login (rekening user lain → 404).
 
 ---
 

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Tags,
   Target,
   Wallet,
   type LucideIcon
@@ -34,6 +35,7 @@ import { WidgetInstallModal } from "../android-widget/WidgetInstallModal";
 import { formatPlainAmount } from "../beranda/beranda-data";
 import { getGoals } from "../goals/goal.service";
 import { getSummary } from "../summary/summary.service";
+import { useReferenceData } from "../transactions/use-reference-data";
 
 type MenuItem = {
   icon: LucideIcon;
@@ -136,6 +138,7 @@ export function LainnyaPage() {
     queryFn: getAccounts,
     staleTime: 5 * 60_000
   });
+  const { categories } = useReferenceData();
   const goalsQuery = useQuery({
     queryKey: queryKeys.goals,
     queryFn: getGoals,
@@ -151,6 +154,7 @@ export function LainnyaPage() {
     (goal) => Number(goal.currentAmount) < Number(goal.targetAmount)
   ).length;
   const reminder = getTransactionReminderSettings(user?.id);
+  const limitedCount = categories.filter((category) => category.type === "EXPENSE" && (category.limit ?? 0) > 0).length;
 
   const keuangan: MenuItem[] = [
     {
@@ -161,6 +165,13 @@ export function LainnyaPage() {
         ? `${accounts.length} rekening · total ${formatPlainAmount(totalBalance)}`
         : "Dompet, bank, dan e-wallet",
       to: "/lainnya/rekening"
+    },
+    {
+      icon: Tags,
+      tint: "#ffe3bd",
+      title: "Kategori dan batas",
+      subtitle: limitedCount > 0 ? `${limitedCount} kategori punya batas bulanan` : "Atur batas belanja per kategori",
+      to: "/lainnya/kategori"
     },
     {
       icon: Target,
