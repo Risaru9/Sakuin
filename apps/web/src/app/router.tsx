@@ -118,6 +118,12 @@ const PengingatPage = lazy(() =>
   }))
 );
 
+const AkunPage = lazy(() =>
+  import("../features/lainnya/AkunPage").then((module) => ({
+    default: module.AkunPage
+  }))
+);
+
 const TargetPage = lazy(() =>
   import("../features/lainnya/TargetPage").then((module) => ({
     default: module.TargetPage
@@ -125,7 +131,7 @@ const TargetPage = lazy(() =>
 );
 
 const ExportPage = lazy(() =>
-  import("../features/export/ExportPage").then((module) => ({
+  import("../features/lainnya/ExportPage").then((module) => ({
     default: module.ExportPage
   }))
 );
@@ -1396,6 +1402,22 @@ const routes = [
     )
   },
   {
+    path: "/lainnya/export",
+    element: (
+      <ProtectedRoute>
+        <ExportPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/akun",
+    element: (
+      <ProtectedRoute>
+        <AkunPage />
+      </ProtectedRoute>
+    )
+  },
+  {
     path: "/lainnya/kategori",
     element: (
       <ProtectedRoute>
@@ -1424,11 +1446,7 @@ const routes = [
   },
   {
     path: "/export",
-    element: (
-      <ProtectedRoute>
-        <ExportPage />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/lainnya/export" replace />
   },
   {
     path: "/profile",

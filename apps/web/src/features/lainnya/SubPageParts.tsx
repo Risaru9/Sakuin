@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
-import { SakuSnackHost } from "../../components/saku";
+import { ArrowLeft, ChevronRight, Plus, type LucideIcon } from "lucide-react";
+import { SakuSnackHost, StickerCard } from "../../components/saku";
 import { cn } from "../../lib/cn";
 
 const ROUND_BUTTON_CLASS =
@@ -72,4 +72,84 @@ export function FloatingSnackHost() {
       <SakuSnackHost />
     </div>
   );
+}
+
+export type MenuItem = {
+  icon: LucideIcon;
+  tint: string;
+  title: string;
+  subtitle: string;
+  danger?: boolean;
+} & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
+
+export function MenuIcon({ icon: Icon, tint, danger = false }: { icon: LucideIcon; tint: string; danger?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="saku-line-thin flex size-[38px] shrink-0 items-center justify-center rounded-full"
+      style={{ background: tint }}
+    >
+      <Icon className={danger ? "size-[18px] text-saku-over-text" : "size-[18px]"} strokeWidth={2.4} />
+    </span>
+  );
+}
+
+export function MenuSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section>
+      <h2 className="mx-1 mt-5 mb-2 text-xs font-black tracking-[0.05em] text-saku-muted uppercase">{label}</h2>
+      <StickerCard className="overflow-hidden">
+        <ul>{children}</ul>
+      </StickerCard>
+    </section>
+  );
+}
+
+const MENU_ROW_CLASS =
+  "flex w-full items-center gap-3 px-3 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-saku-accent/30";
+
+export function MenuRow({ item, isLast }: { item: MenuItem; isLast: boolean }) {
+  const content = (
+    <>
+      <MenuIcon danger={item.danger} icon={item.icon} tint={item.tint} />
+      <span
+        className={cn(
+          "flex min-h-[60px] min-w-0 flex-1 items-center gap-2",
+          !isLast && "border-b-2 border-dashed border-saku-dash"
+        )}
+      >
+        <span className="min-w-0 flex-1">
+          <span className={cn("block text-[15px] font-black", item.danger && "text-saku-over-text")}>{item.title}</span>
+          <span className="block truncate text-xs font-bold text-saku-muted">{item.subtitle}</span>
+        </span>
+        <ChevronRight aria-hidden="true" className="size-4 shrink-0" strokeWidth={2.6} />
+      </span>
+    </>
+  );
+
+  return (
+    <li>
+      {item.to ? (
+        <Link className={MENU_ROW_CLASS} to={item.to}>
+          {content}
+        </Link>
+      ) : (
+        <button className={MENU_ROW_CLASS} onClick={item.onClick} type="button">
+          {content}
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** "Nadia Putri" → "NP", for the round avatar. */
+export function getInitials(name: string) {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return letters || "S";
 }

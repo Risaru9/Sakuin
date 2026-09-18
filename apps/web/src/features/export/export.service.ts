@@ -13,6 +13,7 @@ export type ExportTypeFilter = "ALL" | TransactionType;
 export type DownloadTransactionsExportInput = {
   format: ExportFormat;
   type: ExportTypeFilter;
+  categoryId?: string;
   startDate?: string;
   endDate?: string;
   fileName?: string;
@@ -45,6 +46,10 @@ function buildExportPath(input: DownloadTransactionsExportInput) {
 
   if (input.type !== "ALL") {
     searchParams.set("type", input.type);
+  }
+
+  if (input.categoryId) {
+    searchParams.set("categoryId", input.categoryId);
   }
 
   if (input.startDate) {
