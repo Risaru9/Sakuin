@@ -8,6 +8,7 @@ import {
   createCategoryService,
   deleteCategoryService,
   getCategoriesService,
+  setCategoryLimitService,
   updateCategoryService
 } from "./category.service.js";
 
@@ -33,6 +34,10 @@ type UpdateCategoryInput = {
 
 type CategoryIdParam = {
   id: string;
+};
+
+type SetCategoryLimitInput = {
+  limit: number | null;
 };
 
 function getAuthenticatedUserId(c: Context<AppEnv>) {
@@ -112,6 +117,28 @@ export async function updateCategoryController(c: Context<AppEnv>) {
   });
 
   return successResponse(c, "Kategori berhasil diupdate", category);
+}
+
+export async function setCategoryLimitController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const param = c.get("validatedParam") as CategoryIdParam;
+  const input = c.get("validatedJson") as SetCategoryLimitInput;
+
+  const category = await setCategoryLimitService(userId, param.id, input.limit);
+
+  await recordAuditEventFromContext(c, {
+    eventType: "category.updated",
+    status: "success",
+    targetType: "category",
+    targetId: category.id,
+    metadata: {
+      changedFields: "limit",
+      isDefaultCategory: category.isDefault,
+      hasLimit: input.limit !== null
+    }
+  });
+
+  return successResponse(c, "Batas kategori berhasil disimpan", category);
 }
 
 export async function deleteCategoryController(c: Context<AppEnv>) {

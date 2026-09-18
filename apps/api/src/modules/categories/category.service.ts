@@ -78,6 +78,21 @@ function mapCategory(category: CategoryRecord) {
   };
 }
 
+// Default categories are shared rows, so their limits live per user in CategoryBudget.
+async function getDefaultCategoryLimits(userId: string) {
+  const budgets = await prisma.categoryBudget.findMany({
+    where: {
+      userId
+    },
+    select: {
+      categoryId: true,
+      limit: true
+    }
+  });
+
+  return new Map(budgets.map((budget) => [budget.categoryId, budget.limit]));
+}
+
 function getVisibleCategoryWhere(
   userId: string,
   type?: TransactionType
@@ -194,7 +209,89 @@ export async function getCategoriesService(input: GetCategoriesInput) {
       });
     });
 
-  return categories.map(mapCategory);
+  const defaultLimits = await getDefaultCategoryLimits(input.userId);
+
+  return categories.map((category) =>
+    mapCategory(
+      category.isDefault
+        ? { ...category, limit: defaultLimits.get(category.id) ?? null }
+        : category
+    )
+  );
+}
+
+/**
+ * Sets or clears (null) the monthly limit of any expense category the user can see:
+ * a CategoryBudget row for default categories, Category.limit for the user's own.
+ */
+export async function setCategoryLimitService(
+  userId: string,
+  categoryId: string,
+  limit: number | null
+) {
+  const category = await prisma.category.findFirst({
+    where: {
+      id: categoryId,
+      OR: [
+        {
+          userId: null,
+          isDefault: true
+        },
+        {
+          userId
+        }
+      ]
+    },
+    select: categoryBaseSelect
+  });
+
+  if (!category) {
+    throw new HttpError("Kategori tidak ditemukan", 404);
+  }
+
+  if (category.type !== "EXPENSE") {
+    throw new HttpError("Batas bulanan hanya untuk kategori pengeluaran", 400);
+  }
+
+  if (category.isDefault) {
+    if (limit === null) {
+      await prisma.categoryBudget.deleteMany({
+        where: {
+          userId,
+          categoryId: category.id
+        }
+      });
+    } else {
+      await prisma.categoryBudget.upsert({
+        where: {
+          userId_categoryId: {
+            userId,
+            categoryId: category.id
+          }
+        },
+        update: {
+          limit
+        },
+        create: {
+          userId,
+          categoryId: category.id,
+          limit
+        }
+      });
+    }
+  } else {
+    await prisma.category.update({
+      where: {
+        id: category.id
+      },
+      data: {
+        limit
+      }
+    });
+  }
+
+  invalidateCachedFinancialContext(userId);
+  return mapCategory({ ...category, limit });
 }
 
 export async function createCategoryService(

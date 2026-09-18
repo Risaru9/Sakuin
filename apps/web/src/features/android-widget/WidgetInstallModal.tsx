@@ -1,23 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
-import {
-  Activity,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  CheckCircle2,
-  Clock3,
-  MessageSquare,
-  Plus,
-  RefreshCw,
-  Smartphone,
-  X
-} from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Plus, RefreshCw, Smartphone, X } from "lucide-react";
 import { useLockBodyScroll } from "../../hooks/use-lock-body-scroll";
-import type { Goal } from "../goals/goal.types";
-import { buildFinancialRhythm } from "../summary/financial-rhythm";
+import { formatRupiah, toNumber } from "../dashboard/dashboard-utils";
 import type { SummaryData } from "../summary/summary.types";
-import { formatRupiah, toNumber } from "./dashboard-utils";
+
+// Home-screen widget picker for the Android app (moved from the old dashboard rhythm card).
+// Its styling predates the Saku redesign and is restyled with the Lainnya pages.
 
 type FinanceWidgetStatus = "hemat" | "waspada" | "boros";
 
@@ -64,28 +53,6 @@ const widgetStatusTheme: Record<
 
 // Replace with a transparent PNG/SVG asset path when the official Sakuin mascot is ready.
 const widgetMascotAssetSrc = "";
-
-function FinancialRhythmSkeleton() {
-  return (
-    <div className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-3.5 shadow-sm sm:p-6">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="h-5 w-40 animate-pulse rounded-lg bg-zinc-100" />
-          <div className="mt-2 h-4 w-full max-w-md animate-pulse rounded-lg bg-zinc-100" />
-        </div>
-        <div className="h-9 w-28 animate-pulse rounded-xl bg-zinc-100" />
-      </div>
-      <div className="grid gap-3 2xl:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div
-            className="h-44 animate-pulse rounded-2xl bg-zinc-100"
-            key={index}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function PortalLayer({ children }: { children: ReactNode }) {
   const [root, setRoot] = useState<HTMLElement | null>(null);
@@ -313,7 +280,7 @@ function WidgetPreviewCard({
   );
 }
 
-function WidgetInfoModal({
+export function WidgetInstallModal({
   onClose,
   summary
 }: {
@@ -569,168 +536,5 @@ function WidgetInfoModal({
         </div>
       </div>
     </PortalLayer>
-  );
-}
-
-export function FinancialRhythmCard({
-  summary,
-  goals,
-  isLoading,
-  onOpenAddTransaction,
-  onOpenQuickTransaction
-}: {
-  summary: SummaryData | null;
-  goals: Goal[];
-  isLoading: boolean;
-  onOpenAddTransaction: () => void;
-  onOpenQuickTransaction: () => void;
-}) {
-  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
-  const hasActiveGoals = goals.length > 0;
-  const rhythm = useMemo(
-    () =>
-      buildFinancialRhythm(summary, {
-        period: "week",
-        hasActiveGoals
-      }),
-    [hasActiveGoals, summary]
-  );
-
-  if (isLoading) {
-    return <FinancialRhythmSkeleton />;
-  }
-
-  return (
-    <>
-      <section className="sakuin-card-lift rounded-3xl border border-[var(--sakuin-border)] bg-white p-4 shadow-sm sm:p-6">
-        {/* Header */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--sakuin-primary-soft)] text-[var(--sakuin-primary)]">
-            <Activity className="sakuin-icon-bounce h-4.5 w-4.5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-black text-[var(--sakuin-text)] sm:text-base">
-              Ritme Keuangan
-            </h2>
-            <p className="text-[11px] font-semibold text-zinc-500 sm:text-xs">
-              Membangun habit mencatat keuangan harian.
-            </p>
-          </div>
-        </div>
-
-        {/* Status Utama & Insight */}
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div className="space-y-1.5">
-            {/* Status Utama */}
-            <div className="flex items-center gap-2">
-              <span
-                className={[
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ring-1",
-                  rhythm.todayHasTransaction
-                    ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                    : "bg-amber-50 text-amber-800 ring-amber-200"
-                ].join(" ")}
-              >
-                {rhythm.todayHasTransaction ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Hari ini sudah tercatat
-                  </>
-                ) : (
-                  <>
-                    <Clock3 className="h-3.5 w-3.5" />
-                    Belum ada catatan hari ini
-                  </>
-                )}
-              </span>
-              {rhythm.streakDays > 0 && (
-                <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-black text-orange-700 ring-1 ring-orange-200">
-                  🔥 {rhythm.streakDays} hari streak
-                </span>
-              )}
-            </div>
-
-            {/* Ringkasan Kecil */}
-            <p className="text-sm font-bold text-[var(--sakuin-text)] leading-6">
-              Minggu ini kamu mencatat <span className="text-[var(--sakuin-primary)] font-black">{rhythm.activeDaysThisWeek} dari 7 hari</span>.
-            </p>
-
-            {/* Insight Pendek */}
-            <p className="text-xs font-medium text-zinc-500">
-              {rhythm.todayHasTransaction
-                ? "Bagus, pertahankan ritme ini untuk menjaga akurasi keuanganmu."
-                : "Coba catat satu transaksi kecil hari ini agar insight tetap akurat."}
-            </p>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap gap-2 sm:flex-col sm:w-44">
-            <button
-              className="sakuin-ripple sakuin-press flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--sakuin-primary)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
-              onClick={onOpenQuickTransaction}
-              type="button"
-            >
-              <MessageSquare className="sakuin-icon-bounce h-3.5 w-3.5" />
-              Catat Cepat
-            </button>
-            <button
-              className="sakuin-press flex-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-zinc-50"
-              onClick={onOpenAddTransaction}
-              type="button"
-            >
-              <Plus className="sakuin-icon-bounce h-3.5 w-3.5" />
-              Tambah Transaksi
-            </button>
-          </div>
-        </div>
-
-        {/* 7-day Rhythm Grid (Visual Dot Grid) */}
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <div className="grid grid-cols-7 gap-1.5">
-            {rhythm.dayRhythm.map((day) => (
-              <div
-                className={[
-                  "sakuin-stagger-enter",
-                  "flex flex-col items-center justify-center rounded-xl py-1.5 text-center ring-1",
-                  day.hasTransaction
-                    ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-                    : day.isFuture
-                      ? "bg-slate-50/50 text-zinc-400 ring-slate-100"
-                      : "bg-white text-zinc-500 ring-slate-100",
-                  day.isToday ? "outline outline-2 outline-[var(--sakuin-primary)]/20" : ""
-                ].join(" ")}
-                key={`${day.day}-${day.date}`}
-              >
-                <span className="text-[10px] font-black">{day.day}</span>
-                <span
-                  className={[
-                    "mt-1 h-1.5 w-1.5 rounded-full",
-                    day.hasTransaction ? "bg-emerald-500" : "bg-zinc-200"
-                  ].join(" ")}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tombol Tambah Widget */}
-        <button
-          className="sakuin-press mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-xs font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
-          onClick={() => setIsWidgetModalOpen(true)}
-          type="button"
-        >
-          <Smartphone className="sakuin-icon-bounce h-3.5 w-3.5" />
-          Tambah ke Layar Utama
-        </button>
-      </section>
-
-      {/* Widget Info Modal */}
-      {isWidgetModalOpen && (
-        <WidgetInfoModal
-          onClose={() => setIsWidgetModalOpen(false)}
-          summary={summary}
-        />
-      )}
-    </>
   );
 }

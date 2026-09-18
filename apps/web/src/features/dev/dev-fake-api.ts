@@ -1,5 +1,6 @@
-// Development-only in-memory API for the /dev/beranda preview. It answers the requests the
-// Beranda and search screens make, so their flows can be tried without a server or real data.
+// Development-only in-memory API for the /dev/beranda, /dev/cari, /dev/laporan and
+// /dev/lainnya previews. It answers the requests those screens make, so their flows can be
+// tried without a server or real data.
 // Scenario flags come from the URL the preview is first opened with:
 //   ?kosong=1  a brand-new user without entries
 //   ?lambat=1  every answer takes 1.5 seconds
@@ -18,6 +19,7 @@ const CATEGORY_SEEDS: CategorySeed[] = [
   ["cat-bonus", "Bonus", "INCOME", "gift"],
   ["cat-masuk-lain", "Pemasukan Lainnya", "INCOME", "plus-circle"],
   ["cat-makan", "Makanan", "EXPENSE", "utensils"],
+  ["cat-kopi", "Ngopi", "EXPENSE", "coffee"],
   ["cat-transport", "Transportasi", "EXPENSE", "car"],
   ["cat-belanja", "Belanja", "EXPENSE", "shopping-bag"],
   ["cat-tagihan", "Tagihan", "EXPENSE", "receipt"],
@@ -37,6 +39,7 @@ const ENTRY_SEEDS: Array<[number, string, string, number]> = [
   [2, "Dikasih kakak", "cat-masuk-lain", 100000],
   [3, "Belanja sayur", "cat-belanja", 67000],
   [3, "Obat flu", "cat-sehat", 25000],
+  [4, "Kopi sore", "cat-kopi", 32000],
   [5, "Kopi susu", "cat-makan", 18000],
   [7, "Bonus proyek", "cat-bonus", 400000],
   [12, "Kopi dan roti", "cat-makan", 25000],
@@ -76,14 +79,18 @@ export function installFakeApi() {
   const originalFetch = window.fetch.bind(window);
   let nextId = 1;
 
+  // Some limits so the Laporan budgets have something to show.
+  const seededLimits: Record<string, number> = scenario.empty
+    ? {}
+    : { "cat-makan": 150_000, "cat-tagihan": 800_000, "cat-transport": 60_000 };
   const categories: Category[] = CATEGORY_SEEDS.map(([id, name, type, icon]) => ({
     id,
     name,
     type,
     icon,
     color: null,
-    isDefault: true,
-    limit: null
+    isDefault: id !== "cat-kopi",
+    limit: seededLimits[id] ?? null
   }));
 
   const accounts: FinanceAccount[] = [
@@ -154,8 +161,36 @@ export function installFakeApi() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   }
 
-  function buildSummary() {
+  function byCategory(items: Transaction[], type: Transaction["type"]) {
+    const totals = new Map<string, number>();
+
+    for (const item of items.filter((entry) => entry.type === type)) {
+      totals.set(item.categoryId, (totals.get(item.categoryId) ?? 0) + Number(item.amount));
+    }
+
+    return [...totals].map(([categoryId, total]) => {
+      const category = categories.find((entry) => entry.id === categoryId);
+      return {
+        categoryId,
+        categoryName: category?.name ?? "Kategori",
+        categoryIcon: category?.icon ?? null,
+        categoryColor: null,
+        type,
+        totalAmount: total.toFixed(2),
+        transactionCount: items.filter((entry) => entry.categoryId === categoryId).length,
+        limit: null
+      };
+    });
+  }
+
+  function buildSummary(url: URL) {
     const now = new Date();
+    const month = Number(url.searchParams.get("month")) || null;
+    const year = Number(url.searchParams.get("year")) || null;
+    const periodKey = month && year ? `${year}-${String(month).padStart(2, "0")}` : null;
+    const inPeriod = periodKey ? transactions.filter((item) => monthKeyOf(item.date) === periodKey) : transactions;
+    const sum = (type: Transaction["type"]) =>
+      inPeriod.filter((item) => item.type === type).reduce((total, item) => total + Number(item.amount), 0);
     const monthlyTrend = Array.from({ length: 12 }, (_, index) => {
       const date = new Date(now.getFullYear(), now.getMonth() - 11 + index, 1);
       const key = monthKeyOf(date.toISOString());
@@ -169,9 +204,9 @@ export function installFakeApi() {
     return {
       period: { month: null, year: null, label: "Semua waktu", startDate: null, endDate: null },
       availablePeriods: { years: [...new Set([now.getFullYear(), ...transactions.map((item) => new Date(item.date).getFullYear())])] },
-      totalIncome: "0.00",
-      totalExpense: "0.00",
-      balance: "0.00",
+      totalIncome: sum("INCOME").toFixed(2),
+      totalExpense: sum("EXPENSE").toFixed(2),
+      balance: (sum("INCOME") - sum("EXPENSE")).toFixed(2),
       safeBalanceLimit: "0.00",
       isBelowSafeLimit: false,
       safeToSpend: {
@@ -200,8 +235,8 @@ export function installFakeApi() {
       balanceThisMonth: "0.00",
       transactionCount: transactions.length,
       recentTransactions: [],
-      expenseByCategory: [],
-      incomeByCategory: [],
+      expenseByCategory: byCategory(inPeriod, "EXPENSE"),
+      incomeByCategory: byCategory(inPeriod, "INCOME"),
       monthlyTrend
     };
   }
@@ -300,12 +335,25 @@ export function installFakeApi() {
       return respond(201, created);
     }
 
+    const limitMatch = path.match(/^\/api\/categories\/([^/]+)\/limit$/);
+
+    if (limitMatch && method === "PUT") {
+      const category = categories.find((item) => item.id === limitMatch[1]);
+
+      if (!category) {
+        return respond(404, null, "Kategori tidak ditemukan");
+      }
+
+      category.limit = (body as { limit: number | null }).limit;
+      return respond(200, category);
+    }
+
     if (method === "GET" && path === "/api/accounts") {
       return respond(200, accounts);
     }
 
     if (method === "GET" && path === "/api/summary") {
-      return respond(200, buildSummary());
+      return respond(200, buildSummary(url));
     }
 
     if (method === "GET" && path === "/api/goals") {

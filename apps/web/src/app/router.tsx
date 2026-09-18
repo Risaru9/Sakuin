@@ -150,6 +150,22 @@ const SearchPreviewPage = import.meta.env.DEV
     )
   : null;
 
+const LaporanPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LaporanPreviewPage
+      }))
+    )
+  : null;
+
+const LainnyaPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("../features/dev/BerandaPreviewPage").then((module) => ({
+        default: module.LainnyaPreviewPage
+      }))
+    )
+  : null;
+
 function LoadingScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4">
@@ -1369,7 +1385,11 @@ const routes = [
     )
   },
 
-  ...(SakuPlaygroundPage && BerandaPreviewPage && SearchPreviewPage
+  ...(SakuPlaygroundPage &&
+  BerandaPreviewPage &&
+  SearchPreviewPage &&
+  LaporanPreviewPage &&
+  LainnyaPreviewPage
     ? [
         {
           path: "/dev/saku",
@@ -1392,6 +1412,22 @@ const routes = [
           element: (
             <PageSuspense>
               <SearchPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/laporan",
+          element: (
+            <PageSuspense>
+              <LaporanPreviewPage />
+            </PageSuspense>
+          )
+        },
+        {
+          path: "/dev/lainnya",
+          element: (
+            <PageSuspense>
+              <LainnyaPreviewPage />
             </PageSuspense>
           )
         }

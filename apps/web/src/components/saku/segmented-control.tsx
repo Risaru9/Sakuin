@@ -11,6 +11,8 @@ type SegmentedControlProps<T extends string> = {
   value: T;
   onChange: (value: T) => void;
   ariaLabel: string;
+  /** "accent" sits on the blue hero card: see-through track, white labels. */
+  tone?: "paper" | "accent";
   className?: string;
 };
 
@@ -19,6 +21,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   ariaLabel,
+  tone = "paper",
   className
 }: SegmentedControlProps<T>) {
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -43,7 +46,11 @@ export function SegmentedControl<T extends string>({
   return (
     <div
       aria-label={ariaLabel}
-      className={cn("saku-line-thin grid gap-[3px] rounded-full bg-saku-paper p-[3px]", className)}
+      className={cn(
+        "saku-line-thin grid gap-[3px] rounded-full p-[3px]",
+        tone === "accent" ? "bg-white/20" : "bg-saku-paper",
+        className
+      )}
       onKeyDown={handleKeyDown}
       role="radiogroup"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
@@ -63,7 +70,7 @@ export function SegmentedControl<T extends string>({
               "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30",
               selected
                 ? "border-saku-ink bg-saku-coin text-saku-ink"
-                : "border-transparent text-saku-muted"
+                : cn("border-transparent", tone === "accent" ? "text-white" : "text-saku-muted")
             )}
             onClick={() => onChange(option.value)}
             role="radio"

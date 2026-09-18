@@ -950,6 +950,62 @@ category.updated
 
 ---
 
+## PUT `/api/categories/:id/limit`
+
+Mengatur atau menghapus batas bulanan (anggaran) sebuah kategori pengeluaran. Berlaku untuk kategori default maupun kategori custom milik user login.
+
+- Kategori default adalah baris global, jadi batasnya disimpan per user di tabel `CategoryBudget`. User lain tidak ikut terpengaruh.
+- Kategori custom menyimpan batas di kolom `Category.limit` seperti sebelumnya.
+- `GET /api/categories` mengembalikan `limit` milik user login untuk kedua jenis kategori.
+
+### Auth
+
+Wajib token.
+
+### Body
+
+```json
+{
+  "limit": 1200000
+}
+```
+
+`limit: null` menghapus batas. Nilai harus lebih dari 0.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Batas kategori berhasil disimpan",
+  "data": {
+    "id": "cat_expense_food",
+    "name": "Makanan",
+    "type": "EXPENSE",
+    "icon": "utensils",
+    "color": "#f97316",
+    "isDefault": true,
+    "limit": 1200000
+  }
+}
+```
+
+### Error
+
+```txt
+400 Batas bulanan hanya untuk kategori pengeluaran
+400 Validasi gagal (limit 0, negatif, atau bukan angka)
+404 Kategori tidak ditemukan (termasuk kategori custom milik user lain)
+```
+
+### Audit Event
+
+```txt
+category.updated (metadata: changedFields=limit, isDefaultCategory, hasLimit)
+```
+
+---
+
 ## DELETE `/api/categories/:id`
 
 Hapus custom category milik user login.

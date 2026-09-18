@@ -31,3 +31,11 @@ export function deleteCategory(categoryId: string) {
     method: "DELETE"
   });
 }
+
+/** Sets (or clears with null) the monthly limit; default categories keep it per user. */
+export function setCategoryLimit(categoryId: string, limit: number | null) {
+  return apiRequest<Category>(`/api/categories/${categoryId}/limit`, {
+    method: "PUT",
+    body: { limit }
+  });
+}

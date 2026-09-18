@@ -10,6 +10,7 @@ import {
   Mail,
   Repeat,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Target,
   Wallet,
@@ -29,6 +30,7 @@ import { getTransactionReminderSettings } from "../../lib/transaction-reminder";
 import { queryKeys } from "../../lib/query-keys";
 import { getAccounts } from "../accounts/account.service";
 import { useAuth } from "../auth/auth-context";
+import { WidgetInstallModal } from "../android-widget/WidgetInstallModal";
 import { formatPlainAmount } from "../beranda/beranda-data";
 import { getGoals } from "../goals/goal.service";
 import { getSummary } from "../summary/summary.service";
@@ -38,8 +40,7 @@ type MenuItem = {
   tint: string;
   title: string;
   subtitle: string;
-  to: string;
-};
+} & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
 
 function getInitials(name: string) {
   const letters = name
@@ -75,29 +76,45 @@ function MenuSection({ label, children }: { label: string; children: ReactNode }
   );
 }
 
+const MENU_ROW_CLASS =
+  "flex w-full items-center gap-3 px-3 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-saku-accent/30";
+
 function MenuRow({ item, isLast }: { item: MenuItem; isLast: boolean }) {
+  const content = (
+    <>
+      <MenuIcon icon={item.icon} tint={item.tint} />
+      <span
+        className={cn(
+          "flex min-h-[60px] min-w-0 flex-1 items-center gap-2",
+          !isLast && "border-b-2 border-dashed border-saku-dash"
+        )}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-black">{item.title}</span>
+          <span className="block truncate text-xs font-bold text-saku-muted">{item.subtitle}</span>
+        </span>
+        <ChevronRight aria-hidden="true" className="size-4 shrink-0" strokeWidth={2.6} />
+      </span>
+    </>
+  );
+
   return (
     <li>
-      <Link
-        className="flex items-center gap-3 px-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-saku-accent/30"
-        to={item.to}
-      >
-        <MenuIcon icon={item.icon} tint={item.tint} />
-        <span
-          className={cn(
-            "flex min-h-[60px] min-w-0 flex-1 items-center gap-2",
-            !isLast && "border-b-2 border-dashed border-saku-dash"
-          )}
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-black">{item.title}</span>
-            <span className="block truncate text-xs font-bold text-saku-muted">{item.subtitle}</span>
-          </span>
-          <ChevronRight aria-hidden="true" className="size-4 shrink-0" strokeWidth={2.6} />
-        </span>
-      </Link>
+      {item.to ? (
+        <Link className={MENU_ROW_CLASS} to={item.to}>
+          {content}
+        </Link>
+      ) : (
+        <button className={MENU_ROW_CLASS} onClick={item.onClick} type="button">
+          {content}
+        </button>
+      )}
     </li>
   );
+}
+
+function canPinAndroidWidget() {
+  return typeof window !== "undefined" && typeof window.AndroidWidgetBridge?.requestPinWidget === "function";
 }
 
 export function LainnyaPage() {
@@ -106,6 +123,7 @@ export function LainnyaPage() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [widgetOpen, setWidgetOpen] = useState(false);
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.summary,
@@ -187,7 +205,19 @@ export function LainnyaPage() {
       title: "Impor dari Gmail",
       subtitle: "Catat otomatis dari email bank",
       to: "/profile?section=automation"
-    }
+    },
+    // Only the Android app can pin its home-screen widget.
+    ...(canPinAndroidWidget()
+      ? [
+          {
+            icon: Smartphone,
+            tint: "#d6f3f7",
+            title: "Widget layar HP",
+            subtitle: "Lihat ringkasan tanpa membuka aplikasi",
+            onClick: () => setWidgetOpen(true)
+          }
+        ]
+      : [])
   ];
 
   const dataAkun: MenuItem[] = [
@@ -299,6 +329,10 @@ export function LainnyaPage() {
           </p>
         </div>
       </BottomSheet>
+
+      {widgetOpen ? (
+        <WidgetInstallModal onClose={() => setWidgetOpen(false)} summary={summaryQuery.data ?? null} />
+      ) : null}
     </AppShell>
   );
 }

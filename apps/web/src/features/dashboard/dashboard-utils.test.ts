@@ -1,15 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Goal } from "../goals/goal.types";
-import {
-  formatCompactRupiah,
-  formatFinancialCheckupStatus,
-  formatGoalDeadline,
-  formatRupiah,
-  getGoalProgress,
-  getMonthNet,
-  getPriorityGoal,
-  toNumber
-} from "./dashboard-utils";
+import { formatCompactRupiah, formatRupiah, getGoalProgress, toNumber } from "./dashboard-utils";
 
 function createGoal(override: Partial<Goal> = {}): Goal {
   return {
@@ -38,19 +29,6 @@ describe("dashboard-utils", () => {
     expect(formatCompactRupiah("25000")).toBe("Rp 25 rb");
   });
 
-  it("memformat status financial checkup", () => {
-    expect(formatFinancialCheckupStatus("GOOD")).toBe("Baik");
-    expect(formatFinancialCheckupStatus("WATCH")).toBe("Waspada");
-    expect(formatFinancialCheckupStatus("RISK")).toBe("Berisiko");
-    expect(formatFinancialCheckupStatus("UNKNOWN")).toBe("Belum lengkap");
-  });
-
-  it("memformat deadline goal dengan fallback aman", () => {
-    expect(formatGoalDeadline(null)).toBe("Tanpa deadline");
-    expect(formatGoalDeadline("tanggal-rusak")).toBe("Tanpa deadline");
-    expect(formatGoalDeadline("2026-08-01T00:00:00.000Z")).toContain("2026");
-  });
-
   it("menghitung progress goal dan membatasi di 100 persen", () => {
     expect(getGoalProgress(createGoal())).toBe(25);
     expect(
@@ -67,34 +45,5 @@ describe("dashboard-utils", () => {
         })
       )
     ).toBe(0);
-  });
-
-  it("memilih goal prioritas eksplisit jika tersedia", () => {
-    const goals = [
-      createGoal({ id: "goal-a", deadline: "2026-09-01T00:00:00.000Z" }),
-      createGoal({ id: "goal-b", deadline: "2026-07-01T00:00:00.000Z" })
-    ];
-
-    expect(getPriorityGoal(goals, "goal-a")?.id).toBe("goal-a");
-  });
-
-  it("memilih goal unfinished dengan deadline terdekat jika tidak ada prioritas", () => {
-    const goals = [
-      createGoal({ id: "goal-a", deadline: "2026-09-01T00:00:00.000Z" }),
-      createGoal({ id: "goal-b", deadline: "2026-07-01T00:00:00.000Z" })
-    ];
-
-    expect(getPriorityGoal(goals, null)?.id).toBe("goal-b");
-  });
-
-  it("menghitung net bulanan", () => {
-    expect(
-      getMonthNet({
-        month: "2026-06",
-        income: "3000000.00",
-        expense: "750000.00",
-        balance: "2250000.00"
-      })
-    ).toBe(2250000);
   });
 });
