@@ -266,3 +266,21 @@ Selama tahap 2–3, pengguna APK 2.0 hanya melihat perubahan web: layar memuat b
 - **APK 2.1.1**: `versionCode 18`, `versionName 2.1.1`, label "Sakuin", SHA-1 kunci `A7:20:43:6E:...:6D:3A` (sama), SHA-256 file `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`. Layout widget di dalam APK sudah dicek dengan `aapt2 dump xmltree`: hanya FrameLayout/LinearLayout/TextView/ImageView/ProgressBar, tanpa font resource.
 - **Belum terverifikasi di HP**: emulator di komputer ini tidak bisa menyala (image Android 37.1 16 KB butuh emulator lebih baru dari 36.6). Pemilik perlu memperbarui ke 2.1.1 lalu melepas dan memasang ulang widget. Kalau masih gagal, langkah berikutnya: ambil log dari HP (`adb logcat | findstr /i "AppWidget RemoteViews"`) lewat USB debugging.
 - Catatan rilis 2.1.1 (`latest-version.json`, `app-version.ts`, `release-notes.ts`) menyebut perbaikan widget. `AppReleaseNotesPrompt.tsx` menulis "Perbaikan ini memerlukan APK 2.1.1."
+
+## 9. Update aplikasi sekali ketuk (usulan, menunggu persetujuan pemilik, 19 September 2026)
+
+**Masalah yang dilaporkan**: setelah 2.1.1 tayang, aplikasi 2.1.0 di HP pemilik tidak menampilkan tawaran update.
+
+**Penyebab yang ditemukan di kode** (`apps/web/src/components/pwa/ApkUpdatePrompt.tsx`, `use-app-version.ts`):
+- Pengecekan versi hanya jalan sekali, 1,5 detik setelah halaman web pertama kali dimuat. Kalau Sakuin masih hidup di latar belakang lalu dibuka lagi, WebView tidak memuat ulang, jadi tidak pernah dicek lagi.
+- `apiRequest("/app-version")` memanggil `https://sakuin-api.vercel.app/app-version` (404). Rute yang benar `/api/app-version`. Cadangan `fetch("/latest-version.json")` dari origin web tetap berhasil, jadi ini bukan penyebab utama, tapi harus dibetulkan.
+- Jalan pintas untuk pengguna sekarang: tutup Sakuin sepenuhnya (geser dari daftar aplikasi terbaru), buka lagi, lalu kartu update muncul; atau unduh langsung dari https://sakuin-web.vercel.app/downloads/sakuin.apk.
+
+**Permintaan pemilik**: setiap ada versi baru, aplikasi memberi notifikasi "ada update", diketuk, lalu langsung mengunduh.
+
+**Mockup** (kanvas https://claude.ai/artifact/DcwFXFG6rKU87uiEjGGkJS baris "4 · Update aplikasi sekali ketuk"; salinan gambar `docs/handoff-apk-2.1/mockups/12-UpdateSekaliKetuk.png`): 4a notifikasi "Update Sakuin 2.1.1 sudah ada" + tombol Perbarui/Nanti, 4b kartu update yang sudah ada (layar sama), 4c kartu berubah jadi bar unduhan dengan persen, 4d layar pasang bawaan Android (tidak bisa diubah).
+
+**Rencana teknis** (belum dikerjakan):
+- Tahap A, cukup deploy web (berlaku juga untuk APK 2.0/2.1 yang sudah terpasang): betulkan rute ke `/api/app-version`; cek ulang saat aplikasi kembali ke depan (`App.addListener("appStateChange")` + `visibilitychange`) dan tiap beberapa jam; saat ada versi lebih baru, tampilkan kartu dan notifikasi lokal Capacitor sekali per versi (tap → buka kartu/mulai unduh); tombol "Perbarui sekarang" memakai `AndroidExportBridge.enqueueDownload(url, "sakuin-<versi>.apk", "application/vnd.android.package-archive", "")` (sudah ada sejak 2.0) sehingga unduhan langsung jalan lewat pengunduh Android. Pengguna lalu mengetuk notifikasi "Unduhan selesai" untuk membuka layar pasang.
+- Tahap B, butuh APK 2.2: pengecekan harian walau aplikasi tertutup (alarm/WorkManager memanggil `/api/app-version`, lalu notifikasi); bar persen unduhan; setelah unduhan selesai, layar pasang Android langsung dibuka (izin `REQUEST_INSTALL_PACKAGES` + intent install lewat `FileProvider`; pertama kali Android minta izin "Instal aplikasi tidak dikenal" untuk Sakuin).
+- Batas Android: aplikasi di luar Play Store tidak bisa memasang dirinya diam-diam; pengguna selalu menekan "Update" di layar pasang Android.
