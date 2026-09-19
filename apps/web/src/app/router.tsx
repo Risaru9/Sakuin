@@ -29,6 +29,7 @@ const ACCOUNT_DELETION_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComp
 )}&body=${encodeURIComponent(
   "Halo Sakuin,\n\nSaya ingin mengajukan penghapusan akun Sakuin.\n\nEmail akun Sakuin:\nAlasan opsional:\n\nSaya memahami bahwa tim Sakuin perlu memverifikasi kepemilikan akun sebelum menghapus data."
 )}`;
+const APK_DOWNLOAD_PATH = "/downloads/sakuin.apk";
 
 const LandingPage = lazy(() =>
   import("../features/landing/LandingPage").then((module) => ({
@@ -347,6 +348,14 @@ function InstallGuidePage() {
                   fallbackToGuide={false}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[var(--sakuin-secondary)] px-6 text-base font-bold text-white shadow-sm transition hover:bg-[var(--sakuin-secondary)]"
                 />
+                <a
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-secondary)] bg-[var(--sakuin-primary-soft)] px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary)]"
+                  download="sakuin.apk"
+                  href={APK_DOWNLOAD_PATH}
+                >
+                  <Download className="h-5 w-5" />
+                  Download APK Android
+                </a>
                 <Link
                   className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-6 text-base font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
                   to="/register"
