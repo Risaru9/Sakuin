@@ -240,7 +240,7 @@ Pemilik memilih rilis **bertahap**, dan setiap langkah harus dicatat di bagian i
 | 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang, buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | Selesai. PR dibuat pemilik; CI "Validate Sakuin" hijau untuk `2086afa` dan `b0b2da6` (termasuk tes database). |
 | 2–4 | Merge ke `main`, uji di HP pemilik, lalu umumkan APK 2.1. | Codex langsung merilis 2.1.0 ke `main` sebagai `b0b2da6` (19 Sep, 15.31 WIB): web + API + APK 2.1.0 (kode 17) tayang untuk semua pengguna. CI dan "Build Android APK" hijau. |
 | 5 | Pemilik mencoba di HP Xiaomi: widget menampilkan **"Tidak dapat memuat widget"**. | Diperbaiki di 2.1.1, lihat catatan di bawah. |
-| 6 | Rilis perbaikan APK 2.1.1 (kode 18). | Sedang dirilis oleh Claude (19 Sep, ±17.10 WIB): commit di atas `b0b2da6`, push ke `main`. |
+| 6 | Rilis perbaikan APK 2.1.1 (kode 18). | Commit `dcec350` sudah di-push ke cabang `claude/frosty-engelbart-1dd838` (di atas `b0b2da6` = `main`). Push langsung ke `main` diblokir pengaman izin Claude, jadi pemilik diminta membuat PR baru (https://github.com/Risaru9/Sakuin/compare/main...claude/frosty-engelbart-1dd838?expand=1), menunggu CI hijau, lalu Merge. Setelah merge: cek `https://sakuin-web.vercel.app/latest-version.json` = 18 dan SHA-256 `downloads/sakuin.apk` = `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`. |
 
 **Ditahan untuk tahap 4** (sengaja dibiarkan belum di-commit di worktree; jangan di-commit di tahap 1–2):
 - `apps/web/public/latest-version.json` (17 / 2.1.0 + catatan rilis)
