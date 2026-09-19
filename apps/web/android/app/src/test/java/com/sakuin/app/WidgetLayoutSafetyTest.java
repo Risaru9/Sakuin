@@ -48,10 +48,17 @@ public class WidgetLayoutSafetyTest {
         return layouts;
     }
 
+    /** A widget layout without its XML declaration and comments, which are not markup the launcher reads. */
+    private static String readLayout(String layout) throws IOException {
+        return read(RES.resolve("layout").resolve(layout + ".xml"))
+                .replaceAll("<\\?xml[^>]*\\?>", "")
+                .replaceAll("(?s)<!--.*?-->", "");
+    }
+
     @Test
     public void widgetLayoutsUseOnlyLauncherSafeViews() throws IOException {
         for (String layout : widgetLayouts()) {
-            String xml = read(RES.resolve("layout").resolve(layout + ".xml"));
+            String xml = readLayout(layout);
             Matcher tags = Pattern.compile("<([A-Za-z][\\w.]*)").matcher(xml);
             while (tags.find()) {
                 assertTrue(layout + " uses <" + tags.group(1) + ">, which widgets cannot show",
@@ -63,7 +70,7 @@ public class WidgetLayoutSafetyTest {
     @Test
     public void widgetLayoutsAvoidFontsAndAppThemeAttributes() throws IOException {
         for (String layout : widgetLayouts()) {
-            String xml = read(RES.resolve("layout").resolve(layout + ".xml"));
+            String xml = readLayout(layout);
             assertFalse(layout + " uses a font resource; widgets must use system fonts", xml.contains("@font/"));
             assertFalse(layout + " uses an app theme attribute the launcher cannot resolve",
                     xml.replace("?android:attr/", "").contains("?"));

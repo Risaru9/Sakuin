@@ -60,7 +60,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             v.setTextViewText(R.id.widget_today, ""); v.setTextViewText(R.id.widget_left, "");
             v.setImageViewResource(R.id.widget_mascot, R.drawable.saku_wow);
             v.setViewVisibility(R.id.widget_budget_box, View.GONE);
-            v.setViewVisibility(R.id.widget_budget_badge, View.GONE);
             v.setViewVisibility(R.id.widget_login_message, View.VISIBLE);
             v.setTextViewText(R.id.widget_login_message, login ? "Widget tampil setelah kamu masuk di aplikasi." : "Sambungkan internet untuk memuat catatan.");
             v.setTextViewText(R.id.widget_quick_add_button, login ? "Buka Sakuin" : "+ Catat");
@@ -75,7 +74,8 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             JSONObject budget = data.optJSONObject("budget");
             String status = budget == null ? "ok" : budget.optString("status", "ok");
             v.setViewVisibility(R.id.widget_budget_box, View.VISIBLE);
-            v.setViewVisibility(R.id.widget_budget_badge, View.VISIBLE);
+            // The bar only means something against a limit; without one the line names the top category.
+            v.setViewVisibility(R.id.widget_budget_bar, budget == null ? View.GONE : View.VISIBLE);
             v.setImageViewResource(R.id.widget_mascot, "over".equals(status) ? R.drawable.saku_worried : "watch".equals(status) ? R.drawable.saku_wow : R.drawable.saku_happy);
             int[] bars = {R.id.widget_progress_ok, R.id.widget_progress_watch, R.id.widget_progress_over};
             String[] states = {"ok", "watch", "over"};
@@ -88,7 +88,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 line = budget.optString("categoryName") + ("over".equals(status) ? " lewat batas" : ("ok".equals(status) ? " baru " : " ") + budget.optInt("percent") + "% dari batas");
             } else {
                 JSONObject top = data.optJSONObject("topCategory");
-                if (top != null) line = top.optString("categoryName") + " " + SakuStore.number(top.optDouble("amount"));
+                if (top != null) line = "Terbanyak: " + top.optString("categoryName") + " · " + SakuStore.number(top.optDouble("amount"));
             }
             v.setTextViewText(R.id.widget_budget, line);
             v.setTextColor(R.id.widget_budget, android.graphics.Color.parseColor("over".equals(status) ? "#C62828" : "watch".equals(status) ? "#8A5A00" : "#625D78"));
@@ -100,14 +100,13 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
                 v.setTextViewText(R.id.widget_last, last == null ? "Belum ada catatan" : "Terakhir: " + last.optString("name") + ("INCOME".equals(last.optString("type")) ? " +" : " −") + SakuStore.number(last.optDouble("amount")));
             }
         }
-        int minHeight = m.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, isLarge() ? 220 : 150);
-        if ((!isLarge() && minHeight < 140) || (isLarge() && minHeight < 220)) {
-            float density = c.getResources().getDisplayMetrics().density;
-            int padding = (int) (8 * density);
-            v.setViewPadding(R.id.widget_root, padding, padding, padding, padding);
-            v.setViewPadding(R.id.widget_quick_add_button, padding, (int)(4 * density), padding, (int)(4 * density));
-            v.setTextViewTextSize(R.id.widget_today, android.util.TypedValue.COMPLEX_UNIT_SP, 24);
-            if (isLarge()) v.setTextViewTextSize(R.id.widget_left, android.util.TypedValue.COMPLEX_UNIT_SP, 20);
+        // Launchers size widgets differently; drop the least important line rather than clip "+ Catat".
+        Bundle options = m.getAppWidgetOptions(id);
+        int height = Math.max(options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0), options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0));
+        if (isLarge()) {
+            v.setViewVisibility(R.id.widget_last, height >= 215 ? View.VISIBLE : View.GONE);
+        } else if (height > 0 && height < 120) {
+            v.setViewVisibility(R.id.widget_budget_box, View.GONE);
         }
         m.updateAppWidget(id, v);
     }
