@@ -29,7 +29,7 @@ public class SakuNativeTest {
     List<String> posted = Collections.synchronizedList(new ArrayList<>());
     ExecutorService listener;
     static final String GLANCE = "{\"success\":true,\"data\":{\"todayExpense\":43000,\"month\":{\"label\":\"September\",\"left\":1240500},\"budget\":{\"categoryName\":\"Makanan\",\"percent\":86,\"status\":\"watch\"},\"lastTransaction\":{\"name\":\"Kopi susu\",\"amount\":18000,\"type\":\"EXPENSE\"}}}";
-    static final String SAVED = "{\"success\":true,\"data\":{\"transactions\":[{\"id\":\"test-coffee\",\"note\":\"Kopi susu\",\"amount\":18000,\"type\":\"EXPENSE\",\"category\":{\"name\":\"Makanan\"}}],\"budgetAlerts\":[],\"todayExpense\":61000}}";
+    static final String SAVED = "{\"success\":true,\"data\":{\"transactions\":[{\"id\":\"test-coffee\",\"note\":\"Kopi susu\",\"amount\":18000,\"type\":\"EXPENSE\",\"category\":{\"name\":\"Makanan\"}}],\"budgetAlerts\":[{\"categoryName\":\"Makanan\",\"spent\":86000,\"limit\":100000,\"level\":80}],\"todayExpense\":61000}}";
     @Before public void setup() throws Exception {
         c = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertTrue("Only run against the debuggable app", (c.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0);
@@ -66,6 +66,15 @@ public class SakuNativeTest {
         Bitmap image = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
         try (FileOutputStream out = new FileOutputStream(new File(c.getExternalFilesDir(null), name + ".png"))) { image.compress(Bitmap.CompressFormat.PNG, 100, out); }
     }
+    private void waitForKeyboard(ActivityScenario<QuickEntryActivity> activity) throws Exception {
+        for (int i=0;i<40;i++) {
+            final boolean[] visible = {false};
+            activity.onActivity(a -> { androidx.core.view.WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(a.getWindow().getDecorView()); visible[0] = insets != null && insets.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()); });
+            if (visible[0]) { Thread.sleep(500); return; }
+            Thread.sleep(100);
+        }
+        fail("Quick entry keyboard must stay visible");
+    }
     @Test public void cacheSurvivesOfflineButNotExpiredAuth() throws Exception {
         assertEquals(43000, SakuStore.glance(c).getInt("todayExpense"));
         glanceCode = 503;
@@ -83,10 +92,11 @@ public class SakuNativeTest {
     }
     @Test public void quickEntrySavesAndRetainsInvalidDraft() throws Exception {
         try (ActivityScenario<QuickEntryActivity> activity = ActivityScenario.launch(QuickEntryActivity.class)) {
-            onView(withHint("Catat… misal kopi 18rb")).perform(replaceText("kopi 18rb"), pressImeActionButton()); drain();
+            onView(withHint("Catat… misal kopi 18rb")).perform(click(), replaceText("kopi 18rb"), pressImeActionButton()); drain();
             onView(withText("Hari ini keluar 61.000")).check(matches(isDisplayed()));
             onView(withText("Ubah")).check(matches(isDisplayed()));
-            screenshot("quick-saved");
+            waitForKeyboard(activity);
+            onView(withText("Hari ini keluar 61.000")).perform(scrollTo()).check(matches(isDisplayed())); screenshot("quick-saved");
             quickCode = 400;
             onView(withHint("Catat lagi…")).perform(replaceText("kopi"), pressImeActionButton()); drain();
             onView(withText("Nominalnya belum ketemu")).check(matches(isDisplayed()));
@@ -102,17 +112,71 @@ public class SakuNativeTest {
         }
     }
     @Test public void widgetLayoutsInflateAsRemoteViews() throws Exception {
-        try (ActivityScenario<QuickEntryActivity> activity = ActivityScenario.launch(QuickEntryActivity.class)) {
+        JSONObject data = new JSONObject(GLANCE).getJSONObject("data");
+        data.put("todayExpense",180000); data.getJSONObject("month").put("left",671691);
+        final android.app.Activity[] hostActivity = new android.app.Activity[1];
+        final android.appwidget.AppWidgetHostView[] hosts = new android.appwidget.AppWidgetHostView[2];
+        try (ActivityScenario<WidgetTestActivity> activity = ActivityScenario.launch(WidgetTestActivity.class)) {
             activity.onActivity(a -> {
+                hostActivity[0] = a;
                 LinearLayout root = new LinearLayout(a); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(android.graphics.Color.parseColor("#35415D")); root.setPadding(24,60,24,24);
                 float density = a.getResources().getDisplayMetrics().density;
-                for (int layout : new int[] {R.layout.sakuin_finance_widget_medium, R.layout.sakuin_finance_widget_extra}) {
-                    android.view.View view = new RemoteViews(c.getPackageName(), layout).apply(a, root);
-                    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, (int)(density * (layout == R.layout.sakuin_finance_widget_medium ? 164 : 264))); p.bottomMargin = 30; root.addView(view, p);
+                for (boolean large : new boolean[] {false,true}) {
+                    SakuinFinanceWidgetProvider provider = large ? new SakuinFinanceWidgetExtraProvider() : new SakuinFinanceWidgetProvider();
+                    // Launcher context, without AppCompat's factory replacing platform widget classes.
+                    android.appwidget.AppWidgetHostView view = new android.appwidget.AppWidgetHostView(c);
+                    hosts[large ? 1 : 0] = view;
+                    android.appwidget.AppWidgetProviderInfo info = android.appwidget.AppWidgetManager.getInstance(c).getInstalledProviders().stream().filter(p -> p.provider.equals(new ComponentName(c,provider.getProviderClass()))).findFirst().orElseThrow(AssertionError::new);
+                    view.setAppWidget(0,info); view.setPadding(0,0,0,0);
+                    view.updateAppWidget(provider.createViews(c,267,large ? 200 : 131,data,2));
+                    assertNotNull("RemoteViews must inflate, not show the host error placeholder",view.findViewById(R.id.widget_art));
+                    assertTrue(view.findViewById(R.id.widget_quick_add_button).hasOnClickListeners());
+                    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams((int)(267*density), (int)(density * (large ? 200 : 131))); p.bottomMargin = 30; root.addView(view, p);
                 }
                 a.setContentView(root); a.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             });
-            onView(withText("September")).check(matches(isDisplayed())); screenshot("widgets");
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync(); Thread.sleep(500); screenshot("widgets-267dp");
+            activity.onActivity(a -> { assertSame("Host activity recreated",hostActivity[0],a); assertTrue(hosts[0].isAttachedToWindow()); assertNotNull("Host content missing",hosts[0].findViewById(R.id.widget_art)); hosts[0].findViewById(R.id.widget_quick_add_button).performClick(); });
+            onView(withHint("Catat… misal kopi 18rb")).check(matches(isDisplayed()));
         }
+    }
+
+    @Test public void widgetStatesFitSmallLargeAndLandscapeSizes() throws Exception {
+        JSONObject data = new JSONObject(GLANCE).getJSONObject("data");
+        int[][] sizes = {{250,110},{267,131},{360,164},{420,200},{550,110},{250,180},{267,200},{360,268},{420,300},{550,180}};
+        for (int i=0;i<sizes.length;i++) {
+            boolean large = i>=5;
+            for (String state : new String[] {"ok","watch","over","no-limit","login","offline","long"}) {
+                JSONObject fixture = new JSONObject(data.toString());
+                if (state.equals("no-limit")) { fixture.remove("budget"); fixture.put("topCategory",new JSONObject().put("categoryName","Pengeluaran Lainnya").put("amount",175000)); }
+                else { fixture.getJSONObject("budget").put("status",state.equals("over") ? "over" : state.equals("watch") ? "watch" : "ok").put("percent",state.equals("over") ? 112 : state.equals("watch") ? 86 : 42); }
+                if (state.equals("long")) { fixture.put("todayExpense",1234567890); fixture.getJSONObject("month").put("left",-9876543210d); fixture.getJSONObject("budget").put("categoryName","Kebutuhan rumah tangga dan keluarga"); }
+                SakuWidgetDrawing drawing = new SakuWidgetDrawing(c,sizes[i][0],sizes[i][1],large,state.equals("login"),state.equals("offline") ? null : fixture,0,2);
+                assertTrue(state+" quick action outside card", new android.graphics.RectF(0,0,sizes[i][0],sizes[i][1]).contains(drawing.quick));
+                assertTrue(drawing.quick.width()>40); assertTrue(drawing.quick.height()>20);
+                if (!drawing.refresh.isEmpty()) assertTrue(new android.graphics.RectF(0,0,sizes[i][0],sizes[i][1]).contains(drawing.refresh));
+                assertTrue(drawing.bitmap.getAllocationByteCount() < 6000000);
+                try (FileOutputStream out = new FileOutputStream(new File(c.getExternalFilesDir(null),"widget-"+sizes[i][0]+"x"+sizes[i][1]+"-"+state+".png"))) { drawing.bitmap.compress(Bitmap.CompressFormat.PNG,100,out); }
+            }
+        }
+    }
+
+    @Test public void quickEntryTypingMatchesMockup() throws Exception {
+        try (ActivityScenario<QuickEntryActivity> activity = ActivityScenario.launch(QuickEntryActivity.class)) {
+            onView(withHint("Catat… misal kopi 18rb")).perform(click(), replaceText("kopi susu 18rb"));
+            onView(withText("Simpan")).check(matches(isDisplayed()));
+            waitForKeyboard(activity); screenshot("quick-typing");
+        }
+    }
+
+    @Test public void sixteenWidgetVariantsStayWithinMemoryBudget() throws Exception {
+        float area = 16 * 420 * 300;
+        float resolution = new SakuinFinanceWidgetProvider().resolution(c,area);
+        long bytes = 0;
+        for (int i=0;i<16;i++) {
+            SakuWidgetDrawing drawing = new SakuWidgetDrawing(c,420,300,true,false,new JSONObject(GLANCE).getJSONObject("data"),0,resolution);
+            bytes += drawing.bitmap.getAllocationByteCount(); drawing.bitmap.recycle();
+        }
+        assertTrue("Combined RemoteViews bitmaps exceed conservative budget: "+bytes,bytes < 6100000);
     }
 }

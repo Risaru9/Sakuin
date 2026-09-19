@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/saku_card" android:gravity="center"
+    android:fontFamily="sans-serif" android:textColor="#1D1A33"
+    android:text="Memuat widget…" android:textSize="14sp" />

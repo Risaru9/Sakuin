@@ -63,10 +63,10 @@ export function ApkUpdatePrompt() {
 
         let data: ApkVersionInfo;
         try {
-          data = await apiRequest<ApkVersionInfo>("/app-version");
+          data = await apiRequest<ApkVersionInfo>("/api/app-version");
         } catch (apiError) {
           console.warn("Gagal fetch versi dari API, mencoba fallback ke static JSON...", apiError);
-          const response = await fetch("/latest-version.json");
+          const response = await fetch("/latest-version.json", { cache: "no-store" });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }

@@ -1,14 +1,14 @@
 export const appVersionMetadata = {
-  latestVersionCode: 18,
-  latestVersionName: "2.1.1",
+  latestVersionCode: 19,
+  latestVersionName: "2.1.2",
   minSupportedVersionCode: 1,
-  apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
+  apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=19",
   releaseNotes: [
-    "Perbaikan: widget yang tadinya bertuliskan \"Tidak dapat memuat widget\" sekarang tampil lagi.",
-    "Catat langsung dari widget lewat tombol + Catat.",
-    "Ikon, layar pembuka, dan notifikasi baru tetap tersedia.",
-    "Pasang APK 2.1.1 di atas versi 2.0 atau 2.1.0, tanpa menghapus aplikasi."
+    "Widget sedang dan besar mengikuti mockup, dengan font Saku dan tata letak adaptif.",
+    "Panel + Catat dirapikan: mengetik, menyimpan, ikon kategori, dan batas anggaran.",
+    "Rendering widget tidak bergantung pada font launcher atau merek HP.",
+    "Pasang APK 2.1.2 di atas versi sebelumnya, tanpa menghapus aplikasi."
   ],
   forceUpdate: false,
-  publishedAt: "2026-09-19T10:07:08.000Z"
+  publishedAt: "2026-09-19T14:24:14.824Z"
 } as const;

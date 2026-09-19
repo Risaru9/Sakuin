@@ -45,6 +45,7 @@ public class WidgetLayoutSafetyTest {
             }
         }
         assertFalse("No widget layouts found", layouts.isEmpty());
+        layouts.add("sakuin_widget_rendered");
         return layouts;
     }
 
