@@ -60,6 +60,7 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             v.setTextViewText(R.id.widget_today, ""); v.setTextViewText(R.id.widget_left, "");
             v.setImageViewResource(R.id.widget_mascot, R.drawable.saku_wow);
             v.setViewVisibility(R.id.widget_budget_box, View.GONE);
+            v.setViewVisibility(R.id.widget_budget_badge, View.GONE);
             v.setViewVisibility(R.id.widget_login_message, View.VISIBLE);
             v.setTextViewText(R.id.widget_login_message, login ? "Widget tampil setelah kamu masuk di aplikasi." : "Sambungkan internet untuk memuat catatan.");
             v.setTextViewText(R.id.widget_quick_add_button, login ? "Buka Sakuin" : "+ Catat");
@@ -73,6 +74,8 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             v.setTextViewText(R.id.widget_left, (isLarge() ? "" : "Sisa bulan ini ") + SakuStore.number(month == null ? 0 : month.optDouble("left")));
             JSONObject budget = data.optJSONObject("budget");
             String status = budget == null ? "ok" : budget.optString("status", "ok");
+            v.setViewVisibility(R.id.widget_budget_box, View.VISIBLE);
+            v.setViewVisibility(R.id.widget_budget_badge, View.VISIBLE);
             v.setImageViewResource(R.id.widget_mascot, "over".equals(status) ? R.drawable.saku_worried : "watch".equals(status) ? R.drawable.saku_wow : R.drawable.saku_happy);
             int[] bars = {R.id.widget_progress_ok, R.id.widget_progress_watch, R.id.widget_progress_over};
             String[] states = {"ok", "watch", "over"};
@@ -82,10 +85,10 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
             }
             String line = "Belum ada pengeluaran bulan ini";
             if (budget != null) {
-                line = "● " + budget.optString("categoryName") + ("over".equals(status) ? " lewat batas" : ("ok".equals(status) ? " baru " : " ") + budget.optInt("percent") + "% dari batas");
+                line = budget.optString("categoryName") + ("over".equals(status) ? " lewat batas" : ("ok".equals(status) ? " baru " : " ") + budget.optInt("percent") + "% dari batas");
             } else {
                 JSONObject top = data.optJSONObject("topCategory");
-                if (top != null) line = "● " + top.optString("categoryName") + " " + SakuStore.number(top.optDouble("amount"));
+                if (top != null) line = top.optString("categoryName") + " " + SakuStore.number(top.optDouble("amount"));
             }
             v.setTextViewText(R.id.widget_budget, line);
             v.setTextColor(R.id.widget_budget, android.graphics.Color.parseColor("over".equals(status) ? "#C62828" : "watch".equals(status) ? "#8A5A00" : "#625D78"));

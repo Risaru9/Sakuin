@@ -1,14 +1,14 @@
 export const appVersionMetadata = {
-  latestVersionCode: 17,
-  latestVersionName: "2.1.0",
+  latestVersionCode: 18,
+  latestVersionName: "2.1.1",
   minSupportedVersionCode: 1,
   apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   releaseNotes: [
-    "Ikon dan layar pembuka baru bergambar Saku.",
-    "Widget baru: lihat pengeluaran hari ini dan catat lewat tombol + Catat tanpa membuka aplikasi.",
-    "Notifikasi baru: batas kategori, tagihan besok, dan ringkasan mingguan. Atur di Lainnya › Pengingat.",
-    "Cukup pasang di atas versi 2.0, tidak perlu hapus aplikasi."
+    "Perbaikan: widget yang tadinya bertuliskan \"Tidak dapat memuat widget\" sekarang tampil lagi.",
+    "Catat langsung dari widget lewat tombol + Catat.",
+    "Ikon, layar pembuka, dan notifikasi baru tetap tersedia.",
+    "Pasang APK 2.1.1 di atas versi 2.0 atau 2.1.0, tanpa menghapus aplikasi."
   ],
   forceUpdate: false,
-  publishedAt: "2026-09-19T06:13:54.950Z"
+  publishedAt: "2026-09-19T10:07:08.000Z"
 } as const;
