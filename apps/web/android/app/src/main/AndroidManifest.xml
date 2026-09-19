@@ -78,6 +78,10 @@
                 android:resource="@xml/sakuin_finance_widget_extra_info" />
         </receiver>
 
+        <activity android:name=".QuickEntryActivity" android:exported="false" android:taskAffinity="" android:excludeFromRecents="true" android:launchMode="singleTask" android:windowSoftInputMode="stateVisible|adjustResize" android:theme="@style/AppTheme.QuickEntry" />
+        <receiver android:name=".WeeklySummaryReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter>
+        </receiver>
     </application>
 
     <!-- Permissions -->

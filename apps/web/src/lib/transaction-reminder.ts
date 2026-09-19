@@ -515,8 +515,10 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
           body: TRANSACTION_REMINDER_BODY,
           id: 1,
           schedule: { at: scheduleDate, repeats: true },
-          smallIcon: "ic_stat_icon_config_sample", 
-          iconColor: "#10b981"
+          smallIcon: "ic_stat_saku",
+          largeIcon: "saku_notif_happy",
+          iconColor: "#2B63E0",
+          extra: { route: "/dashboard" }
         }
       ]
     });
@@ -616,8 +618,9 @@ export async function sendTestTransactionReminder() {
           body,
           id: 999,
           schedule: { at: new Date(Date.now() + 1000) },
-          smallIcon: "ic_stat_icon_config_sample",
-          iconColor: "#10b981"
+          smallIcon: "ic_stat_saku",
+          largeIcon: "saku_notif_happy",
+          iconColor: "#2B63E0"
         }
       ]
     });

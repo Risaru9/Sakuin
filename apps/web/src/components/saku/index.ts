@@ -5,6 +5,7 @@ export {
   getCategoryVisual,
   type CategoryVisual
 } from "./category-badge";
+export { SakuAppIcon, SakuLoadingScreen } from "./saku-loading-screen";
 export { SakuMascot, SakuSparkle, type SakuMood } from "./saku-mascot";
 export { SakuSnackbar } from "./saku-snackbar";
 export { SakuSnackHost } from "./saku-snack-host";

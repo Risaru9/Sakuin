@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -232,8 +233,16 @@ export async function createTransaction(
 
 export async function createTransactionsBulk(
   userId: string,
-  input: CreateTransactionsBulkInput
+  input: CreateTransactionsBulkInput,
+  requestId?: string
 ): Promise<TransactionResponse[]> {
+  // Stable IDs make a phone retry safe after the server saved but its response was lost.
+  const prefix = requestId ? `quick_${createHash("sha256").update(`${userId}:${requestId}`).digest("hex")}_` : undefined;
+  const previous = async () => prefix ? prisma.transaction.findMany({
+    where: { userId, id: { startsWith: prefix } }, include: transactionCategoryInclude, orderBy: { id: "asc" }
+  }) : [];
+  const existing = await previous();
+  if (existing.length) return existing.map(toTransactionResponse);
   await getUsableCategoriesForBulk(userId, input.transactions);
   const accountIds = new Map<string | undefined, string>();
 
@@ -250,23 +259,34 @@ export async function createTransactionsBulk(
     }
   }
 
-  const transactions = await prisma.$transaction(
-    input.transactions.map((transactionInput) =>
-      prisma.transaction.create({
-        data: {
-          userId,
-          accountId: accountIds.get(transactionInput.accountId)!,
-          categoryId: transactionInput.categoryId,
-          type: transactionInput.type as TransactionType,
-          amount: transactionInput.amount,
-          note: transactionInput.note?.trim() || null,
-          date: transactionInput.date
-        },
-        include: transactionCategoryInclude
-      })
-    )
-  );
+  let transactions: TransactionWithCategory[];
+  try {
+    transactions = await prisma.$transaction(
+      input.transactions.map((transactionInput, index) =>
+        prisma.transaction.create({
+          data: {
+            userId,
+            id: prefix ? `${prefix}${String(index).padStart(2, "0")}` : undefined,
+            accountId: accountIds.get(transactionInput.accountId)!,
+            categoryId: transactionInput.categoryId,
+            type: transactionInput.type as TransactionType,
+            amount: transactionInput.amount,
+            note: transactionInput.note?.trim() || null,
+            date: transactionInput.date
+          },
+          include: transactionCategoryInclude
+        })
+      )
+    );
 
+  } catch (error) {
+    // A concurrent replay can lose the unique-ID race; the entire bulk insert is atomic.
+    if (prefix && typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      const replayed = await previous();
+      if (replayed.length) return replayed.map(toTransactionResponse);
+    }
+    throw error;
+  }
   invalidateCachedFinancialContext(userId);
   return transactions.map(toTransactionResponse);
 }

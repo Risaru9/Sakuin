@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "../../components/layout/AppShell";
-import { useSakuSnack } from "../../components/saku";
+import { showSnack, useSakuSnack } from "../../components/saku";
 import { useOnlineStatus } from "../../hooks/use-online-status";
 import { queryKeys } from "../../lib/query-keys";
 import { useAuth } from "../auth/auth-context";
 import { requestComposerFocus } from "../quick-composer/composer-bridge";
 import { getSummary } from "../summary/summary.service";
 import { getTodayInputValue } from "../transactions/transaction-date";
+import { getTransaction } from "../transactions/transaction.service";
 import type { Transaction } from "../transactions/transaction.types";
 import { useReferenceData } from "../transactions/use-reference-data";
 import {
@@ -88,6 +89,24 @@ export function BerandaPage({ searchPath = "/cari" }: BerandaPageProps) {
     next.delete("widgetAction");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const id = searchParams.get("ubah");
+    if (!id || monthQuery.isPending) return;
+    let cancelled = false;
+    const existing = monthQuery.data?.items.find((item) => item.id === id);
+    void (existing ? Promise.resolve(existing) : getTransaction(id)).then(
+      (transaction) => { if (!cancelled) setEditing(transaction); },
+      () => { if (!cancelled) showSnack({ title: "Catatan gagal dibuka", detail: "Coba lagi saat tersambung internet." }); }
+    ).finally(() => {
+      if (!cancelled) setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete("ubah");
+        return next;
+      }, { replace: true });
+    });
+    return () => { cancelled = true; };
+  }, [searchParams, setSearchParams, monthQuery.isPending, monthQuery.data]);
 
   function selectMonth(nextMonthKey: string) {
     const next = new URLSearchParams(searchParams);

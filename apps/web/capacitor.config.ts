@@ -11,6 +11,8 @@ const config: CapacitorConfig = {
     url: 'https://sakuin-web.vercel.app',
     cleartext: false
   },
+  // Cream behind the WebView, so the Saku splash never flashes white while the site loads.
+  backgroundColor: '#fff7e8',
   android: {
     // Override User Agent to look like standard mobile Chrome to bypass Google OAuth WebView block
     overrideUserAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36'

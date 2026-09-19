@@ -1,8 +1,10 @@
 import type { z } from "zod";
 import type {
+  budgetAlertsSchema,
   createTransactionSchema,
   createTransactionsBulkSchema,
   getTransactionsQuerySchema,
+  quickTransactionSchema,
   transactionIdParamSchema,
   updateTransactionSchema
 } from "./transaction.schema.js";
@@ -16,6 +18,8 @@ export type CreateTransactionsBulkInput = z.infer<
   typeof createTransactionsBulkSchema
 >;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+export type QuickTransactionInput = z.infer<typeof quickTransactionSchema>;
+export type BudgetAlertsInput = z.infer<typeof budgetAlertsSchema>;
 
 export type GetTransactionsQuery = z.infer<typeof getTransactionsQuerySchema>;
 

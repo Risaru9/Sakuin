@@ -63,6 +63,10 @@ declare global {
       getAppVersionCode?: () => number;
       getAppVersionName?: () => string;
       consumePendingWidgetQuickAction?: () => boolean;
+      /** APK 2.1+: a page the quick-entry window or a notification asked to open, or "". */
+      consumePendingRoute?: () => string;
+      /** APK 2.1+: which Saku notifications are on, as JSON. */
+      setNotificationPrefs?: (prefsJson: string) => void;
     };
   }
 }

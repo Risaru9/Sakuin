@@ -8,6 +8,7 @@ import { getSummary } from "../summary/summary.service";
 import {
   createTransaction,
   deleteTransaction,
+  getTransaction,
   getTransactions,
   updateTransaction
 } from "../transactions/transaction.service";
@@ -43,6 +44,7 @@ vi.mock("../summary/summary.service", () => ({
 }));
 
 vi.mock("../transactions/transaction.service", () => ({
+  getTransaction: vi.fn(),
   getTransactions: vi.fn(),
   createTransaction: vi.fn(),
   createTransactionsBulk: vi.fn(),
@@ -161,6 +163,21 @@ describe("BerandaPage", () => {
   afterEach(() => {
     act(() => dismissSnack());
     vi.useRealTimers();
+  });
+
+  it("opens the widget edit link for an entry in the month", async () => {
+    renderBeranda("/dashboard?ubah=tx-coffee");
+    const sheet = await screen.findByRole("dialog", { name: "Ubah catatan" });
+    expect(within(sheet).getByLabelText("Nominal")).toHaveValue("18.000");
+    expect(getTransaction).not.toHaveBeenCalled();
+  });
+
+  it("fetches an edit entry outside the loaded month", async () => {
+    vi.mocked(getTransaction).mockResolvedValue(serverTransactions[3]);
+    renderBeranda("/dashboard?ubah=tx-august");
+    const sheet = await screen.findByRole("dialog", { name: "Ubah catatan" });
+    expect(within(sheet).getByLabelText("Nominal")).toHaveValue("410.000");
+    expect(getTransaction).toHaveBeenCalledWith("tx-august");
   });
 
   it("shows the month's totals and entries grouped by day", async () => {

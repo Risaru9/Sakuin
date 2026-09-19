@@ -9,6 +9,7 @@ import {
   TRANSACTION_REMINDER_TITLE
 } from "../../lib/transaction-reminder";
 import { useReminderSettings } from "../reminders/use-reminder-settings";
+import { SakuNotificationSwitches } from "./SakuNotificationSwitches";
 import { FloatingSnackHost, SheetFieldLabel, SubPageHeader } from "./SubPageParts";
 
 const HOUR_LABEL = `${String(TRANSACTION_REMINDER_POLICY.eveningHour).padStart(2, "0")}.00`;
@@ -66,6 +67,8 @@ export function PengingatPage() {
           ) : null}
         </StickerCard>
         <p className="mt-1.5 px-1 text-xs font-bold text-saku-muted">Paling banyak sekali sehari, biar tidak mengganggu.</p>
+
+        <SakuNotificationSwitches />
 
         <SheetFieldLabel className="mt-5">Contoh notifikasi</SheetFieldLabel>
         <div className="saku-line-thin flex gap-2.5 rounded-[20px] bg-saku-paper p-3 shadow-[0_8px_24px_rgba(29,26,51,0.12)] motion-safe:animate-saku-rise">

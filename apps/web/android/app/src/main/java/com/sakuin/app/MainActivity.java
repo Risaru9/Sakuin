@@ -22,7 +22,10 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+        SakuNotifications.channels(this);
+        SakuNotifications.scheduleWeekly(this);
         registerPlugin(GoogleAuth.class);
         handleWidgetIntent(getIntent());
     }
@@ -45,12 +48,42 @@ public class MainActivity extends BridgeActivity {
                 public void saveConfig(String token, String apiUrl) {
                     SharedPreferences sharedPref = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString("jwt_token", token);
+                    String nextToken = token == null ? "" : token;
+                    if (!SakuStore.owner(nextToken).equals(SakuStore.owner(sharedPref.getString("jwt_token", "")))) {
+                        editor.remove("glance").remove("glance_at").remove("pending_route");
+                    }
+                    editor.putBoolean("auth_expired", false);
+                    editor.putString("jwt_token", nextToken);
                     editor.putString("api_url", apiUrl);
                     editor.apply();
 
+                    SakuNotifications.scheduleWeekly(MainActivity.this);
+                    if (!nextToken.isEmpty() && Build.VERSION.SDK_INT >= 33 && !sharedPref.getBoolean("notification_permission_asked", false)) {
+                        sharedPref.edit().putBoolean("notification_permission_asked", true).apply();
+                        runOnUiThread(() -> androidx.core.app.ActivityCompat.requestPermissions(MainActivity.this, new String[] { android.Manifest.permission.POST_NOTIFICATIONS }, 210));
+                    }
+                    SakuStore.IO.execute(() -> SakuStore.flush(getApplicationContext()));
                     // Trigger widget update immediately after token/config saved
                     triggerWidgetUpdate();
+                }
+
+                @JavascriptInterface
+                public void setNotificationPrefs(String json) {
+                    try {
+                        org.json.JSONObject input = new org.json.JSONObject(json);
+                        org.json.JSONObject clean = new org.json.JSONObject();
+                        for (String key : new String[] { "budget", "bills", "weekly" }) clean.put(key, input.optBoolean(key, true));
+                        SakuStore.prefs(MainActivity.this).edit().putString("notification_prefs", clean.toString()).apply();
+                        SakuNotifications.scheduleWeekly(MainActivity.this);
+                    } catch (Exception ignored) { }
+                }
+
+                @JavascriptInterface
+                public String consumePendingRoute() {
+                    SharedPreferences p = SakuStore.prefs(MainActivity.this);
+                    String route = p.getString("pending_route", "");
+                    p.edit().remove("pending_route").apply();
+                    return route;
                 }
 
                 @JavascriptInterface
@@ -167,6 +200,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        SakuStore.IO.execute(() -> SakuStore.flush(getApplicationContext()));
         // Refresh widget data every time the app comes to foreground
         triggerWidgetUpdate();
     }
@@ -222,6 +256,15 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void handleWidgetIntent(Intent intent) {
+        if (intent != null) {
+            String route = intent.getStringExtra("saku_route");
+            if (route != null && route.startsWith("/") && !route.startsWith("//")) {
+                SakuStore.prefs(this).edit().putString("pending_route", route).apply();
+                intent.removeExtra("saku_route");
+                WebView web = getBridge() == null ? null : getBridge().getWebView();
+                if (web != null) web.post(() -> web.evaluateJavascript("window.dispatchEvent(new CustomEvent('sakuin:native-route'))", null));
+            }
+        }
         if (intent == null || !SakuinFinanceWidgetProvider.ACTION_QUICK_TRANSACTION.equals(intent.getAction())) {
             return;
         }

@@ -3,10 +3,15 @@ import type { AppEnv } from "../../types/app.js";
 import { successResponse } from "../../utils/api-response.js";
 import { recordAuditEventFromContext } from "../../utils/audit-event-recorder.js";
 import { HttpError } from "../../utils/http-error.js";
+import { DEFAULT_TZ_OFFSET_MINUTES } from "../summary/glance-copy.js";
+import { getBudgetAlerts } from "../summary/glance.service.js";
+import { createQuickTransactions } from "./quick-transaction.service.js";
 import type {
+  BudgetAlertsInput,
   CreateTransactionInput,
   CreateTransactionsBulkInput,
   GetTransactionsQuery,
+  QuickTransactionInput,
   TransactionIdParam,
   UpdateTransactionInput
 } from "./transaction.types.js";
@@ -85,6 +90,45 @@ export async function createTransactionsBulkController(c: Context<AppEnv>) {
   }
 
   return successResponse(c, "Daftar transaksi berhasil dibuat", transactions, 201);
+}
+
+/** The Android quick-entry window: one typed line, parsed and saved on the server. */
+export async function createQuickTransactionsController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const input = c.get("validatedJson") as QuickTransactionInput;
+
+  const result = await createQuickTransactions(userId, input);
+
+  for (const transaction of result.transactions) {
+    await recordAuditEventFromContext(c, {
+      eventType: "transaction.created",
+      status: "success",
+      targetType: "transaction",
+      targetId: transaction.id,
+      metadata: {
+        type: transaction.type,
+        hasNote: hasNonEmptyNote(transaction.note),
+        dateProvided: Boolean(input.date),
+        source: "quick"
+      }
+    });
+  }
+
+  return successResponse(c, "Transaksi berhasil dicatat", result, 201);
+}
+
+/** Categories the just-saved expenses pushed past 80% or 100% of their limit. */
+export async function getBudgetAlertsController(c: Context<AppEnv>) {
+  const userId = getAuthenticatedUserId(c);
+  const input = c.get("validatedJson") as BudgetAlertsInput;
+
+  const budgetAlerts = await getBudgetAlerts(
+    userId,
+    input.transactionIds,
+    input.tzOffsetMinutes ?? DEFAULT_TZ_OFFSET_MINUTES
+  );
+
+  return successResponse(c, "Peringatan batas berhasil diperiksa", { budgetAlerts });
 }
 
 export async function getTransactionsController(c: Context<AppEnv>) {

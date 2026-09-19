@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { dismissSnack } from "../../components/saku";
 import { ToastProvider } from "../../components/toast/ToastProvider";
 import {
+  isNativePlatform,
   getNotificationPermission,
   subscribeBrowserToPushReminder,
   unsubscribeBrowserFromPushReminder
@@ -17,6 +18,7 @@ vi.mock("../auth/auth-context", () => ({
 
 vi.mock("../../lib/transaction-reminder", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/transaction-reminder")>()),
+  isNativePlatform: vi.fn(() => false),
   getNotificationPermission: vi.fn(),
   subscribeBrowserToPushReminder: vi.fn(),
   unsubscribeBrowserFromPushReminder: vi.fn(),
@@ -55,6 +57,8 @@ describe("PengingatPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    vi.mocked(isNativePlatform).mockReturnValue(false);
+    delete window.AndroidWidgetBridge;
     vi.mocked(getNotificationPermission).mockResolvedValue("granted");
     vi.mocked(getRemoteReminderSettings).mockResolvedValue(REMOTE);
     vi.mocked(updateRemoteReminderSettings).mockResolvedValue({ ...REMOTE, enabled: true });
@@ -62,6 +66,25 @@ describe("PengingatPage", () => {
 
   afterEach(() => {
     act(() => dismissSnack());
+  });
+
+  it("shows three disabled notification switches on the web", async () => {
+    await act(async () => { renderPengingat(); });
+    expect(screen.getByText("Kabar lain dari Saku")).toBeInTheDocument();
+    for (const name of ["Batas kategori", "Tagihan besok", "Ringkasan mingguan"]) {
+      expect(screen.getByRole("switch", { name })).toBeDisabled();
+    }
+  });
+
+  it("saves notification switches on Android", async () => {
+    vi.mocked(isNativePlatform).mockReturnValue(true);
+    window.AndroidWidgetBridge = { saveConfig: vi.fn(), setNotificationPrefs: vi.fn() };
+    const user = renderPengingat();
+    for (const name of ["Batas kategori", "Tagihan besok", "Ringkasan mingguan"]) {
+      await user.click(screen.getByRole("switch", { name }));
+    }
+    expect(JSON.parse(localStorage.getItem("sakuin_saku_notifications_v1")!)).toEqual({ budget: false, bills: false, weekly: false });
+    expect(window.AndroidWidgetBridge.setNotificationPrefs).toHaveBeenLastCalledWith(JSON.stringify({ budget: false, bills: false, weekly: false }));
   });
 
   it("turns the nightly reminder on and off, saving it locally and on the server", async () => {

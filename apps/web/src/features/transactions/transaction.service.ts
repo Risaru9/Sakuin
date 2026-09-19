@@ -1,5 +1,6 @@
 import { apiRequest } from "../../lib/api-client";
 import { addToOfflineQueue } from "../../lib/offline-queue";
+import type { BudgetAlert } from "../../lib/saku-notifications";
 import type {
   CreateTransactionInput,
   CreateTransactionsBulkInput,
@@ -152,6 +153,17 @@ export async function createTransactionsBulk(input: CreateTransactionsBulkInput)
   }
 }
 
+/** Categories that these just-saved expenses pushed past 80% or 100% of their monthly limit. */
+export function getBudgetAlerts(transactionIds: string[]) {
+  return apiRequest<{ budgetAlerts: BudgetAlert[] }>("/api/transactions/budget-alerts", {
+    method: "POST",
+    body: {
+      transactionIds,
+      tzOffsetMinutes: new Date().getTimezoneOffset()
+    }
+  });
+}
+
 export function updateTransaction(
   transactionId: string,
   input: UpdateTransactionInput
@@ -166,4 +178,8 @@ export function deleteTransaction(transactionId: string) {
   return apiRequest<Transaction>(`/api/transactions/${transactionId}`, {
     method: "DELETE"
   });
+}
+
+export function getTransaction(transactionId: string) {
+  return apiRequest<Transaction>(`/api/transactions/${encodeURIComponent(transactionId)}`);
 }

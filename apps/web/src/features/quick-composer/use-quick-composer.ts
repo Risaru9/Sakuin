@@ -4,6 +4,8 @@ import { showSnack } from "../../components/saku";
 import { useToast } from "../../components/toast/ToastProvider";
 import { ApiClientError } from "../../lib/api-client";
 import { removeFromOfflineQueue } from "../../lib/offline-queue";
+import { getSakuNotificationPrefs, showBudgetAlerts } from "../../lib/saku-notifications";
+import { isNativePlatform } from "../../lib/transaction-reminder";
 import { queryKeys } from "../../lib/query-keys";
 import { markTodayReviewed } from "../reminders/daily-review-completion";
 import { buildOptimisticTransactionsFromDrafts } from "../transactions/optimistic-drafts";
@@ -20,7 +22,11 @@ import {
   restoreTransactionListCacheSnapshot
 } from "../transactions/transaction-cache";
 import { getTodayInputValue } from "../transactions/transaction-date";
-import { createTransactionsBulk, deleteTransaction } from "../transactions/transaction.service";
+import {
+  createTransactionsBulk,
+  deleteTransaction,
+  getBudgetAlerts
+} from "../transactions/transaction.service";
 import type { Transaction, TransactionType } from "../transactions/transaction.types";
 import { useReferenceData } from "../transactions/use-reference-data";
 import {
@@ -80,6 +86,24 @@ function buildSavedMessage(saved: Transaction[], drafts: QuickTransactionDraft[]
     detail: `${draft.categoryName} · ${formatSignedAmount(draft.amount, draft.type)}`,
     offline
   };
+}
+
+/** APK only: a phone notification when this save pushed a category past 80% or 100% of its limit. */
+async function notifyCrossedBudgets(saved: Transaction[]) {
+  const expenseIds = saved
+    .filter((transaction) => transaction.type === "EXPENSE" && !isOfflineTransaction(transaction))
+    .map((transaction) => transaction.id);
+
+  if (!isNativePlatform() || expenseIds.length === 0 || !getSakuNotificationPrefs().budget) {
+    return;
+  }
+
+  try {
+    const { budgetAlerts } = await getBudgetAlerts(expenseIds);
+    await showBudgetAlerts(budgetAlerts);
+  } catch {
+    // The entry is saved either way; a missed alert must never look like a failed save.
+  }
 }
 
 function getErrorMessage(error: unknown) {
@@ -146,6 +170,7 @@ export function useQuickComposer() {
 
       if (!message.offline) {
         markTodayReviewed();
+        void notifyCrossedBudgets(saved);
       }
 
       showSnack({
