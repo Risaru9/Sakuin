@@ -1,1 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:networkSecurityConfig="@xml/test_network_security" /></manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:networkSecurityConfig="@xml/test_network_security"><activity android:name=".WidgetTestActivity" android:exported="false" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode" android:theme="@android:style/Theme.Material.Light.NoActionBar" /></application></manifest>

@@ -6,7 +6,7 @@ export const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfr2eAUDvktXBFQwBo8SkB--6AWi0K9ooIeilwLUZIVxoZLbg/viewform?usp=dialog";
 export const SUPPORT_EMAIL = "sakuinofficial@gmail.com";
 
-const APK_PATH = "/downloads/sakuin.apk";
+const APK_PATH = "/downloads/sakuin.apk?v=19";
 
 const FEATURES: Array<{ Icon: LucideIcon; tint: string; title: string; text: string }> = [
   { Icon: Wallet, tint: "#fff0b3", title: "Catat satu baris", text: "Ketik \"kopi 18rb\", tekan Enter. Kategori ditebak otomatis." },

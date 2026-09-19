@@ -190,7 +190,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname === "/sw.js") {
+  // Downloads are not page navigations: never cache an APK as the offline home page.
+  if (url.pathname === "/sw.js" || url.pathname.startsWith("/downloads/") || url.pathname === "/latest-version.json") {
     return;
   }
 

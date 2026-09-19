@@ -5,6 +5,7 @@ import org.json.JSONObject;
 public class WeeklySummaryReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context c, Intent intent) {
         SakuNotifications.scheduleWeekly(c);
+        if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) SakuStore.refreshWidgets(c);
         if (!"com.sakuin.app.WEEKLY".equals(intent.getAction()) || !SakuNotifications.enabled(c, "weekly") || !SakuStore.loggedIn(c)) return;
         PendingResult pending = goAsync();
         SakuStore.IO.execute(() -> {

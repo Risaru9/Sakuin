@@ -240,7 +240,8 @@ Pemilik memilih rilis **bertahap**, dan setiap langkah harus dicatat di bagian i
 | 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang, buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | Selesai. PR dibuat pemilik; CI "Validate Sakuin" hijau untuk `2086afa` dan `b0b2da6` (termasuk tes database). |
 | 2–4 | Merge ke `main`, uji di HP pemilik, lalu umumkan APK 2.1. | Codex langsung merilis 2.1.0 ke `main` sebagai `b0b2da6` (19 Sep, 15.31 WIB): web + API + APK 2.1.0 (kode 17) tayang untuk semua pengguna. CI dan "Build Android APK" hijau. |
 | 5 | Pemilik mencoba di HP Xiaomi: widget menampilkan **"Tidak dapat memuat widget"**. | Diperbaiki di 2.1.1, lihat catatan di bawah. |
-| 6 | Rilis perbaikan APK 2.1.1 (kode 18). | Commit `dcec350` sudah di-push ke cabang `claude/frosty-engelbart-1dd838` (di atas `b0b2da6` = `main`). Push langsung ke `main` diblokir pengaman izin Claude, jadi pemilik diminta membuat PR baru (https://github.com/Risaru9/Sakuin/compare/main...claude/frosty-engelbart-1dd838?expand=1), menunggu CI hijau, lalu Merge. Setelah merge: cek `https://sakuin-web.vercel.app/latest-version.json` = 18 dan SHA-256 `downloads/sakuin.apk` = `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`. |
+| 6 | Rilis perbaikan APK 2.1.1 (kode 18). | Selesai (19 Sep). Pemilik membuat PR #3 dan menggabungnya (`2e8ed2c`). CI push + PR hijau (termasuk tes database). Produksi: `latest-version.json` dan `/api/app-version` = 18 / 2.1.1; `downloads/sakuin.apk` publik identik dengan build lokal (SHA-256 `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`). |
+| 7 | Pemilik update ke 2.1.1 di HP Xiaomi, lepas lalu pasang ulang widget, dan memastikan widget tampil. | Menunggu kabar pemilik. Kalau masih "Tidak dapat memuat widget": ambil log lewat USB debugging (`adb logcat \| findstr /i "AppWidget RemoteViews"`). |
 
 **Ditahan untuk tahap 4** (sengaja dibiarkan belum di-commit di worktree; jangan di-commit di tahap 1–2):
 - `apps/web/public/latest-version.json` (17 / 2.1.0 + catatan rilis)
@@ -265,3 +266,31 @@ Selama tahap 2–3, pengguna APK 2.0 hanya melihat perubahan web: layar memuat b
 - **APK 2.1.1**: `versionCode 18`, `versionName 2.1.1`, label "Sakuin", SHA-1 kunci `A7:20:43:6E:...:6D:3A` (sama), SHA-256 file `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`. Layout widget di dalam APK sudah dicek dengan `aapt2 dump xmltree`: hanya FrameLayout/LinearLayout/TextView/ImageView/ProgressBar, tanpa font resource.
 - **Belum terverifikasi di HP**: emulator di komputer ini tidak bisa menyala (image Android 37.1 16 KB butuh emulator lebih baru dari 36.6). Pemilik perlu memperbarui ke 2.1.1 lalu melepas dan memasang ulang widget. Kalau masih gagal, langkah berikutnya: ambil log dari HP (`adb logcat | findstr /i "AppWidget RemoteViews"`) lewat USB debugging.
 - Catatan rilis 2.1.1 (`latest-version.json`, `app-version.ts`, `release-notes.ts`) menyebut perbaikan widget. `AppReleaseNotesPrompt.tsx` menulis "Perbaikan ini memerlukan APK 2.1.1."
+
+## 9. Update aplikasi sekali ketuk (usulan, menunggu persetujuan pemilik, 19 September 2026)
+
+**Masalah yang dilaporkan**: setelah 2.1.1 tayang, aplikasi 2.1.0 di HP pemilik tidak menampilkan tawaran update.
+
+**Penyebab yang ditemukan di kode** (`apps/web/src/components/pwa/ApkUpdatePrompt.tsx`, `use-app-version.ts`):
+- Pengecekan versi hanya jalan sekali, 1,5 detik setelah halaman web pertama kali dimuat. Kalau Sakuin masih hidup di latar belakang lalu dibuka lagi, WebView tidak memuat ulang, jadi tidak pernah dicek lagi.
+- `apiRequest("/app-version")` memanggil `https://sakuin-api.vercel.app/app-version` (404). Rute yang benar `/api/app-version`. Cadangan `fetch("/latest-version.json")` dari origin web tetap berhasil, jadi ini bukan penyebab utama, tapi harus dibetulkan.
+- Jalan pintas untuk pengguna sekarang: tutup Sakuin sepenuhnya (geser dari daftar aplikasi terbaru), buka lagi, lalu kartu update muncul; atau unduh langsung dari https://sakuin-web.vercel.app/downloads/sakuin.apk.
+
+**Permintaan pemilik**: setiap ada versi baru, aplikasi memberi notifikasi "ada update", diketuk, lalu langsung mengunduh.
+
+**Mockup** (kanvas https://claude.ai/artifact/DcwFXFG6rKU87uiEjGGkJS baris "4 · Update aplikasi sekali ketuk"; salinan gambar `docs/handoff-apk-2.1/mockups/12-UpdateSekaliKetuk.png`): 4a notifikasi "Update Sakuin 2.1.1 sudah ada" + tombol Perbarui/Nanti, 4b kartu update yang sudah ada (layar sama), 4c kartu berubah jadi bar unduhan dengan persen, 4d layar pasang bawaan Android (tidak bisa diubah).
+
+**Rencana teknis** (belum dikerjakan):
+- Tahap A, cukup deploy web (berlaku juga untuk APK 2.0/2.1 yang sudah terpasang): betulkan rute ke `/api/app-version`; cek ulang saat aplikasi kembali ke depan (`App.addListener("appStateChange")` + `visibilitychange`) dan tiap beberapa jam; saat ada versi lebih baru, tampilkan kartu dan notifikasi lokal Capacitor sekali per versi (tap → buka kartu/mulai unduh); tombol "Perbarui sekarang" memakai `AndroidExportBridge.enqueueDownload(url, "sakuin-<versi>.apk", "application/vnd.android.package-archive", "")` (sudah ada sejak 2.0) sehingga unduhan langsung jalan lewat pengunduh Android. Pengguna lalu mengetuk notifikasi "Unduhan selesai" untuk membuka layar pasang.
+- Tahap B, butuh APK 2.2: pengecekan harian walau aplikasi tertutup (alarm/WorkManager memanggil `/api/app-version`, lalu notifikasi); bar persen unduhan; setelah unduhan selesai, layar pasang Android langsung dibuka (izin `REQUEST_INSTALL_PACKAGES` + intent install lewat `FileProvider`; pertama kali Android minta izin "Instal aplikasi tidak dikenal" untuk Sakuin).
+- Batas Android: aplikasi di luar Play Store tidak bisa memasang dirinya diam-diam; pengguna selalu menekan "Update" di layar pasang Android.
+
+## 10. APK 2.1.2: widget digambar oleh aplikasi (19 September 2026)
+
+- Keluhan pemilik: layout widget 2.1.1 (XML + font sistem) berantakan di HP Xiaomi; widget harus fleksibel dan jalan di semua HP.
+- Pendekatan (dikerjakan Codex, diperiksa dan dilanjutkan Claude): `SakuWidgetDrawing` menggambar kartu mockup ke Bitmap memakai Fredoka/Nunito milik aplikasi; `sakuin_widget_rendered.xml` hanya berisi ImageView + area tombol transparen ("+ Catat", refresh), jadi launcher tidak memuat font atau layout khusus. Android 12+: satu gambar per ukuran (`OPTION_APPWIDGET_SIZES`); Android lama: gambar portrait + landscape. Total piksel dibatasi agar di bawah batas memori RemoteViews. `MY_PACKAGE_REPLACED` langsung menggambar ulang widget setelah update.
+- Tambahan Claude: isi "Masuk dulu"/"Belum ada data" di tengah pada kartu lebar; jarak kotak batas–"Terakhir"–tombol di widget besar dilonggarkan; ruang tinggi berlebih dibagi rata (tidak ada celah besar di tengah); pesan offline di Catat cepat tidak diulang dua kali.
+- Web (Codex): cek versi ke `/api/app-version` tanpa cache, APK diberi `?v=19`, header Vercel untuk unduhan APK, service worker tidak meng-cache `/downloads/` dan `latest-version.json`.
+- Verifikasi: emulator Android 14 (AVD `Sakuin_Widget_34`, 1080×2400 @440dpi; berkas `D:\Android\Avd\Sakuin_Widget_34.ini` perlu `path.rel`) — 8/8 tes instrumentasi `SakuNativeTest` lolos (70 kombinasi ukuran/keadaan, batas memori, host widget sungguhan), unit test lolos, kedua widget dipasang di Pixel Launcher lewat `requestPinAppWidget` dan tampil sesuai mockup, "+ Catat" membuka Catat cepat, alur offline benar. Tes keyboard butuh `settings put secure show_ime_with_hard_keyboard 1` di emulator.
+- APK 2.1.2: versionCode 19, kunci SHA-1 `A7:20:...:6D:3A`, SHA-256 `4c40887efa8f47fc1da07a09755c4110d76bfa108b11dd6dbcee26818cb1d631`.
+- Belum: uji di HP Xiaomi pemilik setelah rilis; rilis lewat PR baru dari cabang ini (push langsung ke `main` diblokir pengaman izin Claude). Tahap A/B update sekali ketuk (bagian 9) belum dikerjakan.

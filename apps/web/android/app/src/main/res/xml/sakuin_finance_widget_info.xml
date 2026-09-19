@@ -6,8 +6,9 @@
     android:targetCellHeight="2"
     android:description="@string/widget_finance_medium_description"
     android:updatePeriodMillis="1800000"
-    android:initialLayout="@layout/sakuin_finance_widget_medium"
-    android:previewLayout="@layout/sakuin_finance_widget_medium"
+    android:initialLayout="@layout/sakuin_widget_loading"
+    android:previewLayout="@layout/sakuin_widget_preview_medium"
+    android:previewImage="@drawable/widget_preview_medium"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
 </appwidget-provider>

@@ -3,12 +3,14 @@ package com.sakuin.app;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.os.Build;
 import android.os.Bundle;
+import android.graphics.RectF;
+import android.util.SizeF;
 import android.view.View;
 import android.content.*;
 import android.widget.RemoteViews;
 import org.json.JSONObject;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
@@ -45,70 +47,58 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         try { cached = new JSONObject(SakuStore.prefs(c).getString("glance", "")); } catch (Exception ignored) { }
         render(c, m, id, cached);
     }
-    private void render(Context c, AppWidgetManager m, int id, JSONObject data) {
-        RemoteViews v = new RemoteViews(c.getPackageName(), getLayoutResource());
-        PendingIntent open = PendingIntent.getActivity(c, 100, new Intent(c, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        v.setOnClickPendingIntent(R.id.widget_root, open);
-        boolean login = !SakuStore.loggedIn(c) || SakuStore.prefs(c).getBoolean("auth_expired", false);
-        PendingIntent quick = PendingIntent.getActivity(c, 101, new Intent(c, QuickEntryActivity.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        v.setOnClickPendingIntent(R.id.widget_quick_add_button, login ? open : quick);
-        if (isLarge()) {
-            v.setOnClickPendingIntent(R.id.widget_refresh_button, PendingIntent.getBroadcast(c, 102, new Intent(c, getProviderClass()).setAction(ACTION_REFRESH), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+
+    private void render(Context c, AppWidgetManager manager, int id, JSONObject data) {
+        Bundle options = manager.getAppWidgetOptions(id);
+        ArrayList<SizeF> sizes = Build.VERSION.SDK_INT >= 31 ? options.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES) : null;
+        if (Build.VERSION.SDK_INT >= 31 && sizes != null && !sizes.isEmpty() && sizes.size() <= 16) {
+            Map<SizeF, RemoteViews> variants = new LinkedHashMap<>();
+            float area = 0;
+            for (SizeF s : sizes) area += Math.max(1,s.getWidth()) * Math.max(1,s.getHeight());
+            float resolution = resolution(c, area);
+            for (SizeF s : sizes) if (s.getWidth() > 0 && s.getHeight() > 0) variants.put(s, createViews(c,s.getWidth(),s.getHeight(),data,resolution));
+            if (!variants.isEmpty()) { manager.updateAppWidget(id,new RemoteViews(variants)); return; }
         }
-        if (login || data == null) {
-            v.setTextViewText(R.id.widget_today_label, login ? "Masuk dulu, ya" : "Belum ada data");
-            v.setTextViewText(R.id.widget_today, ""); v.setTextViewText(R.id.widget_left, "");
-            v.setImageViewResource(R.id.widget_mascot, R.drawable.saku_wow);
-            v.setViewVisibility(R.id.widget_budget_box, View.GONE);
-            v.setViewVisibility(R.id.widget_budget_badge, View.GONE);
-            v.setViewVisibility(R.id.widget_login_message, View.VISIBLE);
-            v.setTextViewText(R.id.widget_login_message, login ? "Widget tampil setelah kamu masuk di aplikasi." : "Sambungkan internet untuk memuat catatan.");
-            v.setTextViewText(R.id.widget_quick_add_button, login ? "Buka Sakuin" : "+ Catat");
-            if (isLarge()) {
-                v.setTextViewText(R.id.widget_month, "Sakuin"); v.setTextViewText(R.id.widget_updated, "");
-                v.setTextViewText(R.id.widget_last, ""); v.setViewVisibility(R.id.widget_left_label, View.GONE);
-            }
-        } else {
-            JSONObject month = data.optJSONObject("month");
-            v.setTextViewText(R.id.widget_today, SakuStore.number(data.optDouble("todayExpense")));
-            v.setTextViewText(R.id.widget_left, (isLarge() ? "" : "Sisa bulan ini ") + SakuStore.number(month == null ? 0 : month.optDouble("left")));
-            JSONObject budget = data.optJSONObject("budget");
-            String status = budget == null ? "ok" : budget.optString("status", "ok");
-            v.setViewVisibility(R.id.widget_budget_box, View.VISIBLE);
-            v.setViewVisibility(R.id.widget_budget_badge, View.VISIBLE);
-            v.setImageViewResource(R.id.widget_mascot, "over".equals(status) ? R.drawable.saku_worried : "watch".equals(status) ? R.drawable.saku_wow : R.drawable.saku_happy);
-            int[] bars = {R.id.widget_progress_ok, R.id.widget_progress_watch, R.id.widget_progress_over};
-            String[] states = {"ok", "watch", "over"};
-            for (int i = 0; i < bars.length; i++) {
-                v.setViewVisibility(bars[i], budget != null && states[i].equals(status) ? View.VISIBLE : View.GONE);
-                v.setProgressBar(bars[i], 100, budget == null ? 0 : Math.max(0, Math.min(100, budget.optInt("percent"))), false);
-            }
-            String line = "Belum ada pengeluaran bulan ini";
-            if (budget != null) {
-                line = budget.optString("categoryName") + ("over".equals(status) ? " lewat batas" : ("ok".equals(status) ? " baru " : " ") + budget.optInt("percent") + "% dari batas");
-            } else {
-                JSONObject top = data.optJSONObject("topCategory");
-                if (top != null) line = top.optString("categoryName") + " " + SakuStore.number(top.optDouble("amount"));
-            }
-            v.setTextViewText(R.id.widget_budget, line);
-            v.setTextColor(R.id.widget_budget, android.graphics.Color.parseColor("over".equals(status) ? "#C62828" : "watch".equals(status) ? "#8A5A00" : "#625D78"));
-            if (isLarge()) {
-                v.setTextViewText(R.id.widget_month, month == null ? "Sakuin" : month.optString("label"));
-                long at = SakuStore.prefs(c).getLong("glance_at", 0);
-                v.setTextViewText(R.id.widget_updated, at == 0 ? "" : "diperbarui " + new SimpleDateFormat("HH.mm", Locale.US).format(new Date(at)));
-                JSONObject last = data.optJSONObject("lastTransaction");
-                v.setTextViewText(R.id.widget_last, last == null ? "Belum ada catatan" : "Terakhir: " + last.optString("name") + ("INCOME".equals(last.optString("type")) ? " +" : " −") + SakuStore.number(last.optDouble("amount")));
-            }
+        float w = size(options,AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,267);
+        float h = size(options,AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,isLarge() ? 200 : 131);
+        float landscapeW = size(options,AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,(int)w);
+        float landscapeH = size(options,AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,(int)h);
+        float resolution = resolution(c,w*h+landscapeW*landscapeH);
+        // Legacy launchers report portrait=minWidth/maxHeight, landscape=maxWidth/minHeight.
+        manager.updateAppWidget(id,new RemoteViews(createViews(c,landscapeW,landscapeH,data,resolution),createViews(c,w,h,data,resolution)));
+    }
+
+    private int size(Bundle options,String key,int fallback) { int value = options.getInt(key,fallback); return value > 0 ? value : fallback; }
+
+    float resolution(Context c, float area) {
+        android.util.DisplayMetrics display = c.getResources().getDisplayMetrics();
+        // Bound ALL variants together below the launcher's bitmap memory limit.
+        float maxPixels = Math.min(1500000f, display.widthPixels * (float)display.heightPixels * .75f);
+        return Math.min(display.density, (float)Math.sqrt(maxPixels / Math.max(1,area)));
+    }
+
+    RemoteViews createViews(Context c, float width, float height, JSONObject data, float resolution) {
+        boolean login = !SakuStore.loggedIn(c) || SakuStore.prefs(c).getBoolean("auth_expired",false);
+        SakuWidgetDrawing art = new SakuWidgetDrawing(c,width,height,isLarge(),login,data,SakuStore.prefs(c).getLong("glance_at",0),resolution);
+        RemoteViews views = new RemoteViews(c.getPackageName(),R.layout.sakuin_widget_rendered);
+        views.setImageViewBitmap(R.id.widget_art,art.bitmap);
+        views.setContentDescription(R.id.widget_art,art.description);
+        PendingIntent open = PendingIntent.getActivity(c,100,new Intent(c,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent quick = PendingIntent.getActivity(c,101,new Intent(c,QuickEntryActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_art,open);
+        views.setOnClickPendingIntent(R.id.widget_quick_add_button,login ? open : quick);
+        views.setContentDescription(R.id.widget_quick_add_button,login ? "Buka Sakuin" : "Catat cepat");
+        position(c,views,R.id.widget_quick_area,art.quick,width,height);
+        views.setViewVisibility(R.id.widget_refresh_area,art.refresh.isEmpty() ? View.GONE : View.VISIBLE);
+        if (!art.refresh.isEmpty()) {
+            position(c,views,R.id.widget_refresh_area,art.refresh,width,height);
+            views.setOnClickPendingIntent(R.id.widget_refresh_button,PendingIntent.getBroadcast(c,102,new Intent(c,getProviderClass()).setAction(ACTION_REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
         }
-        int minHeight = m.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, isLarge() ? 220 : 150);
-        if ((!isLarge() && minHeight < 140) || (isLarge() && minHeight < 220)) {
-            float density = c.getResources().getDisplayMetrics().density;
-            int padding = (int) (8 * density);
-            v.setViewPadding(R.id.widget_root, padding, padding, padding, padding);
-            v.setViewPadding(R.id.widget_quick_add_button, padding, (int)(4 * density), padding, (int)(4 * density));
-            v.setTextViewTextSize(R.id.widget_today, android.util.TypedValue.COMPLEX_UNIT_SP, 24);
-            if (isLarge()) v.setTextViewTextSize(R.id.widget_left, android.util.TypedValue.COMPLEX_UNIT_SP, 20);
-        }
-        m.updateAppWidget(id, v);
+        return views;
+    }
+
+    private void position(Context c, RemoteViews v, int id, RectF rect, float w, float h) {
+        float density = c.getResources().getDisplayMetrics().density;
+        v.setViewPadding(id,Math.round(rect.left*density),Math.round(rect.top*density),Math.round((w-rect.right)*density),Math.round((h-rect.bottom)*density));
     }
 }
