@@ -237,7 +237,7 @@ Pemilik memilih rilis **bertahap**, dan setiap langkah harus dicatat di bagian i
 
 | Tahap | Isi | Status |
 | --- | --- | --- |
-| 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang (bukan `main`), buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | sedang berjalan |
+| 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang (bukan `main`), buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | Commit `553de60` sudah di-push ke cabang (19 Sep). PR belum dibuat: `gh` tidak terpasang dan browser Claude tidak masuk GitHub, jadi pemilik diminta membuka https://github.com/Risaru9/Sakuin/pull/new/claude/frosty-engelbart-1dd838 lalu menekan "Create pull request". Setelah PR ada: tunggu CI "Validate Sakuin", catat hasilnya di sini. |
 | 2 | Kalau CI hijau: merge PR ke `main`. Web + API baru tayang (endpoint `/api/transactions/quick`, `/api/transactions/budget-alerts`, `/api/summary/glance`, layar memuat baru, sakelar Pengingat). APK 2.1 **belum** ditawarkan: `latest-version.json` dan `app-version.ts` tetap 16/2.0.0, `downloads/sakuin.apk` tetap 2.0.0. | belum |
 | 3 | Pemilik memasang APK 2.1 di HP-nya sendiri (file `apps/web/public/downloads/sakuin.apk` di worktree, disalin manual ke HP, dipasang di atas 2.0) lalu mencoba: ikon, layar pembuka, kedua widget, tombol + Catat, Ubah, notifikasi dan ketukannya, sakelar Pengingat. | belum |
 | 4 | Kalau aman: commit kedua berisi pengumuman APK (lihat daftar di bawah), push, PR, CI, merge. Semua pengguna ditawari update 2.1. | belum |
