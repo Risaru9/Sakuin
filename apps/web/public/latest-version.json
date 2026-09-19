@@ -1,13 +1,14 @@
 {
-  "latestVersionCode": 16,
-  "latestVersionName": "2.0.0",
+  "latestVersionCode": 17,
+  "latestVersionName": "2.1.0",
   "minSupportedVersionCode": 1,
   "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
   "releaseNotes": [
-    "Tampilan baru Sakuin: catat satu baris, menu Catatan, Laporan, dan Lainnya.",
-    "Kunci keamanan aplikasi diganti. Hapus aplikasi Sakuin lama dulu, lalu pasang yang ini (cukup sekali).",
-    "Catatanmu tersimpan di server. Setelah dipasang, tinggal masuk lagi."
+    "Ikon dan layar pembuka baru bergambar Saku.",
+    "Widget baru: lihat pengeluaran hari ini dan catat lewat tombol + Catat tanpa membuka aplikasi.",
+    "Notifikasi baru: batas kategori, tagihan besok, dan ringkasan mingguan. Atur di Lainnya › Pengingat.",
+    "Cukup pasang di atas versi 2.0, tidak perlu hapus aplikasi."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-09-18T18:07:02.000Z"
+  "publishedAt": "2026-09-19T06:13:54.950Z"
 }

@@ -53,7 +53,7 @@ export function AppReleaseNotesPrompt() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-saku-head text-lg font-semibold">{SAKUIN_RELEASE_TITLE}</p>
-            <p className="text-xs font-bold text-saku-muted">Pembaruan masuk otomatis, tidak perlu pasang ulang.</p>
+            <p className="text-xs font-bold text-saku-muted">Fitur Android baru memerlukan APK 2.1.</p>
           </div>
           <button
             aria-label="Tutup info update Sakuin"
