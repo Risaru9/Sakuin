@@ -1,10 +1,10 @@
-export const SAKUIN_RELEASE_VERSION = "2026.09-apk-2.1";
-export const SAKUIN_RELEASE_TITLE = "Saku makin dekat!";
+export const SAKUIN_RELEASE_VERSION = "2026.09-apk-2.1.1";
+export const SAKUIN_RELEASE_TITLE = "Widget Saku sudah diperbaiki!";
 export const SAKUIN_RELEASE_NOTES = [
-  "Ikon dan layar pembuka baru bergambar Saku.",
-  "APK 2.1: catat langsung dari widget lewat tombol + Catat.",
-  "Atur kabar batas kategori, tagihan besok, dan ringkasan mingguan di Lainnya › Pengingat.",
-  "Pasang APK 2.1 di atas versi 2.0, tanpa menghapus aplikasi."
+  "Perbaikan: widget yang tadinya bertuliskan \"Tidak dapat memuat widget\" sekarang tampil lagi.",
+  "Catat langsung dari widget lewat tombol + Catat.",
+  "Ikon, layar pembuka, dan notifikasi baru tetap tersedia.",
+  "Pasang APK 2.1.1 di atas versi 2.0 atau 2.1.0, tanpa menghapus aplikasi."
 ];
 
 const RELEASE_NOTES_STORAGE_KEY = "sakuin_seen_release_notes_version";

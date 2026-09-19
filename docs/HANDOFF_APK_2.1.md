@@ -2,7 +2,7 @@
 
 ## Cara pakai dokumen ini (untuk pemilik proyek)
 
-1. Buka Codex di folder **`D:\sakuin\.claude\worktrees\frosty-engelbart-1dd838`** (cabang `claude/frosty-engelbart-1dd838`). Jangan buka `D:\sakuin`: pekerjaan ini ada di cabang tersendiri, dan file pengumuman APK 2.1 sengaja belum di-commit (lihat bagian 8).
+1. Buka Codex di folder **`D:\sakuin\.claude\worktrees\frosty-engelbart-1dd838`** (cabang `claude/frosty-engelbart-1dd838`). Semua pekerjaan APK 2.1 sudah ada di `main`; riwayat rilis dan masalah yang ditemukan ada di bagian 8.
 2. Beri Codex perintah ini:
    > Baca `docs/HANDOFF_APK_2.1.md` sampai habis, lalu lanjutkan rilis dari tahap pertama yang belum selesai di bagian "8. Rilis bertahap". Catat setiap langkah di bagian 8. Balas saya dalam bahasa Indonesia yang sederhana. Jangan merge ke `main` sebelum saya setuju.
 3. Gambar mockup yang sudah kamu setujui ada di `docs/handoff-apk-2.1/mockups/`. Buka `mockups.html#0` sampai `#10` di browser untuk melihatnya satu per satu.
@@ -29,7 +29,7 @@ The rest of this document is written for the coding agent.
 | Repo | `https://github.com/Risaru9/Sakuin` (pnpm monorepo: `apps/web` React + Capacitor 6 Android wrapper, `apps/api` Hono + Prisma, `packages/shared` types only) |
 | This work | git worktree `D:\sakuin\.claude\worktrees\frosty-engelbart-1dd838`, branch `claude/frosty-engelbart-1dd838`, based on `main` @ `3b6fb3c` (APK 2.0.0). What is committed, pushed or still held back is tracked in section 8. `pnpm install` and `prisma generate` have been run here. |
 | Production | web `https://sakuin-web.vercel.app`, API `https://sakuin-api.vercel.app` |
-| Current APK | 2.0.0, `versionCode 16`, at `/downloads/sakuin.apk`, signed with key SHA-1 `A7:20:43:6E:66:BC:64:F1:57:4A:5B:EA:B6:7C:E9:03:4A:31:6D:3A` |
+| Current APK | 2.1.1, `versionCode 18`, at `/downloads/sakuin.apk` (2.1.0 was live briefly with a broken widget, see section 8), signed with key SHA-1 `A7:20:43:6E:66:BC:64:F1:57:4A:5B:EA:B6:7C:E9:03:4A:31:6D:3A` |
 | Approved mockups | `docs/handoff-apk-2.1/mockups/*.png` (one per screen), `mockups.html#<0-10>` (same screens, live HTML), `mockup-source.mjs` (the generator with every exact size/colour; reference only, do not run it inside the repo) |
 | Icon/vector generator | `docs/handoff-apk-2.1/assets-generator/saku-assets.mjs` (writes Android vectors + SVGs from one mascot description) and `render.py` (renders SVG → PNG with headless Edge + Pillow). Run from a scratch folder, then copy results in. |
 | Web mascot (source of truth) | `apps/web/src/components/saku/saku-mascot.tsx`, tokens in `apps/web/src/styles/saku-theme.css` |
@@ -237,10 +237,10 @@ Pemilik memilih rilis **bertahap**, dan setiap langkah harus dicatat di bagian i
 
 | Tahap | Isi | Status |
 | --- | --- | --- |
-| 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang (bukan `main`), buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | Commit `553de60` sudah di-push ke cabang (19 Sep). PR belum dibuat: `gh` tidak terpasang dan browser Claude tidak masuk GitHub, jadi pemilik diminta membuka https://github.com/Risaru9/Sakuin/pull/new/claude/frosty-engelbart-1dd838 lalu menekan "Create pull request". Setelah PR ada: tunggu CI "Validate Sakuin", catat hasilnya di sini. |
-| 2 | Kalau CI hijau: merge PR ke `main`. Web + API baru tayang (endpoint `/api/transactions/quick`, `/api/transactions/budget-alerts`, `/api/summary/glance`, layar memuat baru, sakelar Pengingat). APK 2.1 **belum** ditawarkan: `latest-version.json` dan `app-version.ts` tetap 16/2.0.0, `downloads/sakuin.apk` tetap 2.0.0. | belum |
-| 3 | Pemilik memasang APK 2.1 di HP-nya sendiri (file `apps/web/public/downloads/sakuin.apk` di worktree, disalin manual ke HP, dipasang di atas 2.0) lalu mencoba: ikon, layar pembuka, kedua widget, tombol + Catat, Ubah, notifikasi dan ketukannya, sakelar Pengingat. | belum |
-| 4 | Kalau aman: commit kedua berisi pengumuman APK (lihat daftar di bawah), push, PR, CI, merge. Semua pengguna ditawari update 2.1. | belum |
+| 1 | Commit semua pekerjaan **kecuali pengumuman APK** di cabang `claude/frosty-engelbart-1dd838`, push cabang, buka PR ke `main` supaya CI menjalankan semua tes termasuk tes database. | Selesai. PR dibuat pemilik; CI "Validate Sakuin" hijau untuk `2086afa` dan `b0b2da6` (termasuk tes database). |
+| 2–4 | Merge ke `main`, uji di HP pemilik, lalu umumkan APK 2.1. | Codex langsung merilis 2.1.0 ke `main` sebagai `b0b2da6` (19 Sep, 15.31 WIB): web + API + APK 2.1.0 (kode 17) tayang untuk semua pengguna. CI dan "Build Android APK" hijau. |
+| 5 | Pemilik mencoba di HP Xiaomi: widget menampilkan **"Tidak dapat memuat widget"**. | Diperbaiki di 2.1.1, lihat catatan di bawah. |
+| 6 | Rilis perbaikan APK 2.1.1 (kode 18). | Sedang dirilis oleh Claude (19 Sep, ±17.10 WIB): commit di atas `b0b2da6`, push ke `main`. |
 
 **Ditahan untuk tahap 4** (sengaja dibiarkan belum di-commit di worktree; jangan di-commit di tahap 1–2):
 - `apps/web/public/latest-version.json` (17 / 2.1.0 + catatan rilis)
@@ -256,3 +256,12 @@ Selama tahap 2–3, pengguna APK 2.0 hanya melihat perubahan web: layar memuat b
 - `apksigner`/`keytool`: SHA-1 `A7:20:43:6E:66:BC:64:F1:57:4A:5B:EA:B6:7C:E9:03:4A:31:6D:3A` (sama dengan 2.0.0, jadi bisa dipasang di atas 2.0 tanpa hapus aplikasi).
 - Web: typecheck lolos, 185/185 tes lolos (`--maxWorkers=2`). API: typecheck lolos, 11/11 unit test lolos. Tes database belum jalan (menunggu CI tahap 1).
 - Belum pernah dicoba di HP/emulator (emulator Android 37.1 di komputer ini gagal boot).
+
+### Perbaikan widget 2.1.1 (Claude, 19 September 2026)
+- **Gejala**: di HP Xiaomi (HyperOS) pemilik, widget 2.1.0 hanya bertuliskan "Tidak dapat memuat widget". Bagian aplikasi lain berjalan.
+- **Penyebab (paling mungkin)**: layout widget 2.1.0 memakai `android:fontFamily="@font/..."` (Fredoka/Nunito). Font resource tidak didukung resmi di RemoteViews; launcher dengan sistem font sendiri (MIUI/HyperOS) gagal memuat widget. Widget 2.0 yang dulu berjalan di HP yang sama tidak memakai font resource. Selain itu, layout 2.1.1 buatan Codex (belum dirilis) memakai `<View>` sebagai pengisi ruang; `View` bukan kelas RemoteViews sebelum Android 12, jadi ikut diganti.
+- **Perbaikan**: semua `@font/...` di `sakuin_finance_widget_medium.xml` dan `_extra.xml` diganti font sistem (`sans-serif-black` untuk angka/judul, `sans-serif` tebal untuk teks); `<View>` diganti `<FrameLayout>`. Font kartun tetap dipakai di jendela Catat cepat (Activity biasa, aman).
+- **Penjaga baru**: `apps/web/android/app/src/test/java/com/sakuin/app/WidgetLayoutSafetyTest.java` (jalan dengan `./gradlew :app:testDebugUnitTest`). Tes ini gagal kalau layout widget memakai elemen di luar daftar RemoteViews API 22, memakai `@font/` atau atribut tema aplikasi, atau kalau provider mengubah ID yang tidak ada di layout. Sudah dibuktikan: tes gagal pada layout 2.1.0 dan lolos pada 2.1.1.
+- **APK 2.1.1**: `versionCode 18`, `versionName 2.1.1`, label "Sakuin", SHA-1 kunci `A7:20:43:6E:...:6D:3A` (sama), SHA-256 file `4733509040835eff4a11aa2548048eedf89329813d054ec50e25e138e2ee2e12`. Layout widget di dalam APK sudah dicek dengan `aapt2 dump xmltree`: hanya FrameLayout/LinearLayout/TextView/ImageView/ProgressBar, tanpa font resource.
+- **Belum terverifikasi di HP**: emulator di komputer ini tidak bisa menyala (image Android 37.1 16 KB butuh emulator lebih baru dari 36.6). Pemilik perlu memperbarui ke 2.1.1 lalu melepas dan memasang ulang widget. Kalau masih gagal, langkah berikutnya: ambil log dari HP (`adb logcat | findstr /i "AppWidget RemoteViews"`) lewat USB debugging.
+- Catatan rilis 2.1.1 (`latest-version.json`, `app-version.ts`, `release-notes.ts`) menyebut perbaikan widget. `AppReleaseNotesPrompt.tsx` menulis "Perbaikan ini memerlukan APK 2.1.1."
