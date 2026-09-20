@@ -1,10 +1,10 @@
-export const SAKUIN_RELEASE_VERSION = "2026.09-apk-2.1.2";
-export const SAKUIN_RELEASE_TITLE = "Widget Saku sudah diperbaiki!";
+export const SAKUIN_RELEASE_VERSION = "2026.09-apk-2.2.0";
+export const SAKUIN_RELEASE_TITLE = "Update Sakuin jadi sekali ketuk!";
 export const SAKUIN_RELEASE_NOTES = [
-  "Widget sedang dan besar mengikuti mockup, dengan font Saku dan tata letak adaptif.",
-  "Panel + Catat dirapikan: mengetik, menyimpan, ikon kategori, dan batas anggaran.",
-  "Rendering widget tidak bergantung pada font launcher atau merek HP.",
-  "Pasang APK 2.1.2 di atas versi sebelumnya, tanpa menghapus aplikasi."
+  "Sakuin memberi tahu sendiri kalau ada versi baru, walau aplikasi sedang tertutup.",
+  "Ketuk notifikasinya: unduhan jalan sendiri, lalu layar pasang Android langsung terbuka.",
+  "Widget dan catat cepat tetap seperti 2.1.2.",
+  "Pasang APK 2.2.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
 ];
 
 const RELEASE_NOTES_STORAGE_KEY = "sakuin_seen_release_notes_version";

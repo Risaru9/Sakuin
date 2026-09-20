@@ -58,6 +58,7 @@ public class MainActivity extends BridgeActivity {
                     editor.apply();
 
                     SakuNotifications.scheduleWeekly(MainActivity.this);
+                    SakuUpdate.scheduleCheck(MainActivity.this);
                     if (!nextToken.isEmpty() && Build.VERSION.SDK_INT >= 33 && !sharedPref.getBoolean("notification_permission_asked", false)) {
                         sharedPref.edit().putBoolean("notification_permission_asked", true).apply();
                         runOnUiThread(() -> androidx.core.app.ActivityCompat.requestPermissions(MainActivity.this, new String[] { android.Manifest.permission.POST_NOTIFICATIONS }, 210));
@@ -72,7 +73,7 @@ public class MainActivity extends BridgeActivity {
                     try {
                         org.json.JSONObject input = new org.json.JSONObject(json);
                         org.json.JSONObject clean = new org.json.JSONObject();
-                        for (String key : new String[] { "budget", "bills", "weekly" }) clean.put(key, input.optBoolean(key, true));
+                        for (String key : new String[] { "budget", "bills", "weekly", "update" }) clean.put(key, input.optBoolean(key, true));
                         SakuStore.prefs(MainActivity.this).edit().putString("notification_prefs", clean.toString()).apply();
                         SakuNotifications.scheduleWeekly(MainActivity.this);
                     } catch (Exception ignored) { }

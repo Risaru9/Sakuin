@@ -24,6 +24,7 @@ final class SakuNotifications {
             m.createNotificationChannel(new NotificationChannel("sakuin_budget", "Batas kategori", NotificationManager.IMPORTANCE_HIGH));
             m.createNotificationChannel(new NotificationChannel("sakuin_bills", "Tagihan besok", NotificationManager.IMPORTANCE_HIGH));
             m.createNotificationChannel(new NotificationChannel("sakuin_weekly", "Ringkasan mingguan", NotificationManager.IMPORTANCE_DEFAULT));
+            m.createNotificationChannel(new NotificationChannel(SakuUpdate.CHANNEL, "Update aplikasi", NotificationManager.IMPORTANCE_DEFAULT));
         }
     }
     static void post(Context c, int id, String channel, String title, String body, int icon, String route) {
@@ -35,6 +36,17 @@ final class SakuNotifications {
                 .setColor(Color.parseColor("#2B63E0")).setLargeIcon(BitmapFactory.decodeResource(c.getResources(), icon))
                 .setContentTitle(title).setContentText(body).setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentIntent(tap).setAutoCancel(true);
+        NotificationManagerCompat.from(c).notify(id, b.build());
+    }
+    /** A notification whose tap and button run one of our own receivers, without opening the app. */
+    static void action(Context c, int id, String channel, String title, String body, int icon, String label, Intent broadcast) {
+        channels(c);
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
+        PendingIntent run = PendingIntent.getBroadcast(c, id, broadcast, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(c, channel).setSmallIcon(R.drawable.ic_stat_saku)
+                .setColor(Color.parseColor("#2B63E0")).setLargeIcon(BitmapFactory.decodeResource(c.getResources(), icon))
+                .setContentTitle(title).setContentText(body).setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(run).addAction(0, label, run).setAutoCancel(true);
         NotificationManagerCompat.from(c).notify(id, b.build());
     }
     static void budget(Context c, JSONArray alerts) {
