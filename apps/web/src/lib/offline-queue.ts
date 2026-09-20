@@ -99,9 +99,8 @@ export async function syncOfflineTransactions(): Promise<boolean> {
   
   try {
     const payload = {
-      transactions: queue.map(({ categoryId, accountId, amount, type, note, date }) => ({
+      transactions: queue.map(({ categoryId, amount, type, note, date }) => ({
         categoryId,
-        accountId,
         amount,
         type,
         note,

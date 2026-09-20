@@ -104,8 +104,6 @@ describe("toCreateTransactionInputs", () => {
       note: "kopi susu"
     });
 
-    const [withAccount] = toCreateTransactionInputs(drafts, "account-bca");
-    expect(withAccount.accountId).toBe("account-bca");
   });
 });
 

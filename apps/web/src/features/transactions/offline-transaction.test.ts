@@ -248,11 +248,10 @@ describe("Offline Transaction Handling", () => {
     expect(getOfflineQueue().length).toBe(0);
   });
 
-  it("keeps the chosen account when syncing offline transactions", async () => {
+  it("syncs offline transactions without account fields", async () => {
     saveOfflineQueue([
       {
         categoryId: "cat-1",
-        accountId: "account-bca",
         amount: "10000",
         type: "EXPENSE" as const,
         date: "2026-05-27T00:00:00.000Z",
@@ -269,7 +268,7 @@ describe("Offline Transaction Handling", () => {
       method: "POST",
       body: {
         transactions: [
-          expect.objectContaining({ categoryId: "cat-1", accountId: "account-bca" })
+          expect.objectContaining({ categoryId: "cat-1" })
         ]
       }
     });

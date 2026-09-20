@@ -26,7 +26,7 @@ export type QuickTransactionResult = {
 
 /**
  * Saves a typed line the way the in-app composer does: the same parser guesses the type and
- * category, and the entry goes to the default account on the given local day.
+ * category on the given local day.
  */
 export async function createQuickTransactions(
   userId: string,

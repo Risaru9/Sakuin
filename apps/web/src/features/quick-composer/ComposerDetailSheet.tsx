@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { BottomSheet, SegmentedControl, StickerButton } from "../../components/saku";
-import type { FinanceAccount } from "../accounts/account.types";
 import { CategoryPickerGrid } from "../categories/CategoryPickerGrid";
 import type { Category } from "../categories/category.types";
 import { NewCategorySheet } from "../categories/NewCategorySheet";
 import {
-  AccountChoiceChips,
   DateChoiceChips,
   PickerLabel
 } from "../transactions/TransactionFieldPickers";
@@ -22,8 +20,6 @@ type ComposerDetailSheetProps = {
   onSave: () => void;
   guess: ComposerGuess;
   categories: Category[];
-  accounts: FinanceAccount[];
-  selectedAccountId: string | null;
   todayKey: string;
   onChange: (patch: ComposerOverrides) => void;
 };
@@ -39,8 +35,6 @@ export function ComposerDetailSheet({
   onSave,
   guess,
   categories,
-  accounts,
-  selectedAccountId,
   todayKey,
   onChange
 }: ComposerDetailSheetProps) {
@@ -87,17 +81,6 @@ export function ComposerDetailSheet({
             />
           </>
         )}
-
-        {accounts.length > 0 ? (
-          <>
-            <PickerLabel>Rekening</PickerLabel>
-            <AccountChoiceChips
-              accounts={accounts}
-              onChange={(accountId) => onChange({ accountId })}
-              selectedId={selectedAccountId}
-            />
-          </>
-        ) : null}
 
         <PickerLabel>Tanggal</PickerLabel>
         <DateChoiceChips

@@ -50,7 +50,6 @@ type SavedMessage = {
 
 type SaveVariables = {
   drafts: QuickTransactionDraft[];
-  accountId?: string;
   sourceText: string;
 };
 
@@ -118,7 +117,7 @@ export function useQuickComposer() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
 
-  const { categories, accounts, categoriesQuery } = useReferenceData();
+  const { categories, categoriesQuery } = useReferenceData();
 
   const [text, setText] = useState("");
   const [overrides, setOverrides] = useState<ComposerOverrides>({});
@@ -131,13 +130,9 @@ export function useQuickComposer() {
     [text, categories, todayKey, overrides]
   );
 
-  // The API files transactions without an account under the first (default) account.
-  const selectedAccount =
-    accounts.find((account) => account.id === overrides.accountId) ?? accounts[0] ?? null;
-
   const saveMutation = useMutation({
-    mutationFn: ({ drafts, accountId }: SaveVariables) =>
-      createTransactionsBulk({ transactions: toCreateTransactionInputs(drafts, accountId) }),
+    mutationFn: ({ drafts }: SaveVariables) =>
+      createTransactionsBulk({ transactions: toCreateTransactionInputs(drafts) }),
 
     onMutate: async ({ drafts }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.transactions.all });
@@ -262,14 +257,12 @@ export function useQuickComposer() {
 
     saveMutation.mutate({
       drafts: guess.drafts,
-      accountId: overrides.accountId,
       sourceText: text
     });
 
     setText("");
     setHint(null);
-    // Keep the chosen account for the next entry; reset the per-entry choices.
-    setOverrides((current) => ({ accountId: current.accountId }));
+    setOverrides({});
     return true;
   }
 
@@ -280,8 +273,6 @@ export function useQuickComposer() {
     hint,
     todayKey,
     categories,
-    accounts,
-    selectedAccount,
     overrides,
     updateOverrides,
     toggleType,

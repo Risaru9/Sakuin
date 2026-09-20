@@ -159,54 +159,6 @@ export type TransactionCategory = {
   isDefault?: boolean;
 };
 
-export type AccountType = "CASH" | "BANK" | "E_WALLET" | "SAVINGS" | "OTHER";
-
-export type TransactionAccount = {
-  id: string;
-  name: string;
-  type: AccountType;
-  icon: string | null;
-  color: string | null;
-};
-
-export type FinanceAccount = TransactionAccount & {
-  initialBalance: string;
-  balance: string;
-  transactionCount: number;
-  isArchived: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type CreateAccountInput = {
-  name: string;
-  type: AccountType;
-  initialBalance?: string;
-  icon?: string | null;
-  color?: string | null;
-};
-
-export type UpdateAccountInput = Partial<CreateAccountInput>;
-
-export type CreateAccountTransferInput = {
-  fromAccountId: string;
-  toAccountId: string;
-  amount: string;
-  date: string;
-  note?: string | null;
-};
-
-export type AccountTransfer = {
-  id: string;
-  fromAccount: TransactionAccount;
-  toAccount: TransactionAccount;
-  amount: string;
-  note: string | null;
-  date: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type Transaction = {
   id: string;
   type: CategoryType;
@@ -215,7 +167,6 @@ export type Transaction = {
   date: string;
   categoryId: string;
   category: TransactionCategory;
-  account?: TransactionAccount | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -237,7 +188,6 @@ export type CreateTransactionInput = {
   type: CategoryType;
   amount: string;
   categoryId: string;
-  accountId?: string;
   date: string;
   note?: string;
 };
@@ -262,7 +212,6 @@ export type TransactionResponse = {
     color: string | null;
     isDefault: boolean;
   };
-  account?: TransactionAccount | null;
   createdAt: string;
   updatedAt: string;
 };

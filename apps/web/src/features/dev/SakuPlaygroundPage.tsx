@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CalendarDays, ChevronDown, Plus, Wallet } from "lucide-react";
+import { CalendarDays, ChevronDown, Plus } from "lucide-react";
 import {
   BottomSheet,
   CategoryBadge,
@@ -52,27 +52,9 @@ const SAMPLE_CATEGORIES = [
   limit: null
 }));
 
-const SAMPLE_ACCOUNTS = ["Dompet Utama", "BCA", "GoPay"].map((name, index) => ({
-  id: `sample-account-${index}`,
-  name,
-  type: index === 0 ? "CASH" : "BANK",
-  icon: null,
-  color: null,
-  initialBalance: "0",
-  balance: "0",
-  transactionCount: 0,
-  isArchived: false,
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z"
-}));
-
 // Sample reference data so the composer works here without an API or login (dev only).
 if (!queryClient.getQueryData(queryKeys.categories)) {
   queryClient.setQueryData(queryKeys.categories, SAMPLE_CATEGORIES);
-}
-
-if (!queryClient.getQueryData(queryKeys.accounts)) {
-  queryClient.setQueryData(queryKeys.accounts, SAMPLE_ACCOUNTS);
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -149,7 +131,6 @@ export function SakuPlaygroundPage() {
               Makanan
             </StickerChip>
             <StickerChip leading={<CalendarDays aria-hidden="true" className="size-4" />}>Hari ini</StickerChip>
-            <StickerChip leading={<Wallet aria-hidden="true" className="size-4" />}>Dompet Utama</StickerChip>
           </div>
           <SegmentedControl
             ariaLabel="Jenis transaksi"
@@ -203,7 +184,7 @@ export function SakuPlaygroundPage() {
         }
         onClose={() => setSheetOpen(false)}
         open={sheetOpen}
-        subtitle="Kategori, rekening, dan tanggal dalam satu tempat"
+        subtitle="Kategori dan tanggal dalam satu tempat"
         title="Detail catatan"
       >
         <p className="text-xs font-black tracking-wider text-saku-muted uppercase">Kategori</p>

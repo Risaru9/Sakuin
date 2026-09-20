@@ -11,7 +11,6 @@ import type { CreateTransactionInput, TransactionType } from "../transactions/tr
 export type ComposerOverrides = {
   type?: TransactionType;
   categoryId?: string;
-  accountId?: string;
   dateKey?: string;
 };
 
@@ -116,14 +115,12 @@ export function buildComposerGuess({
 }
 
 export function toCreateTransactionInputs(
-  drafts: QuickTransactionDraft[],
-  accountId?: string
+  drafts: QuickTransactionDraft[]
 ): CreateTransactionInput[] {
   return drafts.map((draft) => ({
     type: draft.type,
     amount: draft.amount,
     categoryId: draft.categoryId,
-    ...(accountId ? { accountId } : {}),
     date: toIsoDate(draft.date),
     note: draft.note.trim()
   }));

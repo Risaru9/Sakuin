@@ -54,9 +54,9 @@ export function BerandaPage({ searchPath = "/cari" }: BerandaPageProps) {
   const monthKey = parseMonthKey(searchParams.get("bulan"), currentMonthKey);
   const monthLabel = formatMonthLabel(monthKey);
 
-  const { categories, accounts } = useReferenceData();
-  const actions = useTransactionActions({ categories, accounts });
-  const pending = usePendingTransactions(categories, accounts);
+  const { categories } = useReferenceData();
+  const actions = useTransactionActions({ categories });
+  const pending = usePendingTransactions(categories);
 
   const listParams = useMemo(() => getMonthListParams(monthKey), [monthKey]);
   const monthQuery = useQuery({
@@ -189,7 +189,6 @@ export function BerandaPage({ searchPath = "/cari" }: BerandaPageProps) {
       />
 
       <EditTransactionSheet
-        accounts={accounts}
         categories={categories}
         onClose={() => setEditing(null)}
         onDelete={(transaction) => {

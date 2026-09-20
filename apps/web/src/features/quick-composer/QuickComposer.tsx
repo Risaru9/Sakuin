@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw, Wallet } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw } from "lucide-react";
 import {
   CategoryBadge,
   SakuMascot,
@@ -127,15 +127,6 @@ export function QuickComposer({ className }: QuickComposerProps) {
             {describeDateKey(guess.dateKey, composer.todayKey)}
           </StickerChip>
 
-          {composer.selectedAccount ? (
-            <StickerChip
-              leading={<Wallet aria-hidden="true" className="size-4" />}
-              onClick={() => setSheetOpen(true)}
-            >
-              {composer.selectedAccount.name}
-            </StickerChip>
-          ) : null}
-
           <StickerChip
             aria-label={`Jenis ${guess.type === "INCOME" ? "masuk" : "keluar"}, ketuk untuk mengganti`}
             leading={<ArrowLeftRight aria-hidden="true" className="size-4" />}
@@ -187,14 +178,12 @@ export function QuickComposer({ className }: QuickComposerProps) {
 
       {guess ? (
         <ComposerDetailSheet
-          accounts={composer.accounts}
           categories={composer.categories}
           guess={guess}
           onChange={composer.updateOverrides}
           onClose={() => setSheetOpen(false)}
           onSave={saveFromSheet}
           open={sheetOpen}
-          selectedAccountId={composer.selectedAccount?.id ?? null}
           todayKey={composer.todayKey}
         />
       ) : null}

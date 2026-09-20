@@ -33,12 +33,6 @@ vi.mock("../categories/category.service", () => ({
   createCategory: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() =>
-    Promise.resolve([{ id: "acc-cash", name: "Dompet Utama", type: "CASH", isArchived: false }])
-  )
-}));
-
 vi.mock("../summary/summary.service", () => ({
   getSummary: vi.fn()
 }));
@@ -71,7 +65,6 @@ function tx(id: string, note: string, amount: number, date: string, overrides: P
     date,
     categoryId: "cat-food",
     category: { id: "cat-food", name: "Makanan", type: "EXPENSE", icon: "utensils", color: null },
-    account: { id: "acc-cash", name: "Dompet Utama", type: "CASH", icon: null, color: null },
     createdAt: date,
     updatedAt: date,
     ...overrides
@@ -273,7 +266,6 @@ describe("BerandaPage", () => {
         type: "EXPENSE",
         amount: "18000",
         categoryId: "cat-food",
-        accountId: "acc-cash",
         date: localIso(9, 16),
         note: "Kopi susu"
       })
