@@ -7,7 +7,9 @@
    > Baca `docs/HANDOFF_APK_2.1.md` sampai habis, lalu lanjutkan rilis dari tahap pertama yang belum selesai di bagian "8. Rilis bertahap". Catat setiap langkah di bagian 8. Balas saya dalam bahasa Indonesia yang sederhana. Jangan merge ke `main` sebelum saya setuju.
 3. Gambar mockup yang sudah kamu setujui ada di `docs/handoff-apk-2.1/mockups/`. Buka `mockups.html#0` sampai `#10` di browser untuk melihatnya satu per satu.
 
-Status terbaru selalu ada di **bagian 8** (tabel "Rilis bertahap").
+Pekerjaan berikutnya (hapus fitur Rekening, sembunyikan Impor Gmail) ada di dokumen terpisah: `docs/HANDOFF_HAPUS_REKENING.md`.
+
+Status terbaru rilis APK selalu ada di **bagian 8** (tabel "Rilis bertahap").
 
 ---
 
