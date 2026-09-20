@@ -17,6 +17,8 @@ import org.json.*;
 public class QuickEntryActivity extends AppCompatActivity {
     private EditText input;
     private TextView save, hint, footer, budget;
+    private TextView expenseType, incomeType;
+    private String selectedType = "EXPENSE";
     private LinearLayout rows;
     private LinearLayout foot, budgetRow;
     private ProgressBar budgetBar;
@@ -31,6 +33,20 @@ public class QuickEntryActivity extends AppCompatActivity {
     private LinearLayout vertical() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
     private LinearLayout horizontal() { LinearLayout l = new LinearLayout(this); l.setGravity(Gravity.CENTER_VERTICAL); return l; }
     private void pad(View v, int n) { v.setPadding(dp(n), dp(n), dp(n), dp(n)); }
+    private android.graphics.drawable.GradientDrawable typeBackground(boolean selected) {
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        background.setColor(Color.parseColor(selected ? "#FFC83D" : "#FFFFFF"));
+        background.setCornerRadius(dp(14));
+        background.setStroke(dp(1), Color.parseColor("#1D1A33"));
+        return background;
+    }
+    private void selectType(String type) {
+        selectedType = type;
+        boolean income = "INCOME".equals(type);
+        expenseType.setBackground(typeBackground(!income));
+        incomeType.setBackground(typeBackground(income));
+        if (input != null) input.setHint(income ? "Misal gaji 5jt" : "Misal kopi 18rb");
+    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,6 +62,14 @@ public class QuickEntryActivity extends AppCompatActivity {
         LinearLayout title = horizontal(); title.addView(text("Catat cepat", 20, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView close = text("×", 26, false); close.setContentDescription("Tutup"); close.setGravity(Gravity.CENTER); close.setBackgroundResource(R.drawable.saku_white);
         title.addView(close, new LinearLayout.LayoutParams(dp(40), dp(40))); close.setOnClickListener(v -> finish()); sheet.addView(title);
+        LinearLayout typeRow = horizontal(); typeRow.setPadding(dp(4), dp(4), dp(4), dp(4)); typeRow.setBackgroundResource(R.drawable.saku_white);
+        expenseType = text("Pengeluaran", 13, true); expenseType.setGravity(Gravity.CENTER); expenseType.setContentDescription("Pilih pengeluaran");
+        incomeType = text("Pemasukan", 13, true); incomeType.setGravity(Gravity.CENTER); incomeType.setContentDescription("Pilih pemasukan");
+        LinearLayout.LayoutParams typeParams = new LinearLayout.LayoutParams(0, dp(42), 1); typeParams.setMargins(dp(2), 0, dp(2), 0);
+        typeRow.addView(expenseType, typeParams); typeRow.addView(incomeType, typeParams);
+        expenseType.setOnClickListener(v -> selectType("EXPENSE")); incomeType.setOnClickListener(v -> selectType("INCOME"));
+        LinearLayout.LayoutParams typeRowParams = new LinearLayout.LayoutParams(-1, -2); typeRowParams.topMargin = dp(10); sheet.addView(typeRow, typeRowParams);
+        selectType("EXPENSE");
         rows = vertical(); sheet.addView(rows);
         budgetRow = horizontal(); budgetRow.setBackgroundResource(R.drawable.saku_white); budgetRow.setPadding(dp(10),dp(8),dp(10),dp(8)); budgetRow.setVisibility(View.GONE);
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1,-2); bp.topMargin = dp(8); sheet.addView(budgetRow,bp);
@@ -91,7 +115,10 @@ public class QuickEntryActivity extends AppCompatActivity {
         if (!entryOwner.equals(SakuStore.owner(SakuStore.prefs(this).getString("jwt_token", "")))) { requireLogin(); return; }
         saving = true; save.setEnabled(false); input.setEnabled(false); hint.setVisibility(View.VISIBLE); hint.setText("Menyimpan…");
         final JSONObject entry;
-        try { entry = SakuStore.entry(raw); } catch (Exception e) { saving = false; input.setEnabled(true); save.setEnabled(true); return; }
+        try {
+            String parserText = ("INCOME".equals(selectedType) ? "pemasukan " : "pengeluaran ") + raw;
+            entry = SakuStore.entry(parserText);
+        } catch (Exception e) { saving = false; input.setEnabled(true); save.setEnabled(true); return; }
         final Context app = getApplicationContext();
         final String queueKey = SakuStore.queueKey(app);
         SakuStore.IO.execute(() -> {
