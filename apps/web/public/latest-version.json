@@ -1,16 +1,17 @@
 {
-  "latestVersionCode": 22,
-  "latestVersionName": "2.4.0",
+  "latestVersionCode": 23,
+  "latestVersionName": "2.5.0",
   "minSupportedVersionCode": 1,
-  "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=22",
+  "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=23",
   "releaseNotes": [
     "Sakuin memberi tahu sendiri kalau ada versi baru, walau aplikasi sedang tertutup.",
     "Ketuk notifikasinya: unduhan jalan sendiri, lalu layar pasang Android langsung terbuka.",
     "Widget menyesuaikan ukuran layar tanpa membuat teks gepeng di HP seperti Oppo.",
     "Tombol Catat cepat sekarang bisa dipilih sendiri sesuai kebiasaanmu.",
     "Pilih kategori dulu, lalu ketik nominal langsung tanpa memindahkan kursor.",
-    "Pasang APK 2.4.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
+    "Ikon kategori diperbanyak dan kategori lama tetap mendapat ikon yang sesuai.",
+    "Pasang APK 2.5.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-09-20T08:44:36.000Z"
+  "publishedAt": "2026-09-20T09:15:00.000Z"
 }

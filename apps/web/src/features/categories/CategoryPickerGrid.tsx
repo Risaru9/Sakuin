@@ -46,6 +46,7 @@ export function CategoryPickerGrid({
             <CategoryBadge
               className={cn(selected && "shadow-saku-xs motion-safe:animate-saku-wiggle")}
               icon={category.icon}
+              name={category.name}
               size={48}
             />
             {selected ? (

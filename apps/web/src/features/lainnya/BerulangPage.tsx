@@ -145,7 +145,7 @@ export function BerulangPage() {
                         onClick={() => openSheet(rule)}
                         type="button"
                       >
-                        <CategoryBadge icon={rule.category.icon} size={40} />
+                        <CategoryBadge icon={rule.category.icon} name={rule.category.name} size={40} />
                         <span className={cn("min-w-0 flex-1 py-2.5", index < ordered.length - 1 && "saku-dash-bottom")}>
                           <span className="flex items-center gap-2">
                             <span className="min-w-0 flex-1 truncate text-[15px] font-black">{title}</span>

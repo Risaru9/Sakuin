@@ -152,7 +152,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
                 aria-label={`Catat ${category.name}`}
                 className="min-h-8 gap-1 px-2.5 text-[11px]"
                 key={category.id}
-                leading={<CategoryBadge icon={category.icon} size={20} />}
+                leading={<CategoryBadge icon={category.icon} name={category.name} size={20} />}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   if (selectedQuickCategory?.id === category.id) {
@@ -191,7 +191,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
           {guess.category ? (
             <StickerChip
               aria-label={`Kategori ${guess.category.name}${guess.needsCheck ? ", perlu dicek" : ""}`}
-              leading={<CategoryBadge icon={guess.category.icon} size={26} />}
+              leading={<CategoryBadge icon={guess.category.icon} name={guess.category.name} size={26} />}
               onClick={() => setSheetOpen(true)}
               tone="highlight"
               trailing={<ChevronDown aria-hidden="true" className="size-3.5" strokeWidth={2.6} />}

@@ -151,7 +151,7 @@ export function KategoriPage() {
                 const isLast = index === rows.length - 1;
                 const content = (
                   <>
-                    <CategoryBadge icon={row.category.icon} />
+                    <CategoryBadge icon={row.category.icon} name={row.category.name} />
                     <span className={cn("min-w-0 flex-1 py-2.5", !isLast && "saku-dash-bottom")}>
                       <span className="flex items-center gap-1.5">
                         <span className="truncate text-[15px] font-black">{row.category.name}</span>
