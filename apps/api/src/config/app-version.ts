@@ -1,15 +1,16 @@
 export const appVersionMetadata = {
-  latestVersionCode: 21,
-  latestVersionName: "2.3.0",
+  latestVersionCode: 22,
+  latestVersionName: "2.4.0",
   minSupportedVersionCode: 1,
-  apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=21",
+  apkDownloadUrl: "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=22",
   releaseNotes: [
     "Sakuin memberi tahu sendiri kalau ada versi baru, walau aplikasi sedang tertutup.",
     "Ketuk notifikasinya: unduhan jalan sendiri, lalu layar pasang Android langsung terbuka.",
     "Widget menyesuaikan ukuran layar tanpa membuat teks gepeng di HP seperti Oppo.",
-    "Catat cepat sekarang punya tombol Pengeluaran dan Pemasukan.",
-    "Pasang APK 2.3.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
+    "Tombol Catat cepat sekarang bisa dipilih sendiri sesuai kebiasaanmu.",
+    "Pilih kategori dulu, lalu ketik nominal langsung tanpa memindahkan kursor.",
+    "Pasang APK 2.4.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
   ],
   forceUpdate: false,
-  publishedAt: "2026-09-20T06:52:22.000Z"
+  publishedAt: "2026-09-20T08:44:36.000Z"
 } as const;

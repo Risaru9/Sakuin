@@ -1,6 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw, Settings2 } from "lucide-react";
 import {
   CategoryBadge,
   SakuMascot,
@@ -11,6 +11,8 @@ import { cn } from "../../lib/cn";
 import { describeDateKey, formatAmount, formatSignedAmount } from "./composer-logic";
 import { subscribeComposerFocus, takeComposerFocusRequest } from "./composer-bridge";
 import { ComposerDetailSheet } from "./ComposerDetailSheet";
+import { QuickCategorySettingsSheet } from "./QuickCategorySettingsSheet";
+import { getQuickCategoryIds, saveQuickCategoryIds } from "./quick-category-preferences";
 import { useQuickComposer } from "./use-quick-composer";
 import type { Category } from "../categories/category.types";
 
@@ -25,13 +27,23 @@ type QuickComposerProps = {
 export function QuickComposer({ className }: QuickComposerProps) {
   const composer = useQuickComposer();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [quickSettingsOpen, setQuickSettingsOpen] = useState(false);
+  const [savedQuickCategoryIds, setSavedQuickCategoryIds] = useState<string[]>(() => getQuickCategoryIds());
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const hintId = useId();
   const { guess, changeText } = composer;
   const quickCategories = useMemo(() => {
-    const preferred = ["makanan", "transportasi", "belanja", "tagihan"];
     const expenses = composer.categories.filter((category) => category.type === "EXPENSE");
+    const configured = savedQuickCategoryIds
+      .map((categoryId) => expenses.find((category) => category.id === categoryId))
+      .filter((category): category is Category => Boolean(category));
+
+    if (configured.length > 0) {
+      return configured;
+    }
+
+    const preferred = ["makanan", "transportasi", "belanja", "tagihan"];
 
     return preferred
       .map(
@@ -40,7 +52,17 @@ export function QuickComposer({ className }: QuickComposerProps) {
           expenses.find((category) => category.name.trim().toLowerCase().includes(name))
       )
       .filter((category): category is Category => Boolean(category));
-  }, [composer.categories]);
+  }, [composer.categories, savedQuickCategoryIds]);
+
+  const selectedQuickCategory = composer.overrides.categoryId
+    ? composer.categories.find((category) => category.id === composer.overrides.categoryId) ?? null
+    : null;
+
+  useLayoutEffect(() => {
+    if (!composer.text.trim() && selectedQuickCategory) {
+      inputRef.current?.focus();
+    }
+  }, [composer.text, selectedQuickCategory]);
 
   useEffect(() => {
     function handleFocusRequest() {
@@ -72,6 +94,19 @@ export function QuickComposer({ className }: QuickComposerProps) {
     }
   }
 
+  function saveQuickSettings(categoryIds: string[]) {
+    const validIds = categoryIds
+      .filter((categoryId) => composer.categories.some((category) => category.id === categoryId && category.type === "EXPENSE"))
+      .slice(0, 6);
+
+    if (validIds.length === 0) {
+      return;
+    }
+
+    setSavedQuickCategoryIds(validIds);
+    saveQuickCategoryIds(validIds);
+  }
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <SakuSnackHost />
@@ -94,6 +129,46 @@ export function QuickComposer({ className }: QuickComposerProps) {
             </button>
           ) : null}
         </p>
+      ) : null}
+
+      {!composer.text.trim() && quickCategories.length > 0 ? (
+        <div aria-label="Transaksi cepat" className="-mx-1 px-1" role="group">
+          <div className="mb-1 flex items-center justify-between px-1">
+            <span className="text-[11px] font-black tracking-[0.04em] text-saku-muted uppercase">Catat cepat</span>
+            <button
+              aria-label="Atur tombol cepat"
+              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black text-saku-muted hover:text-saku-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
+              onClick={() => setQuickSettingsOpen(true)}
+              type="button"
+            >
+              <Settings2 aria-hidden="true" className="size-3.5" />
+              Atur
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {quickCategories.map((category) => (
+              <StickerChip
+                active={selectedQuickCategory?.id === category.id}
+                aria-label={`Catat ${category.name}`}
+                className="min-h-8 gap-1 px-2.5 text-[11px]"
+                key={category.id}
+                leading={<CategoryBadge icon={category.icon} size={20} />}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  if (selectedQuickCategory?.id === category.id) {
+                    composer.clearQuickCategory();
+                  } else {
+                    composer.selectQuickCategory(category);
+                  }
+                  inputRef.current?.focus();
+                }}
+                tone="highlight"
+              >
+                {category.name}
+              </StickerChip>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       {guess ? (
@@ -176,7 +251,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
           id={inputId}
           maxLength={500}
           onChange={(event) => composer.changeText(event.target.value)}
-          placeholder="Catat… misal kopi 18rb"
+          placeholder={selectedQuickCategory ? `Nominal ${selectedQuickCategory.name.toLowerCase()}…` : "Catat… misal kopi 18rb"}
           value={composer.text}
         />
         {composer.text.trim() ? (
@@ -189,30 +264,6 @@ export function QuickComposer({ className }: QuickComposerProps) {
         ) : null}
       </form>
 
-      {!composer.text.trim() && quickCategories.length > 0 ? (
-        <div
-          aria-label="Transaksi cepat"
-          className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          role="group"
-        >
-          <span className="shrink-0 pl-1 text-xs font-black text-saku-muted">Cepat:</span>
-          {quickCategories.map((category) => (
-            <StickerChip
-              key={category.id}
-              aria-label={`Catat ${category.name}`}
-              leading={<CategoryBadge icon={category.icon} size={24} />}
-              onClick={() => {
-                composer.selectQuickCategory(category);
-                requestAnimationFrame(() => inputRef.current?.focus());
-              }}
-              tone="highlight"
-            >
-              {category.name}
-            </StickerChip>
-          ))}
-        </div>
-      ) : null}
-
       {guess ? (
         <ComposerDetailSheet
           categories={composer.categories}
@@ -224,6 +275,14 @@ export function QuickComposer({ className }: QuickComposerProps) {
           todayKey={composer.todayKey}
         />
       ) : null}
+
+      <QuickCategorySettingsSheet
+        categories={composer.categories}
+        onClose={() => setQuickSettingsOpen(false)}
+        onSave={saveQuickSettings}
+        open={quickSettingsOpen}
+        selectedIds={quickCategories.map((category) => category.id)}
+      />
     </div>
   );
 }

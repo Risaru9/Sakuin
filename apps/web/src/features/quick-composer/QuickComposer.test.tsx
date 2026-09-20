@@ -19,6 +19,7 @@ vi.mock("../categories/category.service", () => ({
         ["cat-income-other", "Pemasukan Lainnya", "INCOME", "plus-circle"],
         ["cat-food", "Makanan", "EXPENSE", "utensils"],
         ["cat-transport", "Transportasi", "EXPENSE", "car"],
+        ["cat-entertainment", "Hiburan", "EXPENSE", "gamepad"],
         ["cat-expense-other", "Pengeluaran Lainnya", "EXPENSE", "minus-circle"]
       ].map(([id, name, type, icon]) => ({
         id,
@@ -110,12 +111,27 @@ describe("QuickComposer", () => {
     await user.click(quickButton);
 
     const input = screen.getByLabelText(/catat transaksi, misalnya/i);
-    expect(input).toHaveValue("Makanan ");
+    expect(input).toHaveValue("");
+    expect(input).toHaveAttribute("placeholder", "Nominal makanan…");
     expect(input).toHaveFocus();
 
     await user.type(input, "18rb");
     await screen.findByRole("group", { name: "Tebakan Saku" });
     expect(within(screen.getByRole("group", { name: "Tebakan Saku" })).getByText("−18.000")).toBeInTheDocument();
+  });
+
+  it("lets users choose their own quick categories", async () => {
+    const { user } = renderComposer();
+
+    await user.click(await screen.findByRole("button", { name: "Atur tombol cepat" }));
+    const settings = await screen.findByRole("dialog", { name: "Atur tombol cepat" });
+
+    await user.click(within(settings).getByRole("button", { name: "Tombol cepat Hiburan" }));
+    await user.click(within(settings).getByRole("button", { name: "Tombol cepat Makanan" }));
+    await user.click(within(settings).getByRole("button", { name: "Selesai" }));
+
+    expect(screen.getByRole("button", { name: "Catat Hiburan" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Catat Makanan" })).not.toBeInTheDocument();
   });
 
   it("shows the guess while typing and saves on Enter", async () => {
