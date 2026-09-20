@@ -231,8 +231,9 @@ export function useQuickComposer() {
   }
 
   function selectQuickCategory(category: (typeof categories)[number]) {
-    // Keep the category visible so the user only needs to add the amount.
-    setText(`${category.name} `);
+    // Keep the category as an override. The input stays empty so the first key is the amount,
+    // rather than being appended after the category name.
+    setText("");
     setHint(null);
     setOverrides((current) => ({
       ...current,
@@ -240,6 +241,11 @@ export function useQuickComposer() {
       categoryId: category.id,
       dateKey: todayKey
     }));
+  }
+
+  function clearQuickCategory() {
+    setOverrides({});
+    setHint(null);
   }
 
   function toggleType() {
@@ -288,6 +294,7 @@ export function useQuickComposer() {
     overrides,
     updateOverrides,
     selectQuickCategory,
+    clearQuickCategory,
     toggleType,
     submit,
     retryCategories: () => void categoriesQuery.refetch()
