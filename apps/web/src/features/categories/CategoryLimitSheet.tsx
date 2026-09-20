@@ -191,7 +191,7 @@ function LimitForm({ category, spent, periodLabel, onClose }: CategoryLimitSheet
 export function CategoryLimitSheet({ category, onClose, ...rest }: CategoryLimitSheetProps) {
   return (
     <BottomSheet
-      leading={category ? <CategoryBadge icon={category.icon} size={44} /> : undefined}
+      leading={category ? <CategoryBadge icon={category.icon} name={category.name} size={44} /> : undefined}
       onClose={onClose}
       open={Boolean(category)}
       subtitle={

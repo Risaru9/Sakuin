@@ -207,6 +207,14 @@ describe("CategoryBadge", () => {
     expect(container.firstChild).toHaveAttribute("data-icon", "utensils");
   });
 
+  it("mengenali nama ikon lama dan mengisi ikon dari nama kategori", () => {
+    const legacy = render(<CategoryBadge icon="gamepad" />);
+    expect(legacy.container.firstChild).toHaveAttribute("data-icon", "gamepad");
+
+    const inferred = render(<CategoryBadge icon={null} name="Minum" />);
+    expect(inferred.container.firstChild).toHaveAttribute("data-icon", "coffee");
+  });
+
   it("memakai tampilan cadangan untuk ikon yang tidak dikenal", () => {
     const { container } = render(<CategoryBadge icon="ikon-aneh" />);
 

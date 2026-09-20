@@ -240,7 +240,7 @@ function EditTransactionForm({
             disabled={pending}
             expanded={picker === "category"}
             label="Kategori"
-            leading={<CategoryBadge icon={category?.icon} size={34} />}
+            leading={<CategoryBadge icon={category?.icon} name={category?.name} size={34} />}
             onClick={() => togglePicker("category")}
             value={category?.name ?? "Pilih kategori"}
           />

@@ -68,7 +68,7 @@ export function TransactionRow({
         type="button"
       >
         <span className="relative flex shrink-0">
-          <CategoryBadge icon={transaction.category.icon} />
+          <CategoryBadge icon={transaction.category.icon} name={transaction.category.name} />
           {pending ? (
             <span className="saku-line-hair absolute -right-1 -bottom-1 flex size-[17px] items-center justify-center rounded-full bg-white">
               <CloudOff aria-hidden="true" className="size-2.5" strokeWidth={2.8} />

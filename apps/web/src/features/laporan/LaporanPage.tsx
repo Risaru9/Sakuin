@@ -257,7 +257,7 @@ export function LaporanPage() {
                 }}
                 type="button"
               >
-                <CategoryBadge icon={category.icon} />
+                <CategoryBadge icon={category.icon} name={category.name} />
                 <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold">{category.name}</span>
                 <span className="shrink-0 text-xs font-extrabold text-saku-muted">
                   {category.limit ? `Batas ${formatPlainAmount(category.limit)}` : "Belum ada batas"}
