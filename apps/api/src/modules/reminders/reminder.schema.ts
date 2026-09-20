@@ -13,7 +13,7 @@ export const updateReminderSettingsSchema = z.object({
   eveningHour: z.number().int().min(0).max(23),
   quietStartHour: z.number().int().min(0).max(23),
   quietEndHour: z.number().int().min(0).max(23),
-  maxPerDay: z.number().int().min(1).max(3),
+  maxPerDay: z.number().int().min(1).max(6),
   timezoneOffsetMinutes: z.number().int().min(-840).max(720)
 });
 

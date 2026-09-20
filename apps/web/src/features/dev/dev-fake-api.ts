@@ -144,11 +144,11 @@ export function installFakeApi() {
 
   let reminderSettings = {
     enabled: false,
-    frequency: "EVENING" as const,
-    eveningHour: 20,
-    quietStartHour: 21,
+    frequency: "EVERY_4_HOURS" as const,
+    eveningHour: 21,
+    quietStartHour: 0,
     quietEndHour: 7,
-    maxPerDay: 1,
+    maxPerDay: 6,
     timezoneOffsetMinutes: new Date().getTimezoneOffset(),
     dailyReviewCompletedDate: null,
     hasActiveSubscription: false

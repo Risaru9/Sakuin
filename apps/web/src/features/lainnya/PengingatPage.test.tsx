@@ -92,7 +92,7 @@ describe("PengingatPage", () => {
     vi.mocked(unsubscribeBrowserFromPushReminder).mockResolvedValue(undefined as never);
     const user = renderPengingat();
 
-    expect(screen.getByText("Hari ini ada jajan yang belum dicatat?")).toBeInTheDocument();
+    expect(screen.getByText("Sudah mencatat hari ini?")).toBeInTheDocument();
     const toggle = screen.getByRole("switch", { name: "Ingatkan aku mencatat" });
     expect(toggle).toHaveAttribute("aria-checked", "false");
 
@@ -100,7 +100,7 @@ describe("PengingatPage", () => {
     await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
     expect(subscribeBrowserToPushReminder).toHaveBeenCalled();
     expect(updateRemoteReminderSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: true, frequency: "EVENING", eveningHour: 20, maxPerDay: 1 })
+      expect.objectContaining({ enabled: true, frequency: "EVERY_4_HOURS", eveningHour: 21, maxPerDay: 6 })
     );
     expect(await screen.findByText("Pengingat aktif")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kirim notifikasi tes sekarang" })).toBeInTheDocument();

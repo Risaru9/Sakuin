@@ -25,7 +25,7 @@ function runsMoreThanOncePerDay(schedule: string) {
 }
 
 describe("Vercel deployment config", () => {
-  it("hanya memakai cron maksimal sekali sehari agar kompatibel dengan Hobby", () => {
+  it("menjalankan reminder tiap jam dan job lain maksimal sekali sehari", () => {
     const config = JSON.parse(
       readFileSync(new URL("../vercel.json", import.meta.url), "utf8")
     ) as VercelConfig;
@@ -33,10 +33,14 @@ describe("Vercel deployment config", () => {
     expect(config.crons?.length).toBeGreaterThan(0);
 
     for (const cron of config.crons ?? []) {
-      expect(
-        runsMoreThanOncePerDay(cron.schedule),
-        `${cron.path} memakai jadwal ${cron.schedule}`
-      ).toBe(false);
+      if (cron.path === "/api/reminders/run") {
+        expect(cron.schedule).toBe("0 * * * *");
+      } else {
+        expect(
+          runsMoreThanOncePerDay(cron.schedule),
+          `${cron.path} memakai jadwal ${cron.schedule}`
+        ).toBe(false);
+      }
     }
   });
 });

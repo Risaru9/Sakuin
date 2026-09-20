@@ -5,16 +5,18 @@ import { cn } from "../../lib/cn";
 import {
   isNativePlatform,
   TRANSACTION_REMINDER_BODY,
-  TRANSACTION_REMINDER_POLICY,
+  TRANSACTION_REMINDER_SCHEDULE,
   TRANSACTION_REMINDER_TITLE
 } from "../../lib/transaction-reminder";
 import { useReminderSettings } from "../reminders/use-reminder-settings";
 import { SakuNotificationSwitches } from "./SakuNotificationSwitches";
 import { FloatingSnackHost, SheetFieldLabel, SubPageHeader } from "./SubPageParts";
 
-const HOUR_LABEL = `${String(TRANSACTION_REMINDER_POLICY.eveningHour).padStart(2, "0")}.00`;
+const HOUR_LABEL = TRANSACTION_REMINDER_SCHEDULE.map(
+  (slot) => `${String(slot.hour).padStart(2, "0")}.${String(slot.minute).padStart(2, "0")}`
+).join(", ");
 
-/** Pengingat: one switch for the nightly "don't forget to record" nudge, with a preview. */
+/** Pengingat berkala dengan tiga pengingat siang dan hitung mundur malam. */
 export function PengingatPage() {
   const { settings, permission, busy, setEnabled, sendTest } = useReminderSettings();
   const blocked = permission === "denied";
@@ -56,8 +58,8 @@ export function PengingatPage() {
         <StickerCard className="overflow-hidden">
           <div className={cn("flex items-center gap-3 px-3.5 py-3", native && "saku-dash-bottom")}>
             <Moon aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2.4} />
-            <p className="min-w-0 flex-1 text-[15px] font-black">Setiap malam</p>
-            <p className="font-saku-head text-xl font-semibold">{HOUR_LABEL}</p>
+            <p className="min-w-0 flex-1 text-[15px] font-black">Berkala + hitung mundur</p>
+            <p className="max-w-[56%] text-right font-saku-head text-sm font-semibold leading-5">{HOUR_LABEL}</p>
           </div>
           {native ? (
             <div className="flex items-center gap-3 px-3.5 py-3">
@@ -66,7 +68,7 @@ export function PengingatPage() {
             </div>
           ) : null}
         </StickerCard>
-        <p className="mt-1.5 px-1 text-xs font-bold text-saku-muted">Paling banyak sekali sehari, biar tidak mengganggu.</p>
+        <p className="mt-1.5 px-1 text-xs font-bold text-saku-muted">Berhenti otomatis setelah ada catatan. Malam hari ada hitung mundur pukul 21.00, 22.00, dan 23.00.</p>
 
         <SakuNotificationSwitches />
 

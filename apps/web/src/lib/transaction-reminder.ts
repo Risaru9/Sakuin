@@ -23,10 +23,21 @@ export type TransactionReminderSettings = {
   timezoneOffsetMinutes: number;
 };
 
+export type TransactionReminderSlotKind = "DAYTIME" | "COUNTDOWN";
+
+export type TransactionReminderSlot = {
+  hour: number;
+  minute: number;
+  kind: TransactionReminderSlotKind;
+  title: string;
+  body: string;
+};
+
 type ReminderDeliveryState = {
   dateKey: string;
   count: number;
   lastSentAt: string | null;
+  lastSlotKey: string | null;
 };
 
 type ReminderNotificationOptions = NotificationOptions & {
@@ -39,30 +50,73 @@ type ReminderNotificationOptions = NotificationOptions & {
 const REMINDER_SETTINGS_PREFIX = "sakuin_transaction_reminder_settings_v1";
 const REMINDER_DELIVERY_PREFIX = "sakuin_transaction_reminder_delivery_v1";
 export const TRANSACTION_REMINDER_POLICY = {
-  frequency: "EVENING" as TransactionReminderFrequency,
-  eveningHour: 20,
-  maxPerDay: 1
+  frequency: "EVERY_4_HOURS" as TransactionReminderFrequency,
+  eveningHour: 21,
+  maxPerDay: 6,
+  quietStartHour: 0,
+  quietEndHour: 7
 };
 
+export const TRANSACTION_REMINDER_SCHEDULE: readonly TransactionReminderSlot[] = [
+  {
+    hour: 9,
+    minute: 0,
+    kind: "DAYTIME",
+    title: "Sudah mencatat hari ini?",
+    body: "Kalau ada pengeluaran, catat sekarang supaya saldo tetap rapi."
+  },
+  {
+    hour: 13,
+    minute: 0,
+    kind: "DAYTIME",
+    title: "Jangan lupa catat pengeluaran siang ini",
+    body: "Satu catatan kecil sekarang bikin review harian lebih ringan."
+  },
+  {
+    hour: 17,
+    minute: 0,
+    kind: "DAYTIME",
+    title: "Ada transaksi yang belum dicatat?",
+    body: "Sempatkan catat sebelum malam supaya tidak menumpuk."
+  },
+  {
+    hour: 21,
+    minute: 0,
+    kind: "COUNTDOWN",
+    title: "Tinggal 2 jam untuk merapikan hari ini",
+    body: "Hitung mundur dimulai. Ada pengeluaran yang belum dicatat?"
+  },
+  {
+    hour: 22,
+    minute: 0,
+    kind: "COUNTDOWN",
+    title: "Tinggal 1 jam untuk merapikan hari ini",
+    body: "Catat sebentar sekarang agar transaksi hari ini tidak terlupa."
+  },
+  {
+    hour: 23,
+    minute: 0,
+    kind: "COUNTDOWN",
+    title: "Hari ini hampir selesai",
+    body: "Ini pengingat terakhir malam ini. Yuk catat transaksi yang tersisa."
+  }
+] as const;
+
+const TRANSACTION_REMINDER_NOTIFICATION_IDS = [101, 102, 103, 104, 105, 106] as const;
+const TRANSACTION_REMINDER_CANCEL_IDS = [1, ...TRANSACTION_REMINDER_NOTIFICATION_IDS] as const;
+
 /** What the phone shows; the Pengingat page previews the same words. */
-export const TRANSACTION_REMINDER_TITLE = "Hari ini ada jajan yang belum dicatat?";
-export const TRANSACTION_REMINDER_BODY = "Ketuk untuk catat sebentar, cuma 3 detik.";
+export const TRANSACTION_REMINDER_TITLE = TRANSACTION_REMINDER_SCHEDULE[0].title;
+export const TRANSACTION_REMINDER_BODY = TRANSACTION_REMINDER_SCHEDULE[0].body;
 
 export const DEFAULT_TRANSACTION_REMINDER_SETTINGS: TransactionReminderSettings = {
   enabled: false,
   frequency: TRANSACTION_REMINDER_POLICY.frequency,
   eveningHour: TRANSACTION_REMINDER_POLICY.eveningHour,
-  quietStartHour: 21,
-  quietEndHour: 7,
+  quietStartHour: TRANSACTION_REMINDER_POLICY.quietStartHour,
+  quietEndHour: TRANSACTION_REMINDER_POLICY.quietEndHour,
   maxPerDay: TRANSACTION_REMINDER_POLICY.maxPerDay,
   timezoneOffsetMinutes: new Date().getTimezoneOffset()
-};
-
-const frequencyMinutes: Record<TransactionReminderFrequency, number | null> = {
-  EVENING: null,
-  EVERY_1_HOUR: 60,
-  EVERY_2_HOURS: 120,
-  EVERY_4_HOURS: 240
 };
 
 const reminderNotificationActions = [
@@ -101,7 +155,7 @@ function clampMaxPerDay(value: unknown, fallback: number) {
     return fallback;
   }
 
-  return Math.min(3, Math.max(1, numberValue));
+  return Math.min(TRANSACTION_REMINDER_SCHEDULE.length, Math.max(1, numberValue));
 }
 
 function normalizeReminderSettings(
@@ -138,6 +192,8 @@ export function applyTransactionReminderPolicy(
     ...settings,
     frequency: TRANSACTION_REMINDER_POLICY.frequency,
     eveningHour: TRANSACTION_REMINDER_POLICY.eveningHour,
+    quietStartHour: TRANSACTION_REMINDER_POLICY.quietStartHour,
+    quietEndHour: TRANSACTION_REMINDER_POLICY.quietEndHour,
     maxPerDay: TRANSACTION_REMINDER_POLICY.maxPerDay,
     timezoneOffsetMinutes: new Date().getTimezoneOffset()
   };
@@ -153,7 +209,8 @@ function getDeliveryState(userId: string | null | undefined) {
       return {
         dateKey: today,
         count: 0,
-        lastSentAt: null
+        lastSentAt: null,
+        lastSlotKey: null
       };
     }
 
@@ -163,20 +220,23 @@ function getDeliveryState(userId: string | null | undefined) {
       return {
         dateKey: today,
         count: 0,
-        lastSentAt: null
+        lastSentAt: null,
+        lastSlotKey: null
       };
     }
 
     return {
       dateKey: today,
       count: Number(parsedValue.count ?? 0),
-      lastSentAt: parsedValue.lastSentAt ?? null
+      lastSentAt: parsedValue.lastSentAt ?? null,
+      lastSlotKey: parsedValue.lastSlotKey ?? null
     };
   } catch {
     return {
       dateKey: today,
       count: 0,
-      lastSentAt: null
+      lastSentAt: null,
+      lastSlotKey: null
     };
   }
 }
@@ -212,83 +272,35 @@ function isWithinQuietHours(settings: TransactionReminderSettings, date: Date) {
   );
 }
 
-function isHourWithinQuietHours(
-  settings: TransactionReminderSettings,
-  currentHour: number
-) {
-  if (settings.quietStartHour === settings.quietEndHour) {
-    return false;
+function getLatestReminderSlot(now: Date) {
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  let latest: { slot: TransactionReminderSlot; index: number } | null = null;
+
+  for (const [index, slot] of TRANSACTION_REMINDER_SCHEDULE.entries()) {
+    if (slot.hour * 60 + slot.minute <= currentMinutes) {
+      latest = { slot, index };
+    }
   }
 
-  if (settings.quietStartHour < settings.quietEndHour) {
-    return (
-      currentHour >= settings.quietStartHour &&
-      currentHour < settings.quietEndHour
-    );
-  }
-
-  return (
-    currentHour >= settings.quietStartHour ||
-    currentHour < settings.quietEndHour
-  );
+  return latest;
 }
 
-function hasReachedFrequencyDelay(input: {
-  settings: TransactionReminderSettings;
-  deliveryState: ReminderDeliveryState;
-  now: Date;
-}) {
-  const intervalMinutes = frequencyMinutes[input.settings.frequency];
-
-  if (intervalMinutes === null) {
-    return (
-      input.now.getHours() >= input.settings.eveningHour ||
-      isHourWithinQuietHours(input.settings, input.settings.eveningHour)
-    );
-  }
-
-  if (!input.deliveryState.lastSentAt) {
-    return true;
-  }
-
-  const lastSentAt = new Date(input.deliveryState.lastSentAt);
-
-  if (Number.isNaN(lastSentAt.getTime())) {
-    return true;
-  }
-
-  const elapsedMinutes =
-    (input.now.getTime() - lastSentAt.getTime()) / (1000 * 60);
-
-  return elapsedMinutes >= intervalMinutes;
+function getReminderSlotKey(now: Date, slotIndex: number) {
+  return `${getLocalDateKey(now)}:${slotIndex}`;
 }
 
 function getNextNativeReminderDate(input: {
   hasTransactionsToday: boolean;
-  settings: TransactionReminderSettings;
+  slot: TransactionReminderSlot;
   now: Date;
 }) {
   const scheduleDate = new Date(input.now);
-  scheduleDate.setHours(TRANSACTION_REMINDER_POLICY.eveningHour, 0, 0, 0);
+  scheduleDate.setHours(input.slot.hour, input.slot.minute, 0, 0);
 
   if (
     input.hasTransactionsToday ||
     scheduleDate.getTime() <= input.now.getTime()
   ) {
-    scheduleDate.setDate(scheduleDate.getDate() + 1);
-  }
-
-  if (!isWithinQuietHours(input.settings, scheduleDate)) {
-    return scheduleDate;
-  }
-
-  scheduleDate.setHours(input.settings.quietEndHour, 0, 0, 0);
-
-  if (scheduleDate.getTime() <= input.now.getTime()) {
-    scheduleDate.setDate(scheduleDate.getDate() + 1);
-  }
-
-  if (isWithinQuietHours(input.settings, scheduleDate)) {
     scheduleDate.setDate(scheduleDate.getDate() + 1);
   }
 
@@ -332,7 +344,9 @@ export function setTransactionReminderSettings(
 
     setDeliveryState(userId, {
       ...deliveryState,
-      lastSentAt: new Date().toISOString()
+      count: 0,
+      lastSentAt: null,
+      lastSlotKey: null
     });
   }
 
@@ -467,7 +481,9 @@ export async function subscribeBrowserToPushReminder() {
 
 export async function unsubscribeBrowserFromPushReminder() {
   if (isNativePlatform()) {
-    await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+    await LocalNotifications.cancel({
+      notifications: TRANSACTION_REMINDER_CANCEL_IDS.map((id) => ({ id }))
+    });
     return;
   }
 
@@ -493,43 +509,43 @@ export async function syncLocalHabitReminder(hasTransactionsToday: boolean, sett
 
   try {
     if (!settings.enabled) {
-      await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+      await LocalNotifications.cancel({
+        notifications: TRANSACTION_REMINDER_CANCEL_IDS.map((id) => ({ id }))
+      });
       return;
     }
 
     const status = await LocalNotifications.checkPermissions();
     if (status.display !== "granted") return;
 
-    const scheduleDate = getNextNativeReminderDate({
-      hasTransactionsToday,
-      settings,
-      now: new Date()
+    const now = new Date();
+    await LocalNotifications.cancel({
+      notifications: TRANSACTION_REMINDER_CANCEL_IDS.map((id) => ({ id }))
     });
 
-    await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-
     await LocalNotifications.schedule({
-      notifications: [
-        {
-          title: TRANSACTION_REMINDER_TITLE,
-          body: TRANSACTION_REMINDER_BODY,
-          id: 1,
-          schedule: { at: scheduleDate, repeats: true },
-          smallIcon: "ic_stat_saku",
-          largeIcon: "saku_notif_happy",
-          iconColor: "#2B63E0",
-          extra: { route: "/dashboard" }
-        }
-      ]
+      notifications: TRANSACTION_REMINDER_SCHEDULE.map((slot, index) => ({
+        title: slot.title,
+        body: slot.body,
+        id: TRANSACTION_REMINDER_NOTIFICATION_IDS[index],
+        schedule: {
+          at: getNextNativeReminderDate({ hasTransactionsToday, slot, now }),
+          repeats: true
+        },
+        smallIcon: "ic_stat_saku",
+        largeIcon: "saku_notif_happy",
+        iconColor: "#2B63E0",
+        extra: { route: "/dashboard" }
+      }))
     });
   } catch (error) {
     console.error("Gagal sinkronisasi Local Notification", error);
   }
 }
 
-function buildTransactionReminderOptions(): ReminderNotificationOptions {
+function buildTransactionReminderOptions(slot: TransactionReminderSlot) {
   return {
-    body: TRANSACTION_REMINDER_BODY,
+    body: slot.body,
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",
     tag: "sakuin-transaction-reminder",
@@ -565,18 +581,25 @@ export function shouldSendTransactionReminder(input: {
     return false;
   }
 
-  return hasReachedFrequencyDelay({
-    settings: input.settings,
-    deliveryState,
-    now
-  });
+  const due = getLatestReminderSlot(now);
+
+  if (!due) {
+    return false;
+  }
+
+  return deliveryState.lastSlotKey !== getReminderSlotKey(now, due.index);
 }
 
 export async function sendTransactionReminder(
   userId: string | null | undefined
 ) {
-  const title = TRANSACTION_REMINDER_TITLE;
-  const options = buildTransactionReminderOptions();
+  const due = getLatestReminderSlot(new Date());
+  if (!due) {
+    return;
+  }
+
+  const title = due.slot.title;
+  const options = buildTransactionReminderOptions(due.slot);
 
   if ("serviceWorker" in navigator) {
     const registration = await getReadyServiceWorkerRegistration();
@@ -596,7 +619,7 @@ export async function sendTestTransactionReminder() {
   const title = "Tes notifikasi Sakuin";
   const body = "Notifikasi aktif. Sakuin siap mengingatkan review transaksi sesuai pengaturanmu.";
   const options = {
-    ...buildTransactionReminderOptions(),
+    ...buildTransactionReminderOptions(TRANSACTION_REMINDER_SCHEDULE[0]),
     body,
     tag: "sakuin-transaction-reminder-test"
   };
@@ -641,10 +664,13 @@ export async function sendTestTransactionReminder() {
 
 function markTransactionReminderSent(userId: string | null | undefined) {
   const deliveryState = getDeliveryState(userId);
+  const now = new Date();
+  const due = getLatestReminderSlot(now);
 
   setDeliveryState(userId, {
     dateKey: getLocalDateKey(),
     count: deliveryState.count + 1,
-    lastSentAt: new Date().toISOString()
+    lastSentAt: now.toISOString(),
+    lastSlotKey: due ? getReminderSlotKey(now, due.index) : deliveryState.lastSlotKey
   });
 }
