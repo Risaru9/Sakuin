@@ -38,16 +38,6 @@ vi.mock("../reminders/daily-review-completion", () => ({
   markTodayReviewed: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() =>
-    Promise.resolve([
-      { id: "acc-cash", name: "Dompet Utama", type: "CASH", isArchived: false },
-      { id: "acc-bca", name: "BCA", type: "BANK", isArchived: false },
-      { id: "acc-old", name: "Dompet Lama", type: "CASH", isArchived: true }
-    ])
-  )
-}));
-
 vi.mock("../transactions/transaction.service", () => ({
   createTransactionsBulk: vi.fn(),
   deleteTransaction: vi.fn(() => Promise.resolve({}))
@@ -123,8 +113,6 @@ describe("QuickComposer", () => {
     expect(within(guess).getByText("−18.000")).toBeInTheDocument();
     expect(within(guess).getByRole("button", { name: /kategori makanan/i })).toBeInTheDocument();
     expect(within(guess).getByRole("button", { name: /hari ini/i })).toBeInTheDocument();
-    expect(within(guess).getByRole("button", { name: /dompet utama/i })).toBeInTheDocument();
-
     await user.keyboard("{Enter}");
 
     expect(createTransactionsBulk).toHaveBeenCalledWith({
@@ -169,7 +157,7 @@ describe("QuickComposer", () => {
     expect(createTransactionsBulk).not.toHaveBeenCalled();
   });
 
-  it("lets the user change category and account in the detail sheet", async () => {
+  it("lets the user change category in the detail sheet", async () => {
     vi.mocked(createTransactionsBulk).mockResolvedValueOnce([
       savedTransaction({ categoryId: "cat-transport" })
     ] as never);
@@ -182,12 +170,11 @@ describe("QuickComposer", () => {
     expect(within(sheet).queryByRole("button", { name: /dompet lama/i })).not.toBeInTheDocument();
 
     await user.click(within(sheet).getByRole("button", { name: "Transportasi" }));
-    await user.click(within(sheet).getByRole("button", { name: "BCA" }));
     await user.click(within(sheet).getByRole("button", { name: "Simpan · −18.000" }));
 
     expect(createTransactionsBulk).toHaveBeenCalledWith({
       transactions: [
-        expect.objectContaining({ categoryId: "cat-transport", accountId: "acc-bca" })
+        expect.objectContaining({ categoryId: "cat-transport" })
       ]
     });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -251,7 +238,7 @@ describe("QuickComposer", () => {
   });
 
   it("gives the text back and shows an error when saving fails", async () => {
-    vi.mocked(createTransactionsBulk).mockRejectedValueOnce(new Error("Server sedang sibuk"));
+    vi.mocked(createTransactionsBulk).mockReset().mockRejectedValueOnce(new Error("Server sedang sibuk"));
     const { user } = renderComposer();
 
     const input = await typeEntry(user, "kopi susu 18rb");

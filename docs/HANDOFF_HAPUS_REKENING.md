@@ -98,7 +98,7 @@ Kalau pemilik belum mengizinkan: **berhenti setelah Tahap 2**. Kode sudah bersih
 
 | Tahap | Status | Catatan |
 | --- | --- | --- |
-| 1 — Web | Belum | |
-| 2 — API + tipe | Belum | |
+| 1 — Web | Selesai | Menghapus fitur dan rute Rekening, kartu Rekening/Impor Gmail di Lainnya, kartu deteksi email di Profil, semua pemilih rekening transaksi, serta data rekening di preview/dev. Berkas fitur impor Gmail tetap ada. |
+| 2 — API + tipe | Selesai | Menghapus modul/rute rekening, rekening bawaan saat daftar, `accountId` dari transaksi dan berulang, tipe bersama, serta pembuatan rekening oleh impor Gmail. OAuth/login tetap dipertahankan. |
 | 3 — Database | Menunggu izin pemilik | |
-| 4 — Uji + PR | Belum | |
+| 4 — Uji + PR | Uji selesai; PR menunggu | `pnpm --filter @sakuin/web typecheck` lulus; `pnpm --filter @sakuin/api typecheck` lulus; 29 file tes web/178 tes lulus dengan `--maxWorkers=2`. Tes API database tidak dijalankan karena `DATABASE_URL` kosong dan safety guard memblokirnya. Schema/migrasi database tidak disentuh. |

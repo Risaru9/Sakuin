@@ -15,7 +15,6 @@ export type GetTransactionsParams = {
   page?: number;
   limit?: number;
   type?: TransactionType;
-  accountId?: string;
   categoryId?: string;
   search?: string;
   startDate?: string;
@@ -93,7 +92,6 @@ export function getTransactions(params: GetTransactionsParams = {}) {
   }
 
   setOptionalSearchParam(searchParams, "categoryId", params.categoryId);
-  setOptionalSearchParam(searchParams, "accountId", params.accountId);
   setOptionalSearchParam(searchParams, "search", params.search);
   setOptionalSearchParam(searchParams, "startDate", params.startDate);
   setOptionalSearchParam(searchParams, "endDate", params.endDate);

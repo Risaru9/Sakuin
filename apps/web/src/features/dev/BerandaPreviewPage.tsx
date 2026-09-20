@@ -9,13 +9,12 @@ import { ExportPage } from "../lainnya/ExportPage";
 import { KategoriPage } from "../lainnya/KategoriPage";
 import { LainnyaPage } from "../lainnya/LainnyaPage";
 import { PengingatPage } from "../lainnya/PengingatPage";
-import { RekeningPage } from "../lainnya/RekeningPage";
 import { TargetPage } from "../lainnya/TargetPage";
 import { LaporanPage } from "../laporan/LaporanPage";
 import { installFakeApi } from "./dev-fake-api";
 
 // Development-only (/dev/beranda, /dev/cari, /dev/laporan, /dev/lainnya and its pages such as
-// /dev/lainnya/rekening): the real screens backed by an in-memory API.
+// /dev/lainnya): the real screens backed by an in-memory API.
 // Installed while this module loads so the very first queries already hit the fake server.
 installFakeApi();
 
@@ -36,7 +35,6 @@ export function LainnyaPreviewPage() {
 }
 
 const LAINNYA_SECTIONS: Record<string, ComponentType> = {
-  rekening: RekeningPage,
   kategori: KategoriPage,
   target: TargetPage,
   berulang: BerulangPage,

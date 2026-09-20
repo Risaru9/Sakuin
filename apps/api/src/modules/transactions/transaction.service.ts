@@ -11,19 +11,9 @@ import type {
   UpdateTransactionInput
 } from "./transaction.types.js";
 import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
-import { resolveOwnedAccountId } from "../accounts/account.service.js";
 
 type TransactionWithCategory = Prisma.TransactionGetPayload<{
   include: {
-    account: {
-      select: {
-        id: true;
-        name: true;
-        type: true;
-        icon: true;
-        color: true;
-      };
-    };
     category: {
       select: {
         id: true;
@@ -38,15 +28,6 @@ type TransactionWithCategory = Prisma.TransactionGetPayload<{
 }>;
 
 const transactionCategoryInclude = {
-  account: {
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      icon: true,
-      color: true
-    }
-  },
   category: {
     select: {
       id: true,
@@ -80,7 +61,6 @@ function toTransactionResponse(
     amount: transaction.amount.toString(),
     note: transaction.note,
     date: transaction.date.toISOString(),
-    account: transaction.account,
     category: {
       id: transaction.category.id,
       name: transaction.category.name,
@@ -208,16 +188,9 @@ export async function createTransaction(
     input.categoryId,
     input.type as TransactionType
   );
-  const accountId = await resolveOwnedAccountId(
-    prisma,
-    userId,
-    input.accountId
-  );
-
   const transaction = await prisma.transaction.create({
     data: {
       userId,
-      accountId,
       categoryId: input.categoryId,
       type: input.type as TransactionType,
       amount: input.amount,
@@ -244,21 +217,6 @@ export async function createTransactionsBulk(
   const existing = await previous();
   if (existing.length) return existing.map(toTransactionResponse);
   await getUsableCategoriesForBulk(userId, input.transactions);
-  const accountIds = new Map<string | undefined, string>();
-
-  for (const transactionInput of input.transactions) {
-    if (!accountIds.has(transactionInput.accountId)) {
-      accountIds.set(
-        transactionInput.accountId,
-        await resolveOwnedAccountId(
-          prisma,
-          userId,
-          transactionInput.accountId
-        )
-      );
-    }
-  }
-
   let transactions: TransactionWithCategory[];
   try {
     transactions = await prisma.$transaction(
@@ -267,7 +225,6 @@ export async function createTransactionsBulk(
           data: {
             userId,
             id: prefix ? `${prefix}${String(index).padStart(2, "0")}` : undefined,
-            accountId: accountIds.get(transactionInput.accountId)!,
             categoryId: transactionInput.categoryId,
             type: transactionInput.type as TransactionType,
             amount: transactionInput.amount,
@@ -301,10 +258,6 @@ export async function getTransactions(
 
   if (query.type) {
     where.type = query.type as TransactionType;
-  }
-
-  if (query.accountId) {
-    where.accountId = query.accountId;
   }
 
   if (query.categoryId) {
@@ -411,11 +364,6 @@ export async function updateTransaction(
 
   const finalType = (input.type ?? existingTransaction.type) as TransactionType;
   const finalCategoryId = input.categoryId ?? existingTransaction.categoryId;
-  const finalAccountId =
-    input.accountId === undefined
-      ? existingTransaction.accountId
-      : await resolveOwnedAccountId(prisma, userId, input.accountId);
-
   await ensureCategoryCanBeUsed(userId, finalCategoryId, finalType);
 
   const transaction = await prisma.transaction.update({
@@ -424,7 +372,6 @@ export async function updateTransaction(
     },
     data: {
       type: finalType,
-      accountId: finalAccountId,
       categoryId: finalCategoryId,
       amount: input.amount ?? existingTransaction.amount,
       date: input.date ?? existingTransaction.date,

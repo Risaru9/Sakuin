@@ -27,10 +27,6 @@ vi.mock("../categories/category.service", () => ({
   setCategoryLimit: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() => Promise.resolve([]))
-}));
-
 vi.mock("../summary/summary.service", () => ({
   getSummary: vi.fn()
 }));
@@ -104,7 +100,6 @@ describe("LaporanPage", () => {
           date: new Date(2026, 8, 1).toISOString(),
           categoryId: "cat-salary",
           category: { id: "cat-salary", name: "Gaji", type: "INCOME", icon: "wallet", color: null },
-          account: null,
           createdAt: new Date(2026, 8, 1).toISOString(),
           updatedAt: new Date(2026, 8, 1).toISOString()
         }

@@ -90,12 +90,6 @@ const LainnyaPage = lazy(() =>
   }))
 );
 
-const RekeningPage = lazy(() =>
-  import("../features/lainnya/RekeningPage").then((module) => ({
-    default: module.RekeningPage
-  }))
-);
-
 const KategoriPage = lazy(() =>
   import("../features/lainnya/KategoriPage").then((module) => ({
     default: module.KategoriPage
@@ -756,7 +750,7 @@ function EmailImportCallbackPage() {
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
           {isConnected
-            ? "Sakuin siap mendeteksi email transaksi m-banking dan memetakannya ke rekening bank yang sesuai."
+            ? "Sakuin siap mendeteksi dan mencatat email transaksi m-banking."
             : message ?? "Kembali ke Sakuin lalu coba hubungkan Gmail kembali."}
         </p>
 
@@ -889,14 +883,6 @@ const routes = [
     element: (
       <ProtectedRoute>
         <LainnyaPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/lainnya/rekening",
-    element: (
-      <ProtectedRoute>
-        <RekeningPage />
       </ProtectedRoute>
     )
   },

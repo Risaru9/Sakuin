@@ -221,7 +221,7 @@ export function GoalFormSheet({ open, goal, onClose }: GoalFormSheetProps) {
 
         {confirmDelete ? (
           <p className="mt-4 rounded-2xl bg-saku-over-soft px-3 py-2 text-sm font-bold">
-            Target {goal?.name} dan riwayat tabungannya dihapus. Saldo rekeningmu tidak berubah.
+            Target {goal?.name} dan riwayat tabungannya dihapus. Saldo transaksi tidak berubah.
           </p>
         ) : null}
 

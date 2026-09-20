@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowLeftRight, CalendarDays, ChevronDown, Pencil, Trash2, Wallet } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import {
   BottomSheet,
   CategoryBadge,
@@ -7,7 +7,6 @@ import {
   StickerButton
 } from "../../components/saku";
 import { cn } from "../../lib/cn";
-import type { FinanceAccount } from "../accounts/account.types";
 import { CategoryPickerGrid } from "../categories/CategoryPickerGrid";
 import type { Category } from "../categories/category.types";
 import { NewCategorySheet } from "../categories/NewCategorySheet";
@@ -15,7 +14,6 @@ import { pickFallbackCategory } from "../quick-composer/composer-logic";
 import { amountToInput, formatAmountInput, parseAmountInput } from "../transactions/amount-input";
 import { toIsoDate } from "../transactions/transaction-date";
 import {
-  AccountChoiceChips,
   DateChoiceChips,
   PickerLabel
 } from "../transactions/TransactionFieldPickers";
@@ -27,13 +25,12 @@ type EditTransactionSheetProps = {
   transaction: Transaction | null;
   onClose: () => void;
   categories: Category[];
-  accounts: FinanceAccount[];
   todayKey: string;
   onSave: (transaction: Transaction, edit: TransactionEdit) => void;
   onDelete: (transaction: Transaction) => void;
 };
 
-type Picker = "category" | "date" | "account" | "type";
+type Picker = "category" | "date" | "type";
 
 const TYPE_OPTIONS: Array<{ value: TransactionType; label: string }> = [
   { value: "EXPENSE", label: "Keluar" },
@@ -123,7 +120,6 @@ function IconBubble({ children }: { children: ReactNode }) {
 function EditTransactionForm({
   transaction,
   categories,
-  accounts,
   todayKey,
   onSave,
   onDelete
@@ -132,13 +128,11 @@ function EditTransactionForm({
   const amountId = useId();
   const pending = isPendingTransaction(transaction);
   const initialDateKey = transactionDateKey(transaction);
-  const initialAccountId = transaction.account?.id ?? null;
 
   const [note, setNote] = useState(transaction.note ?? "");
   const [amountText, setAmountText] = useState(() => amountToInput(transaction.amount));
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [categoryId, setCategoryId] = useState(transaction.categoryId || transaction.category.id);
-  const [accountId, setAccountId] = useState<string | null>(initialAccountId);
   const [dateKey, setDateKey] = useState(initialDateKey);
   const [picker, setPicker] = useState<Picker | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -147,7 +141,6 @@ function EditTransactionForm({
   const category =
     categories.find((item) => item.id === categoryId) ??
     (categoryId === transaction.category.id ? transaction.category : null);
-  const account = accounts.find((item) => item.id === accountId) ?? transaction.account ?? null;
   const amount = parseAmountInput(amountText);
 
   const isDirty =
@@ -155,7 +148,6 @@ function EditTransactionForm({
     amount !== Number(transaction.amount) ||
     type !== transaction.type ||
     categoryId !== (transaction.categoryId || transaction.category.id) ||
-    accountId !== initialAccountId ||
     dateKey !== initialDateKey;
 
   function togglePicker(next: Picker) {
@@ -190,7 +182,6 @@ function EditTransactionForm({
       amount: String(amount),
       type,
       categoryId,
-      ...(accountId && accountId !== initialAccountId ? { accountId } : {}),
       ...(dateKey !== initialDateKey ? { date: toIsoDate(dateKey) } : {})
     });
   }
@@ -266,18 +257,6 @@ function EditTransactionForm({
             value={describeDate(dateKey, todayKey)}
           />
           <FieldTile
-            disabled={pending || accounts.length === 0}
-            expanded={picker === "account"}
-            label="Rekening"
-            leading={
-              <IconBubble>
-                <Wallet aria-hidden="true" className="size-4" strokeWidth={2.4} />
-              </IconBubble>
-            }
-            onClick={() => togglePicker("account")}
-            value={account?.name ?? "Rekening utama"}
-          />
-          <FieldTile
             disabled={pending}
             expanded={picker === "type"}
             label="Jenis"
@@ -311,13 +290,6 @@ function EditTransactionForm({
           <>
             <PickerLabel>Pilih tanggal</PickerLabel>
             <DateChoiceChips onChange={setDateKey} todayKey={todayKey} value={dateKey} />
-          </>
-        ) : null}
-
-        {picker === "account" ? (
-          <>
-            <PickerLabel>Pilih rekening</PickerLabel>
-            <AccountChoiceChips accounts={accounts} onChange={setAccountId} selectedId={accountId} />
           </>
         ) : null}
 
@@ -366,7 +338,7 @@ function EditTransactionForm({
   );
 }
 
-/** "Ubah catatan": tap any row to fix its name, amount, category, date, account or type. */
+/** "Ubah catatan": tap any row to fix its name, amount, category, date or type. */
 export function EditTransactionSheet({ transaction, onClose, ...formProps }: EditTransactionSheetProps) {
   return (
     <BottomSheet

@@ -4,7 +4,6 @@ import { useToast } from "../../components/toast/ToastProvider";
 import { ApiClientError } from "../../lib/api-client";
 import { addToOfflineQueue, removeFromOfflineQueue } from "../../lib/offline-queue";
 import { queryKeys } from "../../lib/query-keys";
-import type { FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
 import { formatSignedAmount } from "../quick-composer/composer-logic";
 import {
@@ -37,8 +36,6 @@ export type TransactionEdit = {
   amount: string;
   type: TransactionType;
   categoryId: string;
-  /** Only set when the user picked another account. */
-  accountId?: string;
   /** ISO date; only set when the user picked another day. */
   date?: string;
 };
@@ -67,13 +64,9 @@ function describeForSnack(transaction: Transaction) {
 function applyEdit(
   transaction: Transaction,
   edit: TransactionEdit,
-  categories: Category[],
-  accounts: FinanceAccount[]
+  categories: Category[]
 ): Transaction {
   const category = categories.find((item) => item.id === edit.categoryId);
-  const account = edit.accountId
-    ? accounts.find((item) => item.id === edit.accountId)
-    : undefined;
 
   return {
     ...transaction,
@@ -92,9 +85,6 @@ function applyEdit(
           isDefault: category.isDefault
         }
       : transaction.category,
-    account: account
-      ? { id: account.id, name: account.name, type: account.type, icon: account.icon, color: account.color }
-      : transaction.account ?? null,
     updatedAt: new Date().toISOString()
   };
 }
@@ -104,7 +94,6 @@ function toCreateInput(transaction: Transaction): CreateTransactionInput {
     type: transaction.type,
     amount: String(Number(transaction.amount)),
     categoryId: transaction.categoryId || transaction.category.id,
-    ...(transaction.account?.id ? { accountId: transaction.account.id } : {}),
     date: transaction.date,
     ...(transaction.note ? { note: transaction.note } : {})
   };
@@ -112,11 +101,9 @@ function toCreateInput(transaction: Transaction): CreateTransactionInput {
 
 /** Edit, delete and undo-delete for rows in the Beranda and search lists. */
 export function useTransactionActions({
-  categories,
-  accounts
+  categories
 }: {
   categories: Category[];
-  accounts: FinanceAccount[];
 }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
@@ -145,13 +132,12 @@ export function useTransactionActions({
         categoryId: edit.categoryId,
         // The API stores an empty note as null.
         note: edit.note ?? "",
-        ...(edit.accountId ? { accountId: edit.accountId } : {}),
         ...(edit.date ? { date: edit.date } : {})
       }),
 
     onMutate: async ({ transaction, edit }) => {
       const context = await snapshotCaches();
-      const next = applyEdit(transaction, edit, categories, accounts);
+      const next = applyEdit(transaction, edit, categories);
 
       updateTransactionInListCaches(queryClient, next);
       updateTransactionInSummaryCache(queryClient, {

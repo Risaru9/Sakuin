@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { StickerChip } from "../../components/saku";
 import { cn } from "../../lib/cn";
-import type { FinanceAccount } from "../accounts/account.types";
 import { shiftDateKey } from "../quick-composer/composer-logic";
 
 export function PickerLabel({ children }: { children: ReactNode }) {
@@ -51,28 +50,6 @@ export function DateChoiceChips({ value, todayKey, onChange }: DateChoiceChipsPr
           value={value}
         />
       </label>
-    </div>
-  );
-}
-
-type AccountChoiceChipsProps = {
-  accounts: FinanceAccount[];
-  selectedId: string | null;
-  onChange: (accountId: string) => void;
-};
-
-export function AccountChoiceChips({ accounts, selectedId, onChange }: AccountChoiceChipsProps) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {accounts.map((account) => (
-        <StickerChip
-          active={account.id === selectedId}
-          key={account.id}
-          onClick={() => onChange(account.id)}
-        >
-          {account.name}
-        </StickerChip>
-      ))}
     </div>
   );
 }

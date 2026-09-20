@@ -85,7 +85,7 @@ describe("api-client URL builder", () => {
       )
     );
 
-    await expect(apiRequest("/api/accounts")).rejects.toThrow(
+    await expect(apiRequest("/api/transactions")).rejects.toThrow(
       "User tidak ditemukan"
     );
 

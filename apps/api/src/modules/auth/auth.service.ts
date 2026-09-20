@@ -176,15 +176,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     data: {
       name: input.name,
       email: input.email,
-      passwordHash,
-      accounts: {
-        create: {
-          name: "Dompet Utama",
-          type: "CASH",
-          icon: "wallet",
-          color: "#2563eb"
-        }
-      }
+      passwordHash
     },
     select: {
       id: true,

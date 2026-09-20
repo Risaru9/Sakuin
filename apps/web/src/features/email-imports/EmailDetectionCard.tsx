@@ -94,7 +94,6 @@ export function EmailDetectionCard() {
   async function refreshAfterImport() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.emailImports.overview }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounts }),
       queryClient.invalidateQueries({ queryKey: queryKeys.summary }),
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all })
     ]);
@@ -199,7 +198,7 @@ export function EmailDetectionCard() {
               Otomasi M-Banking
             </h2>
             <p className="mt-1 text-xs font-semibold leading-5 text-zinc-500">
-              Hubungkan Gmail sekali. Sakuin mengenali email resmi bank, membuat rekening bank otomatis, dan mencatat transaksinya.
+              Hubungkan Gmail sekali. Sakuin mengenali email resmi bank dan mencatat transaksinya.
             </p>
           </div>
         </div>
@@ -246,7 +245,7 @@ export function EmailDetectionCard() {
           ].join(" ")}
         >
           {hasConnectedGmail
-            ? "Aktif: transaksi bank baru akan dipetakan otomatis ke rekening yang sesuai."
+            ? "Aktif: transaksi bank baru akan dipetakan otomatis."
             : "Status: Gmail belum terhubung."}
         </div>
 
@@ -373,11 +372,6 @@ export function EmailDetectionCard() {
                     {item.method ?? "Email"} | {item.occurredAt ? formatDate(item.occurredAt) : "Tanggal belum jelas"}
                     {item.emailAddress ? ` | ${item.emailAddress}` : ""}
                   </p>
-                  {item.accountName ? (
-                    <p className="mt-1 text-[11px] font-black text-blue-700">
-                      Masuk ke rekening {item.accountName}
-                    </p>
-                  ) : null}
                 </div>
                 <span className={["shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ring-1", getStatusBadge(item)].join(" ")}>
                   {getStatusLabel(item.status)}

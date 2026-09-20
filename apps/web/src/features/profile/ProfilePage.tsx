@@ -58,7 +58,6 @@ import {
 } from "../recurring/recurring.service";
 import { RecurringRuleManager } from "../recurring/RecurringRuleManager";
 import type { RecurringRule } from "../recurring/recurring.types";
-import { EmailDetectionCard } from "../email-imports/EmailDetectionCard";
 import { getUserProfile, updateUserProfile } from "./profile.service";
 import type { UpdateUserProfileInput, UserProfile } from "./profile.types";
 
@@ -973,7 +972,6 @@ export function ProfilePage() {
 
             {activeSection === "automation" ? (
               <div className="grid gap-5">
-                <EmailDetectionCard />
                 <RecurringRuleManager
                   categories={categories}
                   isLoading={isLoadingRecurring || categoriesQuery.isLoading}

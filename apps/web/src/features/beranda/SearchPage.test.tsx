@@ -27,10 +27,6 @@ vi.mock("../categories/category.service", () => ({
   createCategory: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() => Promise.resolve([]))
-}));
-
 vi.mock("../summary/summary.service", () => ({
   getSummary: vi.fn()
 }));
@@ -62,7 +58,6 @@ function tx(id: string, note: string, amount: number, day: number, overrides: Pa
     date,
     categoryId: "cat-food",
     category: { id: "cat-food", name: "Makanan", type: "EXPENSE", icon: "utensils", color: null },
-    account: null,
     createdAt: date,
     updatedAt: date,
     ...overrides

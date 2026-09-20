@@ -77,9 +77,9 @@ export function LaporanPage() {
   const monthLabel = formatMonthLabel(monthKey);
   const isCurrentMonth = monthKey === currentMonthKey;
 
-  const { categories, accounts } = useReferenceData();
-  const actions = useTransactionActions({ categories, accounts });
-  const pending = usePendingTransactions(categories, accounts);
+  const { categories } = useReferenceData();
+  const actions = useTransactionActions({ categories });
+  const pending = usePendingTransactions(categories);
 
   const summaryParams = useMemo(() => ({ month, year }), [month, year]);
   const summaryQuery = useQuery({
@@ -276,7 +276,6 @@ export function LaporanPage() {
       />
 
       <EditTransactionSheet
-        accounts={accounts}
         categories={categories}
         onClose={() => setEditing(null)}
         onDelete={(transaction) => {
