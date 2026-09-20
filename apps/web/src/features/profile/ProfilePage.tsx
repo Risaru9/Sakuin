@@ -150,13 +150,6 @@ function getNotificationPermissionLabel(permission: string) {
   return "Belum diminta";
 }
 
-function getHourOptions() {
-  return Array.from({ length: 24 }, (_, hour) => ({
-    value: hour,
-    label: `${String(hour).padStart(2, "0")}:00`
-  }));
-}
-
 function formatHourLabel(hour: number) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
@@ -529,13 +522,6 @@ export function ProfilePage() {
     }
   }
 
-  function updateReminderSettings(updates: Partial<TransactionReminderSettings>) {
-    saveReminderSettings({
-      ...reminderSettings,
-      ...updates
-    });
-  }
-
   async function handleCreateRecurringRule(payload: {
     categoryId: string;
     type: "INCOME" | "EXPENSE";
@@ -686,7 +672,6 @@ export function ProfilePage() {
   const displayedEmail = profile?.email ?? user?.email ?? "-";
   const displayedSafeLimit =
     profile?.safeBalanceLimit ?? user?.safeBalanceLimit ?? "0";
-  const hourOptions = getHourOptions();
   const recurringActiveCount = recurringRules.filter((rule) => rule.isActive).length;
   const profileSections: Array<{
     id: ProfileSection;
@@ -1094,50 +1079,12 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block">
-                    <span className="text-xs font-black uppercase text-zinc-500">
-                      Jangan ganggu
-                    </span>
-                    <select
-                      className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-                      value={reminderSettings.quietStartHour}
-                      onChange={(event) =>
-                        updateReminderSettings({
-                          quietStartHour: Number(event.target.value)
-                        })
-                      }
-                    >
-                      {hourOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="text-xs font-black uppercase text-zinc-500">
-                      Sampai
-                    </span>
-                    <select
-                      className="mt-1 min-h-11 w-full rounded-xl border border-[var(--sakuin-border)] bg-white px-3 text-sm font-bold text-[var(--sakuin-text)] outline-none transition focus:border-[var(--sakuin-primary)] focus:ring-4 focus:ring-[var(--sakuin-focus)]/25"
-                      value={reminderSettings.quietEndHour}
-                      onChange={(event) =>
-                        updateReminderSettings({
-                          quietEndHour: Number(event.target.value)
-                        })
-                      }
-                    >
-                      {hourOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+              <div className="mt-4 flex items-start gap-2 rounded-2xl border border-[var(--sakuin-border)] bg-white p-3 text-xs font-semibold leading-5 text-zinc-700">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Jam tenang otomatis dari 00.00 sampai 07.00. Pengingat malam
+                  pukul 21.00, 22.00, dan 23.00 adalah hitung mundur terakhir.
+                </p>
               </div>
 
               <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[var(--sakuin-primary-soft)] p-3 text-xs font-semibold leading-5 text-zinc-700">

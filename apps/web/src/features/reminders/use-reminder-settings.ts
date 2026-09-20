@@ -101,7 +101,7 @@ export function useReminderSettings() {
         save({ ...settings, enabled });
         showSnack(
           enabled
-            ? { title: "Pengingat aktif", detail: "Saku mengingatkan tiap malam pukul 20.00", mood: "happy" }
+            ? { title: "Pengingat aktif", detail: "Saku mengingatkan berkala dan menghitung mundur mulai pukul 21.00.", mood: "happy" }
             : { title: "Pengingat dimatikan", mood: "happy" }
         );
       } catch (caughtError) {
