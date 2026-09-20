@@ -103,6 +103,21 @@ describe("QuickComposer", () => {
     expect(screen.getByRole("link", { name: "Tanya Saku" })).toHaveAttribute("href", "/asisten");
   });
 
+  it("starts a quick category entry with the field focused", async () => {
+    const { user } = renderComposer();
+
+    const quickButton = await screen.findByRole("button", { name: "Catat Makanan" });
+    await user.click(quickButton);
+
+    const input = screen.getByLabelText(/catat transaksi, misalnya/i);
+    expect(input).toHaveValue("Makanan ");
+    expect(input).toHaveFocus();
+
+    await user.type(input, "18rb");
+    await screen.findByRole("group", { name: "Tebakan Saku" });
+    expect(within(screen.getByRole("group", { name: "Tebakan Saku" })).getByText("−18.000")).toBeInTheDocument();
+  });
+
   it("shows the guess while typing and saves on Enter", async () => {
     vi.mocked(createTransactionsBulk).mockResolvedValueOnce([savedTransaction()] as never);
     const { user } = renderComposer();

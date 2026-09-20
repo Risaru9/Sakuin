@@ -230,6 +230,18 @@ export function useQuickComposer() {
     setOverrides((current) => ({ ...current, ...patch }));
   }
 
+  function selectQuickCategory(category: (typeof categories)[number]) {
+    // Keep the category visible so the user only needs to add the amount.
+    setText(`${category.name} `);
+    setHint(null);
+    setOverrides((current) => ({
+      ...current,
+      type: category.type,
+      categoryId: category.id,
+      dateKey: todayKey
+    }));
+  }
+
   function toggleType() {
     const nextType: TransactionType = guess?.type === "INCOME" ? "EXPENSE" : "INCOME";
     // The previous category belongs to the old type, so let the guess pick a new one.
@@ -275,6 +287,7 @@ export function useQuickComposer() {
     categories,
     overrides,
     updateOverrides,
+    selectQuickCategory,
     toggleType,
     submit,
     retryCategories: () => void categoriesQuery.refetch()

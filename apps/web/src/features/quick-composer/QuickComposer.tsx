@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeftRight, CalendarDays, ChevronDown, RefreshCw } from "lucide-react";
 import {
@@ -12,6 +12,7 @@ import { describeDateKey, formatAmount, formatSignedAmount } from "./composer-lo
 import { subscribeComposerFocus, takeComposerFocusRequest } from "./composer-bridge";
 import { ComposerDetailSheet } from "./ComposerDetailSheet";
 import { useQuickComposer } from "./use-quick-composer";
+import type { Category } from "../categories/category.types";
 
 type QuickComposerProps = {
   className?: string;
@@ -28,6 +29,18 @@ export function QuickComposer({ className }: QuickComposerProps) {
   const inputId = useId();
   const hintId = useId();
   const { guess, changeText } = composer;
+  const quickCategories = useMemo(() => {
+    const preferred = ["makanan", "transportasi", "belanja", "tagihan"];
+    const expenses = composer.categories.filter((category) => category.type === "EXPENSE");
+
+    return preferred
+      .map(
+        (name) =>
+          expenses.find((category) => category.name.trim().toLowerCase() === name) ??
+          expenses.find((category) => category.name.trim().toLowerCase().includes(name))
+      )
+      .filter((category): category is Category => Boolean(category));
+  }, [composer.categories]);
 
   useEffect(() => {
     function handleFocusRequest() {
@@ -175,6 +188,30 @@ export function QuickComposer({ className }: QuickComposerProps) {
           </button>
         ) : null}
       </form>
+
+      {!composer.text.trim() && quickCategories.length > 0 ? (
+        <div
+          aria-label="Transaksi cepat"
+          className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="group"
+        >
+          <span className="shrink-0 pl-1 text-xs font-black text-saku-muted">Cepat:</span>
+          {quickCategories.map((category) => (
+            <StickerChip
+              key={category.id}
+              aria-label={`Catat ${category.name}`}
+              leading={<CategoryBadge icon={category.icon} size={24} />}
+              onClick={() => {
+                composer.selectQuickCategory(category);
+                requestAnimationFrame(() => inputRef.current?.focus());
+              }}
+              tone="highlight"
+            >
+              {category.name}
+            </StickerChip>
+          ))}
+        </div>
+      ) : null}
 
       {guess ? (
         <ComposerDetailSheet
