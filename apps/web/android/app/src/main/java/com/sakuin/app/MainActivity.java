@@ -92,9 +92,12 @@ public class MainActivity extends BridgeActivity {
                         return "UNSUPPORTED_LAUNCHER";
                     }
 
-                    Class<?> providerClass = getWidgetProviderClass(size);
-                    ComponentName widgetComponent = new ComponentName(MainActivity.this, providerClass);
-                    Intent pinnedIntent = new Intent(MainActivity.this, providerClass);
+                    // Keep one canonical provider so the widget looks the same on phones
+                    // and tablets. The old size argument is kept for APK compatibility.
+                    ComponentName widgetComponent = new ComponentName(
+                            MainActivity.this, SakuinFinanceWidgetProvider.class);
+                    Intent pinnedIntent = new Intent(
+                            MainActivity.this, SakuinFinanceWidgetProvider.class);
                     pinnedIntent.setAction(SakuinFinanceWidgetProvider.ACTION_PINNED);
                     PendingIntent successCallback = PendingIntent.getBroadcast(
                             MainActivity.this,
@@ -174,7 +177,6 @@ public class MainActivity extends BridgeActivity {
     private void triggerWidgetUpdate() {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
         triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetProvider.class);
-        triggerWidgetUpdate(appWidgetManager, SakuinFinanceWidgetExtraProvider.class);
     }
 
     private void triggerWidgetUpdate(AppWidgetManager appWidgetManager, Class<?> providerClass) {
@@ -188,14 +190,6 @@ public class MainActivity extends BridgeActivity {
         updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         sendBroadcast(updateIntent);
-    }
-
-    private Class<?> getWidgetProviderClass(String size) {
-        if ("xl".equals(size) || "extra".equals(size)) {
-            return SakuinFinanceWidgetExtraProvider.class;
-        }
-
-        return SakuinFinanceWidgetProvider.class;
     }
 
     private String sanitizeExportFileName(String fileName) {

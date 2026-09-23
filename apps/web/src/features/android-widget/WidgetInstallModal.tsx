@@ -168,13 +168,7 @@ function WidgetMetricPill({
   );
 }
 
-function WidgetPreviewCard({
-  selectedSize,
-  summary
-}: {
-  selectedSize: "medium" | "xl";
-  summary: SummaryData | null;
-}) {
+function WidgetPreviewCard({ summary }: { summary: SummaryData | null }) {
   const fallbackIncome = 350000;
   const fallbackExpense = 211700;
   const income = toNumber(summary?.incomeThisMonth) || toNumber(summary?.totalIncome) || fallbackIncome;
@@ -182,11 +176,6 @@ function WidgetPreviewCard({
   const balance = toNumber(summary?.balance) || income - expense;
   const status = getWidgetStatus(income, expense, summary);
   const theme = widgetStatusTheme[status];
-  const ratio = income > 0 ? Math.min(Math.round((expense / income) * 100), 999) : 0;
-  const showMetrics = true;
-  const showInsight = selectedSize === "xl";
-  const showRatio = selectedSize === "xl";
-
   return (
     <div
       className={[
@@ -225,38 +214,9 @@ function WidgetPreviewCard({
           </div>
         </div>
 
-        {showMetrics ? (
-          <div className="mt-4 grid max-w-[68%] grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-            <WidgetMetricPill label="Pemasukan" type="income" value={formatRupiah(income)} />
-            <WidgetMetricPill label="Pengeluaran" type="expense" value={formatRupiah(expense)} />
-          </div>
-        ) : null}
-
-        {showRatio ? (
-          <div className="mt-4 max-w-[66%]">
-            <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-white/80">
-              <span>Rasio pengeluaran</span>
-              <span>{ratio}%</span>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
-              <div
-                className={["h-full rounded-full", theme.accentClass].join(" ")}
-                style={{ width: `${Math.min(ratio, 100)}%` }}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-auto max-w-[68%] pt-4">
-          {showInsight ? (
-            <div className="rounded-2xl border border-white/15 bg-white/12 px-3 py-2.5 backdrop-blur-md">
-              <p className="text-[11px] font-semibold text-white/82">{theme.headline}</p>
-              <p className="mt-1 text-lg font-black uppercase leading-none text-lime-300">
-                {theme.label}
-              </p>
-              <p className="mt-1 truncate text-[11px] font-semibold text-white/86">{theme.note}</p>
-            </div>
-          ) : null}
+        <div className="mt-4 grid max-w-[68%] grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+          <WidgetMetricPill label="Pemasukan" type="income" value={formatRupiah(income)} />
+          <WidgetMetricPill label="Pengeluaran" type="expense" value={formatRupiah(expense)} />
         </div>
       </div>
 
@@ -272,7 +232,6 @@ export function WidgetInstallModal({
   onClose: () => void;
   summary: SummaryData | null;
 }) {
-  const [selectedSize, setSelectedSize] = useState<"medium" | "xl">("medium");
   const [pinStatus, setPinStatus] = useState<"idle" | "requested" | "unsupported" | "failed">("idle");
 
   const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
@@ -290,7 +249,7 @@ export function WidgetInstallModal({
     }
 
     try {
-      const result = androidWidgetBridge.requestPinWidget(selectedSize);
+      const result = androidWidgetBridge.requestPinWidget();
 
       if (result === "REQUESTED") {
         setPinStatus("requested");
@@ -308,11 +267,6 @@ export function WidgetInstallModal({
     }
   }
 
-  const sizeOptions = [
-    { id: "medium" as const, label: "Sedang", title: "Saldo, masuk, keluar" },
-    { id: "xl" as const, label: "Besar", title: "Plus porsi pengeluaran" }
-  ];
-
   return (
     <BottomSheet
       footer={
@@ -323,39 +277,15 @@ export function WidgetInstallModal({
       }
       onClose={onClose}
       open
-      subtitle="Lihat saldo tanpa membuka aplikasi"
-      title="Widget layar HP"
+      subtitle="Satu tampilan yang sama di HP dan tablet"
+      title="Widget Sakuin"
     >
-      <p className="mb-1.5 text-xs font-black tracking-[0.05em] text-saku-muted uppercase">Ukuran</p>
-      <div aria-label="Ukuran widget" className="grid grid-cols-2 gap-2" role="radiogroup">
-        {sizeOptions.map((item) => {
-          const selected = selectedSize === item.id;
-
-          return (
-            <button
-              aria-checked={selected}
-              className={[
-                "saku-line-thin rounded-[18px] px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30",
-                selected ? "bg-saku-coin shadow-saku-xs" : "bg-saku-paper"
-              ].join(" ")}
-              key={item.id}
-              onClick={() => setSelectedSize(item.id)}
-              role="radio"
-              type="button"
-            >
-              <span className="block font-saku-head text-base font-semibold">{item.label}</span>
-              <span className="block text-xs font-bold text-saku-muted">{item.title}</span>
-            </button>
-          );
-        })}
-      </div>
-
       <p className="mt-4 mb-1.5 text-xs font-black tracking-[0.05em] text-saku-muted uppercase">Contoh tampilan</p>
-      <WidgetPreviewCard selectedSize={selectedSize} summary={summary} />
+      <WidgetPreviewCard summary={summary} />
 
       <ol className="mt-4 space-y-1.5 text-sm font-bold">
         <li>1. Ketuk "Tambahkan widget", lalu setujui di layar Android.</li>
-        <li>2. Kalau tidak muncul, tahan layar utama HP, buka Widget, lalu cari Sakuin.</li>
+        <li>2. Kalau tidak muncul, tahan layar utama HP/tablet, buka Widget, lalu cari Sakuin.</li>
         <li>3. Di widget: ikon putar untuk memperbarui, ikon plus untuk catat cepat.</li>
       </ol>
 

@@ -198,7 +198,8 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:orientation="vertical"
-            android:paddingEnd="118dp">
+            android:paddingEnd="118dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:id="@+id/widget_status_panel"

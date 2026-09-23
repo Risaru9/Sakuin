@@ -4,7 +4,6 @@ import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.os.Bundle;
-import android.view.View;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -84,9 +83,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
 
     protected void updateAppWidgetSync(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), getLayoutResource());
-        WidgetSize widgetSize = getWidgetSize(appWidgetManager, appWidgetId);
-        applyResponsiveLayout(views, widgetSize);
-
         // Setup non-button areas to open main app. Keep root free so widget buttons
         // are not swallowed by parent click handling on some Android launchers.
         Intent configIntent = new Intent(context, MainActivity.class);
@@ -242,51 +238,6 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         return SakuinFinanceWidgetProvider.class;
     }
 
-    protected WidgetSize getFixedWidgetSize() {
-        return WidgetSize.MEDIUM;
-    }
-
-    private WidgetSize getWidgetSize(AppWidgetManager appWidgetManager, int appWidgetId) {
-        WidgetSize fixedWidgetSize = getFixedWidgetSize();
-        if (fixedWidgetSize != null) {
-            return fixedWidgetSize;
-        }
-
-        Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
-        int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180);
-        int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110);
-
-        if (minWidth >= 300 && minHeight >= 180) {
-            return WidgetSize.EXTRA_LARGE;
-        }
-
-        if (minWidth >= 250 || minHeight >= 150) {
-            return WidgetSize.LARGE;
-        }
-
-        if (minWidth >= 180) {
-            return WidgetSize.MEDIUM;
-        }
-
-        return WidgetSize.SMALL;
-    }
-
-    private static void applyResponsiveLayout(RemoteViews views, WidgetSize widgetSize) {
-        boolean showAmounts = widgetSize != WidgetSize.SMALL;
-        boolean showHeaderActions = widgetSize != WidgetSize.SMALL;
-        boolean showStatus = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
-        boolean showInsight = widgetSize == WidgetSize.LARGE || widgetSize == WidgetSize.EXTRA_LARGE;
-        boolean showRatio = showInsight;
-        boolean showMascot = widgetSize != WidgetSize.SMALL;
-
-        views.setViewVisibility(R.id.widget_amount_grid, showAmounts ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_header_actions, showHeaderActions ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_status_row, showStatus ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_status_headline, showInsight ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_ratio, showRatio ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_mascot, showMascot ? View.VISIBLE : View.GONE);
-
-    }
 
     private static String classifyFinancialStatus(double income, double expense, JSONObject safeToSpend) {
         String safeStatus = safeToSpend != null ? safeToSpend.optString("status", "") : "";
@@ -360,10 +311,4 @@ public class SakuinFinanceWidgetProvider extends AppWidgetProvider {
         views.setTextColor(R.id.widget_balance, android.graphics.Color.WHITE);
     }
 
-    protected enum WidgetSize {
-        SMALL,
-        MEDIUM,
-        LARGE,
-        EXTRA_LARGE
-    }
 }

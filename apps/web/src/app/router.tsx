@@ -19,6 +19,7 @@ import {
   Smartphone
 } from "lucide-react";
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
+import { SakuMascot, SakuSparkle } from "../components/saku";
 import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
 import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import { useAuth } from "../features/auth/auth-context";
@@ -473,61 +474,70 @@ function PrivacyPolicyPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-white px-4 py-5 text-[var(--sakuin-text)] sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--sakuin-border)] bg-white px-4 py-3 shadow-sm">
-          <Link className="min-w-0" to="/">
-            <SakuinIdentityLogo subtitle="Kebijakan privasi" />
+    <main className="min-h-[100dvh] bg-saku-bg font-saku-body text-saku-ink">
+      <div className="mx-auto w-full max-w-4xl px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-12 sm:px-6">
+        <header className="flex items-center justify-between gap-3">
+          <Link
+            aria-label="Kembali ke beranda Sakuin"
+            className="flex min-w-0 items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
+            to="/"
+          >
+            <span className="saku-line-thin flex size-10 shrink-0 items-end justify-center overflow-hidden rounded-full bg-saku-coin-soft">
+              <SakuMascot size={36} />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-saku-head text-2xl font-semibold leading-none">Sakuin</span>
+              <span className="mt-1 block truncate text-xs font-bold text-saku-muted">Kebijakan privasi</span>
+            </span>
           </Link>
 
           <Link
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-bold text-white transition hover:bg-[var(--sakuin-secondary)]"
+            className="saku-line-thin saku-press inline-flex min-h-11 shrink-0 items-center rounded-full bg-saku-paper px-4 text-sm font-black shadow-saku-xs focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
             to="/dashboard"
           >
-            Buka App
+            Buka app
           </Link>
         </header>
 
-        <section className="py-10 sm:py-14">
-          <div className="rounded-3xl border border-[var(--sakuin-primary)] bg-[var(--sakuin-primary)] p-6 text-white shadow-[0_20px_50px_rgba(37,99,235,0.15)] sm:p-8">
-            <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--sakuin-text)] ring-1 ring-[var(--sakuin-border)]">
-              Privacy Policy
-            </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl">
-              Kebijakan Privasi Sakuin
+        <section className="relative mt-8 overflow-hidden saku-line rounded-saku-hero bg-saku-accent p-5 text-white shadow-saku sm:p-8">
+          <SakuSparkle aria-hidden="true" className="absolute right-7 top-5 text-saku-coin" size={18} />
+          <div className="relative max-w-2xl">
+            <span className="saku-line-thin inline-flex items-center gap-2 rounded-full bg-saku-paper px-3 py-1 text-xs font-black text-saku-ink">
+              <ShieldCheck aria-hidden="true" className="size-4" strokeWidth={2.6} />
+              Privacy policy
+            </span>
+            <h1 className="mt-4 font-saku-head text-[36px] leading-[42px] font-semibold sm:text-[46px] sm:leading-[52px]">
+              Kebijakan privasi Sakuin.
             </h1>
-            <p className="mt-4 max-w-3xl text-sm font-semibold leading-7 text-white/85 sm:text-base">
+            <p className="mt-3 text-sm font-bold leading-7 text-white/90 sm:text-base">
               Sakuin memproses data yang kamu masukkan untuk menjalankan fitur
               pencatatan transaksi, dashboard, goals, reminder, export, dan
-              Asisten Sakuin. Dokumen ini menjelaskan data apa yang digunakan
-              dan untuk apa.
+              Asisten Sakuin. Di sini kamu bisa melihat data apa yang digunakan
+              dan mengatur kendalinya.
             </p>
-            <p className="mt-4 text-xs font-black uppercase text-white/75">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.08em] text-white/75">
               Berlaku sejak 27 Mei 2026
             </p>
           </div>
         </section>
 
-        <div className="grid gap-5 pb-14 lg:grid-cols-[0.85fr_1.15fr]">
-          <aside className="space-y-5">
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-[var(--sakuin-text)]">Ringkasan</h2>
-              <p className="mt-2 text-sm font-medium leading-7 text-zinc-600">
+        <div className="mt-6 grid gap-4 pb-10 lg:grid-cols-[0.82fr_1.18fr]">
+          <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+            <section className="saku-line rounded-saku-card bg-saku-paper p-4 shadow-saku sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Ringkasan</h2>
+              <p className="mt-2 text-sm font-bold leading-7 text-saku-muted">
                 Sakuin menggunakan data pribadi dan data keuanganmu hanya untuk
                 menjalankan fitur aplikasi. Sakuin tidak dirancang untuk menjual
                 profil finansial user.
               </p>
             </section>
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-[var(--sakuin-primary-soft)] p-5 shadow-sm">
-              <h2 className="text-lg font-black text-[var(--sakuin-text)]">Kontrol User</h2>
-              <ul className="mt-3 grid gap-2">
+            <section className="saku-line-thin rounded-saku-card bg-saku-coin-soft p-4 sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Kontrol user</h2>
+              <ul className="mt-3 grid gap-2.5">
                 {userControls.map((item) => (
-                  <li
-                    className="flex gap-2 text-sm font-semibold leading-6 text-zinc-700"
-                    key={item}
-                  >
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sakuin-text)]" />
+                  <li className="flex gap-2.5 text-sm font-bold leading-6" key={item}>
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-saku-income" strokeWidth={2.6} />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -535,28 +545,24 @@ function PrivacyPolicyPage() {
             </section>
           </aside>
 
-          <div className="space-y-5">
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-xl font-black text-[var(--sakuin-text)]">
-                Data yang Diproses
-              </h2>
-              <ul className="mt-4 grid gap-3">
+          <div className="space-y-4">
+            <section className="saku-line rounded-saku-card bg-saku-paper p-4 shadow-saku sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Data yang diproses</h2>
+              <ul className="mt-4 grid gap-2.5">
                 {dataItems.map((item) => (
-                  <li className="flex gap-3" key={item}>
-                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--sakuin-primary)] ring-1 ring-[var(--sakuin-border)]" />
-                    <p className="text-sm font-medium leading-7 text-zinc-600">
-                      {item}
-                    </p>
+                  <li className="flex items-start gap-3 rounded-2xl bg-saku-bg px-3 py-2.5" key={item}>
+                    <span className="saku-line-hair mt-1.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-saku-coin">
+                      <span className="size-1.5 rounded-full bg-saku-ink" />
+                    </span>
+                    <p className="text-sm font-bold leading-6 text-saku-muted">{item}</p>
                   </li>
                 ))}
               </ul>
             </section>
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-xl font-black text-[var(--sakuin-text)]">
-                Tujuan Penggunaan Data
-              </h2>
-              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+            <section className="saku-line-thin rounded-saku-card bg-saku-paper p-4 sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Tujuan penggunaan data</h2>
+              <p className="mt-3 text-sm font-bold leading-7 text-saku-muted">
                 Data digunakan untuk membuat akun, menyimpan transaksi,
                 menampilkan dashboard, mengelola goals, mengirim reminder jika
                 kamu mengaktifkannya, menjalankan export, dan membantu Asisten
@@ -564,9 +570,9 @@ function PrivacyPolicyPage() {
               </p>
             </section>
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-xl font-black text-[var(--sakuin-text)]">Asisten Sakuin</h2>
-              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+            <section className="saku-line-thin rounded-saku-card bg-saku-accent-soft p-4 sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Asisten Sakuin</h2>
+              <p className="mt-3 text-sm font-bold leading-7 text-saku-muted">
                 Asisten Sakuin hanya ditujukan untuk membantu membaca kondisi
                 keuangan pribadi di Sakuin. Asisten bukan pengganti nasihat
                 investasi, pajak, pinjaman, hukum, atau profesional lain.
@@ -575,31 +581,27 @@ function PrivacyPolicyPage() {
               </p>
             </section>
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-xl font-black text-[var(--sakuin-text)]">
-                Keamanan dan Penyimpanan
-              </h2>
-              <ul className="mt-4 grid gap-3">
+            <section className="saku-line-thin rounded-saku-card bg-saku-income-soft p-4 sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Keamanan dan penyimpanan</h2>
+              <ul className="mt-4 grid gap-2.5">
                 {securityPrinciples.map((item) => (
-                  <li className="flex gap-3" key={item}>
-                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[var(--sakuin-text)]" />
-                    <p className="text-sm font-medium leading-7 text-zinc-600">
-                      {item}
-                    </p>
+                  <li className="flex gap-3 text-sm font-bold leading-6" key={item}>
+                    <ShieldCheck className="mt-0.5 size-5 shrink-0 text-saku-income" strokeWidth={2.5} />
+                    <p className="text-saku-muted">{item}</p>
                   </li>
                 ))}
               </ul>
             </section>
 
-            <section className="rounded-3xl border border-[var(--sakuin-border)] bg-zinc-50 p-5 shadow-sm sm:p-6">
-              <h2 className="text-xl font-black text-[var(--sakuin-text)]">Catatan</h2>
-              <p className="mt-3 text-sm font-medium leading-7 text-zinc-600">
+            <section className="saku-line-thin rounded-saku-card bg-saku-coin-soft p-4 sm:p-5">
+              <h2 className="font-saku-head text-xl font-semibold">Catatan</h2>
+              <p className="mt-3 text-sm font-bold leading-7 text-saku-muted">
                 Kebijakan ini dapat diperbarui ketika fitur Sakuin berubah,
                 terutama jika ada perubahan pada AI, notifikasi, integrasi pihak
                 ketiga, atau distribusi mobile app.
               </p>
               <Link
-                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-bold text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"
+                className="saku-line-thin saku-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-saku-paper px-4 text-sm font-black shadow-saku-xs focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-saku-accent/30"
                 to="/account-deletion"
               >
                 Ajukan penghapusan akun
@@ -607,6 +609,13 @@ function PrivacyPolicyPage() {
             </section>
           </div>
         </div>
+
+        <footer className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs font-bold text-saku-muted">
+          <Link to="/privacy">Kebijakan privasi</Link>
+          <Link to="/account-deletion">Hapus akun</Link>
+          <Link to="/install">Panduan pasang</Link>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+        </footer>
       </div>
     </main>
   );

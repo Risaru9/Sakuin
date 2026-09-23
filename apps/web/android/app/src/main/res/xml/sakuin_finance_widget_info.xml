@@ -4,7 +4,7 @@
     android:minHeight="110dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:description="@string/widget_finance_medium_description"
+    android:description="@string/widget_finance_description"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/sakuin_finance_widget_medium"
     android:previewLayout="@layout/sakuin_finance_widget_medium"
