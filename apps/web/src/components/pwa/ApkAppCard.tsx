@@ -1,79 +1,24 @@
 import { useEffect, useState } from "react";
 import { Download, RefreshCcw, Smartphone, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useToast } from "../toast/ToastProvider";
-import { apiRequest } from "../../lib/api-client";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
-
-type ApkVersionInfo = {
-  latestVersionName: string;
-  latestVersionCode: number;
-  apkDownloadUrl: string;
-  releaseNotes: string[];
-  forceUpdate: boolean;
-  publishedAt: string;
-};
+import { useAppVersion } from "./use-app-version";
 
 export function ApkAppCard() {
   const { addToast } = useToast();
+  const app = useAppVersion();
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine !== false
   );
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isApk, setIsApk] = useState(false);
-  const [installedVersion, setInstalledVersion] = useState({ code: 0, name: "Bukan APK / Browser" });
-  const [latestVersion, setLatestVersion] = useState<ApkVersionInfo | null>(null);
 
   useEffect(() => {
-    // 1. Cek environment
-    const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-    const isCapacitor = typeof window !== "undefined" && !!(window as any).Capacitor;
-    const isAndroidWidgetBridge = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
-    const detectedApk = isAndroid && (isCapacitor || isAndroidWidgetBridge);
-
-    setIsApk(detectedApk);
-
-    if (detectedApk) {
-      let installedCode = 2; // legacy default
-      let installedName = "1.1";
-
-      if (isAndroidWidgetBridge && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
-        try {
-          installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
-          installedName = (window as any).AndroidWidgetBridge.getAppVersionName 
-            ? (window as any).AndroidWidgetBridge.getAppVersionName() 
-            : "1.2+";
-        } catch (e) {
-          console.error("Gagal mendapatkan info versi dari native AndroidWidgetBridge", e);
-        }
-      }
-      setInstalledVersion({ code: installedCode, name: `v${installedName} (${installedCode})` });
-    }
-
-    // 2. Event listener online/offline
     function handleOnlineChange() {
       setIsOnline(navigator.onLine !== false);
     }
     window.addEventListener("online", handleOnlineChange);
     window.addEventListener("offline", handleOnlineChange);
-
-    // 3. Load latest version info on mount
-    async function loadLatestVersion() {
-      try {
-        let data: ApkVersionInfo;
-        try {
-          data = await apiRequest<ApkVersionInfo>("/api/app-version");
-        } catch {
-          const response = await fetch("/latest-version.json", { cache: "no-store" });
-          data = await response.json();
-        }
-        setLatestVersion(data);
-      } catch (err) {
-        console.error("Gagal mengambil versi APK terbaru", err);
-      }
-    }
-    void loadLatestVersion();
 
     return () => {
       window.removeEventListener("online", handleOnlineChange);
@@ -82,66 +27,46 @@ export function ApkAppCard() {
   }, []);
 
   async function handleCheckUpdate() {
-    try {
-      setIsCheckingUpdate(true);
-      
-      let data: ApkVersionInfo;
-      try {
-        data = await apiRequest<ApkVersionInfo>("/api/app-version");
-      } catch {
-        const response = await fetch("/latest-version.json", { cache: "no-store" });
-        data = await response.json();
-      }
-      setLatestVersion(data);
-
-      if (!isApk) {
-        addToast({
-          variant: "info",
-          title: "Bukan Aplikasi Android",
-          description: "Anda membuka Sakuin lewat browser. Fitur update otomatis tidak aktif.",
-          duration: 5000
-        });
-        return;
-      }
-
-      // Bandingkan versi
-      const isAndroidWidgetBridge = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
-      let installedCode = 2; // legacy default
-      if (isAndroidWidgetBridge && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
-        try {
-          installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      if (data.latestVersionCode > installedCode) {
-        addToast({
-          variant: "success",
-          title: "Update Tersedia!",
-          description: `Versi terbaru v${data.latestVersionName} tersedia untuk diunduh. Silakan ketuk tombol Perbarui.`,
-          duration: 6000
-        });
-      } else {
-        addToast({
-          variant: "success",
-          title: "Aplikasi Terkini",
-          description: `Sakuin APK Anda sudah menggunakan versi terbaru.`,
-          duration: 5000
-        });
-      }
-    } catch {
+    const data = await app.check();
+    if (!data) {
       addToast({
         variant: "error",
         title: "Koneksi Gagal",
         description: "Gagal terhubung ke server untuk mengecek versi terbaru.",
         duration: 5000
       });
-    } finally {
-      setIsCheckingUpdate(false);
+    } else if (!app.isApk) {
+      addToast({
+        variant: "info",
+        title: "Bukan Aplikasi Android",
+        description: "Anda membuka Sakuin lewat browser. Versi APK tidak terpasang di sini.",
+        duration: 5000
+      });
+    } else if (!app.installed) {
+      addToast({
+        variant: "error",
+        title: "Versi APK belum terbaca",
+        description: "Tutup aplikasi sepenuhnya lalu buka lagi.",
+        duration: 5000
+      });
+    } else if (data.latestVersionCode > app.installed.code) {
+      addToast({
+        variant: "success",
+        title: "Update Tersedia!",
+        description: `Versi terbaru v${data.latestVersionName} tersedia untuk diunduh.`,
+        duration: 6000
+      });
+    } else {
+      addToast({
+        variant: "success",
+        title: "Aplikasi Terkini",
+        description: `APK terpasang v${app.installed.name} sudah menggunakan versi terbaru.`,
+        duration: 5000
+      });
     }
   }
 
+  const latestVersion = app.latest;
   const downloadUrl = latestVersion?.apkDownloadUrl || null;
 
   return (
@@ -166,7 +91,9 @@ export function ApkAppCard() {
               Versi Terpasang
             </p>
             <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
-              {installedVersion.name}
+              {app.isApk
+                ? app.installed ? `v${app.installed.name} (${app.installed.code})` : "Belum terbaca"
+                : "Bukan APK / Browser"}
             </p>
           </div>
 
@@ -175,10 +102,15 @@ export function ApkAppCard() {
               Versi Terbaru
             </p>
             <p className="mt-1 truncate text-xs font-black text-[var(--sakuin-text)]">
-              {latestVersion ? `v${latestVersion.latestVersionName} (${latestVersion.latestVersionCode})` : "Mengecek..."}
+              {latestVersion
+                ? `v${latestVersion.latestVersionName} (${latestVersion.latestVersionCode})`
+                : app.checking ? "Mengecek..." : "Belum dapat dicek"}
             </p>
           </div>
         </div>
+        <p className="text-xs font-semibold leading-5 text-zinc-600">
+          Muat ulang memperbarui tampilan web, bukan versi APK atau widget. Versi APK berubah setelah paket Android yang lebih baru dipasang.
+        </p>
 
         <div className="flex items-center gap-3 rounded-2xl bg-zinc-50 p-3">
           <div
@@ -249,7 +181,9 @@ export function ApkAppCard() {
               ) : (
                 <>
                   <Download className="h-4 w-4 text-white" />
-                  {isApk ? "Unduh / Perbarui APK" : "Unduh Aplikasi (APK)"}
+                  {app.isApk
+                    ? app.updateAvailable ? "Unduh pembaruan APK" : "Unduh ulang APK"
+                    : "Unduh Aplikasi (APK)"}
                 </>
               )}
             </a>
@@ -261,12 +195,12 @@ export function ApkAppCard() {
 
           <button
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isCheckingUpdate}
+            disabled={app.checking}
             onClick={() => void handleCheckUpdate()}
             type="button"
           >
             <RefreshCcw
-              className={isCheckingUpdate ? "h-4 w-4 animate-spin" : "h-4 w-4"}
+              className={app.checking ? "h-4 w-4 animate-spin" : "h-4 w-4"}
             />
             Cek Pembaruan APK
           </button>

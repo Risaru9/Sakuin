@@ -1,60 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
-import { apiRequest } from "../../lib/api-client";
-
-export type ApkVersionInfo = {
-  latestVersionName: string;
-  latestVersionCode: number;
-  apkDownloadUrl: string;
-  releaseNotes: string[];
-  forceUpdate: boolean;
-  publishedAt: string;
-};
-
-type WidgetBridgeVersion = {
-  getAppVersionCode?: () => number;
-  getAppVersionName?: () => string;
-};
-
-// APKs older than the version bridge report nothing; treat them as build 2 ("1.1").
-const LEGACY_VERSION = { code: 2, name: "1.1" };
-
-function readInstalledVersion() {
-  const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-  const bridge = (typeof window !== "undefined" ? window.AndroidWidgetBridge : undefined) as WidgetBridgeVersion | undefined;
-  const isApk = isAndroid && (Capacitor.isNativePlatform() || Boolean(bridge));
-
-  if (!isApk) {
-    return null;
-  }
-
-  try {
-    if (typeof bridge?.getAppVersionCode === "function") {
-      return {
-        code: bridge.getAppVersionCode(),
-        name: typeof bridge.getAppVersionName === "function" ? bridge.getAppVersionName() : "1.2+"
-      };
-    }
-  } catch {
-    // Fall through to the legacy default.
-  }
-
-  return LEGACY_VERSION;
-}
-
-async function fetchLatestVersion() {
-  try {
-    return await apiRequest<ApkVersionInfo>("/api/app-version");
-  } catch {
-    const response = await fetch("/latest-version.json", { cache: "no-store" });
-    return (await response.json()) as ApkVersionInfo;
-  }
-}
+import { getInstalledAndroidVersion, isAndroidApp, readAndroidBridgeVersion } from "../../lib/android-version";
+import { fetchLatestApkVersion, type ApkVersionInfo } from "../../lib/latest-apk-version";
 
 /** Installed APK version (null in a browser), the latest release, and a way to open its download. */
 export function useAppVersion() {
-  const [installed] = useState(readInstalledVersion);
+  const [isApk] = useState(isAndroidApp);
+  const [installed, setInstalled] = useState(readAndroidBridgeVersion);
   const [latest, setLatest] = useState<ApkVersionInfo | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -62,7 +15,7 @@ export function useAppVersion() {
     setChecking(true);
 
     try {
-      const info = await fetchLatestVersion();
+      const info = await fetchLatestApkVersion();
       setLatest(info);
       return info;
     } catch {
@@ -71,6 +24,23 @@ export function useAppVersion() {
       setChecking(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isApk) {
+      return;
+    }
+
+    let active = true;
+    void getInstalledAndroidVersion().then((version) => {
+      if (active) {
+        setInstalled(version);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [isApk]);
 
   useEffect(() => {
     void check();
@@ -92,5 +62,5 @@ export function useAppVersion() {
 
   const updateAvailable = Boolean(installed && latest && latest.latestVersionCode > installed.code);
 
-  return { installed, latest, checking, check, openDownload, updateAvailable };
+  return { isApk, installed, latest, checking, check, openDownload, updateAvailable };
 }

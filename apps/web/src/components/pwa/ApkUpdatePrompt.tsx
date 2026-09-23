@@ -1,79 +1,36 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, X, Loader2 } from "lucide-react";
-import { apiRequest } from "../../lib/api-client";
 import { SakuMascot } from "../saku";
 import { useToast } from "../toast/ToastProvider";
-import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
-
-type ApkVersionInfo = {
-  latestVersionName: string;
-  latestVersionCode: number;
-  apkDownloadUrl: string;
-  releaseNotes: string[];
-  forceUpdate: boolean;
-  publishedAt: string;
-};
+import { getInstalledAndroidVersion, isAndroidApp, type InstalledAndroidVersion } from "../../lib/android-version";
+import { fetchLatestApkVersion, type ApkVersionInfo } from "../../lib/latest-apk-version";
 
 export function ApkUpdatePrompt() {
   const [updateInfo, setUpdateInfo] = useState<ApkVersionInfo | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState({ code: 2, name: "1.1" });
+  const [currentVersion, setCurrentVersion] = useState<InstalledAndroidVersion | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
-    // 1. Cek apakah berjalan di dalam environment Android APK
-    const isNativeCapacitor = Capacitor.isNativePlatform();
-    const isAndroidWidgetBridge = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
-    const isAndroidApk = isNativeCapacitor || isAndroidWidgetBridge;
-
-    if (!isAndroidApk) {
+    if (!isAndroidApp()) {
       return;
     }
 
-    // 2. Ambil data versi terbaru dari server API (dengan pembacaan bridge versi terbaru)
     async function checkApkVersion() {
       try {
-        const isAndroidWidgetBridgeNow = typeof window !== "undefined" && !!(window as any).AndroidWidgetBridge;
-        let installedCode = 2;
-        let installedName = "1.1";
-
-        if (isNativeCapacitor) {
-          try {
-            const info = await CapacitorApp.getInfo();
-            installedCode = parseInt(info.build || "2", 10);
-            installedName = info.version || "1.1";
-          } catch (e) {
-            console.error("Gagal mendapatkan info versi dari Capacitor", e);
-          }
-        } else if (isAndroidWidgetBridgeNow && typeof (window as any).AndroidWidgetBridge.getAppVersionCode === "function") {
-          try {
-            installedCode = (window as any).AndroidWidgetBridge.getAppVersionCode();
-            installedName = (window as any).AndroidWidgetBridge.getAppVersionName 
-              ? (window as any).AndroidWidgetBridge.getAppVersionName() 
-              : "1.2+";
-          } catch (e) {
-            console.error("Gagal mendapatkan info versi dari native AndroidWidgetBridge", e);
-          }
+        const installed = await getInstalledAndroidVersion();
+        if (!installed) {
+          console.warn("Versi APK terpasang belum dapat dibaca; pengingat update tidak ditampilkan.");
+          return;
         }
+        setCurrentVersion(installed);
 
-        setCurrentVersion({ code: installedCode, name: installedName });
+        const data = await fetchLatestApkVersion();
 
-        let data: ApkVersionInfo;
-        try {
-          data = await apiRequest<ApkVersionInfo>("/api/app-version");
-        } catch (apiError) {
-          console.warn("Gagal fetch versi dari API, mencoba fallback ke static JSON...", apiError);
-          const response = await fetch("/latest-version.json", { cache: "no-store" });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          data = await response.json();
-        }
-
-        if (data && data.latestVersionCode > installedCode && data.apkDownloadUrl) {
+        if (data && data.latestVersionCode > installed.code && data.apkDownloadUrl) {
           // Cek jika update ini sudah pernah di-dismiss oleh user sebelumnya
           const dismissedCode = localStorage.getItem("sakuin_dismissed_apk_version");
           const hasBeenDismissed = dismissedCode === String(data.latestVersionCode);
@@ -137,7 +94,7 @@ export function ApkUpdatePrompt() {
     }
   }
 
-  if (!showPrompt || !updateInfo) {
+  if (!showPrompt || !updateInfo || !currentVersion) {
     return null;
   }
 

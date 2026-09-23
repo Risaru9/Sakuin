@@ -5,7 +5,6 @@ import { App as CapApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { AppReleaseNotesPrompt } from "../components/pwa/AppReleaseNotesPrompt";
 import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
 import { SakuNotificationsRunner } from "../components/pwa/SakuNotificationsRunner";
 import { ApkUpdatePrompt } from "../components/pwa/ApkUpdatePrompt";
@@ -238,7 +237,6 @@ export function App() {
           {showBootScreen ? <SakuLoadingScreen className="sakuin-boot-screen" overlay /> : null}
           <TransactionReminderRunner />
           <SakuNotificationsRunner />
-          <AppReleaseNotesPrompt />
           <ApkUpdatePrompt />
 
           <PwaUpdatePrompt

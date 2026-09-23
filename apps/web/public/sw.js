@@ -1,4 +1,5 @@
-const CACHE_VERSION = "sakuin-pwa-v11";
+// The production build replaces this marker with the current entry-bundle hash.
+const CACHE_VERSION = "sakuin-pwa-v12-__SAKUIN_BUILD_ID__";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -22,7 +23,10 @@ const APP_SHELL_URLS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL_URLS))
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(APP_SHELL_URLS))
+      // Replace the old shell immediately so a cached APK 2.1.x page can recover.
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -33,7 +37,11 @@ self.addEventListener("activate", (event) => {
       .then((cacheNames) =>
         Promise.all(
           cacheNames
-            .filter((cacheName) => !cacheName.startsWith(CACHE_VERSION))
+            .filter((cacheName) =>
+              cacheName.startsWith("sakuin-pwa-") &&
+              cacheName !== STATIC_CACHE &&
+              cacheName !== RUNTIME_CACHE
+            )
             .map((cacheName) => caches.delete(cacheName))
         )
       )
@@ -140,6 +148,14 @@ async function cacheFirst(request) {
   }
 
   const response = await fetch(request);
+  const isMissingAsset = new URL(request.url).pathname.startsWith("/assets/") &&
+    response.headers.get("content-type")?.includes("text/html");
+
+  // Vercel's SPA rewrite returns index.html with status 200 for missing chunks.
+  // Never keep that HTML under a JavaScript or CSS asset URL.
+  if (isMissingAsset) {
+    return new Response("Asset tidak tersedia", { status: 404 });
+  }
 
   if (response && response.ok) {
     const cache = await caches.open(RUNTIME_CACHE);
@@ -151,7 +167,7 @@ async function cacheFirst(request) {
 
 async function networkFirstNavigation(request) {
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: "no-store" });
 
     if (response && response.ok) {
       const cache = await caches.open(RUNTIME_CACHE);

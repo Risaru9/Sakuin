@@ -23,6 +23,7 @@ import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
 import { SakuLoadingScreen } from "../components/saku";
 import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import { useAuth } from "../features/auth/auth-context";
+import { reloadFreshApp } from "../lib/pwa";
 
 const SUPPORT_EMAIL = "sakuinofficial@gmail.com";
 const ACCOUNT_DELETION_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
@@ -219,15 +220,15 @@ function RouteErrorFallback() {
           Sakuin perlu dimuat ulang
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
-          Ada bagian aplikasi yang belum terbaca sempurna. Muat ulang halaman
-          untuk mengambil versi terbaru.
+          Halaman ini gagal dimuat. Coba ambil ulang berkas tampilan Sakuin.
+          Data akun tidak akan dihapus.
         </p>
         <button
           className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--sakuin-secondary)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--sakuin-primary)]"
-          onClick={() => window.location.reload()}
+          onClick={() => void reloadFreshApp()}
           type="button"
         >
-          Muat Ulang
+          Pulihkan tampilan
         </button>
         <Link
           className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[var(--sakuin-border)] bg-white px-4 text-sm font-black text-[var(--sakuin-text)] shadow-sm transition hover:bg-[var(--sakuin-primary-soft)]"

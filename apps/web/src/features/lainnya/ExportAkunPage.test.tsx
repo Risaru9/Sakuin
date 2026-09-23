@@ -15,6 +15,7 @@ import { AkunPage } from "./AkunPage";
 import { ExportPage } from "./ExportPage";
 
 const updateAuthUser = vi.fn();
+const appVersionState = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }));
 
 vi.mock("../auth/auth-context", () => ({
   useAuth: () => ({
@@ -28,7 +29,10 @@ vi.mock("../profile/profile.service", () => ({ getUserProfile: vi.fn(), updateUs
 vi.mock("../transactions/transaction.service", () => ({ getTransactions: vi.fn() }));
 vi.mock("../categories/category.service", () => ({ getCategories: vi.fn() }));
 vi.mock("../../components/pwa/use-app-version", () => ({
-  useAppVersion: () => ({ installed: null, latest: null, checking: false, check: vi.fn(), openDownload: vi.fn(), updateAvailable: false })
+  useAppVersion: () => appVersionState.current ?? ({
+    isApk: false, installed: null, latest: null, checking: false,
+    check: vi.fn(), openDownload: vi.fn(), updateAvailable: false
+  })
 }));
 vi.mock("../export/export.service", () => ({ downloadTransactionsExport: vi.fn() }));
 
@@ -48,6 +52,7 @@ function renderPage(page: ReactNode) {
 
 afterEach(() => {
   act(() => dismissSnack());
+  appVersionState.current = null;
 });
 
 describe("getExportRange", () => {
@@ -137,5 +142,26 @@ describe("AkunPage", () => {
     await waitFor(() => expect(requestPasswordReset).toHaveBeenCalledWith({ email: "nadia@sakuin.test" }));
     expect(await screen.findByText("Link ganti password dikirim")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Hapus akun/ })).toHaveAttribute("href", "/account-deletion");
+  });
+
+  it("does not claim the APK is current when version checking fails", async () => {
+    const check = vi.fn().mockResolvedValue(null);
+    appVersionState.current = {
+      isApk: true,
+      installed: { code: 23, name: "2.5.0" },
+      latest: null,
+      checking: false,
+      check,
+      openDownload: vi.fn(),
+      updateAvailable: false
+    };
+    const user = renderPage(<AkunPage />);
+
+    const row = await screen.findByRole("button", { name: /Aplikasi Android/ });
+    expect(row).toHaveTextContent("belum dapat cek versi terbaru");
+    await user.click(row);
+
+    expect(check).toHaveBeenCalledOnce();
+    expect(await screen.findByText("Cek versi belum berhasil")).toBeInTheDocument();
   });
 });

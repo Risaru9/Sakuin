@@ -145,6 +145,42 @@ export async function checkForServiceWorkerUpdate() {
   await registration?.update();
 }
 
+export async function clearSakuinWebCaches() {
+  if (!("caches" in window)) {
+    return;
+  }
+
+  const cacheNames = await caches.keys();
+  await Promise.all(
+    cacheNames
+      .filter((cacheName) => cacheName.startsWith("sakuin-pwa-"))
+      .map((cacheName) => caches.delete(cacheName))
+  );
+}
+
+/** Recover from a stale app shell without touching account or widget auth data. */
+export async function reloadFreshApp() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("sakuin_refresh", String(Date.now()));
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration?.unregister();
+    }
+  } catch (error) {
+    console.error("Gagal melepas service worker lama Sakuin:", error);
+  }
+
+  try {
+    await clearSakuinWebCaches();
+  } catch (error) {
+    console.error("Gagal membersihkan cache tampilan Sakuin:", error);
+  }
+
+  window.location.replace(url.toString());
+}
+
 export function registerServiceWorker(
   options: RegisterServiceWorkerOptions = {}
 ) {
@@ -180,7 +216,7 @@ export function registerServiceWorker(
             const hasExistingController =
               Boolean(navigator.serviceWorker.controller);
 
-            if (hasNewWorkerInstalled && hasExistingController) {
+            if (hasNewWorkerInstalled && hasExistingController && registration.waiting) {
               options.onUpdate?.(registration);
             }
           });

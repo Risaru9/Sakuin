@@ -140,21 +140,46 @@ export function AkunPage() {
       showSnack({ title: "Link belum terkirim", detail: errorMessage(caughtError, "Coba lagi sebentar lagi."), mood: "worried" })
   });
 
-  const appItem: MenuItem = app.installed
-    ? app.updateAvailable
-      ? {
-          icon: Smartphone,
-          tint: "#fff0b3",
-          title: `Perbarui ke v${app.latest?.latestVersionName}`,
-          subtitle: `Terpasang v${app.installed.name}. Ketuk untuk mengunduh`,
-          onClick: app.openDownload
-        }
+  async function handleCheckAppVersion() {
+    const latest = await app.check();
+    if (!latest) {
+      showSnack({ title: "Cek versi belum berhasil", detail: "Periksa koneksi lalu coba lagi.", mood: "worried" });
+    } else if (!app.installed) {
+      showSnack({ title: "Versi terpasang belum terbaca", detail: "Tutup aplikasi sepenuhnya lalu buka lagi.", mood: "worried" });
+    } else if (latest.latestVersionCode > app.installed.code) {
+      showSnack({ title: `APK v${latest.latestVersionName} tersedia`, detail: "Ketuk lagi untuk mengunduh.", mood: "happy" });
+    } else {
+      showSnack({ title: "APK sudah versi terbaru", detail: `Terpasang v${app.installed.name}.`, mood: "happy" });
+    }
+  }
+
+  const appItem: MenuItem = app.isApk
+    ? app.installed
+      ? app.updateAvailable
+        ? {
+            icon: Smartphone,
+            tint: "#fff0b3",
+            title: `Perbarui ke v${app.latest?.latestVersionName}`,
+            subtitle: `Terpasang v${app.installed.name}. Ketuk untuk mengunduh`,
+            onClick: app.openDownload
+          }
+        : {
+            icon: Smartphone,
+            tint: "#d6f3f7",
+            title: "Aplikasi Android",
+            subtitle: app.checking
+              ? "Mengecek versi terbaru…"
+              : app.latest
+                ? `v${app.installed.name} · sudah versi terbaru`
+                : `Terpasang v${app.installed.name} · belum dapat cek versi terbaru`,
+            onClick: () => void handleCheckAppVersion()
+          }
       : {
           icon: Smartphone,
-          tint: "#d6f3f7",
+          tint: "#fff0b3",
           title: "Aplikasi Android",
-          subtitle: app.checking ? "Mengecek versi terbaru…" : `v${app.installed.name} · sudah versi terbaru`,
-          onClick: () => void app.check().then(() => showSnack({ title: "Sudah dicek", detail: "Kalau ada versi baru, tombolnya muncul di sini.", mood: "happy" }))
+          subtitle: "Versi terpasang belum dapat dibaca",
+          onClick: () => void handleCheckAppVersion()
         }
     : {
         icon: Smartphone,
