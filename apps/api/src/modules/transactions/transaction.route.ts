@@ -3,16 +3,20 @@ import type { AppEnv } from "../../types/app.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import {
+  budgetAlertsSchema,
   createTransactionSchema,
   createTransactionsBulkSchema,
   getTransactionsQuerySchema,
+  quickTransactionSchema,
   transactionIdParamSchema,
   updateTransactionSchema
 } from "./transaction.schema.js";
 import {
+  createQuickTransactionsController,
   createTransactionController,
   createTransactionsBulkController,
   deleteTransactionController,
+  getBudgetAlertsController,
   getTransactionDetailController,
   getTransactionsController,
   updateTransactionController
@@ -35,11 +39,18 @@ transactionRoutes.post(
   createTransactionsBulkController
 );
 
-transactionRoutes.get(
-  "/",
+transactionRoutes.post(
+  "/quick",
   authMiddleware,
-  validateRequest("query", getTransactionsQuerySchema),
-  getTransactionsController
+  validateRequest("json", quickTransactionSchema),
+  createQuickTransactionsController
+);
+
+transactionRoutes.post(
+  "/budget-alerts",
+  authMiddleware,
+  validateRequest("json", budgetAlertsSchema),
+  getBudgetAlertsController
 );
 
 transactionRoutes.get(

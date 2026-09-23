@@ -6,14 +6,12 @@ import {
   Download,
   Flame,
   LogOut,
-  Mail,
   Repeat,
   ShieldCheck,
   Smartphone,
   Sparkles,
   Tags,
   Target,
-  Wallet
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
 import {
@@ -25,10 +23,8 @@ import {
 import { useToast } from "../../components/toast/ToastProvider";
 import { getTransactionReminderSettings } from "../../lib/transaction-reminder";
 import { queryKeys } from "../../lib/query-keys";
-import { getAccounts } from "../accounts/account.service";
 import { useAuth } from "../auth/auth-context";
 import { WidgetInstallModal } from "../android-widget/WidgetInstallModal";
-import { formatPlainAmount } from "../beranda/beranda-data";
 import { getGoals } from "../goals/goal.service";
 import { getSummary } from "../summary/summary.service";
 import { useReferenceData } from "../transactions/use-reference-data";
@@ -52,11 +48,6 @@ export function LainnyaPage() {
     staleTime: 60_000,
     refetchOnWindowFocus: false
   });
-  const accountsQuery = useQuery({
-    queryKey: queryKeys.accounts,
-    queryFn: getAccounts,
-    staleTime: 5 * 60_000
-  });
   const { categories } = useReferenceData();
   const goalsQuery = useQuery({
     queryKey: queryKeys.goals,
@@ -67,8 +58,6 @@ export function LainnyaPage() {
 
   const name = user?.name ?? "Pengguna Sakuin";
   const streak = summaryQuery.data?.habit?.currentStreakDays ?? 0;
-  const accounts = (accountsQuery.data ?? []).filter((account) => !account.isArchived);
-  const totalBalance = accounts.reduce((total, account) => total + (Number(account.balance) || 0), 0);
   const runningGoals = (goalsQuery.data ?? []).filter(
     (goal) => Number(goal.currentAmount) < Number(goal.targetAmount)
   ).length;
@@ -76,15 +65,6 @@ export function LainnyaPage() {
   const limitedCount = categories.filter((category) => category.type === "EXPENSE" && (category.limit ?? 0) > 0).length;
 
   const keuangan: MenuItem[] = [
-    {
-      icon: Wallet,
-      tint: "#d6e4ff",
-      title: "Rekening",
-      subtitle: accountsQuery.data
-        ? `${accounts.length} rekening · total ${formatPlainAmount(totalBalance)}`
-        : "Dompet, bank, dan e-wallet",
-      to: "/lainnya/rekening"
-    },
     {
       icon: Tags,
       tint: "#ffe3bd",
@@ -128,13 +108,6 @@ export function LainnyaPage() {
         ? `Setiap hari pukul ${String(reminder.eveningHour).padStart(2, "0")}.00`
         : "Belum aktif",
       to: "/lainnya/pengingat"
-    },
-    {
-      icon: Mail,
-      tint: "#ffd6e6",
-      title: "Impor dari Gmail",
-      subtitle: "Catat otomatis dari email bank",
-      to: "/profile?section=automation"
     },
     // Only the Android app can pin its home-screen widget.
     ...(canPinAndroidWidget()

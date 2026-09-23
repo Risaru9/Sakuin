@@ -241,7 +241,7 @@ export function BudgetList({
                 onClick={() => onSelect(row)}
                 type="button"
               >
-                <CategoryBadge icon={row.category.icon} />
+                <CategoryBadge icon={row.category.icon} name={row.category.name} />
                 <span
                   className={cn(
                     "min-w-0 flex-1 py-2.5 pr-2.5",

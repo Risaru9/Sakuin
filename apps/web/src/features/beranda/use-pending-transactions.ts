@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getOfflineQueue } from "../../lib/offline-queue";
 import { queryKeys } from "../../lib/query-keys";
-import type { FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
 import { offlineEntryToTransaction } from "./beranda-data";
 
 /** Entries saved while offline, shown as rows until the queue syncs them. */
-export function usePendingTransactions(categories: Category[], accounts: FinanceAccount[]) {
+export function usePendingTransactions(categories: Category[]) {
   const queryClient = useQueryClient();
   const [queue, setQueue] = useState(() => getOfflineQueue());
 
@@ -33,7 +32,7 @@ export function usePendingTransactions(categories: Category[], accounts: Finance
   }, [queryClient]);
 
   return useMemo(
-    () => queue.map((entry) => offlineEntryToTransaction(entry, categories, accounts)),
-    [queue, categories, accounts]
+    () => queue.map((entry) => offlineEntryToTransaction(entry, categories)),
+    [queue, categories]
   );
 }

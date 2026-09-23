@@ -4,6 +4,8 @@ import { showSnack } from "../../components/saku";
 import { useToast } from "../../components/toast/ToastProvider";
 import { ApiClientError } from "../../lib/api-client";
 import { removeFromOfflineQueue } from "../../lib/offline-queue";
+import { getSakuNotificationPrefs, showBudgetAlerts } from "../../lib/saku-notifications";
+import { isNativePlatform } from "../../lib/transaction-reminder";
 import { queryKeys } from "../../lib/query-keys";
 import { markTodayReviewed } from "../reminders/daily-review-completion";
 import { buildOptimisticTransactionsFromDrafts } from "../transactions/optimistic-drafts";
@@ -20,7 +22,11 @@ import {
   restoreTransactionListCacheSnapshot
 } from "../transactions/transaction-cache";
 import { getTodayInputValue } from "../transactions/transaction-date";
-import { createTransactionsBulk, deleteTransaction } from "../transactions/transaction.service";
+import {
+  createTransactionsBulk,
+  deleteTransaction,
+  getBudgetAlerts
+} from "../transactions/transaction.service";
 import type { Transaction, TransactionType } from "../transactions/transaction.types";
 import { useReferenceData } from "../transactions/use-reference-data";
 import {
@@ -44,7 +50,6 @@ type SavedMessage = {
 
 type SaveVariables = {
   drafts: QuickTransactionDraft[];
-  accountId?: string;
   sourceText: string;
 };
 
@@ -82,6 +87,24 @@ function buildSavedMessage(saved: Transaction[], drafts: QuickTransactionDraft[]
   };
 }
 
+/** APK only: a phone notification when this save pushed a category past 80% or 100% of its limit. */
+async function notifyCrossedBudgets(saved: Transaction[]) {
+  const expenseIds = saved
+    .filter((transaction) => transaction.type === "EXPENSE" && !isOfflineTransaction(transaction))
+    .map((transaction) => transaction.id);
+
+  if (!isNativePlatform() || expenseIds.length === 0 || !getSakuNotificationPrefs().budget) {
+    return;
+  }
+
+  try {
+    const { budgetAlerts } = await getBudgetAlerts(expenseIds);
+    await showBudgetAlerts(budgetAlerts);
+  } catch {
+    // The entry is saved either way; a missed alert must never look like a failed save.
+  }
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiClientError || error instanceof Error) {
     return error.message;
@@ -94,7 +117,7 @@ export function useQuickComposer() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
 
-  const { categories, accounts, categoriesQuery } = useReferenceData();
+  const { categories, categoriesQuery } = useReferenceData();
 
   const [text, setText] = useState("");
   const [overrides, setOverrides] = useState<ComposerOverrides>({});
@@ -107,13 +130,9 @@ export function useQuickComposer() {
     [text, categories, todayKey, overrides]
   );
 
-  // The API files transactions without an account under the first (default) account.
-  const selectedAccount =
-    accounts.find((account) => account.id === overrides.accountId) ?? accounts[0] ?? null;
-
   const saveMutation = useMutation({
-    mutationFn: ({ drafts, accountId }: SaveVariables) =>
-      createTransactionsBulk({ transactions: toCreateTransactionInputs(drafts, accountId) }),
+    mutationFn: ({ drafts }: SaveVariables) =>
+      createTransactionsBulk({ transactions: toCreateTransactionInputs(drafts) }),
 
     onMutate: async ({ drafts }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.transactions.all });
@@ -146,6 +165,7 @@ export function useQuickComposer() {
 
       if (!message.offline) {
         markTodayReviewed();
+        void notifyCrossedBudgets(saved);
       }
 
       showSnack({
@@ -210,6 +230,24 @@ export function useQuickComposer() {
     setOverrides((current) => ({ ...current, ...patch }));
   }
 
+  function selectQuickCategory(category: (typeof categories)[number]) {
+    // Keep the category as an override. The input stays empty so the first key is the amount,
+    // rather than being appended after the category name.
+    setText("");
+    setHint(null);
+    setOverrides((current) => ({
+      ...current,
+      type: category.type,
+      categoryId: category.id,
+      dateKey: todayKey
+    }));
+  }
+
+  function clearQuickCategory() {
+    setOverrides({});
+    setHint(null);
+  }
+
   function toggleType() {
     const nextType: TransactionType = guess?.type === "INCOME" ? "EXPENSE" : "INCOME";
     // The previous category belongs to the old type, so let the guess pick a new one.
@@ -237,14 +275,12 @@ export function useQuickComposer() {
 
     saveMutation.mutate({
       drafts: guess.drafts,
-      accountId: overrides.accountId,
       sourceText: text
     });
 
     setText("");
     setHint(null);
-    // Keep the chosen account for the next entry; reset the per-entry choices.
-    setOverrides((current) => ({ accountId: current.accountId }));
+    setOverrides({});
     return true;
   }
 
@@ -255,10 +291,10 @@ export function useQuickComposer() {
     hint,
     todayKey,
     categories,
-    accounts,
-    selectedAccount,
     overrides,
     updateOverrides,
+    selectQuickCategory,
+    clearQuickCategory,
     toggleType,
     submit,
     retryCategories: () => void categoriesQuery.refetch()

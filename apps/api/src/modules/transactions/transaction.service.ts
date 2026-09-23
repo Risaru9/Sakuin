@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -10,19 +11,9 @@ import type {
   UpdateTransactionInput
 } from "./transaction.types.js";
 import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
-import { resolveOwnedAccountId } from "../accounts/account.service.js";
 
 type TransactionWithCategory = Prisma.TransactionGetPayload<{
   include: {
-    account: {
-      select: {
-        id: true;
-        name: true;
-        type: true;
-        icon: true;
-        color: true;
-      };
-    };
     category: {
       select: {
         id: true;
@@ -37,15 +28,6 @@ type TransactionWithCategory = Prisma.TransactionGetPayload<{
 }>;
 
 const transactionCategoryInclude = {
-  account: {
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      icon: true,
-      color: true
-    }
-  },
   category: {
     select: {
       id: true,
@@ -79,7 +61,6 @@ function toTransactionResponse(
     amount: transaction.amount.toString(),
     note: transaction.note,
     date: transaction.date.toISOString(),
-    account: transaction.account,
     category: {
       id: transaction.category.id,
       name: transaction.category.name,
@@ -207,16 +188,9 @@ export async function createTransaction(
     input.categoryId,
     input.type as TransactionType
   );
-  const accountId = await resolveOwnedAccountId(
-    prisma,
-    userId,
-    input.accountId
-  );
-
   const transaction = await prisma.transaction.create({
     data: {
       userId,
-      accountId,
       categoryId: input.categoryId,
       type: input.type as TransactionType,
       amount: input.amount,
@@ -232,41 +206,44 @@ export async function createTransaction(
 
 export async function createTransactionsBulk(
   userId: string,
-  input: CreateTransactionsBulkInput
+  input: CreateTransactionsBulkInput,
+  requestId?: string
 ): Promise<TransactionResponse[]> {
+  // Stable IDs make a phone retry safe after the server saved but its response was lost.
+  const prefix = requestId ? `quick_${createHash("sha256").update(`${userId}:${requestId}`).digest("hex")}_` : undefined;
+  const previous = async () => prefix ? prisma.transaction.findMany({
+    where: { userId, id: { startsWith: prefix } }, include: transactionCategoryInclude, orderBy: { id: "asc" }
+  }) : [];
+  const existing = await previous();
+  if (existing.length) return existing.map(toTransactionResponse);
   await getUsableCategoriesForBulk(userId, input.transactions);
-  const accountIds = new Map<string | undefined, string>();
+  let transactions: TransactionWithCategory[];
+  try {
+    transactions = await prisma.$transaction(
+      input.transactions.map((transactionInput, index) =>
+        prisma.transaction.create({
+          data: {
+            userId,
+            id: prefix ? `${prefix}${String(index).padStart(2, "0")}` : undefined,
+            categoryId: transactionInput.categoryId,
+            type: transactionInput.type as TransactionType,
+            amount: transactionInput.amount,
+            note: transactionInput.note?.trim() || null,
+            date: transactionInput.date
+          },
+          include: transactionCategoryInclude
+        })
+      )
+    );
 
-  for (const transactionInput of input.transactions) {
-    if (!accountIds.has(transactionInput.accountId)) {
-      accountIds.set(
-        transactionInput.accountId,
-        await resolveOwnedAccountId(
-          prisma,
-          userId,
-          transactionInput.accountId
-        )
-      );
+  } catch (error) {
+    // A concurrent replay can lose the unique-ID race; the entire bulk insert is atomic.
+    if (prefix && typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      const replayed = await previous();
+      if (replayed.length) return replayed.map(toTransactionResponse);
     }
+    throw error;
   }
-
-  const transactions = await prisma.$transaction(
-    input.transactions.map((transactionInput) =>
-      prisma.transaction.create({
-        data: {
-          userId,
-          accountId: accountIds.get(transactionInput.accountId)!,
-          categoryId: transactionInput.categoryId,
-          type: transactionInput.type as TransactionType,
-          amount: transactionInput.amount,
-          note: transactionInput.note?.trim() || null,
-          date: transactionInput.date
-        },
-        include: transactionCategoryInclude
-      })
-    )
-  );
-
   invalidateCachedFinancialContext(userId);
   return transactions.map(toTransactionResponse);
 }
@@ -281,10 +258,6 @@ export async function getTransactions(
 
   if (query.type) {
     where.type = query.type as TransactionType;
-  }
-
-  if (query.accountId) {
-    where.accountId = query.accountId;
   }
 
   if (query.categoryId) {
@@ -391,11 +364,6 @@ export async function updateTransaction(
 
   const finalType = (input.type ?? existingTransaction.type) as TransactionType;
   const finalCategoryId = input.categoryId ?? existingTransaction.categoryId;
-  const finalAccountId =
-    input.accountId === undefined
-      ? existingTransaction.accountId
-      : await resolveOwnedAccountId(prisma, userId, input.accountId);
-
   await ensureCategoryCanBeUsed(userId, finalCategoryId, finalType);
 
   const transaction = await prisma.transaction.update({
@@ -404,7 +372,6 @@ export async function updateTransaction(
     },
     data: {
       type: finalType,
-      accountId: finalAccountId,
       categoryId: finalCategoryId,
       amount: input.amount ?? existingTransaction.amount,
       date: input.date ?? existingTransaction.date,

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "sakuin-pwa-v10";
+const CACHE_VERSION = "sakuin-pwa-v11";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -190,7 +190,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname === "/sw.js") {
+  // Downloads are not page navigations: never cache an APK as the offline home page.
+  if (url.pathname === "/sw.js" || url.pathname.startsWith("/downloads/") || url.pathname === "/latest-version.json") {
     return;
   }
 

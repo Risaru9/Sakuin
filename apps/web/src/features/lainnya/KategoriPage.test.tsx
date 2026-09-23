@@ -19,10 +19,6 @@ vi.mock("../categories/category.service", () => ({
   setCategoryLimit: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() => Promise.resolve([]))
-}));
-
 vi.mock("../summary/summary.service", () => ({
   getSummary: vi.fn()
 }));

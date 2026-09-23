@@ -1,13 +1,17 @@
 {
-  "latestVersionCode": 16,
-  "latestVersionName": "2.0.0",
+  "latestVersionCode": 23,
+  "latestVersionName": "2.5.0",
   "minSupportedVersionCode": 1,
-  "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk",
+  "apkDownloadUrl": "https://sakuin-web.vercel.app/downloads/sakuin.apk?v=23",
   "releaseNotes": [
-    "Tampilan baru Sakuin: catat satu baris, menu Catatan, Laporan, dan Lainnya.",
-    "Kunci keamanan aplikasi diganti. Hapus aplikasi Sakuin lama dulu, lalu pasang yang ini (cukup sekali).",
-    "Catatanmu tersimpan di server. Setelah dipasang, tinggal masuk lagi."
+    "Sakuin memberi tahu sendiri kalau ada versi baru, walau aplikasi sedang tertutup.",
+    "Ketuk notifikasinya: unduhan jalan sendiri, lalu layar pasang Android langsung terbuka.",
+    "Widget menyesuaikan ukuran layar tanpa membuat teks gepeng di HP seperti Oppo.",
+    "Tombol Catat cepat sekarang bisa dipilih sendiri sesuai kebiasaanmu.",
+    "Pilih kategori dulu, lalu ketik nominal langsung tanpa memindahkan kursor.",
+    "Ikon kategori diperbanyak dan kategori lama tetap mendapat ikon yang sesuai.",
+    "Pasang APK 2.5.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
   ],
   "forceUpdate": false,
-  "publishedAt": "2026-09-18T18:07:02.000Z"
+  "publishedAt": "2026-09-20T09:15:00.000Z"
 }

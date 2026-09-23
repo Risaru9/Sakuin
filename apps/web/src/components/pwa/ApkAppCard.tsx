@@ -63,9 +63,9 @@ export function ApkAppCard() {
       try {
         let data: ApkVersionInfo;
         try {
-          data = await apiRequest<ApkVersionInfo>("/app-version");
+          data = await apiRequest<ApkVersionInfo>("/api/app-version");
         } catch {
-          const response = await fetch("/latest-version.json");
+          const response = await fetch("/latest-version.json", { cache: "no-store" });
           data = await response.json();
         }
         setLatestVersion(data);
@@ -87,9 +87,9 @@ export function ApkAppCard() {
       
       let data: ApkVersionInfo;
       try {
-        data = await apiRequest<ApkVersionInfo>("/app-version");
+        data = await apiRequest<ApkVersionInfo>("/api/app-version");
       } catch {
-        const response = await fetch("/latest-version.json");
+        const response = await fetch("/latest-version.json", { cache: "no-store" });
         data = await response.json();
       }
       setLatestVersion(data);

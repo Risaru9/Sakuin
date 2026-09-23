@@ -1,12 +1,13 @@
-export const SAKUIN_RELEASE_VERSION = "2026.09-saku-redesign";
-
-export const SAKUIN_RELEASE_TITLE = "Halo, ini Sakuin yang baru!";
-
+export const SAKUIN_RELEASE_VERSION = "2026.09-apk-2.5.0";
+export const SAKUIN_RELEASE_TITLE = "Update Sakuin jadi sekali ketuk!";
 export const SAKUIN_RELEASE_NOTES = [
-  "Catat cukup satu baris di bawah layar, misalnya \"kopi 18rb\", lalu Enter.",
-  "Menu bawah jadi tiga: Catatan, Laporan, dan Lainnya.",
-  "Rekening, kategori, target, dan pengingat sekarang ada di Lainnya.",
-  "Ketuk Saku di kolom catat untuk bertanya soal uangmu."
+  "Sakuin memberi tahu sendiri kalau ada versi baru, walau aplikasi sedang tertutup.",
+  "Ketuk notifikasinya: unduhan jalan sendiri, lalu layar pasang Android langsung terbuka.",
+  "Widget menyesuaikan ukuran layar tanpa membuat teks gepeng di HP seperti Oppo.",
+  "Tombol Catat cepat sekarang bisa dipilih sendiri sesuai kebiasaanmu.",
+  "Pilih kategori dulu, lalu ketik nominal langsung tanpa memindahkan kursor.",
+  "Ikon kategori diperbanyak dan kategori lama tetap mendapat ikon yang sesuai.",
+  "Pasang APK 2.5.0 di atas versi sebelumnya, tanpa menghapus aplikasi."
 ];
 
 const RELEASE_NOTES_STORAGE_KEY = "sakuin_seen_release_notes_version";

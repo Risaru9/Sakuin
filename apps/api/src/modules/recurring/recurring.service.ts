@@ -2,7 +2,6 @@ import { Prisma, TransactionType } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/http-error.js";
 import { invalidateCachedFinancialContext } from "../ai/ai-financial-context-cache.js";
-import { resolveOwnedAccountId } from "../accounts/account.service.js";
 import type {
   CreateRecurringRuleInput,
   RecurringRuleResponse,
@@ -281,11 +280,6 @@ export async function runDueRecurringRules(
     },
     orderBy: { nextRunAt: "asc" }
   });
-  const defaultAccountId =
-    dueRules.length > 0
-      ? await resolveOwnedAccountId(prisma, userId)
-      : null;
-
   let generatedCount = 0;
   let skippedCount = 0;
   let generatedTransactionCount = 0;
@@ -319,7 +313,6 @@ export async function runDueRecurringRules(
           const transaction = await tx.transaction.create({
             data: {
               userId,
-              accountId: defaultAccountId!,
               categoryId: rule.categoryId,
               type: rule.type,
               amount: rule.amount,

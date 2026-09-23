@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: Saku's pocket and coin as one white silhouette. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M62,24 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10,46 Q10,36 20,36 H100 Q110,36 110,46 V76 Q110,110 60,118 Q10,110 10,76 Z" />
+</vector>

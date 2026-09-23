@@ -86,9 +86,9 @@ export function SearchPage({ homePath = "/dashboard" }: SearchPageProps) {
   const monthKey = parseMonthKey(searchParams.get("bulan"), currentMonthKey);
   const { month: monthNumber, year } = splitMonthKey(monthKey);
 
-  const { categories, accounts } = useReferenceData();
-  const actions = useTransactionActions({ categories, accounts });
-  const pending = usePendingTransactions(categories, accounts);
+  const { categories } = useReferenceData();
+  const actions = useTransactionActions({ categories });
+  const pending = usePendingTransactions(categories);
 
   const listParams = useMemo(() => getMonthListParams(monthKey), [monthKey]);
   const monthQuery = useQuery({
@@ -256,7 +256,7 @@ export function SearchPage({ homePath = "/dashboard" }: SearchPageProps) {
             ))}
             <StickerChip
               active={Boolean(selectedCategory)}
-              leading={selectedCategory ? <CategoryBadge icon={selectedCategory.icon} size={24} /> : undefined}
+              leading={selectedCategory ? <CategoryBadge icon={selectedCategory.icon} name={selectedCategory.name} size={24} /> : undefined}
               onClick={() => setCategorySheetOpen(true)}
               trailing={<ChevronDown aria-hidden="true" className="size-3.5" strokeWidth={2.6} />}
             >
@@ -332,7 +332,7 @@ export function SearchPage({ homePath = "/dashboard" }: SearchPageProps) {
             <StickerChip
               active={category.id === categoryId}
               key={category.id}
-              leading={<CategoryBadge icon={category.icon} size={24} />}
+              leading={<CategoryBadge icon={category.icon} name={category.name} size={24} />}
               onClick={() => {
                 setCategoryId(category.id);
                 setCategorySheetOpen(false);
@@ -345,7 +345,6 @@ export function SearchPage({ homePath = "/dashboard" }: SearchPageProps) {
       </BottomSheet>
 
       <EditTransactionSheet
-        accounts={accounts}
         categories={categories}
         onClose={() => setEditing(null)}
         onDelete={(transaction) => {

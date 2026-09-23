@@ -8,6 +8,7 @@ import { getSummary } from "../summary/summary.service";
 import {
   createTransaction,
   deleteTransaction,
+  getTransaction,
   getTransactions,
   updateTransaction
 } from "../transactions/transaction.service";
@@ -32,17 +33,12 @@ vi.mock("../categories/category.service", () => ({
   createCategory: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() =>
-    Promise.resolve([{ id: "acc-cash", name: "Dompet Utama", type: "CASH", isArchived: false }])
-  )
-}));
-
 vi.mock("../summary/summary.service", () => ({
   getSummary: vi.fn()
 }));
 
 vi.mock("../transactions/transaction.service", () => ({
+  getTransaction: vi.fn(),
   getTransactions: vi.fn(),
   createTransaction: vi.fn(),
   createTransactionsBulk: vi.fn(),
@@ -69,7 +65,6 @@ function tx(id: string, note: string, amount: number, date: string, overrides: P
     date,
     categoryId: "cat-food",
     category: { id: "cat-food", name: "Makanan", type: "EXPENSE", icon: "utensils", color: null },
-    account: { id: "acc-cash", name: "Dompet Utama", type: "CASH", icon: null, color: null },
     createdAt: date,
     updatedAt: date,
     ...overrides
@@ -161,6 +156,21 @@ describe("BerandaPage", () => {
   afterEach(() => {
     act(() => dismissSnack());
     vi.useRealTimers();
+  });
+
+  it("opens the widget edit link for an entry in the month", async () => {
+    renderBeranda("/dashboard?ubah=tx-coffee");
+    const sheet = await screen.findByRole("dialog", { name: "Ubah catatan" });
+    expect(within(sheet).getByLabelText("Nominal")).toHaveValue("18.000");
+    expect(getTransaction).not.toHaveBeenCalled();
+  });
+
+  it("fetches an edit entry outside the loaded month", async () => {
+    vi.mocked(getTransaction).mockResolvedValue(serverTransactions[3]);
+    renderBeranda("/dashboard?ubah=tx-august");
+    const sheet = await screen.findByRole("dialog", { name: "Ubah catatan" });
+    expect(within(sheet).getByLabelText("Nominal")).toHaveValue("410.000");
+    expect(getTransaction).toHaveBeenCalledWith("tx-august");
   });
 
   it("shows the month's totals and entries grouped by day", async () => {
@@ -256,7 +266,6 @@ describe("BerandaPage", () => {
         type: "EXPENSE",
         amount: "18000",
         categoryId: "cat-food",
-        accountId: "acc-cash",
         date: localIso(9, 16),
         note: "Kopi susu"
       })

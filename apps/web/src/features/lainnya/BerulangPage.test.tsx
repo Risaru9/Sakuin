@@ -26,10 +26,6 @@ vi.mock("../categories/category.service", () => ({
   createCategory: vi.fn()
 }));
 
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() => Promise.resolve([]))
-}));
-
 function rule(overrides: Partial<RecurringRule> & Pick<RecurringRule, "id" | "amount">): RecurringRule {
   return {
     categoryId: "cat-bills",

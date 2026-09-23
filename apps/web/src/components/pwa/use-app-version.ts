@@ -45,9 +45,9 @@ function readInstalledVersion() {
 
 async function fetchLatestVersion() {
   try {
-    return await apiRequest<ApkVersionInfo>("/app-version");
+    return await apiRequest<ApkVersionInfo>("/api/app-version");
   } catch {
-    const response = await fetch("/latest-version.json");
+    const response = await fetch("/latest-version.json", { cache: "no-store" });
     return (await response.json()) as ApkVersionInfo;
   }
 }

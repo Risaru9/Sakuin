@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Download,
   ExternalLink,
-  Loader2,
   Mail,
   MoreVertical,
   RefreshCcw,
@@ -21,6 +20,7 @@ import {
 import { InstallAppButton } from "../components/pwa/InstallAppButton";
 import { SakuMascot, SakuSparkle } from "../components/saku";
 import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
+import { SakuLoadingScreen } from "../components/saku";
 import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import { useAuth } from "../features/auth/auth-context";
 
@@ -89,12 +89,6 @@ const LaporanPage = lazy(() =>
 const LainnyaPage = lazy(() =>
   import("../features/lainnya/LainnyaPage").then((module) => ({
     default: module.LainnyaPage
-  }))
-);
-
-const RekeningPage = lazy(() =>
-  import("../features/lainnya/RekeningPage").then((module) => ({
-    default: module.RekeningPage
   }))
 );
 
@@ -197,23 +191,7 @@ const LainnyaSectionPreviewPage = import.meta.env.DEV
   : null;
 
 function LoadingScreen() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--sakuin-bg)] px-4">
-      <div className="sakuin-enter flex items-center gap-4 rounded-3xl border border-[var(--sakuin-border)] bg-white px-6 py-5 shadow-[0_18px_45px_rgba(37,99,235,0.12)]">
-        <span className="sakuin-pulse-ring flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--sakuin-primary)] text-white">
-          <Loader2 className="h-5 w-5 animate-spin text-white" />
-        </span>
-        <div>
-          <p className="text-sm font-black tracking-wide text-[var(--sakuin-text)]">
-            Memuat Sakuin
-          </p>
-          <p className="mt-0.5 text-xs font-semibold text-zinc-500">
-            Menyiapkan data keuanganmu...
-          </p>
-        </div>
-      </div>
-    </main>
-  );
+  return <SakuLoadingScreen />;
 }
 
 function PageSuspense({ children }: { children: ReactNode }) {
@@ -790,7 +768,7 @@ function EmailImportCallbackPage() {
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-zinc-600">
           {isConnected
-            ? "Sakuin siap mendeteksi email transaksi m-banking dan memetakannya ke rekening bank yang sesuai."
+            ? "Sakuin siap mendeteksi dan mencatat email transaksi m-banking."
             : message ?? "Kembali ke Sakuin lalu coba hubungkan Gmail kembali."}
         </p>
 
@@ -923,14 +901,6 @@ const routes = [
     element: (
       <ProtectedRoute>
         <LainnyaPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/lainnya/rekening",
-    element: (
-      <ProtectedRoute>
-        <RekeningPage />
       </ProtectedRoute>
     )
   },

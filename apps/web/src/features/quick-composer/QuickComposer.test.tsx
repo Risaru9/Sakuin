@@ -19,6 +19,7 @@ vi.mock("../categories/category.service", () => ({
         ["cat-income-other", "Pemasukan Lainnya", "INCOME", "plus-circle"],
         ["cat-food", "Makanan", "EXPENSE", "utensils"],
         ["cat-transport", "Transportasi", "EXPENSE", "car"],
+        ["cat-entertainment", "Hiburan", "EXPENSE", "gamepad"],
         ["cat-expense-other", "Pengeluaran Lainnya", "EXPENSE", "minus-circle"]
       ].map(([id, name, type, icon]) => ({
         id,
@@ -36,16 +37,6 @@ vi.mock("../categories/category.service", () => ({
 
 vi.mock("../reminders/daily-review-completion", () => ({
   markTodayReviewed: vi.fn()
-}));
-
-vi.mock("../accounts/account.service", () => ({
-  getAccounts: vi.fn(() =>
-    Promise.resolve([
-      { id: "acc-cash", name: "Dompet Utama", type: "CASH", isArchived: false },
-      { id: "acc-bca", name: "BCA", type: "BANK", isArchived: false },
-      { id: "acc-old", name: "Dompet Lama", type: "CASH", isArchived: true }
-    ])
-  )
 }));
 
 vi.mock("../transactions/transaction.service", () => ({
@@ -113,6 +104,36 @@ describe("QuickComposer", () => {
     expect(screen.getByRole("link", { name: "Tanya Saku" })).toHaveAttribute("href", "/asisten");
   });
 
+  it("starts a quick category entry with the field focused", async () => {
+    const { user } = renderComposer();
+
+    const quickButton = await screen.findByRole("button", { name: "Catat Makanan" });
+    await user.click(quickButton);
+
+    const input = screen.getByLabelText(/catat transaksi, misalnya/i);
+    expect(input).toHaveValue("");
+    expect(input).toHaveAttribute("placeholder", "Nominal makanan…");
+    expect(input).toHaveFocus();
+
+    await user.type(input, "18rb");
+    await screen.findByRole("group", { name: "Tebakan Saku" });
+    expect(within(screen.getByRole("group", { name: "Tebakan Saku" })).getByText("−18.000")).toBeInTheDocument();
+  });
+
+  it("lets users choose their own quick categories", async () => {
+    const { user } = renderComposer();
+
+    await user.click(await screen.findByRole("button", { name: "Atur tombol cepat" }));
+    const settings = await screen.findByRole("dialog", { name: "Atur tombol cepat" });
+
+    await user.click(within(settings).getByRole("button", { name: "Tombol cepat Hiburan" }));
+    await user.click(within(settings).getByRole("button", { name: "Tombol cepat Makanan" }));
+    await user.click(within(settings).getByRole("button", { name: "Selesai" }));
+
+    expect(screen.getByRole("button", { name: "Catat Hiburan" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Catat Makanan" })).not.toBeInTheDocument();
+  });
+
   it("shows the guess while typing and saves on Enter", async () => {
     vi.mocked(createTransactionsBulk).mockResolvedValueOnce([savedTransaction()] as never);
     const { user } = renderComposer();
@@ -123,8 +144,6 @@ describe("QuickComposer", () => {
     expect(within(guess).getByText("−18.000")).toBeInTheDocument();
     expect(within(guess).getByRole("button", { name: /kategori makanan/i })).toBeInTheDocument();
     expect(within(guess).getByRole("button", { name: /hari ini/i })).toBeInTheDocument();
-    expect(within(guess).getByRole("button", { name: /dompet utama/i })).toBeInTheDocument();
-
     await user.keyboard("{Enter}");
 
     expect(createTransactionsBulk).toHaveBeenCalledWith({
@@ -169,7 +188,7 @@ describe("QuickComposer", () => {
     expect(createTransactionsBulk).not.toHaveBeenCalled();
   });
 
-  it("lets the user change category and account in the detail sheet", async () => {
+  it("lets the user change category in the detail sheet", async () => {
     vi.mocked(createTransactionsBulk).mockResolvedValueOnce([
       savedTransaction({ categoryId: "cat-transport" })
     ] as never);
@@ -182,12 +201,11 @@ describe("QuickComposer", () => {
     expect(within(sheet).queryByRole("button", { name: /dompet lama/i })).not.toBeInTheDocument();
 
     await user.click(within(sheet).getByRole("button", { name: "Transportasi" }));
-    await user.click(within(sheet).getByRole("button", { name: "BCA" }));
     await user.click(within(sheet).getByRole("button", { name: "Simpan · −18.000" }));
 
     expect(createTransactionsBulk).toHaveBeenCalledWith({
       transactions: [
-        expect.objectContaining({ categoryId: "cat-transport", accountId: "acc-bca" })
+        expect.objectContaining({ categoryId: "cat-transport" })
       ]
     });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -251,7 +269,7 @@ describe("QuickComposer", () => {
   });
 
   it("gives the text back and shows an error when saving fails", async () => {
-    vi.mocked(createTransactionsBulk).mockRejectedValueOnce(new Error("Server sedang sibuk"));
+    vi.mocked(createTransactionsBulk).mockReset().mockRejectedValueOnce(new Error("Server sedang sibuk"));
     const { user } = renderComposer();
 
     const input = await typeEntry(user, "kopi susu 18rb");

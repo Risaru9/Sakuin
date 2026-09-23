@@ -7,10 +7,11 @@ import type {
   MonthlyTrendItem
 } from "@sakuin/shared";
 import type { z } from "zod";
-import type { getSummaryQuerySchema } from "./summary.schema.js";
+import type { getGlanceQuerySchema, getSummaryQuerySchema } from "./summary.schema.js";
 
 export type SummaryAmount = string;
 export type GetSummaryQuery = z.infer<typeof getSummaryQuerySchema>;
+export type GetGlanceQuery = z.infer<typeof getGlanceQuerySchema>;
 
 export type { RecentTransaction, CategorySummaryItem, MonthlyTrendItem };
 

@@ -50,7 +50,6 @@ const optionalStringSchema = z.preprocess(
 export const createTransactionSchema = z.object({
   type: transactionTypeSchema,
   amount: amountSchema,
-  accountId: z.string().trim().min(1, "Rekening tidak valid").optional(),
   categoryId: z.string().trim().min(1, "Category wajib diisi"),
   date: requiredDateSchema,
   note: z
@@ -72,7 +71,6 @@ export const updateTransactionSchema = z
   .object({
     type: transactionTypeSchema.optional(),
     amount: amountSchema.optional(),
-    accountId: z.string().trim().min(1, "Rekening tidak valid").optional(),
     categoryId: z.string().trim().min(1, "Category wajib diisi").optional(),
     date: requiredDateSchema.optional(),
     note: z
@@ -96,7 +94,6 @@ export const getTransactionsQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10),
     type: transactionTypeSchema.optional(),
-    accountId: optionalStringSchema,
     categoryId: optionalStringSchema,
     search: optionalStringSchema,
     startDate: optionalDateSchema,
@@ -130,3 +127,33 @@ export const getTransactionsQuerySchema = z
       });
     }
   });
+
+// Date#getTimezoneOffset style: WIB is -420.
+const tzOffsetMinutesSchema = z
+  .number()
+  .int("Zona waktu tidak valid")
+  .min(-840, "Zona waktu tidak valid")
+  .max(840, "Zona waktu tidak valid");
+
+/** One typed line from the Android quick-entry window, e.g. "kopi 18rb, parkir 5rb". */
+export const quickTransactionSchema = z.object({
+  requestId: z.string().uuid().optional(),
+  text: z
+    .string()
+    .trim()
+    .min(1, "Tulis dulu, misal: kopi 18rb")
+    .max(500, "Tulisan maksimal 500 karakter"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal harus berformat YYYY-MM-DD")
+    .optional(),
+  tzOffsetMinutes: tzOffsetMinutesSchema.optional()
+});
+
+export const budgetAlertsSchema = z.object({
+  transactionIds: z
+    .array(z.string().trim().min(1, "ID transaksi tidak valid"))
+    .min(1, "Minimal satu transaksi")
+    .max(MAX_BULK_TRANSACTIONS, `Maksimal ${MAX_BULK_TRANSACTIONS} transaksi per request`),
+  tzOffsetMinutes: tzOffsetMinutesSchema.optional()
+});

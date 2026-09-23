@@ -24,7 +24,6 @@ function tx(overrides: Partial<Transaction> & Pick<Transaction, "id">): Transact
     date: localIso(2026, 9, 16),
     categoryId: "cat-food",
     category: { id: "cat-food", name: "Makanan", type: "EXPENSE", icon: "utensils", color: null },
-    account: null,
     createdAt: localIso(2026, 9, 16, 8),
     updatedAt: localIso(2026, 9, 16, 8),
     ...overrides
@@ -141,7 +140,7 @@ describe("buildMonthView", () => {
 });
 
 describe("offlineEntryToTransaction", () => {
-  it("uses the real category and account of a queued entry", () => {
+  it("uses the real category of a queued entry", () => {
     const transaction = offlineEntryToTransaction(
       {
         offlineId: "offline-9",
@@ -150,33 +149,16 @@ describe("offlineEntryToTransaction", () => {
         type: "EXPENSE",
         amount: "18000",
         categoryId: "cat-food",
-        accountId: "acc-bca",
         date: localIso(2026, 9, 16),
         note: "Kopi"
       },
       [{ id: "cat-food", name: "Makanan", type: "EXPENSE", icon: "utensils", color: null, isDefault: true, limit: null }],
-      [
-        {
-          id: "acc-bca",
-          name: "BCA",
-          type: "BANK",
-          icon: null,
-          color: null,
-          initialBalance: "0",
-          balance: "0",
-          transactionCount: 0,
-          isArchived: false,
-          createdAt: "",
-          updatedAt: ""
-        }
-      ]
     );
 
     expect(transaction).toMatchObject({
       id: "offline-9",
       note: "Kopi",
       category: { name: "Makanan", icon: "utensils" },
-      account: { id: "acc-bca", name: "BCA" }
     });
   });
 });

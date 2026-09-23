@@ -15,26 +15,30 @@ import type {
 
 const DEFAULT_REMINDER_SETTINGS = {
   enabled: false,
-  frequency: "EVENING" as ReminderFrequency,
-  eveningHour: 20,
-  quietStartHour: 21,
+  frequency: "EVERY_4_HOURS" as ReminderFrequency,
+  eveningHour: 21,
+  quietStartHour: 0,
   quietEndHour: 7,
-  maxPerDay: 1,
+  maxPerDay: 6,
   timezoneOffsetMinutes: -420
 };
 
 const REMINDER_POLICY = {
-  frequency: "EVENING" as ReminderFrequency,
-  eveningHour: 20,
-  maxPerDay: 1
+  frequency: "EVERY_4_HOURS" as ReminderFrequency,
+  eveningHour: 21,
+  quietStartHour: 0,
+  quietEndHour: 7,
+  maxPerDay: 6
 };
 
-const reminderFrequencyMinutes: Record<ReminderFrequency, number | null> = {
-  EVENING: null,
-  EVERY_1_HOUR: 60,
-  EVERY_2_HOURS: 120,
-  EVERY_4_HOURS: 240
-};
+const REMINDER_SCHEDULE = [
+  { hour: 9, minute: 0, kind: "DAYTIME" },
+  { hour: 13, minute: 0, kind: "DAYTIME" },
+  { hour: 17, minute: 0, kind: "DAYTIME" },
+  { hour: 21, minute: 0, kind: "COUNTDOWN" },
+  { hour: 22, minute: 0, kind: "COUNTDOWN" },
+  { hour: 23, minute: 0, kind: "COUNTDOWN" }
+] as const;
 
 type ReminderPreferenceLike = {
   userId: string;
@@ -79,19 +83,6 @@ function ensureVapidConfigured() {
     env.VAPID_PUBLIC_KEY,
     env.VAPID_PRIVATE_KEY
   );
-}
-
-function normalizeFrequency(value: string): ReminderFrequency {
-  if (
-    value === "EVENING" ||
-    value === "EVERY_1_HOUR" ||
-    value === "EVERY_2_HOURS" ||
-    value === "EVERY_4_HOURS"
-  ) {
-    return value;
-  }
-
-  return DEFAULT_REMINDER_SETTINGS.frequency;
 }
 
 function getLocalNow(input: {
@@ -148,55 +139,29 @@ function isWithinQuietHours(input: {
   );
 }
 
-function isHourWithinQuietHours(
-  preference: ReminderPreferenceLike,
-  currentHour: number
-) {
-  if (preference.quietStartHour === preference.quietEndHour) {
-    return false;
+function getLatestReminderSlot(input: {
+  now: Date;
+  timezoneOffsetMinutes: number;
+}) {
+  const localNow = getLocalNow(input);
+  const currentMinutes = localNow.getUTCHours() * 60 + localNow.getUTCMinutes();
+  let latest: { index: number; hour: number; minute: number; kind: string } | null = null;
+
+  for (const [index, slot] of REMINDER_SCHEDULE.entries()) {
+    if (slot.hour * 60 + slot.minute <= currentMinutes) {
+      latest = { ...slot, index };
+    }
   }
 
-  if (preference.quietStartHour < preference.quietEndHour) {
-    return (
-      currentHour >= preference.quietStartHour &&
-      currentHour < preference.quietEndHour
-    );
-  }
-
-  return (
-    currentHour >= preference.quietStartHour ||
-    currentHour < preference.quietEndHour
-  );
+  return latest;
 }
 
-function hasReachedReminderDelay(input: {
-  preference: ReminderPreferenceLike;
+function getReminderSlotKey(input: {
   now: Date;
+  timezoneOffsetMinutes: number;
+  slotIndex: number;
 }) {
-  const frequency = normalizeFrequency(input.preference.frequency);
-  const intervalMinutes = reminderFrequencyMinutes[frequency];
-
-  if (intervalMinutes === null) {
-    const currentHour = getLocalHour({
-      now: input.now,
-      timezoneOffsetMinutes: input.preference.timezoneOffsetMinutes
-    });
-
-    return (
-      currentHour >= input.preference.eveningHour ||
-      isHourWithinQuietHours(input.preference, input.preference.eveningHour)
-    );
-  }
-
-  if (!input.preference.lastReminderSentAt) {
-    return true;
-  }
-
-  const elapsedMinutes =
-    (input.now.getTime() - input.preference.lastReminderSentAt.getTime()) /
-    (1000 * 60);
-
-  return elapsedMinutes >= intervalMinutes;
+  return `${getLocalDateKey(input)}:${input.slotIndex}`;
 }
 
 function mapPreferenceToResponse(input: {
@@ -207,8 +172,8 @@ function mapPreferenceToResponse(input: {
     enabled: input.preference.enabled,
     frequency: REMINDER_POLICY.frequency,
     eveningHour: REMINDER_POLICY.eveningHour,
-    quietStartHour: input.preference.quietStartHour,
-    quietEndHour: input.preference.quietEndHour,
+    quietStartHour: REMINDER_POLICY.quietStartHour,
+    quietEndHour: REMINDER_POLICY.quietEndHour,
     maxPerDay: REMINDER_POLICY.maxPerDay,
     timezoneOffsetMinutes: input.preference.timezoneOffsetMinutes,
     dailyReviewCompletedDate: input.preference.dailyReviewCompletedDate,
@@ -221,6 +186,8 @@ function applyReminderPolicy<T extends UpdateReminderSettingsInput>(input: T): T
     ...input,
     frequency: REMINDER_POLICY.frequency,
     eveningHour: REMINDER_POLICY.eveningHour,
+    quietStartHour: REMINDER_POLICY.quietStartHour,
+    quietEndHour: REMINDER_POLICY.quietEndHour,
     maxPerDay: REMINDER_POLICY.maxPerDay
   };
 }
@@ -232,6 +199,8 @@ function getEffectivePreference(
     ...preference,
     frequency: REMINDER_POLICY.frequency,
     eveningHour: REMINDER_POLICY.eveningHour,
+    quietStartHour: REMINDER_POLICY.quietStartHour,
+    quietEndHour: REMINDER_POLICY.quietEndHour,
     maxPerDay: REMINDER_POLICY.maxPerDay
   };
 }
@@ -415,7 +384,37 @@ function shouldSendReminder(input: {
     return false;
   }
 
-  return hasReachedReminderDelay({ preference, now: input.now });
+  const due = getLatestReminderSlot({
+    now: input.now,
+    timezoneOffsetMinutes: preference.timezoneOffsetMinutes
+  });
+
+  if (!due) {
+    return false;
+  }
+
+  if (!preference.lastReminderSentAt) {
+    return true;
+  }
+
+  const lastSentSlot = getLatestReminderSlot({
+    now: preference.lastReminderSentAt,
+    timezoneOffsetMinutes: preference.timezoneOffsetMinutes
+  });
+
+  return (
+    !lastSentSlot ||
+    getReminderSlotKey({
+      now: input.now,
+      timezoneOffsetMinutes: preference.timezoneOffsetMinutes,
+      slotIndex: due.index
+    }) !==
+      getReminderSlotKey({
+        now: preference.lastReminderSentAt,
+        timezoneOffsetMinutes: preference.timezoneOffsetMinutes,
+        slotIndex: lastSentSlot.index
+      })
+  );
 }
 
 function formatRupiah(value: number) {
@@ -454,6 +453,15 @@ async function buildDynamicNotificationPayload(
     return null;
   }
 
+  const due = getLatestReminderSlot({
+    now,
+    timezoneOffsetMinutes
+  });
+
+  if (!due) {
+    return null;
+  }
+
   const todayExpenseSum = todayTransactions
     .filter((transaction) => transaction.type === "EXPENSE")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -476,11 +484,21 @@ async function buildDynamicNotificationPayload(
   const formattedExpense = formatRupiah(todayExpenseSum);
   const formattedSafeToSpend = formatRupiah(availableToSpend);
 
+  const countdownCopy =
+    due.kind === "COUNTDOWN"
+      ? due.hour === 21
+        ? "Tinggal 2 jam untuk merapikan hari ini."
+        : due.hour === 22
+          ? "Tinggal 1 jam untuk merapikan hari ini."
+          : "Hari ini hampir selesai. Ini pengingat terakhir malam ini."
+      : null;
+
   return JSON.stringify({
-    title: "Review transaksi hari ini",
-    body:
-      todayExpenseSum > 0
-        ? `Hari ini kamu belanja ${formattedExpense}, sisa Safe-to-Spend ${formattedSafeToSpend}. Catat transaksi lainnya malam ini?`
+    title: countdownCopy ?? "Review transaksi hari ini",
+    body: countdownCopy
+      ? `${countdownCopy} ${todayExpenseSum > 0 ? `Hari ini kamu belanja ${formattedExpense}.` : `Sisa Safe-to-Spend kamu ${formattedSafeToSpend}.`}`
+      : todayExpenseSum > 0
+        ? `Hari ini kamu belanja ${formattedExpense}, sisa Safe-to-Spend ${formattedSafeToSpend}. Catat transaksi lainnya hari ini?`
         : `Sisa Safe-to-Spend kamu ${formattedSafeToSpend}. Ada pengeluaran yang belum dicatat hari ini?`,
     icon: "/icons/pwa-192.png",
     badge: "/icons/maskable-192.png",

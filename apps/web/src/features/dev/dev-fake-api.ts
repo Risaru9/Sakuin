@@ -6,7 +6,6 @@
 //   ?lambat=1  every answer takes 1.5 seconds
 //   ?gagal=1   loading the transaction list fails
 
-import type { AccountTransfer, FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
 import type { Goal } from "../goals/goal.types";
 import type { RecurringRule } from "../recurring/recurring.types";
@@ -95,29 +94,6 @@ export function installFakeApi() {
     limit: seededLimits[id] ?? null
   }));
 
-  const accounts: FinanceAccount[] = [
-    ["acc-dompet", "Dompet Utama", "CASH", 250000, false],
-    ["acc-bca", "BCA", "BANK", 3500000, false],
-    ["acc-gopay", "GoPay", "E_WALLET", 90000, false],
-    ["acc-jenius", "Jenius", "BANK", 120000, true]
-  ]
-    .filter(([, , , , archived]) => !scenario.empty || !archived)
-    .map(([id, name, type, initialBalance, archived]) => ({
-      id: String(id),
-      name: String(name),
-      type: type as FinanceAccount["type"],
-      icon: null,
-      color: null,
-      initialBalance: String(initialBalance),
-      balance: String(initialBalance),
-      transactionCount: 0,
-      isArchived: Boolean(archived),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
-
-  let transfers: AccountTransfer[] = [];
-
   function daysFromNowIso(days: number) {
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
   }
@@ -168,11 +144,11 @@ export function installFakeApi() {
 
   let reminderSettings = {
     enabled: false,
-    frequency: "EVENING" as const,
-    eveningHour: 20,
-    quietStartHour: 21,
+    frequency: "EVERY_4_HOURS" as const,
+    eveningHour: 21,
+    quietStartHour: 0,
     quietEndHour: 7,
-    maxPerDay: 1,
+    maxPerDay: 6,
     timezoneOffsetMinutes: new Date().getTimezoneOffset(),
     dailyReviewCompletedDate: null,
     hasActiveSubscription: false
@@ -199,42 +175,14 @@ export function installFakeApi() {
         updatedAt: daysFromNowIso(-16)
       }));
 
-  function accountSummary(account: FinanceAccount) {
-    return { id: account.id, name: account.name, type: account.type, icon: account.icon, color: account.color };
-  }
-
-  /** Balances follow the entries and transfers, like the real server computes them. */
-  function withBalances(list: FinanceAccount[]) {
-    return list.map((account) => {
-      const own = transactions.filter((item) => item.account?.id === account.id);
-      const moved =
-        own.reduce((sum, item) => sum + (item.type === "INCOME" ? 1 : -1) * Number(item.amount), 0) +
-        transfers.reduce(
-          (sum, item) =>
-            sum +
-            (item.toAccount.id === account.id ? Number(item.amount) : 0) -
-            (item.fromAccount.id === account.id ? Number(item.amount) : 0),
-          0
-        );
-
-      return {
-        ...account,
-        balance: String(Number(account.initialBalance) + moved),
-        transactionCount: own.length
-      };
-    });
-  }
-
   function toTransaction(input: {
     type: Transaction["type"];
     amount: string | number;
     categoryId: string;
-    accountId?: string;
     date: string;
     note?: string | null;
   }): Transaction {
     const category = categories.find((item) => item.id === input.categoryId) ?? categories[0];
-    const account = accounts.find((item) => item.id === input.accountId) ?? accounts[0];
     const now = new Date().toISOString();
 
     return {
@@ -252,7 +200,6 @@ export function installFakeApi() {
         color: category.color,
         isDefault: category.isDefault
       },
-      account: { id: account.id, name: account.name, type: account.type, icon: null, color: null },
       createdAt: now,
       updatedAt: now
     };
@@ -265,27 +212,10 @@ export function installFakeApi() {
           type: categories.find((item) => item.id === categoryId)?.type ?? "EXPENSE",
           amount,
           categoryId,
-          accountId: categoryId === "cat-gaji" || categoryId === "cat-bonus" ? "acc-bca" : "acc-dompet",
           date: localMidnightIso(daysAgo),
           note
         })
       );
-
-  if (!scenario.empty) {
-    const [, bca, gopay] = accounts;
-    transfers = [
-      {
-        id: "dev-transfer-1",
-        fromAccount: accountSummary(bca),
-        toAccount: accountSummary(gopay),
-        amount: "100000.00",
-        note: "Top up GoPay",
-        date: localMidnightIso(2),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
-  }
 
   function monthKeyOf(iso: string) {
     const date = new Date(iso);
@@ -432,7 +362,6 @@ export function installFakeApi() {
           type: patch.type ?? current.type,
           amount: patch.amount ?? current.amount,
           categoryId: patch.categoryId ?? current.categoryId,
-          accountId: patch.accountId ?? current.account?.id,
           date: patch.date ?? current.date,
           note: patch.note === undefined ? current.note : patch.note
         }),
@@ -477,100 +406,6 @@ export function installFakeApi() {
 
       category.limit = (body as { limit: number | null }).limit;
       return respond(200, category);
-    }
-
-    if (method === "GET" && path === "/api/accounts") {
-      const includeArchived = url.searchParams.get("includeArchived") === "true";
-      return respond(200, withBalances(accounts.filter((item) => includeArchived || !item.isArchived)));
-    }
-
-    if (method === "GET" && path === "/api/accounts/transfers") {
-      return respond(200, [...transfers].sort((first, second) => second.date.localeCompare(first.date)));
-    }
-
-    if (method === "POST" && path === "/api/accounts/transfers") {
-      const input = body as { fromAccountId: string; toAccountId: string; amount: string; date: string; note?: string | null };
-      const from = accounts.find((item) => item.id === input.fromAccountId && !item.isArchived);
-      const to = accounts.find((item) => item.id === input.toAccountId && !item.isArchived);
-
-      if (!from || !to || from.id === to.id) {
-        return respond(404, null, "Rekening asal atau tujuan tidak ditemukan");
-      }
-
-      const now = new Date().toISOString();
-      const created: AccountTransfer = {
-        id: `dev-transfer-${nextId++}`,
-        fromAccount: accountSummary(from),
-        toAccount: accountSummary(to),
-        amount: Number(input.amount).toFixed(2),
-        note: input.note ?? null,
-        date: input.date,
-        createdAt: now,
-        updatedAt: now
-      };
-      transfers = [created, ...transfers];
-      return respond(201, created);
-    }
-
-    if (method === "POST" && path === "/api/accounts") {
-      const input = body as Pick<FinanceAccount, "name" | "type" | "color"> & { initialBalance?: string };
-
-      if (accounts.some((item) => item.name.toLowerCase() === input.name.toLowerCase())) {
-        return respond(409, null, "Nama rekening sudah digunakan");
-      }
-
-      if (accounts.filter((item) => !item.isArchived).length >= 20) {
-        return respond(400, null, "Maksimal 20 rekening aktif");
-      }
-
-      const now = new Date().toISOString();
-      const created: FinanceAccount = {
-        id: `dev-acc-${nextId++}`,
-        name: input.name,
-        type: input.type,
-        icon: null,
-        color: input.color ?? null,
-        initialBalance: input.initialBalance ?? "0",
-        balance: input.initialBalance ?? "0",
-        transactionCount: 0,
-        isArchived: false,
-        createdAt: now,
-        updatedAt: now
-      };
-      accounts.push(created);
-      return respond(201, created);
-    }
-
-    const accountMatch = path.match(/^\/api\/accounts\/([^/]+)(\/restore)?$/);
-    const account = accountMatch ? accounts.find((item) => item.id === accountMatch[1]) : undefined;
-
-    if (accountMatch && !account) {
-      return respond(404, null, "Rekening tidak ditemukan");
-    }
-
-    if (account && accountMatch?.[2] && method === "POST") {
-      account.isArchived = false;
-      return respond(200, account);
-    }
-
-    if (account && method === "PUT") {
-      const patch = body as Partial<Pick<FinanceAccount, "name" | "type" | "color" | "initialBalance">>;
-
-      if (patch.name && accounts.some((item) => item !== account && item.name.toLowerCase() === patch.name?.toLowerCase())) {
-        return respond(409, null, "Nama rekening sudah digunakan");
-      }
-
-      Object.assign(account, patch, { updatedAt: new Date().toISOString() });
-      return respond(200, withBalances([account])[0]);
-    }
-
-    if (account && method === "DELETE") {
-      if (accounts.filter((item) => !item.isArchived).length <= 1) {
-        return respond(400, null, "Minimal satu rekening harus tetap aktif");
-      }
-
-      account.isArchived = true;
-      return respond(200, account);
     }
 
     if (method === "GET" && path === "/api/summary") {

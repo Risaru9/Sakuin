@@ -27,7 +27,6 @@ vi.mock("../auth/auth.service", () => ({ requestPasswordReset: vi.fn() }));
 vi.mock("../profile/profile.service", () => ({ getUserProfile: vi.fn(), updateUserProfile: vi.fn() }));
 vi.mock("../transactions/transaction.service", () => ({ getTransactions: vi.fn() }));
 vi.mock("../categories/category.service", () => ({ getCategories: vi.fn() }));
-vi.mock("../accounts/account.service", () => ({ getAccounts: vi.fn(() => Promise.resolve([])) }));
 vi.mock("../../components/pwa/use-app-version", () => ({
   useAppVersion: () => ({ installed: null, latest: null, checking: false, check: vi.fn(), openDownload: vi.fn(), updateAvailable: false })
 }));

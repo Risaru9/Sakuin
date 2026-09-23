@@ -1,6 +1,5 @@
 import { getLocalDateKey } from "../../lib/daily-review";
 import type { OfflineTransaction } from "../../lib/offline-queue";
-import type { FinanceAccount } from "../accounts/account.types";
 import type { Category } from "../categories/category.types";
 import type { SafeToSpendData } from "../summary/summary.types";
 import { getTransactions, type GetTransactionsParams } from "../transactions/transaction.service";
@@ -118,14 +117,12 @@ export function isPendingTransaction(transaction: Pick<Transaction, "id">) {
   return transaction.id.startsWith("offline-");
 }
 
-/** Shows a queued offline entry like a normal row, with its real category and account. */
+/** Shows a queued offline entry like a normal row, with its real category. */
 export function offlineEntryToTransaction(
   entry: OfflineTransaction,
-  categories: Category[],
-  accounts: FinanceAccount[]
+  categories: Category[]
 ): Transaction {
   const category = categories.find((item) => item.id === entry.categoryId);
-  const account = accounts.find((item) => item.id === entry.accountId);
 
   return {
     id: entry.offlineId,
@@ -144,9 +141,6 @@ export function offlineEntryToTransaction(
           isDefault: category.isDefault
         }
       : { id: entry.categoryId, name: "Kategori", type: entry.type, icon: null, color: null },
-    account: account
-      ? { id: account.id, name: account.name, type: account.type, icon: account.icon, color: account.color }
-      : null,
     createdAt: entry.queuedAt,
     updatedAt: entry.queuedAt
   };

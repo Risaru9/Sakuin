@@ -51,7 +51,7 @@
         <receiver
             android:name=".SakuinFinanceWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_finance_name">
+            android:label="@string/widget_finance_medium_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.USER_PRESENT" />
@@ -63,6 +63,20 @@
                 android:resource="@xml/sakuin_finance_widget_info" />
         </receiver>
 
+        <activity android:name=".QuickEntryActivity" android:exported="false" android:taskAffinity="" android:excludeFromRecents="true" android:launchMode="singleTask" android:windowSoftInputMode="stateVisible|adjustResize" android:theme="@style/AppTheme.QuickEntry" />
+        <receiver android:name=".SakuUpdateReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.sakuin.app.UPDATE_CHECK" />
+                <action android:name="com.sakuin.app.UPDATE_DOWNLOAD" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".WeeklySummaryReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter>
+        </receiver>
     </application>
 
     <!-- Permissions -->
@@ -70,6 +84,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />

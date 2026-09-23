@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fonts are rendered inside the app; the launcher only receives a standard ImageView.
+     Separate transparent buttons retain native click and accessibility actions. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent">
+    <!-- Keep the bitmap's proportions when a launcher reports a different cell ratio.
+         fitXY makes canvas text look vertically stretched on some OEM launchers. -->
+    <ImageView android:id="@+id/widget_art" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+    <FrameLayout android:id="@+id/widget_quick_area" android:layout_width="match_parent" android:layout_height="match_parent">
+        <TextView android:id="@+id/widget_quick_add_button" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/transparent" android:contentDescription="Catat cepat" />
+    </FrameLayout>
+    <FrameLayout android:id="@+id/widget_refresh_area" android:layout_width="match_parent" android:layout_height="match_parent">
+        <TextView android:id="@+id/widget_refresh_button" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/transparent" android:contentDescription="Muat ulang widget" />
+    </FrameLayout>
+</FrameLayout>

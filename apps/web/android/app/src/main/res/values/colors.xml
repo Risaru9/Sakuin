@@ -7,6 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="sakuin_splash_background">#FFF8FBFF</color>
+    <color name="sakuin_splash_background">#FFFFF7E8</color>
     <color name="sakuin_primary">#FF2563EB</color>
-</resources>
+<color name="saku_coin">#FFFFC83D</color><color name="saku_ink">#FF1D1A33</color><color name="saku_cream">#FFFFF7E8</color><color name="saku_muted">#FF625D78</color></resources>

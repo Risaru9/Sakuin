@@ -23,3 +23,23 @@ export const getSummaryQuerySchema = z
     )
   })
   .default({});
+
+const tzOffsetSchema = z.preprocess(
+  (value) => (value === "" || value === undefined || value === null ? undefined : value),
+  z.coerce
+    .number()
+    .int("Zona waktu tidak valid")
+    .min(-840, "Zona waktu tidak valid")
+    .max(840, "Zona waktu tidak valid")
+    .optional()
+);
+
+export const getGlanceQuerySchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal harus berformat YYYY-MM-DD")
+      .optional(),
+    tz: tzOffsetSchema
+  })
+  .default({});

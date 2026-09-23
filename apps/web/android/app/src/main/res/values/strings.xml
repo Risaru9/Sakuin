@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Sakuin v1.6.8</string>
-    <string name="title_activity_main">Sakuin v1.6.8</string>
-    <string name="widget_finance_name">Sakuin Widget</string>
-    <string name="widget_finance_description">Saldo, pemasukan, pengeluaran, dan maskot.</string>
+    <string name="app_name">Sakuin</string>
+    <string name="title_activity_main">Sakuin</string>
+    <string name="widget_finance_medium_name">Sakuin</string>
+    <string name="widget_finance_medium_description">Widget Sakuin yang menyesuaikan ruang di HP dan tablet</string>
     <string name="package_name">com.sakuin.app</string>
     <string name="custom_url_scheme">com.sakuin.app</string>
     <string name="server_client_id">1090124544185-jqgvut63n2hg4rhf341eohvg7i7fnp32.apps.googleusercontent.com</string>

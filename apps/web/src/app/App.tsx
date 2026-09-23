@@ -3,12 +3,15 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { App as CapApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { AppReleaseNotesPrompt } from "../components/pwa/AppReleaseNotesPrompt";
 import { PwaUpdatePrompt } from "../components/pwa/PwaUpdatePrompt";
+import { SakuNotificationsRunner } from "../components/pwa/SakuNotificationsRunner";
 import { ApkUpdatePrompt } from "../components/pwa/ApkUpdatePrompt";
 import { TransactionReminderRunner } from "../components/pwa/TransactionReminderRunner";
 import { ToastProvider } from "../components/toast/ToastProvider";
-import { SakuinIdentityLogo } from "../components/brand/SakuinIdentityLogo";
+import { SakuLoadingScreen } from "../components/saku";
 import { AuthProvider } from "../features/auth/auth-context";
 import { queryClient } from "../lib/query-client";
 import {
@@ -20,6 +23,10 @@ import type { AuthUser } from "../features/auth/auth.types";
 import { router } from "./router";
 
 type PwaUpdateEvent = CustomEvent<ServiceWorkerRegistration>;
+
+function isInternalRoute(route: unknown): route is string {
+  return typeof route === "string" && route.startsWith("/") && !route.startsWith("//");
+}
 
 export function App() {
   const [waitingServiceWorkerRegistration, setWaitingServiceWorkerRegistration] =
@@ -173,12 +180,16 @@ export function App() {
   useEffect(() => {
     function consumeWidgetQuickAction() {
       const bridge = window.AndroidWidgetBridge;
-      if (!bridge?.consumePendingWidgetQuickAction) {
-        return;
-      }
 
       try {
-        if (bridge.consumePendingWidgetQuickAction()) {
+        // APK 2.1: the quick-entry window, widget and native notifications ask for a page.
+        const route = bridge?.consumePendingRoute?.();
+        if (isInternalRoute(route)) {
+          void router.navigate(route);
+          return;
+        }
+
+        if (bridge?.consumePendingWidgetQuickAction?.()) {
           void router.navigate("/dashboard?widgetAction=quick");
         }
       } catch (error) {
@@ -189,12 +200,33 @@ export function App() {
     consumeWidgetQuickAction();
     const retryTimer = window.setTimeout(consumeWidgetQuickAction, 700);
     window.addEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
+    window.addEventListener("sakuin:native-route", consumeWidgetQuickAction);
     window.addEventListener("focus", consumeWidgetQuickAction);
 
     return () => {
       window.clearTimeout(retryTimer);
       window.removeEventListener("sakuin:widget-quick-transaction", consumeWidgetQuickAction);
+      window.removeEventListener("sakuin:native-route", consumeWidgetQuickAction);
       window.removeEventListener("focus", consumeWidgetQuickAction);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
+    // Tapping a Saku notification (budget, bills) opens the page it is about.
+    const listenerPromise = LocalNotifications.addListener("localNotificationActionPerformed", (action) => {
+      const route: unknown = action.notification.extra?.route;
+
+      if (isInternalRoute(route)) {
+        void router.navigate(route);
+      }
+    });
+
+    return () => {
+      void listenerPromise.then((handle) => handle.remove());
     };
   }, []);
 
@@ -203,18 +235,9 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <RouterProvider router={router} />
-          {showBootScreen ? (
-            <div
-              aria-label="Memuat Sakuin"
-              className="sakuin-boot-screen pointer-events-none fixed inset-0 z-[999] flex items-center justify-center bg-[var(--sakuin-bg)]"
-              role="status"
-            >
-              <div className="sakuin-boot-mark rounded-3xl border border-[var(--sakuin-border)] bg-white px-5 py-4 shadow-[0_22px_55px_rgba(37,99,235,0.18)]">
-                <SakuinIdentityLogo subtitle="Mempersiapkan dashboard" size="md" />
-              </div>
-            </div>
-          ) : null}
+          {showBootScreen ? <SakuLoadingScreen className="sakuin-boot-screen" overlay /> : null}
           <TransactionReminderRunner />
+          <SakuNotificationsRunner />
           <AppReleaseNotesPrompt />
           <ApkUpdatePrompt />
 
