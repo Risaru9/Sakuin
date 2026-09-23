@@ -6,13 +6,13 @@ import { SubPageHeader } from "./SubPageParts";
 const methods = [
   {
     title: "QRIS",
-    description: "Pindai kode QR untuk memberi dukungan sekali bayar.",
+    description: "QRIS merchant resmi untuk dukungan sekali bayar sedang disiapkan.",
     Icon: QrCode,
     tint: "bg-saku-coin-soft"
   },
   {
-    title: "Transfer bank",
-    description: "Kirim dukungan langsung ke rekening resmi Sakuin.",
+    title: "Transfer Bank Jago",
+    description: "Nomor Kantong dan nama penerima akan ditampilkan setelah siap.",
     Icon: Landmark,
     tint: "bg-saku-income-soft"
   }
@@ -58,7 +58,7 @@ export function DukungSakuinPage() {
 
         <div className="mt-5 flex items-start gap-2.5 rounded-saku-card bg-saku-paper p-4 text-sm font-bold leading-6 text-saku-muted saku-line-thin">
           <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-saku-income" strokeWidth={2.4} />
-          <p>Belum ada QR atau rekening yang aktif di Sakuin. Periksa detail pembayaran di sini sebelum mengirim dukungan.</p>
+          <p>Belum ada QRIS atau nomor rekening yang aktif di Sakuin. Jangan mengirim dukungan sebelum detail pembayaran tampil di halaman ini.</p>
         </div>
 
         <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs font-black text-saku-muted">
