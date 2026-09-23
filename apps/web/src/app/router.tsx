@@ -92,6 +92,12 @@ const LainnyaPage = lazy(() =>
   }))
 );
 
+const DukungSakuinPage = lazy(() =>
+  import("../features/lainnya/DukungSakuinPage").then((module) => ({
+    default: module.DukungSakuinPage
+  }))
+);
+
 const KategoriPage = lazy(() =>
   import("../features/lainnya/KategoriPage").then((module) => ({
     default: module.KategoriPage
@@ -901,6 +907,14 @@ const routes = [
     element: (
       <ProtectedRoute>
         <LainnyaPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/lainnya/dukung-sakuin",
+    element: (
+      <ProtectedRoute>
+        <DukungSakuinPage />
       </ProtectedRoute>
     )
   },

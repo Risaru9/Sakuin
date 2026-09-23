@@ -237,7 +237,7 @@ export function QuickComposer({ className }: QuickComposerProps) {
           title="Tanya Saku"
           to="/asisten"
         >
-          <SakuMascot className="mt-1.5" mood={composer.hint ? "worried" : "happy"} size={38} />
+          <SakuMascot animated className="mt-1.5" mood={composer.hint ? "worried" : "happy"} size={38} />
         </Link>
         <label className="sr-only" htmlFor={inputId}>
           Catat transaksi, misalnya kopi 18rb

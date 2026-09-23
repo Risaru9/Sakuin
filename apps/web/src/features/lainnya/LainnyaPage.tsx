@@ -5,17 +5,18 @@ import {
   Bell,
   Download,
   Flame,
+  HeartHandshake,
   LogOut,
   Repeat,
   ShieldCheck,
   Smartphone,
-  Sparkles,
   Tags,
   Target,
 } from "lucide-react";
 import { AppShell } from "../../components/layout/AppShell";
 import {
   BottomSheet,
+  SakuChatInvite,
   SakuMascot,
   SakuSparkle,
   StickerButton
@@ -94,13 +95,6 @@ export function LainnyaPage() {
 
   const bantuan: MenuItem[] = [
     {
-      icon: Sparkles,
-      tint: "#dde8ff",
-      title: "Tanya Saku",
-      subtitle: "Asisten AI untuk pertanyaan soal uangmu",
-      to: "/asisten"
-    },
-    {
       icon: Bell,
       tint: "#fff0b3",
       title: "Pengingat",
@@ -160,18 +154,20 @@ export function LainnyaPage() {
         <div className="saku-line relative mt-3 rounded-saku-hero bg-saku-accent px-4 py-3.5 text-white shadow-saku">
           <SakuSparkle className="absolute top-3 right-24 text-white" size={12} />
           <SakuSparkle className="absolute right-[118px] bottom-4 text-saku-coin [animation-delay:0.9s]" size={9} />
-          <SakuMascot animated className="absolute -top-4 right-2.5" size={72} />
-          <div className="flex items-center gap-3 pr-[84px]">
-            <span
-              aria-hidden="true"
-              className="saku-line-thin flex size-12 shrink-0 items-center justify-center rounded-full bg-saku-coin font-saku-head text-lg font-semibold text-saku-ink"
-            >
-              {getInitials(name)}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate font-saku-head text-xl font-semibold">{name}</p>
-              <p className="truncate text-xs font-bold text-white/90">{user?.email ?? ""}</p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3 pt-2">
+              <span
+                aria-hidden="true"
+                className="saku-line-thin flex size-12 shrink-0 items-center justify-center rounded-full bg-saku-coin font-saku-head text-lg font-semibold text-saku-ink"
+              >
+                {getInitials(name)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-saku-head text-xl font-semibold">{name}</p>
+                <p className="truncate text-xs font-bold text-white/90">{user?.email ?? ""}</p>
+              </div>
             </div>
+            <SakuChatInvite className="-mt-5 -mr-2" />
           </div>
           {streak > 0 ? (
             <p className="saku-line-thin mt-3 inline-flex -rotate-[1.5deg] items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-black text-saku-ink">
@@ -187,10 +183,23 @@ export function LainnyaPage() {
           ))}
         </MenuSection>
 
-        <MenuSection label="Bantuan otomatis">
+        <MenuSection label="Alat bantu">
           {bantuan.map((item, index) => (
             <MenuRow isLast={index === bantuan.length - 1} item={item} key={item.title} />
           ))}
+        </MenuSection>
+
+        <MenuSection label="Tentang Sakuin">
+          <MenuRow
+            isLast
+            item={{
+              icon: HeartHandshake,
+              tint: "#ffd6e6",
+              title: "Dukung Sakuin",
+              subtitle: "Bantu Sakuin terus berkembang",
+              to: "/lainnya/dukung-sakuin"
+            }}
+          />
         </MenuSection>
 
         <MenuSection label="Data dan akun">

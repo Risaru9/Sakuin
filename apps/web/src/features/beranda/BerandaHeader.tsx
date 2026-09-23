@@ -1,5 +1,5 @@
 import { ChevronDown, CloudOff, Search } from "lucide-react";
-import { SakuMascot, SakuSparkle } from "../../components/saku";
+import { SakuChatInvite, SakuSparkle } from "../../components/saku";
 import { cn } from "../../lib/cn";
 import { formatPlainAmount, type MonthTotals, type StatusPill, type StatusTone } from "./beranda-data";
 
@@ -69,26 +69,28 @@ export function BerandaHeader({
       <SakuSparkle className="absolute top-2.5 left-[43%] text-white" size={14} />
       <SakuSparkle className="absolute top-8 left-[50%] text-saku-coin [animation-delay:0.8s]" size={10} />
       <SakuSparkle className="absolute right-[88px] bottom-4 text-white [animation-delay:1.4s]" size={12} />
-      <SakuMascot animated className="absolute -top-[18px] right-2" size={70} />
 
-      <div className="flex items-center gap-2 pr-[72px]">
-        <button
-          aria-label={`Bulan ${monthLabel}, ketuk untuk memilih bulan lain`}
-          className="flex min-h-11 min-w-0 items-center gap-1 rounded-full font-saku-head text-[19px] font-semibold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40 min-[360px]:text-[21px]"
-          onClick={onOpenMonth}
-          type="button"
-        >
-          <span className="truncate">{monthLabel}</span>
-          <ChevronDown aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2.8} />
-        </button>
-        <button
-          aria-label="Cari catatan"
-          className="saku-line-thin saku-press flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-saku-ink shadow-saku-xs focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
-          onClick={onOpenSearch}
-          type="button"
-        >
-          <Search aria-hidden="true" className="size-[18px]" strokeWidth={2.6} />
-        </button>
+      <div className="flex items-start justify-between gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5 pt-1">
+          <button
+            aria-label={`Bulan ${monthLabel}, ketuk untuk memilih bulan lain`}
+            className="flex min-h-11 min-w-0 items-center gap-1 rounded-full font-saku-head text-[19px] font-semibold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40 min-[360px]:text-[21px]"
+            onClick={onOpenMonth}
+            type="button"
+          >
+            <span className="truncate">{monthLabel}</span>
+            <ChevronDown aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2.8} />
+          </button>
+          <button
+            aria-label="Cari catatan"
+            className="saku-line-thin saku-press flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-saku-ink shadow-saku-xs focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
+            onClick={onOpenSearch}
+            type="button"
+          >
+            <Search aria-hidden="true" className="size-[18px]" strokeWidth={2.6} />
+          </button>
+        </div>
+        <SakuChatInvite className="-mt-5 -mr-2" />
       </div>
 
       <dl className="mt-2 grid grid-cols-3 gap-2.5">
